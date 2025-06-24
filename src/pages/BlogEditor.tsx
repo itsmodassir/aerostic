@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navigation from "@/components/Navigation";
-import { Sparkles, Loader2, Copy, Download } from "lucide-react";
+import { Sparkles, Loader2, Copy, Download, Send } from "lucide-react";
 import { toast } from "sonner";
 
 const BlogEditor = () => {
@@ -16,6 +16,9 @@ const BlogEditor = () => {
   const [imagePrompt, setImagePrompt] = useState("");
   const [generatedPost, setGeneratedPost] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [wordCount, setWordCount] = useState(800);
+  const [includeIntro, setIncludeIntro] = useState(true);
+  const [includeConclusion, setIncludeConclusion] = useState(true);
 
   const generateBlogPost = async () => {
     if (!topic.trim()) {
@@ -27,10 +30,26 @@ const BlogEditor = () => {
     
     try {
       const prompt = `Write a comprehensive blog post about "${topic}" in a ${tone} tone. 
-      Include an engaging title, introduction, main body with subheadings, and conclusion. 
-      Make it SEO-friendly and approximately 800-1000 words. 
-      Format it with proper headings using markdown syntax.
-      ${imagePrompt ? `Also suggest where to place an image about: ${imagePrompt}` : ''}`;
+      
+      Requirements:
+      - Target word count: approximately ${wordCount} words
+      - ${includeIntro ? 'Include an engaging introduction' : 'Skip the introduction'}
+      - ${includeConclusion ? 'Include a compelling conclusion' : 'Skip the conclusion'}
+      - Use proper markdown formatting with headers (##, ###)
+      - Make it SEO-friendly with relevant keywords
+      - Include 3-5 main sections with descriptive subheadings
+      - Add practical tips and actionable advice where relevant
+      ${imagePrompt ? `- Suggest where to place an image about: ${imagePrompt}` : ''}
+      
+      Structure:
+      ${includeIntro ? '1. Engaging title and introduction' : '1. Engaging title'}
+      2. Main content with 3-5 subheadings
+      3. Practical examples or tips
+      ${includeConclusion ? '4. Strong conclusion with call-to-action' : ''}
+      
+      Make it engaging, informative, and valuable for readers.`;
+
+      console.log('Generating blog post with prompt:', prompt);
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyAhDgajINy8ZYGV9oAHaaOPawlFBlZDS6A`, {
         method: 'POST',
@@ -42,17 +61,29 @@ const BlogEditor = () => {
             parts: [{
               text: prompt
             }]
-          }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('API Response:', data);
       
       if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        setGeneratedPost(data.candidates[0].content.parts[0].text);
-        toast.success("Blog post generated successfully!");
+        const content = data.candidates[0].content.parts[0].text;
+        setGeneratedPost(content);
+        toast.success("🎉 Blog post generated successfully!");
       } else {
-        throw new Error("Failed to generate content");
+        throw new Error("No content generated from API");
       }
     } catch (error) {
       console.error("Error generating blog post:", error);
@@ -62,12 +93,21 @@ const BlogEditor = () => {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedPost);
-    toast.success("Blog post copied to clipboard!");
+  const copyToClipboard = async () => {
+    if (!generatedPost) return;
+    
+    try {
+      await navigator.clipboard.writeText(generatedPost);
+      toast.success("📋 Blog post copied to clipboard!");
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast.error("Failed to copy. Please try selecting and copying manually.");
+    }
   };
 
   const downloadPost = () => {
+    if (!generatedPost) return;
+    
     const blob = new Blob([generatedPost], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -77,7 +117,12 @@ const BlogEditor = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Blog post downloaded!");
+    toast.success("📥 Blog post downloaded!");
+  };
+
+  const publishPost = () => {
+    if (!generatedPost) return;
+    toast.success("🚀 Post published! (Demo mode - integrate with your CMS)");
   };
 
   return (
@@ -105,7 +150,7 @@ const BlogEditor = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <Label htmlFor="topic">Blog Topic or Keywords</Label>
+                  <Label htmlFor="topic">Blog Topic or Keywords *</Label>
                   <Input
                     id="topic"
                     placeholder="e.g., 10 Tips for Remote Work Productivity"
@@ -127,6 +172,22 @@ const BlogEditor = () => {
                       <SelectItem value="casual">Casual & Relaxed</SelectItem>
                       <SelectItem value="authoritative">Authoritative & Expert</SelectItem>
                       <SelectItem value="humorous">Light & Humorous</SelectItem>
+                      <SelectItem value="educational">Educational & Informative</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="wordCount">Target Word Count</Label>
+                  <Select value={wordCount.toString()} onValueChange={(value) => setWordCount(parseInt(value))}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="500">500 words (Short)</SelectItem>
+                      <SelectItem value="800">800 words (Medium)</SelectItem>
+                      <SelectItem value="1200">1200 words (Long)</SelectItem>
+                      <SelectItem value="1500">1500 words (Detailed)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -142,9 +203,30 @@ const BlogEditor = () => {
                   />
                 </div>
 
+                <div className="flex gap-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={includeIntro}
+                      onChange={(e) => setIncludeIntro(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm">Include Introduction</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={includeConclusion}
+                      onChange={(e) => setIncludeConclusion(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm">Include Conclusion</span>
+                  </label>
+                </div>
+
                 <Button 
                   onClick={generateBlogPost} 
-                  disabled={isLoading}
+                  disabled={isLoading || !topic.trim()}
                   className="w-full"
                   size="lg"
                 >
@@ -178,6 +260,10 @@ const BlogEditor = () => {
                         <Download className="h-4 w-4 mr-1" />
                         Download
                       </Button>
+                      <Button size="sm" onClick={publishPost}>
+                        <Send className="h-4 w-4 mr-1" />
+                        Publish
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -193,6 +279,7 @@ const BlogEditor = () => {
                   <div className="text-center py-12 text-gray-500">
                     <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Your AI-generated blog post will appear here</p>
+                    <p className="text-sm mt-2">Fill in the topic and click "Generate Blog Post"</p>
                   </div>
                 )}
               </CardContent>
@@ -200,7 +287,7 @@ const BlogEditor = () => {
           </div>
 
           {/* Features */}
-          <div className="mt-12 grid md:grid-cols-3 gap-6">
+          <div className="mt-12 grid md:grid-cols-4 gap-6">
             <div className="text-center p-6 bg-white/50 rounded-lg">
               <h3 className="font-semibold mb-2">SEO Optimized</h3>
               <p className="text-sm text-gray-600">Every post is optimized for search engines</p>
@@ -212,6 +299,10 @@ const BlogEditor = () => {
             <div className="text-center p-6 bg-white/50 rounded-lg">
               <h3 className="font-semibold mb-2">Instant Results</h3>
               <p className="text-sm text-gray-600">Generate professional content in seconds</p>
+            </div>
+            <div className="text-center p-6 bg-white/50 rounded-lg">
+              <h3 className="font-semibold mb-2">Ready to Publish</h3>
+              <p className="text-sm text-gray-600">Copy, download, or publish directly</p>
             </div>
           </div>
         </div>

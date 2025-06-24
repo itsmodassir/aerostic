@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navigation from "@/components/Navigation";
-import { Globe, Sparkles, Loader2, Check } from "lucide-react";
+import { Globe, Sparkles, Loader2, Check, Palette, Rocket } from "lucide-react";
 import { toast } from "sonner";
 
 const BlogBuilder = () => {
@@ -17,38 +16,59 @@ const BlogBuilder = () => {
     description: "",
     topic: "",
     style: "modern",
-    domain: ""
+    domain: "",
+    color: "blue"
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     about: "",
-    posts: []
+    posts: [],
+    tagline: ""
   });
 
   const themes = [
-    { id: "modern", name: "Modern Minimalist", preview: "Clean lines, lots of white space" },
-    { id: "creative", name: "Creative Portfolio", preview: "Colorful and artistic design" },
-    { id: "business", name: "Professional Business", preview: "Corporate and trustworthy" },
-    { id: "personal", name: "Personal Journal", preview: "Warm and intimate feel" },
-    { id: "tech", name: "Tech Blog", preview: "Dark theme with code highlights" },
-    { id: "lifestyle", name: "Lifestyle Magazine", preview: "Elegant and photo-focused" }
+    { id: "modern", name: "Modern Minimalist", preview: "Clean lines, lots of white space", color: "#3B82F6" },
+    { id: "creative", name: "Creative Portfolio", preview: "Colorful and artistic design", color: "#8B5CF6" },
+    { id: "business", name: "Professional Business", preview: "Corporate and trustworthy", color: "#1F2937" },
+    { id: "personal", name: "Personal Journal", preview: "Warm and intimate feel", color: "#F59E0B" },
+    { id: "tech", name: "Tech Blog", preview: "Dark theme with code highlights", color: "#10B981" },
+    { id: "lifestyle", name: "Lifestyle Magazine", preview: "Elegant and photo-focused", color: "#EC4899" }
+  ];
+
+  const colorOptions = [
+    { id: "blue", name: "Ocean Blue", color: "#3B82F6" },
+    { id: "purple", name: "Royal Purple", color: "#8B5CF6" },
+    { id: "green", name: "Nature Green", color: "#10B981" },
+    { id: "pink", name: "Sunset Pink", color: "#EC4899" },
+    { id: "orange", name: "Warm Orange", color: "#F59E0B" },
+    { id: "gray", name: "Elegant Gray", color: "#6B7280" }
   ];
 
   const generateBlogContent = async () => {
     setIsGenerating(true);
     
     try {
-      const prompt = `Create content for a blog about "${blogData.topic}". 
-      Blog name: "${blogData.name}"
-      Description: "${blogData.description}"
+      const prompt = `Create comprehensive content for a blog website about "${blogData.topic}". 
       
-      Please provide:
-      1. A catchy blog title (if different from the name)
-      2. An engaging "About Me" or "About This Blog" section (2-3 paragraphs)
-      3. 3 sample blog post titles related to the topic
+      Blog Details:
+      - Name: "${blogData.name}"
+      - Description: "${blogData.description}"
+      - Style: ${blogData.style}
       
-      Make it engaging and professional.`;
+      Please provide in this exact format:
+      
+      TITLE: [A catchy blog title if different from the name, otherwise use the name]
+      
+      TAGLINE: [A memorable one-line tagline for the blog]
+      
+      ABOUT: [Write an engaging "About Me" or "About This Blog" section (3-4 paragraphs) that explains the purpose, target audience, and what readers can expect. Make it personal and compelling.]
+      
+      POST_TITLES: [Generate 5 sample blog post titles related to the topic, each on a new line with a dash]
+      
+      Make it professional, engaging, and tailored to the ${blogData.style} style.`;
+
+      console.log('Generating blog content with prompt:', prompt);
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyAhDgajINy8ZYGV9oAHaaOPawlFBlZDS6A`, {
         method: 'POST',
@@ -60,28 +80,53 @@ const BlogBuilder = () => {
             parts: [{
               text: prompt
             }]
-          }]
+          }],
+          generationConfig: {
+            temperature: 0.8,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1500,
+          }
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('API Response:', data);
       
       if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
         const content = data.candidates[0].content.parts[0].text;
-        // Simple parsing - in a real app, you'd want more sophisticated parsing
+        
+        // Parse the structured response
+        const titleMatch = content.match(/TITLE:\s*(.+)/);
+        const taglineMatch = content.match(/TAGLINE:\s*(.+)/);
+        const aboutMatch = content.match(/ABOUT:\s*([\s\S]+?)(?=POST_TITLES:|$)/);
+        const postsMatch = content.match(/POST_TITLES:\s*([\s\S]+)/);
+        
+        const parsedPosts = postsMatch 
+          ? postsMatch[1].split('\n').filter(line => line.trim() && line.includes('-')).map(line => line.replace(/^-\s*/, '').trim())
+          : [
+              `Getting Started with ${blogData.topic}`,
+              `Advanced Tips for ${blogData.topic}`,
+              `Common Mistakes in ${blogData.topic}`,
+              `Best Practices for ${blogData.topic}`,
+              `Future Trends in ${blogData.topic}`
+            ];
+
         setGeneratedContent({
-          title: blogData.name,
-          about: content,
-          posts: [
-            "Getting Started with " + blogData.topic,
-            "Advanced Tips for " + blogData.topic,
-            "Common Mistakes in " + blogData.topic
-          ]
+          title: titleMatch ? titleMatch[1].trim() : blogData.name,
+          tagline: taglineMatch ? taglineMatch[1].trim() : `Your guide to ${blogData.topic}`,
+          about: aboutMatch ? aboutMatch[1].trim() : `Welcome to ${blogData.name}! This blog is dedicated to sharing insights and knowledge about ${blogData.topic}.`,
+          posts: parsedPosts
         });
-        toast.success("Blog content generated successfully!");
+        
+        toast.success("🎉 Blog content generated successfully!");
         setStep(4);
       } else {
-        throw new Error("Failed to generate content");
+        throw new Error("No content generated from API");
       }
     } catch (error) {
       console.error("Error generating blog content:", error);
@@ -100,6 +145,11 @@ const BlogBuilder = () => {
   };
 
   const prevStep = () => setStep(step - 1);
+
+  const launchBlog = () => {
+    toast.success("🚀 Blog launched successfully! (Demo mode)");
+    // In a real implementation, this would deploy the blog
+  };
 
   return (
     <div className="min-h-screen gradient-bg">
@@ -154,7 +204,7 @@ const BlogBuilder = () => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="blogName">Blog Name</Label>
+                    <Label htmlFor="blogName">Blog Name *</Label>
                     <Input
                       id="blogName"
                       placeholder="e.g., My Awesome Blog"
@@ -165,7 +215,7 @@ const BlogBuilder = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="blogTopic">Main Topic/Niche</Label>
+                    <Label htmlFor="blogTopic">Main Topic/Niche *</Label>
                     <Input
                       id="blogTopic"
                       placeholder="e.g., Technology, Travel, Cooking, Fitness"
@@ -176,7 +226,7 @@ const BlogBuilder = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="blogDescription">Blog Description</Label>
+                    <Label htmlFor="blogDescription">Blog Description *</Label>
                     <Textarea
                       id="blogDescription"
                       placeholder="Brief description of what your blog will be about..."
@@ -192,20 +242,48 @@ const BlogBuilder = () => {
               {/* Step 2: Choose Style */}
               {step === 2 && (
                 <div className="space-y-6">
-                  <p className="text-gray-600 mb-6">Choose a theme that matches your blog's personality:</p>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {themes.map((theme) => (
-                      <div
-                        key={theme.id}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                          blogData.style === theme.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => setBlogData({...blogData, style: theme.id})}
-                      >
-                        <h3 className="font-semibold mb-2">{theme.name}</h3>
-                        <p className="text-sm text-gray-600">{theme.preview}</p>
-                      </div>
-                    ))}
+                  <div>
+                    <p className="text-gray-600 mb-6">Choose a theme that matches your blog's personality:</p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {themes.map((theme) => (
+                        <div
+                          key={theme.id}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                            blogData.style === theme.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setBlogData({...blogData, style: theme.id})}
+                        >
+                          <div className="flex items-center mb-2">
+                            <div className="w-4 h-4 rounded" style={{ backgroundColor: theme.color }}></div>
+                            <h3 className="font-semibold ml-2">{theme.name}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600">{theme.preview}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="flex items-center mb-4">
+                      <Palette className="w-4 h-4 mr-2" />
+                      Choose Primary Color:
+                    </Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {colorOptions.map((color) => (
+                        <div
+                          key={color.id}
+                          className={`p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                            blogData.color === color.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setBlogData({...blogData, color: color.id})}
+                        >
+                          <div className="flex items-center">
+                            <div className="w-4 h-4 rounded" style={{ backgroundColor: color.color }}></div>
+                            <span className="text-sm ml-2">{color.name}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -214,13 +292,13 @@ const BlogBuilder = () => {
               {step === 3 && (
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="domain">Choose Your Domain Name</Label>
+                    <Label htmlFor="domain">Choose Your Domain Name *</Label>
                     <div className="mt-2 flex">
                       <Input
                         id="domain"
                         placeholder="myblog"
                         value={blogData.domain}
-                        onChange={(e) => setBlogData({...blogData, domain: e.target.value})}
+                        onChange={(e) => setBlogData({...blogData, domain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})}
                         className="rounded-r-none"
                       />
                       <span className="px-3 py-2 bg-gray-100 border border-l-0 rounded-r-md text-gray-600">
@@ -231,6 +309,16 @@ const BlogBuilder = () => {
                       Your blog will be available at: {blogData.domain || "yourblog"}.setmyblog.ai
                     </p>
                   </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">🚀 What happens next?</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• AI will generate your blog content</li>
+                      <li>• Your website will be built with your chosen theme</li>
+                      <li>• You'll get a fully functional blog ready to go</li>
+                      <li>• You can customize and add content anytime</li>
+                    </ul>
+                  </div>
                 </div>
               )}
 
@@ -240,7 +328,8 @@ const BlogBuilder = () => {
                   {isGenerating ? (
                     <div>
                       <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-                      <p>AI is creating your blog content...</p>
+                      <p className="text-lg font-semibold">AI is creating your blog content...</p>
+                      <p className="text-gray-600">This may take a few moments</p>
                     </div>
                   ) : (
                     <div>
@@ -252,11 +341,14 @@ const BlogBuilder = () => {
                         <p className="text-gray-600">Your AI-powered blog is ready to go live!</p>
                       </div>
 
-                      <div className="bg-gray-50 rounded-lg p-6 text-left max-w-2xl mx-auto">
-                        <h4 className="font-semibold mb-4">Blog Preview:</h4>
+                      <div className="bg-gray-50 rounded-lg p-6 text-left max-w-2xl mx-auto mb-8">
+                        <h4 className="font-semibold mb-4">📋 Blog Preview:</h4>
                         <div className="space-y-4">
                           <div>
-                            <strong>Blog Name:</strong> {blogData.name}
+                            <strong>Blog Name:</strong> {generatedContent.title}
+                          </div>
+                          <div>
+                            <strong>Tagline:</strong> {generatedContent.tagline}
                           </div>
                           <div>
                             <strong>URL:</strong> {blogData.domain}.setmyblog.ai
@@ -265,17 +357,30 @@ const BlogBuilder = () => {
                             <strong>Theme:</strong> {themes.find(t => t.id === blogData.style)?.name}
                           </div>
                           <div>
-                            <strong>AI-Generated Content:</strong> Ready with About page and sample posts
+                            <strong>About Section:</strong> 
+                            <p className="text-sm text-gray-600 mt-1 max-h-20 overflow-y-auto">
+                              {generatedContent.about}
+                            </p>
+                          </div>
+                          <div>
+                            <strong>Sample Posts:</strong>
+                            <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                              {generatedContent.posts.slice(0, 3).map((post, index) => (
+                                <li key={index}>• {post}</li>
+                              ))}
+                            </ul>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                        <Button size="lg">
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button size="lg" onClick={launchBlog}>
+                          <Rocket className="mr-2 h-4 w-4" />
                           Launch My Blog
                         </Button>
-                        <Button variant="outline" size="lg">
-                          Customize Further
+                        <Button variant="outline" size="lg" onClick={() => setStep(1)}>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Create Another Blog
                         </Button>
                       </div>
                     </div>
@@ -296,8 +401,9 @@ const BlogBuilder = () => {
                   <Button
                     onClick={nextStep}
                     disabled={
-                      (step === 1 && (!blogData.name || !blogData.topic)) ||
-                      (step === 3 && !blogData.domain)
+                      (step === 1 && (!blogData.name || !blogData.topic || !blogData.description)) ||
+                      (step === 3 && !blogData.domain) ||
+                      isGenerating
                     }
                   >
                     {step === 3 ? (isGenerating ? "Creating..." : "Create Blog") : "Next"}
