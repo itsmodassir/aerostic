@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,43 +50,76 @@ const BlogEditor = () => {
 
       console.log('Generating blog post with prompt:', prompt);
 
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        }
+      };
+
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyAhDgajINy8ZYGV9oAHaaOPawlFBlZDS6A`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-          }
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error(`HTTP error! status: ${response.status}, response: ${responseText}`);
+        throw new Error(`API request failed with status ${response.status}: ${responseText}`);
       }
 
-      const data = await response.json();
-      console.log('API Response:', data);
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        throw new Error('Invalid JSON response from API');
+      }
+
+      console.log('Parsed API Response:', data);
       
       if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
         const content = data.candidates[0].content.parts[0].text;
         setGeneratedPost(content);
         toast.success("🎉 Blog post generated successfully!");
+        console.log('Generated content:', content);
+      } else if (data.error) {
+        console.error('API returned error:', data.error);
+        throw new Error(`API Error: ${data.error.message || 'Unknown error'}`);
       } else {
-        throw new Error("No content generated from API");
+        console.error('Unexpected API response structure:', data);
+        throw new Error("No content generated from API - unexpected response structure");
       }
     } catch (error) {
       console.error("Error generating blog post:", error);
-      toast.error("Failed to generate blog post. Please try again.");
+      
+      // More specific error messages
+      if (error.message.includes('fetch')) {
+        toast.error("Network error. Please check your internet connection and try again.");
+      } else if (error.message.includes('API Error')) {
+        toast.error(`API Error: ${error.message}`);
+      } else if (error.message.includes('JSON')) {
+        toast.error("Invalid response from API. Please try again.");
+      } else {
+        toast.error(`Failed to generate blog post: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
