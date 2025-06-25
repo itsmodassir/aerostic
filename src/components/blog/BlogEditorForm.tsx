@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface BlogEditorFormProps {
   onGenerate: (content: string) => void;
@@ -20,6 +22,7 @@ const BlogEditorForm = ({ onGenerate }: BlogEditorFormProps) => {
   const [wordCount, setWordCount] = useState(800);
   const [includeIntro, setIncludeIntro] = useState(true);
   const [includeConclusion, setIncludeConclusion] = useState(true);
+  const { user } = useAuth();
 
   const generateBlogPost = async () => {
     if (!topic.trim()) {
@@ -27,117 +30,60 @@ const BlogEditorForm = ({ onGenerate }: BlogEditorFormProps) => {
       return;
     }
 
+    if (!user) {
+      toast.error("Please sign in to generate blog posts");
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      const prompt = `Write a comprehensive blog post about "${topic}" in a ${tone} tone. 
-      
-      Requirements:
-      - Target word count: approximately ${wordCount} words
-      - ${includeIntro ? 'Include an engaging introduction' : 'Skip the introduction'}
-      - ${includeConclusion ? 'Include a compelling conclusion' : 'Skip the conclusion'}
-      - Use proper markdown formatting with headers (##, ###)
-      - Make it SEO-friendly with relevant keywords
-      - Include 3-5 main sections with descriptive subheadings
-      - Add practical tips and actionable advice where relevant
-      ${imagePrompt ? `- Suggest where to place an image about: ${imagePrompt}` : ''}
-      
-      Structure:
-      ${includeIntro ? '1. Engaging title and introduction' : '1. Engaging title'}
-      2. Main content with 3-5 subheadings
-      3. Practical examples or tips
-      ${includeConclusion ? '4. Strong conclusion with call-to-action' : ''}
-      
-      Make it engaging, informative, and valuable for readers.`;
+      console.log('Generating blog post with topic:', topic);
 
-      console.log('Generating blog post with prompt:', prompt);
-
-      const requestBody = {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 3000,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH", 
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      };
-
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyAhDgajINy8ZYGV9oAHaaOPawlFBlZDS6A`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
+      const { data, error } = await supabase.functions.invoke('generate-blog-content', {
+        body: {
+          topic,
+          tone,
+          wordCount,
+          imagePrompt,
+          includeIntro,
+          includeConclusion
+        }
       });
 
-      console.log('Response status:', response.status);
-
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-
-      if (!response.ok) {
-        console.error(`HTTP error! status: ${response.status}, response: ${responseText}`);
-        throw new Error(`API request failed with status ${response.status}: ${responseText}`);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to generate blog content');
       }
 
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse JSON response:', parseError);
-        throw new Error('Invalid JSON response from API');
-      }
+      if (data?.content) {
+        // Save to database
+        const { error: dbError } = await supabase
+          .from('blog_posts')
+          .insert({
+            user_id: user.id,
+            title: topic,
+            content: data.content,
+            topic,
+            tone,
+            word_count: wordCount,
+            image_prompt: imagePrompt
+          });
 
-      console.log('Parsed API Response:', data);
-      
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        const content = data.candidates[0].content.parts[0].text;
-        onGenerate(content);
+        if (dbError) {
+          console.error('Database error:', dbError);
+          toast.error('Failed to save blog post');
+        }
+
+        onGenerate(data.content);
         toast.success("🎉 Blog post generated successfully!");
-        console.log('Generated content:', content);
-      } else if (data.error) {
-        console.error('API returned error:', data.error);
-        throw new Error(`API Error: ${data.error.message || 'Unknown error'}`);
+        console.log('Generated content:', data.content);
       } else {
-        console.error('Unexpected API response structure:', data);
-        throw new Error("No content generated from API - unexpected response structure");
+        throw new Error("No content received from API");
       }
     } catch (error) {
       console.error("Error generating blog post:", error);
-      
-      if (error.message.includes('fetch')) {
-        toast.error("Network error. Please check your internet connection and try again.");
-      } else if (error.message.includes('API Error')) {
-        toast.error(`API Error: ${error.message}`);
-      } else if (error.message.includes('JSON')) {
-        toast.error("Invalid response from API. Please try again.");
-      } else {
-        toast.error(`Failed to generate blog post: ${error.message}`);
-      }
+      toast.error(`Failed to generate blog post: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
