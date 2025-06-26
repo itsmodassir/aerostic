@@ -27,7 +27,7 @@ const ImagesSection = ({ images, onImageDeleted }: ImagesSectionProps) => {
   const deleteImage = async (imageId: string) => {
     try {
       const { error } = await supabase
-        .from('generated_images')
+        .from('generated_images' as any)
         .delete()
         .eq('id', imageId);
 

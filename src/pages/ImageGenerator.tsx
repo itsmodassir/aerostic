@@ -72,7 +72,7 @@ const ImageGenerator = () => {
         
         // Save to user's generated images
         await supabase
-          .from('generated_images')
+          .from('generated_images' as any)
           .insert({
             user_id: user.id,
             prompt,

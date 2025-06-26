@@ -31,7 +31,7 @@ const Dashboard = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
         supabase
-          .from('generated_images')
+          .from('generated_images' as any)
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
