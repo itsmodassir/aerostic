@@ -8,12 +8,12 @@ import Footer from "@/components/Footer";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardLoading from "@/components/dashboard/DashboardLoading";
 import BlogPostsSection from "@/components/dashboard/BlogPostsSection";
-import WebsitesSection from "@/components/dashboard/WebsitesSection";
+import ImagesSection from "@/components/dashboard/ImagesSection";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [blogPosts, setBlogPosts] = useState([]);
-  const [websites, setWebsites] = useState([]);
+  const [generatedImages, setGeneratedImages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,14 +24,14 @@ const Dashboard = () => {
 
   const fetchUserData = async () => {
     try {
-      const [postsResponse, websitesResponse] = await Promise.all([
+      const [postsResponse, imagesResponse] = await Promise.all([
         supabase
           .from('blog_posts')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
         supabase
-          .from('websites')
+          .from('generated_images')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -43,10 +43,10 @@ const Dashboard = () => {
         setBlogPosts(postsResponse.data || []);
       }
 
-      if (websitesResponse.error) {
-        console.error('Error fetching websites:', websitesResponse.error);
+      if (imagesResponse.error) {
+        console.error('Error fetching generated images:', imagesResponse.error);
       } else {
-        setWebsites(websitesResponse.data || []);
+        setGeneratedImages(imagesResponse.data || []);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -60,8 +60,8 @@ const Dashboard = () => {
     setBlogPosts(posts => posts.filter(post => post.id !== postId));
   };
 
-  const handleWebsiteDeleted = (websiteId: string) => {
-    setWebsites(sites => sites.filter(site => site.id !== websiteId));
+  const handleImageDeleted = (imageId: string) => {
+    setGeneratedImages(images => images.filter(image => image.id !== imageId));
   };
 
   if (loading) {
@@ -81,9 +81,9 @@ const Dashboard = () => {
               blogPosts={blogPosts} 
               onPostDeleted={handlePostDeleted}
             />
-            <WebsitesSection 
-              websites={websites} 
-              onWebsiteDeleted={handleWebsiteDeleted}
+            <ImagesSection 
+              images={generatedImages} 
+              onImageDeleted={handleImageDeleted}
             />
           </div>
         </div>

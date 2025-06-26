@@ -12,7 +12,7 @@ import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import BlogEditor from "./pages/BlogEditor";
-import BlogBuilder from "./pages/BlogBuilder";
+import ImageGenerator from "./pages/ImageGenerator";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
@@ -46,9 +46,9 @@ const App = () => (
                 <BlogEditor />
               </ProtectedRoute>
             } />
-            <Route path="/blog-builder" element={
+            <Route path="/image-generator" element={
               <ProtectedRoute>
-                <BlogBuilder />
+                <ImageGenerator />
               </ProtectedRoute>
             } />
             <Route path="/dashboard" element={

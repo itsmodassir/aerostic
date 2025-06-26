@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Sparkles, User, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,18 +32,49 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/features" className="text-gray-700 hover:text-primary transition-colors">
-              Features
-            </Link>
-            <Link to="/pricing" className="text-gray-700 hover:text-primary transition-colors">
-              Pricing
-            </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-primary transition-colors">
-              Contact
-            </Link>
-            <Link to="/faq" className="text-gray-700 hover:text-primary transition-colors">
-              FAQ
-            </Link>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <Link to="/features" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    Features
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/pricing" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    Pricing
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/contact" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    Contact
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/faq" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    FAQ
+                  </Link>
+                </NavigationMenuItem>
+                {user && (
+                  <>
+                    <NavigationMenuItem>
+                      <Link to="/blog-editor" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                        Blog Editor
+                      </Link>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <Link to="/image-generator" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                        Image Generator
+                      </Link>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <Link to="/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                        Dashboard
+                      </Link>
+                    </NavigationMenuItem>
+                  </>
+                )}
+              </NavigationMenuList>
+            </NavigationMenu>
             
             {user ? (
               <div className="flex items-center space-x-4">
