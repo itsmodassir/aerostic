@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +24,8 @@ serve(async (req) => {
   try {
     const { topic, tone, wordCount, imagePrompt, includeIntro, includeConclusion }: BlogRequest = await req.json()
 
+    console.log('Generating blog content for topic:', topic);
+
     const prompt = `Write a comprehensive blog post about "${topic}" in a ${tone} tone. 
     
     Requirements:
@@ -43,7 +44,7 @@ serve(async (req) => {
     3. Practical examples or tips
     ${includeConclusion ? '4. Strong conclusion with call-to-action' : ''}
     
-    Make it engaging, informative, and valuable for readers.`;
+    Make it engaging, informative, and valuable for readers. Focus on providing real value and actionable insights.`;
 
     const requestBody = {
       contents: [{
@@ -55,7 +56,7 @@ serve(async (req) => {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 4096,
       },
       safetySettings: [
         {
@@ -92,9 +93,11 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log('Gemini API response received');
     
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
       const content = data.candidates[0].content.parts[0].text;
+      console.log('Blog content generated successfully');
       
       return new Response(
         JSON.stringify({ content }),
