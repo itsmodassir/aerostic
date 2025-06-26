@@ -21,6 +21,8 @@ serve(async (req) => {
   try {
     const { blogName, blogTopic, blogDescription, selectedTheme }: WebsiteRequest = await req.json()
 
+    console.log('Generating website content for:', blogName, blogTopic);
+
     const prompt = `Create content for a blog website with the following details:
     - Blog Name: ${blogName}
     - Blog Topic/Niche: ${blogTopic}
@@ -49,7 +51,7 @@ serve(async (req) => {
       }
     };
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBW15VMWdcIShXkc3md5uG32T1rbCKX5Mc`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBW15VMWdcIShXkc3md5uG32T1rbCKX5Mc`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -58,7 +60,9 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
+      const errorText = await response.text();
+      console.error(`Gemini API error: ${response.status} - ${errorText}`);
+      throw new Error(`Gemini API request failed with status ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
@@ -70,11 +74,15 @@ serve(async (req) => {
       try {
         parsedContent = JSON.parse(content);
       } catch {
+        // If JSON parsing fails, create a structured response
         parsedContent = {
           title: blogName,
           tagline: `Welcome to ${blogName} - Your go-to source for ${blogTopic}`,
-          aboutContent: content.substring(0, 500) + "...",
-          firstPost: content
+          aboutContent: `Welcome to ${blogName}, your premier destination for everything related to ${blogTopic}. We are passionate about sharing insights, tips, and the latest trends in ${blogTopic}.\n\nOur mission is to provide valuable, engaging content that helps our readers stay informed and inspired. Whether you're a beginner or an expert in ${blogTopic}, you'll find something valuable here.`,
+          firstPost: {
+            title: `Getting Started with ${blogTopic}`,
+            content: content.substring(0, 1000) + "..."
+          }
         };
       }
       
@@ -87,8 +95,12 @@ serve(async (req) => {
           } 
         }
       )
+    } else if (data.error) {
+      console.error('Gemini API returned error:', data.error);
+      throw new Error(`Gemini API Error: ${data.error.message || 'Unknown error'}`);
     } else {
-      throw new Error("No content generated from API");
+      console.error('Unexpected API response structure:', data);
+      throw new Error("No content generated from API - unexpected response structure");
     }
   } catch (error) {
     console.error('Edge function error:', error);

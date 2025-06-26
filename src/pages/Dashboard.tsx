@@ -6,8 +6,9 @@ import Navigation from "@/components/Navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Globe, User, Plus } from "lucide-react";
+import { FileText, Globe, User, Plus, Edit, Eye, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Footer from "@/components/Footer";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -92,9 +93,9 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg">
+      <div className="min-h-screen gradient-bg flex flex-col">
         <Navigation />
-        <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -102,15 +103,16 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen gradient-bg">
+    <div className="min-h-screen gradient-bg flex flex-col">
       <Navigation />
       
-      <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <User className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -153,13 +155,32 @@ const Dashboard = () => {
                         <p className="text-sm text-gray-500 mb-3">
                           Created: {new Date(post.created_at).toLocaleDateString()}
                         </p>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => deletePost(post.id)}
-                        >
-                          Delete
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/blog-post/${post.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/blog-editor?edit=${post.id}`)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => deletePost(post.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -200,13 +221,32 @@ const Dashboard = () => {
                         <p className="text-sm text-gray-500 mb-3">
                           Created: {new Date(website.created_at).toLocaleDateString()}
                         </p>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => deleteWebsite(website.id)}
-                        >
-                          Delete
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/website/${website.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/blog-builder?edit=${website.id}`)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => deleteWebsite(website.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -216,6 +256,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

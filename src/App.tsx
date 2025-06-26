@@ -15,6 +15,10 @@ import BlogEditor from "./pages/BlogEditor";
 import BlogBuilder from "./pages/BlogBuilder";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,7 +36,11 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/blog-post/:id" element={<BlogPost />} />
             <Route path="/blog-editor" element={
               <ProtectedRoute>
                 <BlogEditor />
