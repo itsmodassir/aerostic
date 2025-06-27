@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Sparkles, User, LogOut } from "lucide-react";
@@ -54,6 +55,11 @@ const Navigation = () => {
                     FAQ
                   </Link>
                 </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/deploy" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    Deploy
+                  </Link>
+                </NavigationMenuItem>
                 {user && (
                   <>
                     <NavigationMenuItem>
@@ -64,6 +70,11 @@ const Navigation = () => {
                     <NavigationMenuItem>
                       <Link to="/image-generator" className="text-gray-600 hover:text-gray-900 px-3 py-2">
                         Image Generator
+                      </Link>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <Link to="/chat" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                        AI Chat
                       </Link>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
@@ -145,9 +156,23 @@ const Navigation = () => {
               >
                 FAQ
               </Link>
+              <Link
+                to="/deploy"
+                className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Deploy
+              </Link>
               
               {user ? (
                 <div className="space-y-2 pt-2 border-t border-gray-200">
+                  <Link
+                    to="/chat"
+                    className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    AI Chat
+                  </Link>
                   <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" size="sm" className="w-full">
                       <User className="h-4 w-4 mr-2" />

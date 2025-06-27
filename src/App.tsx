@@ -20,6 +20,8 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
+import Chat from "./pages/Chat";
+import Deploy from "./pages/Deploy";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/deploy" element={<Deploy />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/blog-post/:id" element={<BlogPost />} />
             <Route path="/blog-editor" element={
@@ -49,6 +52,11 @@ const App = () => (
             <Route path="/image-generator" element={
               <ProtectedRoute>
                 <ImageGenerator />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             } />
             <Route path="/dashboard" element={

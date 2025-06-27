@@ -51,11 +51,12 @@ const ImageGenerator = () => {
     setIsGenerating(true);
     
     try {
-      console.log('Generating image with prompt:', prompt);
+      console.log('Generating image with Gemini:', prompt);
 
-      const { data, error } = await supabase.functions.invoke('generate-image', {
+      const { data, error } = await supabase.functions.invoke('gemini-image', {
         body: {
-          prompt: `${prompt}, ${style} style`,
+          prompt,
+          style,
           size,
           quality
         }
@@ -72,7 +73,7 @@ const ImageGenerator = () => {
         
         // Save to user's generated images
         await supabase
-          .from('generated_images' as any)
+          .from('generated_images')
           .insert({
             user_id: user.id,
             prompt,
@@ -96,17 +97,28 @@ const ImageGenerator = () => {
     if (!generatedImage) return;
     
     try {
-      const response = await fetch(generatedImage);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `generated-image-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("Image downloaded successfully!");
+      // For SVG data URLs, we need to handle differently
+      if (generatedImage.startsWith('data:image/svg+xml')) {
+        const link = document.createElement('a');
+        link.href = generatedImage;
+        link.download = `generated-image-${Date.now()}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Image downloaded successfully!");
+      } else {
+        const response = await fetch(generatedImage);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `generated-image-${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success("Image downloaded successfully!");
+      }
     } catch (error) {
       console.error("Error downloading image:", error);
       toast.error("Failed to download image");
@@ -127,7 +139,7 @@ const ImageGenerator = () => {
                 AI Image Generator
               </h1>
               <p className="text-xl text-gray-600">
-                Create stunning images with AI in seconds
+                Create stunning images with Gemini AI in seconds
               </p>
             </div>
 
@@ -213,7 +225,7 @@ const ImageGenerator = () => {
                     ) : (
                       <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Image
+                        Generate with Gemini AI
                       </>
                     )}
                   </Button>
@@ -257,6 +269,7 @@ const ImageGenerator = () => {
                       <div className="text-center text-gray-500">
                         <Image className="h-12 w-12 mx-auto mb-2 opacity-50" />
                         <p>Your generated image will appear here</p>
+                        <p className="text-sm mt-1">Powered by Google Gemini AI</p>
                       </div>
                     </div>
                   )}
@@ -268,8 +281,8 @@ const ImageGenerator = () => {
             <div className="mt-12 grid md:grid-cols-3 gap-6">
               <div className="text-center p-6 bg-white/50 rounded-lg">
                 <Sparkles className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">AI-Powered</h3>
-                <p className="text-sm text-gray-600">Advanced AI models create high-quality images</p>
+                <h3 className="font-semibold mb-2">Gemini AI Powered</h3>
+                <p className="text-sm text-gray-600">Advanced Google AI creates high-quality images</p>
               </div>
               <div className="text-center p-6 bg-white/50 rounded-lg">
                 <Image className="h-8 w-8 text-primary mx-auto mb-3" />
