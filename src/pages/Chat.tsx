@@ -82,7 +82,16 @@ const Chat = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Properly type the messages from the database
+      const typedMessages: Message[] = (data || []).map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        created_at: msg.created_at
+      }));
+      
+      setMessages(typedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
@@ -134,7 +143,7 @@ const Chat = () => {
     }
   };
 
-  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string) => {
+  const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string): Promise<Message> => {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
@@ -147,7 +156,14 @@ const Chat = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Return properly typed message
+      return {
+        id: data.id,
+        role: data.role as 'user' | 'assistant',
+        content: data.content,
+        created_at: data.created_at
+      };
     } catch (error) {
       console.error('Error saving message:', error);
       throw error;
