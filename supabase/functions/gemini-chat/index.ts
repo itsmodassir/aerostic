@@ -27,8 +27,8 @@ serve(async (req) => {
 
     console.log('Processing chat request:', { message, conversationId });
 
-    // Call Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    // Use the correct model name: gemini-1.5-flash instead of gemini-pro
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36,13 +36,13 @@ serve(async (req) => {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: message
+            text: `You are a helpful AI assistant. Please provide a clear, informative, and friendly response to the following message: ${message}`
           }]
         }],
         generationConfig: {
           temperature: 0.7,
-          topK: 1,
-          topP: 1,
+          topK: 40,
+          topP: 0.95,
           maxOutputTokens: 2048,
         },
         safetySettings: [
@@ -69,11 +69,11 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('Gemini response:', data);
+    console.log('Gemini response received:', data);
 
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       throw new Error('Invalid response from Gemini API');

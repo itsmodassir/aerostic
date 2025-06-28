@@ -51,7 +51,7 @@ export const useChat = () => {
       setConversations(data || []);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      toast.error('Failed to load conversations');
+      toast.error('Failed to load conversations. Please try refreshing the page.');
     } finally {
       setLoadingConversations(false);
     }
@@ -67,7 +67,6 @@ export const useChat = () => {
 
       if (error) throw error;
       
-      // Properly type the messages from the database
       const typedMessages: Message[] = (data || []).map(msg => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant',
@@ -78,13 +77,13 @@ export const useChat = () => {
       setMessages(typedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      toast.error('Failed to load messages');
+      toast.error('Failed to load conversation messages.');
     }
   };
 
   const createNewConversation = async () => {
     try {
-      const title = `Chat ${new Date().toLocaleDateString()}`;
+      const title = `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
       const { data, error } = await supabase
         .from('chat_conversations')
         .insert({
@@ -99,10 +98,10 @@ export const useChat = () => {
       setConversations(prev => [data, ...prev]);
       setCurrentConversation(data.id);
       setMessages([]);
-      toast.success('New conversation started');
+      toast.success('New conversation started!');
     } catch (error) {
       console.error('Error creating conversation:', error);
-      toast.error('Failed to create conversation');
+      toast.error('Failed to create new conversation. Please try again.');
     }
   };
 
@@ -123,7 +122,7 @@ export const useChat = () => {
       toast.success('Conversation deleted');
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation');
+      toast.error('Failed to delete conversation. Please try again.');
     }
   };
 
@@ -141,7 +140,6 @@ export const useChat = () => {
 
       if (error) throw error;
       
-      // Return properly typed message
       return {
         id: data.id,
         role: data.role as 'user' | 'assistant',
@@ -181,7 +179,7 @@ export const useChat = () => {
         setConversations(prev => [data, ...prev]);
       } catch (error) {
         console.error('Error creating conversation:', error);
-        toast.error('Failed to create conversation');
+        toast.error('Failed to create conversation. Please try again.');
         return;
       }
     }
@@ -203,7 +201,15 @@ export const useChat = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error('Failed to get AI response. Please try again.');
+      }
+
+      if (data.error) {
+        console.error('AI API error:', data.error);
+        throw new Error(data.error);
+      }
 
       // Save assistant response
       const savedAssistantMessage = await saveMessage(conversationId, 'assistant', data.response);
@@ -217,7 +223,13 @@ export const useChat = () => {
 
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message. Please try again.';
+      toast.error(errorMessage);
+      
+      // Restore the input message so user can retry
+      setInputMessage(userMessage);
     } finally {
       setIsLoading(false);
     }
