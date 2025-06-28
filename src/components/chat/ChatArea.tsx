@@ -44,12 +44,12 @@ const ChatArea = ({
     scrollToBottom();
   }, [messages]);
 
-  // Auto-focus textarea when conversation is selected
+  // Auto-focus textarea
   useEffect(() => {
-    if (currentConversation && textareaRef.current) {
+    if (textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [currentConversation]);
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -60,16 +60,65 @@ const ChatArea = ({
     }
   };
 
-  // Format AI response with proper line breaks and structure
-  const formatMessage = (content: string) => {
-    return content
-      .split('\n')
-      .map((line, index) => (
-        <span key={index}>
-          {line}
-          {index < content.split('\n').length - 1 && <br />}
-        </span>
-      ));
+  // Format AI response with proper structure and organization
+  const formatAIResponse = (content: string) => {
+    // Split content into paragraphs and format properly
+    const paragraphs = content.split('\n\n').filter(p => p.trim());
+    
+    return paragraphs.map((paragraph, index) => {
+      const trimmedParagraph = paragraph.trim();
+      
+      // Check if it's a list item
+      if (trimmedParagraph.startsWith('- ') || trimmedParagraph.startsWith('• ') || /^\d+\./.test(trimmedParagraph)) {
+        const listItems = trimmedParagraph.split('\n').filter(item => item.trim());
+        return (
+          <ul key={index} className="list-disc list-inside space-y-1 mb-4">
+            {listItems.map((item, itemIndex) => (
+              <li key={itemIndex} className="text-gray-800">
+                {item.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '')}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      
+      // Check if it's a heading (starts with #)
+      if (trimmedParagraph.startsWith('#')) {
+        const level = trimmedParagraph.match(/^#+/)?.[0].length || 1;
+        const text = trimmedParagraph.replace(/^#+\s*/, '');
+        const HeadingTag = `h${Math.min(level + 1, 6)}` as keyof JSX.IntrinsicElements;
+        return (
+          <HeadingTag key={index} className="font-semibold text-gray-900 mb-2 mt-4">
+            {text}
+          </HeadingTag>
+        );
+      }
+      
+      // Check if it's code (wrapped in backticks)
+      if (trimmedParagraph.includes('`')) {
+        const parts = trimmedParagraph.split('`');
+        return (
+          <p key={index} className="mb-4 leading-relaxed text-gray-800">
+            {parts.map((part, partIndex) => 
+              partIndex % 2 === 1 ? (
+                <code key={partIndex} className="bg-gray-100 px-2 py-1 rounded font-mono text-sm">
+                  {part}
+                </code>
+              ) : (
+                part
+              )
+            )}
+          </p>
+        );
+      }
+      
+      // Regular paragraph
+      return (
+        <p key={index} className="mb-4 leading-relaxed text-gray-800">
+          {trimmedParagraph}
+        </p>
+      );
+    });
   };
 
   return (
@@ -77,68 +126,38 @@ const ChatArea = ({
       <CardHeader className="pb-3 border-b">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
-          {currentConversation ? 'AI Chat Assistant' : 'Select or start a conversation'}
+          AI Chat Assistant
         </CardTitle>
-        {currentConversation && (
-          <p className="text-sm text-gray-600">
-            Ask me anything! I'm here to help with information, explanations, and friendly conversation.
-          </p>
-        )}
+        <p className="text-sm text-gray-600">
+          Start typing below to begin your conversation with AI
+        </p>
       </CardHeader>
       
       <CardContent className="p-0 flex flex-col flex-1 min-h-0">
         {/* Messages Area */}
         <ScrollArea className="flex-1 p-4">
-          {!currentConversation ? (
-            <div className="text-center py-12">
-              <Bot className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Welcome to AI Chat!
-              </h3>
-              <p className="text-gray-500 mb-4 max-w-md mx-auto">
-                Start a new conversation or select an existing one from the sidebar to begin chatting with your AI assistant.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto text-sm">
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <strong className="text-blue-700">💡 Ask questions</strong>
-                  <p className="text-blue-600 mt-1">Get explanations on any topic</p>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <strong className="text-green-700">🤝 Get help</strong>
-                  <p className="text-green-600 mt-1">Assistance with tasks and problems</p>
-                </div>
-                <div className="bg-purple-50 p-3 rounded-lg">
-                  <strong className="text-purple-700">💬 Have conversations</strong>
-                  <p className="text-purple-600 mt-1">Friendly chat and discussions</p>
-                </div>
-                <div className="bg-orange-50 p-3 rounded-lg">
-                  <strong className="text-orange-700">📝 Get creative</strong>
-                  <p className="text-orange-600 mt-1">Writing help and brainstorming</p>
-                </div>
-              </div>
-            </div>
-          ) : messages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="text-center py-12">
               <Bot className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 Ready to chat!
               </h3>
-              <p className="text-gray-600 mb-4">
-                Start the conversation by typing a message below.
+              <p className="text-gray-600 mb-6">
+                Start the conversation by typing a message below. No need to create a new chat - just start typing!
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
                 {[
-                  "Hello! How are you today?",
-                  "What can you help me with?",
-                  "Tell me something interesting",
-                  "How do you work?"
+                  "Hello! How can you help me today?",
+                  "What are your capabilities?",
+                  "Explain quantum computing in simple terms",
+                  "Help me write a professional email"
                 ].map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => onInputChange(suggestion)}
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors"
+                    className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 rounded-lg text-sm transition-all border border-gray-200 hover:border-primary/30 text-left"
                   >
-                    {suggestion}
+                    <span className="font-medium text-gray-700">{suggestion}</span>
                   </button>
                 ))}
               </div>
@@ -161,7 +180,7 @@ const ChatArea = ({
                       className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                         message.role === 'user'
                           ? 'bg-primary text-white ml-3'
-                          : 'bg-gray-200 text-gray-600 mr-3'
+                          : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white mr-3'
                       }`}
                     >
                       {message.role === 'user' ? (
@@ -174,18 +193,16 @@ const ChatArea = ({
                       className={`rounded-2xl p-4 ${
                         message.role === 'user'
                           ? 'bg-primary text-white'
-                          : 'bg-gray-50 text-gray-900 border border-gray-200'
+                          : 'bg-white border border-gray-200 shadow-sm'
                       }`}
                     >
-                      <div className={`text-sm leading-relaxed ${
-                        message.role === 'assistant' ? 'prose prose-sm max-w-none' : ''
-                      }`}>
+                      <div className="text-sm">
                         {message.role === 'assistant' ? (
-                          <div className="whitespace-pre-wrap">
-                            {formatMessage(message.content)}
+                          <div className="prose prose-sm max-w-none">
+                            {formatAIResponse(message.content)}
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                         )}
                       </div>
                       <p className={`text-xs mt-3 opacity-70 ${
@@ -201,12 +218,17 @@ const ChatArea = ({
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="flex flex-row">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-600 mr-3 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white mr-3 flex items-center justify-center">
                       <Bot className="h-4 w-4" />
                     </div>
-                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
-                      <div className="flex items-center space-x-2">
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center space-x-3">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-100"></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-200"></div>
+                        </div>
                         <span className="text-sm text-gray-600">AI is thinking...</span>
                       </div>
                     </div>
@@ -219,40 +241,38 @@ const ChatArea = ({
           )}
         </ScrollArea>
 
-        {/* Input Area */}
-        {currentConversation && (
-          <div className="border-t p-4 bg-gray-50/50">
-            <div className="flex space-x-3">
-              <div className="flex-1">
-                <Textarea
-                  ref={textareaRef}
-                  value={inputMessage}
-                  onChange={(e) => onInputChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-                  className="min-h-[44px] max-h-32 resize-none border-gray-300 focus:border-primary focus:ring-primary"
-                  disabled={isLoading}
-                  rows={1}
-                />
-              </div>
-              <Button
-                onClick={onSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                size="sm"
-                className="h-[44px] px-4"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+        {/* Input Area - Always visible */}
+        <div className="border-t p-4 bg-gradient-to-r from-gray-50 to-gray-100">
+          <div className="flex space-x-3">
+            <div className="flex-1">
+              <Textarea
+                ref={textareaRef}
+                value={inputMessage}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                className="min-h-[44px] max-h-32 resize-none border-gray-300 focus:border-primary focus:ring-primary bg-white"
+                disabled={isLoading}
+                rows={1}
+              />
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              AI responses are generated and may not always be accurate. Use with discretion.
-            </p>
+            <Button
+              onClick={onSendMessage}
+              disabled={!inputMessage.trim() || isLoading}
+              size="sm"
+              className="h-[44px] px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-        )}
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            AI responses are generated and may not always be accurate. Use with discretion.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

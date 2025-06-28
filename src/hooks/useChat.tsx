@@ -157,7 +157,7 @@ export const useChat = () => {
 
     let conversationId = currentConversation;
     
-    // Create new conversation if none exists
+    // Create new conversation automatically if none exists (no manual + click needed)
     if (!conversationId) {
       try {
         const title = inputMessage.length > 50 
