@@ -157,7 +157,7 @@ export const useChat = () => {
 
     let conversationId = currentConversation;
     
-    // Create new conversation automatically if none exists (no manual + click needed)
+    // Create new conversation automatically if none exists
     if (!conversationId) {
       try {
         const title = inputMessage.length > 50 
@@ -189,11 +189,12 @@ export const useChat = () => {
     setIsLoading(true);
 
     try {
-      // Save user message
+      // Save user message first
       const savedUserMessage = await saveMessage(conversationId, 'user', userMessage);
       setMessages(prev => [...prev, savedUserMessage]);
 
-      // Call Gemini API
+      // Call Gemini API with conversation history
+      console.log('Calling Gemini API with conversation ID:', conversationId);
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           message: userMessage,

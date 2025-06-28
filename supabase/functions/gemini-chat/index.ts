@@ -25,45 +25,87 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
 
+    // Initialize Supabase client to fetch conversation history
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     console.log('Processing chat request:', { message, conversationId });
 
-    // Use the correct model name: gemini-1.5-flash instead of gemini-pro
+    let conversationHistory = [];
+    
+    // Fetch conversation history if conversationId exists
+    if (conversationId) {
+      const { data: messages, error } = await supabase
+        .from('chat_messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching conversation history:', error);
+      } else {
+        conversationHistory = messages || [];
+      }
+    }
+
+    // Build conversation context for Gemini
+    const conversationContext = conversationHistory.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+
+    // Add the current user message
+    conversationContext.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    // Prepare the request for Gemini with conversation history
+    const geminiRequest = {
+      contents: conversationContext,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      },
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE"
+        }
+      ]
+    };
+
+    console.log('Sending request to Gemini with conversation history:', {
+      messageCount: conversationContext.length,
+      conversationId
+    });
+
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `You are a helpful AI assistant. Please provide a clear, informative, and friendly response to the following message: ${message}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      }),
+      body: JSON.stringify(geminiRequest),
     });
 
     if (!response.ok) {
@@ -73,7 +115,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Gemini response received:', data);
+    console.log('Gemini response received with conversation context');
 
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       throw new Error('Invalid response from Gemini API');
