@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
-import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight } from "lucide-react";
+import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -17,12 +17,12 @@ const Index = () => {
       <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Create Amazing Blogs with{" "}
+            Create Amazing Content with{" "}
             <span className="text-primary">AI Power</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Generate professional blog posts and complete websites instantly. 
-            Let AI handle the writing while you focus on your ideas.
+            Generate professional blog posts, create stunning images, and chat with AI. 
+            Let AI handle the heavy lifting while you focus on your ideas.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
@@ -34,16 +34,16 @@ const Index = () => {
               </Link>
             ) : (
               <>
-                <Link to="/blog-editor">
+                <Link to="/auth">
                   <Button size="lg" className="text-lg px-8 py-3">
-                    <FileText className="mr-2 h-5 w-5" />
-                    Create Blog Post
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Get Started Free
                   </Button>
                 </Link>
-                <Link to="/blog-builder">
+                <Link to="/chat">
                   <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                    <Globe className="mr-2 h-5 w-5" />
-                    Build Website
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Try AI Chat
                   </Button>
                 </Link>
               </>
@@ -60,7 +60,7 @@ const Index = () => {
               Everything You Need to Create Content
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Powerful AI tools designed to help you create, publish, and manage your blog content effortlessly.
+              Powerful AI tools designed to help you create, publish, and manage your content effortlessly.
             </p>
           </div>
 
@@ -79,12 +79,24 @@ const Index = () => {
 
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
-                <Globe className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Website Builder</CardTitle>
+                <MessageCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>AI Chat Assistant</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Create complete blog websites with AI-generated content, themes, and professional layouts.
+                  Have intelligent conversations with our AI assistant powered by Google Gemini.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <Globe className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>Image Generator</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Create stunning AI-generated images for your content with simple text prompts.
                 </p>
               </CardContent>
             </Card>
@@ -96,7 +108,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Manage all your blog posts and websites from one central dashboard with easy editing tools.
+                  Manage all your content from one central dashboard with easy editing tools.
                 </p>
               </CardContent>
             </Card>
@@ -108,7 +120,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Get professional content in seconds with our advanced Gemini AI integration.
+                  Get professional content in seconds with our advanced AI integration.
                 </p>
               </CardContent>
             </Card>
@@ -124,18 +136,6 @@ const Index = () => {
                 </p>
               </CardContent>
             </Card>
-
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Multiple Formats</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Download, copy, or publish your content in various formats including Markdown and HTML.
-                </p>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>
@@ -147,7 +147,7 @@ const Index = () => {
             Ready to Transform Your Content Creation?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join thousands of content creators who are using AI to scale their blog writing and website creation.
+            Join thousands of content creators who are using AI to scale their content creation and productivity.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
@@ -167,9 +167,10 @@ const Index = () => {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link to="/blog-editor">
+                <Link to="/chat">
                   <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                    Try Demo
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Try AI Chat
                   </Button>
                 </Link>
               </>

@@ -60,6 +60,18 @@ const ChatArea = ({
     }
   };
 
+  // Format AI response with proper line breaks and structure
+  const formatMessage = (content: string) => {
+    return content
+      .split('\n')
+      .map((line, index) => (
+        <span key={index}>
+          {line}
+          {index < content.split('\n').length - 1 && <br />}
+        </span>
+      ));
+  };
+
   return (
     <Card className="lg:col-span-3 flex flex-col h-full">
       <CardHeader className="pb-3 border-b">
@@ -132,7 +144,7 @@ const ChatArea = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -162,13 +174,21 @@ const ChatArea = ({
                       className={`rounded-2xl p-4 ${
                         message.role === 'user'
                           ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-900 border'
+                          : 'bg-gray-50 text-gray-900 border border-gray-200'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {message.content}
-                      </p>
-                      <p className={`text-xs mt-2 opacity-70 ${
+                      <div className={`text-sm leading-relaxed ${
+                        message.role === 'assistant' ? 'prose prose-sm max-w-none' : ''
+                      }`}>
+                        {message.role === 'assistant' ? (
+                          <div className="whitespace-pre-wrap">
+                            {formatMessage(message.content)}
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        )}
+                      </div>
+                      <p className={`text-xs mt-3 opacity-70 ${
                         message.role === 'user' ? 'text-white' : 'text-gray-500'
                       }`}>
                         {new Date(message.created_at).toLocaleTimeString()}
@@ -184,7 +204,7 @@ const ChatArea = ({
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-600 mr-3 flex items-center justify-center">
                       <Bot className="h-4 w-4" />
                     </div>
-                    <div className="bg-gray-100 border rounded-2xl p-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4">
                       <div className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         <span className="text-sm text-gray-600">AI is thinking...</span>
