@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Bot, User, AlertCircle, RefreshCw } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Send, Loader2, Bot, User } from "lucide-react";
 
 interface Message {
   id: string;
@@ -44,7 +43,6 @@ const ChatArea = ({
     scrollToBottom();
   }, [messages]);
 
-  // Auto-focus textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.focus();
@@ -60,48 +58,72 @@ const ChatArea = ({
     }
   };
 
-  // Format AI response with proper structure and organization
+  // Enhanced AI response formatting
   const formatAIResponse = (content: string) => {
-    // Split content into paragraphs and format properly
-    const paragraphs = content.split('\n\n').filter(p => p.trim());
+    // Remove all asterisks and clean up the content
+    let cleanContent = content
+      .replace(/\*\*\*/g, '') // Remove triple asterisks
+      .replace(/\*\*/g, '') // Remove double asterisks
+      .replace(/\*/g, '') // Remove single asterisks
+      .replace(/#+\s*/g, '') // Remove markdown headers
+      .trim();
+
+    // Split content into paragraphs
+    const paragraphs = cleanContent.split('\n\n').filter(p => p.trim());
     
     return paragraphs.map((paragraph, index) => {
       const trimmedParagraph = paragraph.trim();
       
-      // Check if it's a list item
-      if (trimmedParagraph.startsWith('- ') || trimmedParagraph.startsWith('• ') || /^\d+\./.test(trimmedParagraph)) {
+      // Skip empty paragraphs
+      if (!trimmedParagraph) return null;
+      
+      // Check if it's a numbered list
+      if (/^\d+\./.test(trimmedParagraph)) {
         const listItems = trimmedParagraph.split('\n').filter(item => item.trim());
         return (
-          <ul key={index} className="list-disc list-inside space-y-1 mb-4">
+          <ol key={index} className="list-decimal list-inside space-y-2 mb-4 ml-4">
             {listItems.map((item, itemIndex) => (
-              <li key={itemIndex} className="text-gray-800">
-                {item.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '')}
+              <li key={itemIndex} className="text-gray-800 leading-relaxed">
+                {item.replace(/^\d+\.\s*/, '')}
+              </li>
+            ))}
+          </ol>
+        );
+      }
+      
+      // Check if it's a bullet list
+      if (trimmedParagraph.includes('- ') || trimmedParagraph.includes('• ')) {
+        const listItems = trimmedParagraph.split('\n').filter(item => 
+          item.trim() && (item.includes('- ') || item.includes('• '))
+        );
+        return (
+          <ul key={index} className="list-disc list-inside space-y-2 mb-4 ml-4">
+            {listItems.map((item, itemIndex) => (
+              <li key={itemIndex} className="text-gray-800 leading-relaxed">
+                {item.replace(/^[-•]\s*/, '').trim()}
               </li>
             ))}
           </ul>
         );
       }
       
-      // Check if it's a heading (starts with #)
-      if (trimmedParagraph.startsWith('#')) {
-        const level = trimmedParagraph.match(/^#+/)?.[0].length || 1;
-        const text = trimmedParagraph.replace(/^#+\s*/, '');
-        const HeadingTag = `h${Math.min(level + 1, 6)}` as keyof JSX.IntrinsicElements;
+      // Check if it looks like a heading (short line that introduces content)
+      if (trimmedParagraph.length < 60 && !trimmedParagraph.endsWith('.') && !trimmedParagraph.endsWith('?') && !trimmedParagraph.endsWith('!')) {
         return (
-          <HeadingTag key={index} className="font-semibold text-gray-900 mb-2 mt-4">
-            {text}
-          </HeadingTag>
+          <h3 key={index} className="text-lg font-semibold text-gray-900 mb-3 mt-4">
+            {trimmedParagraph}
+          </h3>
         );
       }
       
-      // Check if it's code (wrapped in backticks)
+      // Check if it contains code (wrapped in backticks)
       if (trimmedParagraph.includes('`')) {
         const parts = trimmedParagraph.split('`');
         return (
           <p key={index} className="mb-4 leading-relaxed text-gray-800">
             {parts.map((part, partIndex) => 
               partIndex % 2 === 1 ? (
-                <code key={partIndex} className="bg-gray-100 px-2 py-1 rounded font-mono text-sm">
+                <code key={partIndex} className="bg-gray-100 px-2 py-1 rounded font-mono text-sm text-blue-600">
                   {part}
                 </code>
               ) : (
@@ -118,163 +140,168 @@ const ChatArea = ({
           {trimmedParagraph}
         </p>
       );
-    });
+    }).filter(Boolean);
   };
 
   return (
-    <Card className="lg:col-span-3 flex flex-col h-full">
-      <CardHeader className="pb-3 border-b">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          AI Chat Assistant
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Start typing below to begin your conversation with AI
-        </p>
-      </CardHeader>
-      
-      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-        {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4">
-          {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <Bot className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                Ready to chat!
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Start the conversation by typing a message below. No need to create a new chat - just start typing!
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                {[
-                  "Hello! How can you help me today?",
-                  "What are your capabilities?",
-                  "Explain quantum computing in simple terms",
-                  "Help me write a professional email"
-                ].map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => onInputChange(suggestion)}
-                    className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 rounded-lg text-sm transition-all border border-gray-200 hover:border-primary/30 text-left"
-                  >
-                    <span className="font-medium text-gray-700">{suggestion}</span>
-                  </button>
-                ))}
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+            <Bot className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">AI Chat Assistant</h1>
+            <p className="text-sm text-gray-600">Powered by Google Gemini</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-6">
+            {messages.length === 0 ? (
+              <div className="text-center py-12">
+                <Bot className="h-16 w-16 text-primary mx-auto mb-6" />
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+                  Welcome to AI Chat Assistant
+                </h2>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  Start the conversation by typing a message below. I'm here to help with questions, creative tasks, and more!
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                  {[
+                    "Hello! How can you help me today?",
+                    "What are your main capabilities?",
+                    "Help me write a professional email",
+                    "Explain a complex topic simply"
+                  ].map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => onInputChange(suggestion)}
+                      className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 rounded-xl text-sm transition-all border border-gray-200 hover:border-primary/30 text-left hover:shadow-md"
+                    >
+                      <span className="font-medium text-gray-700">{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
+            ) : (
+              <div className="space-y-6">
+                {messages.map((message) => (
                   <div
-                    className={`flex max-w-[85%] ${
-                      message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                    key={message.id}
+                    className={`flex ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                        message.role === 'user'
-                          ? 'bg-primary text-white ml-3'
-                          : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white mr-3'
+                      className={`flex max-w-[85%] ${
+                        message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
                       }`}
                     >
-                      {message.role === 'user' ? (
-                        <User className="h-4 w-4" />
-                      ) : (
-                        <Bot className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div
-                      className={`rounded-2xl p-4 ${
-                        message.role === 'user'
-                          ? 'bg-primary text-white'
-                          : 'bg-white border border-gray-200 shadow-sm'
-                      }`}
-                    >
-                      <div className="text-sm">
-                        {message.role === 'assistant' ? (
-                          <div className="prose prose-sm max-w-none">
-                            {formatAIResponse(message.content)}
-                          </div>
+                      <div
+                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                          message.role === 'user'
+                            ? 'bg-primary text-white ml-4'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white mr-4'
+                        }`}
+                      >
+                        {message.role === 'user' ? (
+                          <User className="h-5 w-5" />
                         ) : (
-                          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          <Bot className="h-5 w-5" />
                         )}
                       </div>
-                      <p className={`text-xs mt-3 opacity-70 ${
-                        message.role === 'user' ? 'text-white' : 'text-gray-500'
-                      }`}>
-                        {new Date(message.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="flex flex-row">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white mr-3 flex items-center justify-center">
-                      <Bot className="h-4 w-4" />
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-                      <div className="flex items-center space-x-3">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-100"></div>
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-200"></div>
+                      <div
+                        className={`rounded-2xl p-5 ${
+                          message.role === 'user'
+                            ? 'bg-primary text-white'
+                            : 'bg-white border border-gray-200 shadow-sm'
+                        }`}
+                      >
+                        <div className="text-sm">
+                          {message.role === 'assistant' ? (
+                            <div className="prose prose-sm max-w-none">
+                              {formatAIResponse(message.content)}
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          )}
                         </div>
-                        <span className="text-sm text-gray-600">AI is thinking...</span>
+                        <p className={`text-xs mt-3 opacity-70 ${
+                          message.role === 'user' ? 'text-white' : 'text-gray-500'
+                        }`}>
+                          {new Date(message.created_at).toLocaleTimeString()}
+                        </p>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </ScrollArea>
-
-        {/* Input Area - Always visible */}
-        <div className="border-t p-4 bg-gradient-to-r from-gray-50 to-gray-100">
-          <div className="flex space-x-3">
-            <div className="flex-1">
-              <Textarea
-                ref={textareaRef}
-                value={inputMessage}
-                onChange={(e) => onInputChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
-                className="min-h-[44px] max-h-32 resize-none border-gray-300 focus:border-primary focus:ring-primary bg-white"
-                disabled={isLoading}
-                rows={1}
-              />
-            </div>
-            <Button
-              onClick={onSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              size="sm"
-              className="h-[44px] px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+                ))}
+                
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="flex flex-row">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white mr-4 flex items-center justify-center">
+                        <Bot className="h-5 w-5" />
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center space-x-3">
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-100"></div>
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce delay-200"></div>
+                          </div>
+                          <span className="text-sm text-gray-600">AI is thinking...</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            AI responses are generated and may not always be accurate. Use with discretion.
-          </p>
+        </ScrollArea>
+      </div>
+
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex-shrink-0 border-t border-gray-200 bg-white p-6">
+        <div className="flex space-x-4">
+          <div className="flex-1">
+            <Textarea
+              ref={textareaRef}
+              value={inputMessage}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+              className="min-h-[50px] max-h-32 resize-none border-gray-300 focus:border-primary focus:ring-primary bg-white rounded-xl"
+              disabled={isLoading}
+              rows={1}
+            />
+          </div>
+          <Button
+            onClick={onSendMessage}
+            disabled={!inputMessage.trim() || isLoading}
+            size="lg"
+            className="h-[50px] px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl"
+          >
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          AI responses are generated and may not always be accurate. Use with discretion.
+        </p>
+      </div>
+    </div>
   );
 };
 

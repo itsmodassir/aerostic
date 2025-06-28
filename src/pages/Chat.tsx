@@ -3,7 +3,6 @@ import Navigation from "@/components/Navigation";
 import { MessageCircle } from "lucide-react";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
-import ChatFeatures from "@/components/chat/ChatFeatures";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -73,22 +72,12 @@ const Chat = () => {
   }
 
   return (
-    <div className="min-h-screen gradient-bg">
+    <div className="min-h-screen bg-gray-50">
       <Navigation />
       
-      <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <MessageCircle className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              AI Chat Assistant
-            </h1>
-            <p className="text-xl text-gray-600">
-              Ask me anything and get intelligent, helpful responses
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-4 gap-6 h-[600px]">
+      <div className="pt-16 h-screen">
+        <div className="h-full flex">
+          <div className="w-80 flex-shrink-0">
             <ChatSidebar
               conversations={conversations}
               currentConversation={currentConversation}
@@ -97,7 +86,9 @@ const Chat = () => {
               onCreateConversation={createNewConversation}
               onDeleteConversation={deleteConversation}
             />
+          </div>
 
+          <div className="flex-1">
             <ChatArea
               currentConversation={currentConversation}
               messages={messages}
@@ -108,8 +99,6 @@ const Chat = () => {
               onKeyPress={handleKeyPress}
             />
           </div>
-
-          <ChatFeatures />
         </div>
       </div>
     </div>
