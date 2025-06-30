@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle, Home } from "lucide-react";
@@ -5,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/components/ui/navigation-menu";
+import { ThemeToggle } from "./ThemeToggle";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,12 +33,12 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center space-x-2">
             <Sparkles className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-gray-900">BlogCraft AI</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">BlogCraft AI</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -45,7 +47,7 @@ const Navigation = () => {
               <NavigationMenuList>
                 {/* Home Button */}
                 <NavigationMenuItem>
-                  <Link to="/landing" className="text-gray-600 hover:text-gray-900 px-3 py-2 flex items-center">
+                  <Link to="/landing" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 flex items-center transition-colors">
                     <Home className="h-4 w-4 mr-2" />
                     Home
                   </Link>
@@ -56,19 +58,19 @@ const Navigation = () => {
                   <div className="relative">
                     <Button
                       variant="ghost"
-                      className="flex items-center space-x-1"
+                      className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                       onClick={() => setIsPagesOpen(!isPagesOpen)}
                     >
                       <span>Pages</span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
                     </Button>
                     {isPagesOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                         {mainPages.map((page) => (
                           <Link
                             key={page.path}
                             to={page.path}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => setIsPagesOpen(false)}
                           >
                             {page.name}
@@ -81,7 +83,7 @@ const Navigation = () => {
 
                 {/* Main Navigation Items */}
                 <NavigationMenuItem>
-                  <Link to="/chat" className="text-gray-600 hover:text-gray-900 px-3 py-2 flex items-center">
+                  <Link to="/chat" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 flex items-center transition-colors">
                     <MessageCircle className="h-4 w-4 mr-2" />
                     AI Chat
                   </Link>
@@ -89,13 +91,15 @@ const Navigation = () => {
                 
                 {user && (
                   <NavigationMenuItem>
-                    <Link to="/blog-editor" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                    <Link to="/blog-editor" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 transition-colors">
                       Blog Editor
                     </Link>
                   </NavigationMenuItem>
                 )}
               </NavigationMenuList>
             </NavigationMenu>
+            
+            <ThemeToggle />
             
             {user ? (
               <div className="flex items-center space-x-4">
@@ -123,7 +127,8 @@ const Navigation = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center space-x-2">
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
@@ -137,11 +142,11 @@ const Navigation = () => {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 transition-colors">
               {/* Home Button */}
               <Link
                 to="/landing"
-                className="flex items-center px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <Home className="h-4 w-4 mr-2" />
@@ -152,7 +157,7 @@ const Navigation = () => {
               <div className="space-y-1">
                 <Button
                   variant="ghost"
-                  className="w-full justify-between"
+                  className="w-full justify-between text-gray-700 dark:text-gray-300"
                   onClick={() => setIsPagesOpen(!isPagesOpen)}
                 >
                   <span>Pages</span>
@@ -164,7 +169,7 @@ const Navigation = () => {
                       <Link
                         key={page.path}
                         to={page.path}
-                        className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                        className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         {page.name}
@@ -177,7 +182,7 @@ const Navigation = () => {
               {/* Main Navigation */}
               <Link
                 to="/chat"
-                className="flex items-center px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
@@ -185,10 +190,10 @@ const Navigation = () => {
               </Link>
               
               {user ? (
-                <div className="space-y-2 pt-2 border-t border-gray-200">
+                <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <Link
                     to="/blog-editor"
-                    className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                    className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
                     Blog Editor
@@ -199,7 +204,7 @@ const Navigation = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2 pt-2 border-t border-gray-200">
+                <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <Link to="/auth" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" className="w-full">Sign In</Button>
                   </Link>

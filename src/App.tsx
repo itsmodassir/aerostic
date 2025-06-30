@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MobileOptimizations from "@/components/MobileOptimizations";
 import Index from "./pages/Index";
@@ -29,55 +30,57 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <MobileOptimizations />
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Chat />} />
-            <Route path="/landing" element={<Index />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/deploy" element={<Deploy />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/blog-post/:id" element={<BlogPost />} />
-            <Route path="/blog-editor" element={
-              <ProtectedRoute>
-                <BlogEditor />
-              </ProtectedRoute>
-            } />
-            <Route path="/blog-builder" element={
-              <ProtectedRoute>
-                <BlogBuilder />
-              </ProtectedRoute>
-            } />
-            <Route path="/image-generator" element={
-              <ProtectedRoute>
-                <ImageGenerator />
-              </ProtectedRoute>
-            } />
-            <Route path="/chat" element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider defaultTheme="system" storageKey="blogcraft-theme">
+      <AuthProvider>
+        <TooltipProvider>
+          <MobileOptimizations />
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Chat />} />
+              <Route path="/landing" element={<Index />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/deploy" element={<Deploy />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/blog-post/:id" element={<BlogPost />} />
+              <Route path="/blog-editor" element={
+                <ProtectedRoute>
+                  <BlogEditor />
+                </ProtectedRoute>
+              } />
+              <Route path="/blog-builder" element={
+                <ProtectedRoute>
+                  <BlogBuilder />
+                </ProtectedRoute>
+              } />
+              <Route path="/image-generator" element={
+                <ProtectedRoute>
+                  <ImageGenerator />
+                </ProtectedRoute>
+              } />
+              <Route path="/chat" element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
