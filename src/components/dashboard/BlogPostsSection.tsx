@@ -2,10 +2,16 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, Edit, Eye, Trash2 } from "lucide-react";
+import { FileText, Plus, Edit, Eye, Trash2, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BlogPost {
   id: string;
@@ -63,38 +69,46 @@ const BlogPostsSection = ({ blogPosts, onPostDeleted }: BlogPostsSectionProps) =
           <div className="space-y-4">
             {blogPosts.map((post) => (
               <div key={post.id} className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">{post.title}</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  {post.tone} • {post.word_count} words
-                </p>
-                <p className="text-sm text-gray-500 mb-3">
-                  Created: {new Date(post.created_at).toLocaleDateString()}
-                </p>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/blog-post/${post.id}`)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/blog-editor?edit=${post.id}`)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => deletePost(post.id)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold mb-2">{post.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {post.tone} • {post.word_count} words
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Created: {new Date(post.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={() => navigate(`/blog-post/${post.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => navigate(`/blog-editor?edit=${post.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => deletePost(post.id)}
+                        className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Post
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
