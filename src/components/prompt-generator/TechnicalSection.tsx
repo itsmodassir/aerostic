@@ -9,10 +9,13 @@ interface TechnicalSectionProps {
   setLighting: (value: string) => void;
   composition: string;
   setComposition: (value: string) => void;
+  cameraAngle: string;
+  setCameraAngle: (value: string) => void;
   details: string;
   setDetails: (value: string) => void;
   lightingOptions: Array<{ id: string; name: string }>;
   compositions: Array<{ id: string; name: string }>;
+  cameraAngles: Array<{ id: string; name: string }>;
   detailLevels: Array<{ id: string; name: string }>;
 }
 
@@ -21,10 +24,13 @@ const TechnicalSection = ({
   setLighting,
   composition,
   setComposition,
+  cameraAngle,
+  setCameraAngle,
   details,
   setDetails,
   lightingOptions,
   compositions,
+  cameraAngles,
   detailLevels
 }: TechnicalSectionProps) => {
   return (
@@ -32,7 +38,7 @@ const TechnicalSection = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Camera className="h-5 w-5" />
-          Technical Settings
+          Technical & Camera Settings
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -70,20 +76,38 @@ const TechnicalSection = ({
           </div>
         </div>
 
-        <div>
-          <Label className="text-base font-medium">Detail Level</Label>
-          <Select value={details} onValueChange={setDetails}>
-            <SelectTrigger className="mt-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {detailLevels.map((detailOption) => (
-                <SelectItem key={detailOption.id} value={detailOption.id}>
-                  {detailOption.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="text-base font-medium">Camera Angle</Label>
+            <Select value={cameraAngle} onValueChange={setCameraAngle}>
+              <SelectTrigger className="mt-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {cameraAngles.map((angle) => (
+                  <SelectItem key={angle.id} value={angle.id}>
+                    {angle.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-base font-medium">Detail Level</Label>
+            <Select value={details} onValueChange={setDetails}>
+              <SelectTrigger className="mt-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {detailLevels.map((detailOption) => (
+                  <SelectItem key={detailOption.id} value={detailOption.id}>
+                    {detailOption.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardContent>
     </Card>

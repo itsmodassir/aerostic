@@ -6,7 +6,10 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { usePromptGenerator } from "@/hooks/usePromptGenerator";
 import PromptGeneratorHeader from "@/components/prompt-generator/PromptGeneratorHeader";
 import BasicPromptSection from "@/components/prompt-generator/BasicPromptSection";
+import ContentTypeSection from "@/components/prompt-generator/ContentTypeSection";
 import StyleSection from "@/components/prompt-generator/StyleSection";
+import AdvancedStyleSection from "@/components/prompt-generator/AdvancedStyleSection";
+import EnvironmentSection from "@/components/prompt-generator/EnvironmentSection";
 import TechnicalSection from "@/components/prompt-generator/TechnicalSection";
 import GeneratedPromptSection from "@/components/prompt-generator/GeneratedPromptSection";
 import PromptTips from "@/components/prompt-generator/PromptTips";
@@ -20,11 +23,29 @@ const ImageGenerator = () => {
     lighting,
     composition,
     details,
+    cameraAngle,
+    aspectRatio,
+    colorPalette,
+    textures,
+    environment,
+    timeOfDay,
+    weather,
+    artMovement,
+    contentType,
     generatedPrompt,
+    contentTypes,
     styles,
     moods,
     lightingOptions,
     compositions,
+    cameraAngles,
+    aspectRatios,
+    colorPalettes,
+    textureOptions,
+    environments,
+    timeOptions,
+    weatherOptions,
+    artMovements,
     detailLevels,
     quickPrompts,
     setSubject,
@@ -33,6 +54,15 @@ const ImageGenerator = () => {
     setLighting,
     setComposition,
     setDetails,
+    setCameraAngle,
+    setAspectRatio,
+    setColorPalette,
+    setTextures,
+    setEnvironment,
+    setTimeOfDay,
+    setWeather,
+    setArtMovement,
+    setContentType,
     generatePrompt,
     copyToClipboard,
     clearAll,
@@ -45,7 +75,7 @@ const ImageGenerator = () => {
         <Navigation />
         
         <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <PromptGeneratorHeader />
 
             <div className="grid lg:grid-cols-2 gap-8">
@@ -58,6 +88,15 @@ const ImageGenerator = () => {
                   useQuickPrompt={useQuickPrompt}
                 />
 
+                <ContentTypeSection
+                  contentType={contentType}
+                  setContentType={setContentType}
+                  aspectRatio={aspectRatio}
+                  setAspectRatio={setAspectRatio}
+                  contentTypes={contentTypes}
+                  aspectRatios={aspectRatios}
+                />
+
                 <StyleSection
                   style={style}
                   setStyle={setStyle}
@@ -67,15 +106,42 @@ const ImageGenerator = () => {
                   moods={moods}
                 />
 
+                <AdvancedStyleSection
+                  artMovement={artMovement}
+                  setArtMovement={setArtMovement}
+                  colorPalette={colorPalette}
+                  setColorPalette={setColorPalette}
+                  textures={textures}
+                  setTextures={setTextures}
+                  artMovements={artMovements}
+                  colorPalettes={colorPalettes}
+                  textureOptions={textureOptions}
+                />
+
+                <EnvironmentSection
+                  environment={environment}
+                  setEnvironment={setEnvironment}
+                  timeOfDay={timeOfDay}
+                  setTimeOfDay={setTimeOfDay}
+                  weather={weather}
+                  setWeather={setWeather}
+                  environments={environments}
+                  timeOptions={timeOptions}
+                  weatherOptions={weatherOptions}
+                />
+
                 <TechnicalSection
                   lighting={lighting}
                   setLighting={setLighting}
                   composition={composition}
                   setComposition={setComposition}
+                  cameraAngle={cameraAngle}
+                  setCameraAngle={setCameraAngle}
                   details={details}
                   setDetails={setDetails}
                   lightingOptions={lightingOptions}
                   compositions={compositions}
+                  cameraAngles={cameraAngles}
                   detailLevels={detailLevels}
                 />
 
@@ -86,7 +152,7 @@ const ImageGenerator = () => {
                     size="lg"
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Prompt
+                    Generate Detailed Prompt
                   </Button>
                   <Button 
                     onClick={clearAll} 
