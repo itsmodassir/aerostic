@@ -19,7 +19,7 @@ import {
 const Deploy = () => {
   const deploymentOptions = [
     {
-      title: "Lovable Cloud",
+      title: "BlogCraft Cloud",
       description: "Deploy instantly with zero configuration. Perfect for getting started quickly.",
       icon: <Cloud className="h-8 w-8" />,
       features: ["One-click deployment", "Auto-scaling", "SSL certificates", "CDN included"],

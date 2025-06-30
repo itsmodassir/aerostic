@@ -9,7 +9,7 @@ const BlogEditorHeader = () => {
         AI Blog Editor
       </h1>
       <p className="text-xl text-gray-600">
-        Create professional blog posts in seconds with Google Gemini AI
+        Create professional blog posts in seconds with BlogCraft AI
       </p>
     </div>
   );

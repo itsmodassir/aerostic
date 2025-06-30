@@ -84,7 +84,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Have intelligent conversations with our AI assistant powered by Google Gemini.
+                  Have intelligent conversations with our AI assistant powered by BlogCraft AI.
                 </p>
               </CardContent>
             </Card>
