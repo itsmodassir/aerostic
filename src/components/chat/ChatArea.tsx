@@ -1,9 +1,10 @@
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Bot, User, Plus } from "lucide-react";
+import { Send, Loader2, Bot, User, Copy, Play, Code } from "lucide-react";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -33,6 +34,8 @@ const ChatArea = ({
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [typingText, setTypingText] = useState("");
+  const [showTypingPreview, setShowTypingPreview] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,7 +43,7 @@ const ChatArea = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, showTypingPreview]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -57,18 +60,57 @@ const ChatArea = ({
     }
   };
 
-  // Enhanced AI response formatting
-  const formatAIResponse = (content: string) => {
-    // Remove all asterisks and clean up the content
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard!");
+    } catch (err) {
+      toast.error("Failed to copy text");
+    }
+  };
+
+  const extractCode = (content: string) => {
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+    const matches = [];
+    let match;
+    
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+      matches.push({
+        language: match[1] || 'text',
+        code: match[2].trim()
+      });
+    }
+    
+    return matches;
+  };
+
+  // Enhanced AI response formatting with live preview support
+  const formatAIResponse = (content: string, isLive = false) => {
+    if (isLive) {
+      return (
+        <div className="text-gray-600 italic">
+          <span className="inline-block w-2 h-4 bg-blue-500 animate-pulse mr-1"></span>
+          {content}
+        </div>
+      );
+    }
+
+    // Clean content
     let cleanContent = content
-      .replace(/\*\*\*/g, '') // Remove triple asterisks
-      .replace(/\*\*/g, '') // Remove double asterisks
-      .replace(/\*/g, '') // Remove single asterisks
-      .replace(/#+\s*/g, '') // Remove markdown headers
+      .replace(/\*\*\*/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
       .trim();
 
+    // Extract code blocks first
+    const codeBlocks = extractCode(cleanContent);
+    
+    // Remove code blocks from content for paragraph processing
+    const contentWithoutCode = cleanContent.replace(/```(\w+)?\n([\s\S]*?)```/g, '{{CODE_BLOCK}}');
+    
     // Split content into paragraphs
-    const paragraphs = cleanContent.split('\n\n').filter(p => p.trim());
+    const paragraphs = contentWithoutCode.split('\n\n').filter(p => p.trim());
+    let codeBlockIndex = 0;
     
     return paragraphs.map((paragraph, index) => {
       const trimmedParagraph = paragraph.trim();
@@ -76,11 +118,45 @@ const ChatArea = ({
       // Skip empty paragraphs
       if (!trimmedParagraph) return null;
       
+      // Replace code block placeholder
+      if (trimmedParagraph === '{{CODE_BLOCK}}') {
+        const codeBlock = codeBlocks[codeBlockIndex++];
+        if (!codeBlock) return null;
+        
+        return (
+          <div key={`code-${index}`} className="my-6 rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Code className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700 capitalize">
+                  {codeBlock.language}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(codeBlock.code)}
+                  className="h-8 px-2"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <div className="bg-gray-900 text-gray-100 p-4 overflow-x-auto">
+              <pre className="text-sm">
+                <code>{codeBlock.code}</code>
+              </pre>
+            </div>
+          </div>
+        );
+      }
+      
       // Check if it's a numbered list
       if (/^\d+\./.test(trimmedParagraph)) {
         const listItems = trimmedParagraph.split('\n').filter(item => item.trim());
         return (
-          <ol key={index} className="list-decimal list-inside space-y-2 mb-4 ml-4">
+          <ol key={index} className="list-decimal list-inside space-y-3 mb-6 ml-4">
             {listItems.map((item, itemIndex) => (
               <li key={itemIndex} className="text-gray-800 leading-relaxed">
                 {item.replace(/^\d+\.\s*/, '')}
@@ -96,7 +172,7 @@ const ChatArea = ({
           item.trim() && (item.includes('- ') || item.includes('• '))
         );
         return (
-          <ul key={index} className="list-disc list-inside space-y-2 mb-4 ml-4">
+          <ul key={index} className="list-disc list-inside space-y-2 mb-6 ml-4">
             {listItems.map((item, itemIndex) => (
               <li key={itemIndex} className="text-gray-800 leading-relaxed">
                 {item.replace(/^[-•]\s*/, '').trim()}
@@ -106,23 +182,25 @@ const ChatArea = ({
         );
       }
       
-      // Check if it looks like a heading (short line that introduces content)
-      if (trimmedParagraph.length < 60 && !trimmedParagraph.endsWith('.') && !trimmedParagraph.endsWith('?') && !trimmedParagraph.endsWith('!')) {
+      // Check if it looks like a heading
+      if (trimmedParagraph.length < 80 && !trimmedParagraph.endsWith('.') && 
+          !trimmedParagraph.endsWith('?') && !trimmedParagraph.endsWith('!') &&
+          (trimmedParagraph.includes(':') || trimmedParagraph.match(/^[A-Z][^.!?]*$/))) {
         return (
-          <h3 key={index} className="text-lg font-semibold text-gray-900 mb-3 mt-4">
-            {trimmedParagraph}
+          <h3 key={index} className="text-xl font-bold text-gray-900 mb-4 mt-6 border-b border-gray-200 pb-2">
+            {trimmedParagraph.replace(':', '')}
           </h3>
         );
       }
       
-      // Check if it contains code (wrapped in backticks)
+      // Check if it contains inline code
       if (trimmedParagraph.includes('`')) {
         const parts = trimmedParagraph.split('`');
         return (
           <p key={index} className="mb-4 leading-relaxed text-gray-800">
             {parts.map((part, partIndex) => 
               partIndex % 2 === 1 ? (
-                <code key={partIndex} className="bg-gray-100 px-2 py-1 rounded font-mono text-sm text-blue-600">
+                <code key={partIndex} className="bg-gray-100 px-2 py-1 rounded font-mono text-sm text-blue-600 border">
                   {part}
                 </code>
               ) : (
@@ -143,32 +221,40 @@ const ChatArea = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 transition-colors">
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
-          <div className="max-w-3xl mx-auto px-4 py-6">
+          <div className="max-w-4xl mx-auto px-4 py-6">
             {messages.length === 0 ? (
               <div className="text-center py-20">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Bot className="h-8 w-8 text-white" />
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
+                  <Bot className="h-10 w-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                  How can I help you today?
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">
+                  Enhanced AI Assistant
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto mt-8">
+                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+                  I'm your intelligent coding companion! I learn from our conversations and provide contextual, 
+                  detailed answers with live code examples and step-by-step explanations.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mt-8">
                   {[
-                    "Explain quantum computing",
-                    "Write a creative story",
-                    "Help with coding",
-                    "Plan a trip"
+                    { icon: "🌐", title: "Build a React website", desc: "Get complete code with explanations" },
+                    { icon: "🎨", title: "Design system help", desc: "UI/UX principles and best practices" },
+                    { icon: "🔧", title: "Debug my code", desc: "Step-by-step problem solving" },
+                    { icon: "📚", title: "Learn new concepts", desc: "Clear explanations with examples" }
                   ].map((suggestion, index) => (
                     <button
                       key={index}
-                      onClick={() => onInputChange(suggestion)}
-                      className="p-4 text-left border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                      onClick={() => onInputChange(suggestion.title)}
+                      className="p-6 text-left border border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
                     >
-                      <span className="text-gray-700">{suggestion}</span>
+                      <div className="text-2xl mb-2">{suggestion.icon}</div>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        {suggestion.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{suggestion.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -179,28 +265,33 @@ const ChatArea = ({
                   <div key={message.id} className="group">
                     <div className="flex items-start space-x-4">
                       {/* Avatar */}
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
                         message.role === 'user' 
                           ? 'bg-blue-600 text-white' 
                           : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white'
                       }`}>
                         {message.role === 'user' ? (
-                          <User className="h-4 w-4" />
+                          <User className="h-5 w-5" />
                         ) : (
-                          <Bot className="h-4 w-4" />
+                          <Bot className="h-5 w-5" />
                         )}
                       </div>
                       
                       {/* Message Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 mb-2">
-                          {message.role === 'user' ? 'You' : 'Assistant'}
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                          {message.role === 'user' ? 'You' : 'AI Assistant'}
+                          {message.role === 'assistant' && (
+                            <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
+                              Enhanced
+                            </span>
+                          )}
                         </div>
-                        <div className="prose prose-sm max-w-none text-gray-800">
+                        <div className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200">
                           {message.role === 'assistant' ? (
-                            <div>{formatAIResponse(message.content)}</div>
+                            <div className="space-y-4">{formatAIResponse(message.content)}</div>
                           ) : (
-                            <p className="whitespace-pre-wrap mb-0">{message.content}</p>
+                            <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
                           )}
                         </div>
                       </div>
@@ -208,17 +299,28 @@ const ChatArea = ({
                   </div>
                 ))}
                 
+                {/* Live typing preview */}
                 {isLoading && (
                   <div className="group">
                     <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                        <Bot className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 mb-2">Assistant</div>
-                        <div className="flex items-center space-x-2 text-gray-500">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">Thinking...</span>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                          AI Assistant
+                          <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                            Thinking...
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                          </div>
+                          <span className="text-sm">Analyzing context and generating response...</span>
                         </div>
                       </div>
                     </div>
@@ -232,37 +334,37 @@ const ChatArea = ({
         </ScrollArea>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-4">
+      {/* Enhanced Input Area */}
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="relative">
             <Textarea
               ref={textareaRef}
               value={inputMessage}
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message ChatGPT..."
-              className="min-h-[60px] max-h-32 resize-none border-gray-300 rounded-xl pr-12 focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+              placeholder="Ask me anything about coding, web development, or get help with your projects..."
+              className="min-h-[80px] max-h-40 resize-none border-gray-300 dark:border-gray-600 rounded-2xl pr-16 text-base leading-relaxed focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all duration-200"
               disabled={isLoading}
-              rows={1}
+              rows={3}
             />
             <Button
               onClick={onSendMessage}
               disabled={!inputMessage.trim() || isLoading}
-              size="sm"
-              className="absolute right-2 bottom-2 h-8 w-8 p-0 rounded-md bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100"
-              variant="ghost"
+              size="lg"
+              className="absolute right-3 bottom-3 h-10 w-10 p-0 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-all duration-200"
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
               ) : (
-                <Send className="h-4 w-4 text-gray-600" />
+                <Send className="h-5 w-5 text-white" />
               )}
             </Button>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            ChatGPT can make mistakes. Check important info.
-          </p>
+          <div className="flex items-center justify-between mt-4 text-xs text-gray-500 dark:text-gray-400">
+            <p>Enhanced AI with context awareness and code generation</p>
+            <p>Press Enter to send, Shift+Enter for new line</p>
+          </div>
         </div>
       </div>
     </div>

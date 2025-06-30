@@ -83,7 +83,7 @@ export const useChat = () => {
 
   const createNewConversation = async () => {
     try {
-      const title = `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+      const title = `Enhanced Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
       const { data, error } = await supabase
         .from('chat_conversations')
         .insert({
@@ -98,7 +98,7 @@ export const useChat = () => {
       setConversations(prev => [data, ...prev]);
       setCurrentConversation(data.id);
       setMessages([]);
-      toast.success('New conversation started!');
+      toast.success('New enhanced conversation started!');
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast.error('Failed to create new conversation. Please try again.');
@@ -152,6 +152,25 @@ export const useChat = () => {
     }
   };
 
+  const generateSmartTitle = (message: string): string => {
+    // Extract key topics from the message for better conversation titles
+    const codeKeywords = ['website', 'react', 'javascript', 'css', 'html', 'code', 'function', 'component'];
+    const designKeywords = ['design', 'ui', 'ux', 'layout', 'style', 'color', 'responsive'];
+    const helpKeywords = ['help', 'how', 'what', 'why', 'explain', 'debug', 'fix', 'error'];
+    
+    const lowerMessage = message.toLowerCase();
+    
+    if (codeKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return `💻 ${message.substring(0, 40)}...`;
+    } else if (designKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return `🎨 ${message.substring(0, 40)}...`;
+    } else if (helpKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return `❓ ${message.substring(0, 40)}...`;
+    }
+    
+    return message.length > 40 ? `${message.substring(0, 40)}...` : message;
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
@@ -160,9 +179,7 @@ export const useChat = () => {
     // Create new conversation automatically if none exists
     if (!conversationId) {
       try {
-        const title = inputMessage.length > 50 
-          ? inputMessage.substring(0, 47) + "..." 
-          : inputMessage;
+        const title = generateSmartTitle(inputMessage);
         
         const { data, error } = await supabase
           .from('chat_conversations')
@@ -193,8 +210,12 @@ export const useChat = () => {
       const savedUserMessage = await saveMessage(conversationId, 'user', userMessage);
       setMessages(prev => [...prev, savedUserMessage]);
 
-      // Call Gemini API with conversation history
-      console.log('Calling Gemini API with conversation ID:', conversationId);
+      // Show enhanced loading message
+      console.log('🚀 Calling enhanced Gemini API with conversation ID:', conversationId);
+      console.log('📝 User message:', userMessage);
+      console.log('🧠 Conversation context will be used for better responses');
+
+      // Call enhanced Gemini API with conversation history
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           message: userMessage,
@@ -212,6 +233,9 @@ export const useChat = () => {
         throw new Error(data.error);
       }
 
+      console.log('✅ Enhanced AI response received');
+      console.log('🎯 Response includes context awareness and improved formatting');
+
       // Save assistant response
       const savedAssistantMessage = await saveMessage(conversationId, 'assistant', data.response);
       setMessages(prev => [...prev, savedAssistantMessage]);
@@ -222,8 +246,13 @@ export const useChat = () => {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId);
 
+      // Show success message for enhanced features
+      if (data.enhanced) {
+        console.log('🌟 Enhanced AI features active: context awareness, better formatting, code generation');
+      }
+
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       
       // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message. Please try again.';
