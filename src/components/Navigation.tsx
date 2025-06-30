@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Sparkles, User, LogOut } from "lucide-react";
+import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from "@/compon
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isPagesOpen, setIsPagesOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -21,6 +22,14 @@ const Navigation = () => {
       toast.error("Error signing out");
     }
   };
+
+  const mainPages = [
+    { name: "Features", path: "/features" },
+    { name: "Pricing", path: "/pricing" },
+    { name: "Contact", path: "/contact" },
+    { name: "FAQ", path: "/faq" },
+    { name: "Deploy", path: "/deploy" }
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
@@ -35,46 +44,47 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-8">
             <NavigationMenu>
               <NavigationMenuList>
+                {/* Pages Dropdown */}
                 <NavigationMenuItem>
-                  <Link to="/features" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                    Features
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center space-x-1"
+                      onClick={() => setIsPagesOpen(!isPagesOpen)}
+                    >
+                      <span>Pages</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                    {isPagesOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                        {mainPages.map((page) => (
+                          <Link
+                            key={page.path}
+                            to={page.path}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsPagesOpen(false)}
+                          >
+                            {page.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </NavigationMenuItem>
+
+                {/* Main Navigation Items */}
+                <NavigationMenuItem>
+                  <Link to="/chat" className="text-gray-600 hover:text-gray-900 px-3 py-2 flex items-center">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    AI Chat
                   </Link>
                 </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/pricing" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                    Pricing
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/contact" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                    Contact
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/faq" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                    FAQ
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <Link to="/deploy" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                    Deploy
-                  </Link>
-                </NavigationMenuItem>
+                
                 {user && (
                   <>
                     <NavigationMenuItem>
                       <Link to="/blog-editor" className="text-gray-600 hover:text-gray-900 px-3 py-2">
                         Blog Editor
-                      </Link>
-                    </NavigationMenuItem>
-                    <NavigationMenuItem>
-                      <Link to="/image-generator" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                        Image Generator
-                      </Link>
-                    </NavigationMenuItem>
-                    <NavigationMenuItem>
-                      <Link to="/chat" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                        AI Chat
                       </Link>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
@@ -128,56 +138,57 @@ const Navigation = () => {
         {isOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
+              {/* Pages Section */}
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between"
+                  onClick={() => setIsPagesOpen(!isPagesOpen)}
+                >
+                  <span>Pages</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
+                </Button>
+                {isPagesOpen && (
+                  <div className="pl-4 space-y-1">
+                    {mainPages.map((page) => (
+                      <Link
+                        key={page.path}
+                        to={page.path}
+                        className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {page.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Main Navigation */}
               <Link
-                to="/features"
-                className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                to="/chat"
+                className="flex items-center px-3 py-2 text-gray-700 hover:text-primary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Features
-              </Link>
-              <Link
-                to="/pricing"
-                className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Pricing
-              </Link>
-              <Link
-                to="/contact"
-                className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Contact
-              </Link>
-              <Link
-                to="/faq"
-                className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                FAQ
-              </Link>
-              <Link
-                to="/deploy"
-                className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Deploy
+                <MessageCircle className="h-4 w-4 mr-2" />
+                AI Chat
               </Link>
               
               {user ? (
                 <div className="space-y-2 pt-2 border-t border-gray-200">
                   <Link
-                    to="/chat"
+                    to="/blog-editor"
                     className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    AI Chat
+                    Blog Editor
                   </Link>
-                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <User className="h-4 w-4 mr-2" />
-                      Dashboard
-                    </Button>
+                  <Link
+                    to="/dashboard"
+                    className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Dashboard
                   </Link>
                   <Button variant="outline" size="sm" className="w-full" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />

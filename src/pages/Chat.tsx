@@ -1,6 +1,7 @@
 
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Menu, X } from "lucide-react";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import { useChat } from "@/hooks/useChat";
@@ -10,6 +11,7 @@ import { Link } from "react-router-dom";
 
 const Chat = () => {
   const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const {
     conversations,
     currentConversation,
@@ -76,8 +78,18 @@ const Chat = () => {
       <Navigation />
       
       <div className="flex-1 flex pt-16 overflow-hidden">
+        {/* Sidebar Toggle Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="fixed top-20 left-4 z-40 md:hidden"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
+
         {/* Sidebar */}
-        <div className="w-64 flex-shrink-0 hidden md:block border-r border-gray-200 bg-white">
+        <div className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-gray-200 bg-white md:block ${sidebarOpen ? 'block' : 'hidden'} fixed md:relative z-30 h-full md:h-auto`}>
           <ChatSidebar
             conversations={conversations}
             currentConversation={currentConversation}
@@ -88,8 +100,18 @@ const Chat = () => {
           />
         </div>
 
+        {/* Desktop Sidebar Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hidden md:flex items-center justify-center w-8 h-8 fixed top-20 left-2 z-40 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
+
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}`}>
           <ChatArea
             currentConversation={currentConversation}
             messages={messages}
@@ -100,6 +122,14 @@ const Chat = () => {
             onKeyPress={handleKeyPress}
           />
         </div>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
       </div>
     </div>
   );
