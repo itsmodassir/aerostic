@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle } from "lucide-react";
+import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle, Home } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -44,6 +44,14 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-8">
             <NavigationMenu>
               <NavigationMenuList>
+                {/* Home Button */}
+                <NavigationMenuItem>
+                  <Link to="/landing" className="text-gray-600 hover:text-gray-900 px-3 py-2 flex items-center">
+                    <Home className="h-4 w-4 mr-2" />
+                    Home
+                  </Link>
+                </NavigationMenuItem>
+
                 {/* Pages Dropdown */}
                 <NavigationMenuItem>
                   <div className="relative">
@@ -138,6 +146,16 @@ const Navigation = () => {
         {isOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
+              {/* Home Button */}
+              <Link
+                to="/landing"
+                className="flex items-center px-3 py-2 text-gray-700 hover:text-primary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Link>
+
               {/* Pages Section */}
               <div className="space-y-1">
                 <Button
