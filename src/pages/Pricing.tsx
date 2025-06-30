@@ -28,7 +28,7 @@ const Pricing = () => {
     },
     {
       name: "Creator",
-      price: "$19",
+      price: "$15",
       period: "month",
       description: "Ideal for individual bloggers and content creators",
       features: [
