@@ -73,23 +73,44 @@ const Chat = () => {
     );
   }
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
       <Navigation />
       
       <div className="flex-1 flex pt-16 overflow-hidden">
-        {/* Sidebar Toggle Button */}
+        {/* Mobile Sidebar Toggle Button */}
         <Button
           variant="ghost"
           size="sm"
-          className="fixed top-20 left-4 z-40 md:hidden"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="fixed top-20 left-4 z-50 md:hidden bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+          onClick={toggleSidebar}
+        >
+          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
+
+        {/* Desktop Sidebar Toggle Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`hidden md:flex items-center justify-center w-8 h-8 fixed top-20 z-50 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition-all duration-300 ${
+            sidebarOpen ? 'left-60' : 'left-2'
+          }`}
+          onClick={toggleSidebar}
+          title={sidebarOpen ? 'Hide chat history' : 'Show chat history'}
         >
           {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
 
         {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-gray-200 bg-white md:block ${sidebarOpen ? 'block' : 'hidden'} fixed md:relative z-30 h-full md:h-auto`}>
+        <div className={`${
+          sidebarOpen ? 'w-64' : 'w-0'
+        } flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-gray-200 bg-white ${
+          sidebarOpen ? 'block' : 'hidden'
+        } md:block fixed md:relative z-40 h-full md:h-auto`}>
           <ChatSidebar
             conversations={conversations}
             currentConversation={currentConversation}
@@ -100,18 +121,10 @@ const Chat = () => {
           />
         </div>
 
-        {/* Desktop Sidebar Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden md:flex items-center justify-center w-8 h-8 fixed top-20 left-2 z-40 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
-
         {/* Main Chat Area */}
-        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}`}>
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+          sidebarOpen ? 'md:ml-0' : 'md:ml-0'
+        }`}>
           <ChatArea
             currentConversation={currentConversation}
             messages={messages}
@@ -123,11 +136,11 @@ const Chat = () => {
           />
         </div>
 
-        {/* Overlay for mobile */}
+        {/* Mobile Overlay */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
-            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+            onClick={toggleSidebar}
           />
         )}
       </div>
