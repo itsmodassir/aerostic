@@ -1,16 +1,20 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
-import { Sparkles, Loader2, Globe, Palette, FileText, Settings, Send, Briefcase, Store, Camera, Code, Heart, Plane } from "lucide-react";
+import { Globe, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import WebsitePortfolio from "@/components/blog-builder/WebsitePortfolio";
+import ProgressSteps from "@/components/blog-builder/ProgressSteps";
+import BasicInfoStep from "@/components/blog-builder/BasicInfoStep";
+import DesignStep from "@/components/blog-builder/DesignStep";
+import PreviewStep from "@/components/blog-builder/PreviewStep";
+import WebsiteRequestForm from "@/components/blog-builder/WebsiteRequestForm";
+import BenefitsSection from "@/components/blog-builder/BenefitsSection";
 
 const BlogBuilder = () => {
   const [step, setStep] = useState(1);
@@ -30,60 +34,6 @@ const BlogBuilder = () => {
     firstPost: ""
   });
   const { user } = useAuth();
-
-  const themes = [
-    { id: "modern", name: "Modern Minimalist", preview: "Clean lines, lots of white space" },
-    { id: "creative", name: "Creative Portfolio", preview: "Bold colors, artistic layout" },
-    { id: "business", name: "Professional Business", preview: "Corporate look, formal design" },
-    { id: "lifestyle", name: "Lifestyle Blog", preview: "Warm colors, cozy feeling" },
-    { id: "tech", name: "Tech & Innovation", preview: "Dark theme, futuristic elements" },
-    { id: "travel", name: "Travel Adventures", preview: "Beautiful imagery, wanderlust vibes" }
-  ];
-
-  const websitePortfolio = [
-    {
-      title: "Business Portfolio",
-      description: "Professional websites for companies and entrepreneurs",
-      icon: <Briefcase className="h-8 w-8" />,
-      features: ["Company profiles", "Service showcases", "Contact forms", "Team sections"],
-      color: "bg-blue-50 border-blue-200"
-    },
-    {
-      title: "E-commerce Store",
-      description: "Online stores with product catalogs and shopping features",
-      icon: <Store className="h-8 w-8" />,
-      features: ["Product galleries", "Shopping cart", "Payment integration", "Inventory management"],
-      color: "bg-green-50 border-green-200"
-    },
-    {
-      title: "Photography Portfolio",
-      description: "Stunning galleries for photographers and artists",
-      icon: <Camera className="h-8 w-8" />,
-      features: ["Image galleries", "Portfolio showcases", "Client booking", "Print services"],
-      color: "bg-purple-50 border-purple-200"
-    },
-    {
-      title: "Tech Startup",
-      description: "Modern websites for technology companies",
-      icon: <Code className="h-8 w-8" />,
-      features: ["Product demos", "API documentation", "Developer resources", "Pricing pages"],
-      color: "bg-gray-50 border-gray-200"
-    },
-    {
-      title: "Wedding & Events",
-      description: "Beautiful websites for special occasions",
-      icon: <Heart className="h-8 w-8" />,
-      features: ["Event details", "RSVP forms", "Photo galleries", "Guest information"],
-      color: "bg-pink-50 border-pink-200"
-    },
-    {
-      title: "Travel & Tourism",
-      description: "Inspiring websites for travel businesses",
-      icon: <Plane className="h-8 w-8" />,
-      features: ["Destination guides", "Booking systems", "Travel packages", "Customer reviews"],
-      color: "bg-yellow-50 border-yellow-200"
-    }
-  ];
 
   const generateBlogContent = async () => {
     if (!blogName.trim() || !blogTopic.trim()) {
@@ -208,69 +158,14 @@ const BlogBuilder = () => {
           <Navigation />
           
           <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Send className="h-5 w-5" />
-                    Request Custom Website
-                  </CardTitle>
-                  <p className="text-gray-600">
-                    Tell us about your custom website needs and we'll get back to you with a personalized solution.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <Label htmlFor="requestEmail">Email Address *</Label>
-                    <Input
-                      id="requestEmail"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={requestEmail}
-                      onChange={(e) => setRequestEmail(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="requestDetails">Website Details *</Label>
-                    <Textarea
-                      id="requestDetails"
-                      placeholder="Describe your website needs: type of business, features required, design preferences, target audience, etc."
-                      value={requestDetails}
-                      onChange={(e) => setRequestDetails(e.target.value)}
-                      className="mt-2"
-                      rows={6}
-                    />
-                  </div>
-
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h4 className="font-medium mb-2">What to include in your request:</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Type of business or website purpose</li>
-                      <li>• Specific features you need</li>
-                      <li>• Design style preferences</li>
-                      <li>• Target audience</li>
-                      <li>• Timeline and budget considerations</li>
-                    </ul>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <Button onClick={submitWebsiteRequest} className="flex-1">
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit Request
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowRequestForm(false)}
-                      className="flex-1"
-                    >
-                      Back to Builder
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <WebsiteRequestForm
+              requestEmail={requestEmail}
+              setRequestEmail={setRequestEmail}
+              requestDetails={requestDetails}
+              setRequestDetails={setRequestDetails}
+              onSubmit={submitWebsiteRequest}
+              onBack={() => setShowRequestForm(false)}
+            />
           </div>
         </div>
       </ProtectedRoute>
@@ -305,62 +200,8 @@ const BlogBuilder = () => {
               </div>
             </div>
 
-            {/* Website Portfolio */}
-            <div className="mb-16">
-              <h2 className="text-2xl font-bold text-center mb-8">Website Portfolio</h2>
-              <p className="text-center text-gray-600 mb-8">
-                Explore the different types of websites we can create for you
-              </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {websitePortfolio.map((website, index) => (
-                  <Card key={index} className={`${website.color} border-2 hover:shadow-lg transition-shadow`}>
-                    <CardHeader className="text-center pb-4">
-                      <div className="text-primary mb-3">
-                        {website.icon}
-                      </div>
-                      <CardTitle className="text-lg">{website.title}</CardTitle>
-                      <p className="text-sm text-gray-600">{website.description}</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {website.features.map((feature, featureIndex) => (
-                          <div key={featureIndex} className="flex items-center text-sm">
-                            <div className="w-2 h-2 bg-primary rounded-full mr-2" />
-                            {feature}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Progress Steps */}
-            <div className="flex justify-center mb-12">
-              <div className="flex items-center space-x-4">
-                <div className={`flex items-center space-x-2 ${step >= 1 ? 'text-primary' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <span className="font-medium">Basic Info</span>
-                </div>
-                <div className={`w-8 h-px ${step >= 2 ? 'bg-primary' : 'bg-gray-200'}`} />
-                <div className={`flex items-center space-x-2 ${step >= 2 ? 'text-primary' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-                    <Palette className="h-4 w-4" />
-                  </div>
-                  <span className="font-medium">Design</span>
-                </div>
-                <div className={`w-8 h-px ${step >= 3 ? 'bg-primary' : 'bg-gray-200'}`} />
-                <div className={`flex items-center space-x-2 ${step >= 3 ? 'text-primary' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-                    <Settings className="h-4 w-4" />
-                  </div>
-                  <span className="font-medium">Preview & Launch</span>
-                </div>
-              </div>
-            </div>
+            <WebsitePortfolio />
+            <ProgressSteps currentStep={step} />
 
             {/* Step Content */}
             <Card>
@@ -373,153 +214,34 @@ const BlogBuilder = () => {
               </CardHeader>
               <CardContent>
                 {step === 1 && (
-                  <div className="space-y-6">
-                    <div>
-                      <Label htmlFor="blogName">Blog Name *</Label>
-                      <Input
-                        id="blogName"
-                        placeholder="e.g., Tech Insights, Cooking Adventures"
-                        value={blogName}
-                        onChange={(e) => setBlogName(e.target.value)}
-                        className="mt-2"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="blogTopic">Blog Topic/Niche *</Label>
-                      <Input
-                        id="blogTopic"
-                        placeholder="e.g., Technology, Food, Travel, Business"
-                        value={blogTopic}
-                        onChange={(e) => setBlogTopic(e.target.value)}
-                        className="mt-2"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="blogDescription">Blog Description (Optional)</Label>
-                      <Textarea
-                        id="blogDescription"
-                        placeholder="Brief description of what your blog will be about..."
-                        value={blogDescription}
-                        onChange={(e) => setBlogDescription(e.target.value)}
-                        className="mt-2"
-                        rows={3}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="domainName">Preferred Domain Name (Optional)</Label>
-                      <Input
-                        id="domainName"
-                        placeholder="e.g., myblog.com"
-                        value={domainName}
-                        onChange={(e) => setDomainName(e.target.value)}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
+                  <BasicInfoStep
+                    blogName={blogName}
+                    setBlogName={setBlogName}
+                    blogTopic={blogTopic}
+                    setBlogTopic={setBlogTopic}
+                    blogDescription={blogDescription}
+                    setBlogDescription={setBlogDescription}
+                    domainName={domainName}
+                    setDomainName={setDomainName}
+                  />
                 )}
 
                 {step === 2 && (
-                  <div className="space-y-6">
-                    <div>
-                      <Label>Choose Your Blog Theme</Label>
-                      <div className="grid md:grid-cols-2 gap-4 mt-4">
-                        {themes.map((theme) => (
-                          <div
-                            key={theme.id}
-                            className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                              selectedTheme === theme.id
-                                ? 'border-primary bg-primary/5'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                            onClick={() => setSelectedTheme(theme.id)}
-                          >
-                            <h3 className="font-semibold mb-2">{theme.name}</h3>
-                            <p className="text-sm text-gray-600">{theme.preview}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={generateBlogContent} 
-                      disabled={isGenerating}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating Content...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Generate AI Content
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <DesignStep
+                    selectedTheme={selectedTheme}
+                    setSelectedTheme={setSelectedTheme}
+                    isGenerating={isGenerating}
+                    onGenerateContent={generateBlogContent}
+                  />
                 )}
 
                 {step === 3 && (
-                  <div className="space-y-6">
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold mb-4">Your Generated Blog Preview</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-medium text-gray-700">Blog Title:</h4>
-                          <p className="text-lg">{generatedContent.title || blogName}</p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-gray-700">Tagline:</h4>
-                          <p>{generatedContent.tagline}</p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-gray-700">About Section:</h4>
-                          <p className="text-sm">{generatedContent.aboutContent?.substring(0, 200)}...</p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-gray-700">Sample First Post:</h4>
-                          <p className="text-sm">{generatedContent.firstPost?.substring(0, 200)}...</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h4 className="font-medium mb-2">What happens next?</h4>
-                      <ul className="text-sm text-gray-600 space-y-1">
-                        <li>• Your blog website will be saved to your dashboard</li>
-                        <li>• AI-generated content will be stored</li>
-                        <li>• You can access and edit it anytime</li>
-                        <li>• Ready for deployment when you're ready</li>
-                      </ul>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <Button 
-                        onClick={buildWebsite} 
-                        className="flex-1"
-                        size="lg"
-                      >
-                        <Globe className="mr-2 h-4 w-4" />
-                        Save My Website
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setStep(2)}
-                        size="lg"
-                      >
-                        Edit Content
-                      </Button>
-                    </div>
-                  </div>
+                  <PreviewStep
+                    generatedContent={generatedContent}
+                    blogName={blogName}
+                    onBuildWebsite={buildWebsite}
+                    onEditContent={() => setStep(2)}
+                  />
                 )}
 
                 {/* Navigation Buttons */}
@@ -540,24 +262,7 @@ const BlogBuilder = () => {
               </CardContent>
             </Card>
 
-            {/* Benefits */}
-            <div className="mt-12 grid md:grid-cols-3 gap-6">
-              <div className="text-center p-6 bg-white/50 rounded-lg">
-                <Globe className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">Complete Website</h3>
-                <p className="text-sm text-gray-600">Full website with pages and navigation</p>
-              </div>
-              <div className="text-center p-6 bg-white/50 rounded-lg">
-                <Sparkles className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">AI-Generated Content</h3>
-                <p className="text-sm text-gray-600">Professional content created by AI</p>
-              </div>
-              <div className="text-center p-6 bg-white/50 rounded-lg">
-                <Settings className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">Ready to Publish</h3>
-                <p className="text-sm text-gray-600">Saved to your dashboard for easy access</p>
-              </div>
-            </div>
+            <BenefitsSection />
           </div>
         </div>
       </div>
