@@ -127,7 +127,7 @@ Make the description vivid, specific, and detailed enough that an AI image gener
         accentColor = '#ff9ff3';
         styleElements = `
           <circle cx="30%" cy="40%" r="30" fill="rgba(255,159,243,0.4)"/>
-          <star cx="70%" cy="30%" r="20" fill="rgba(255,159,243,0.5)"/>
+          <circle cx="70%" cy="30%" r="20" fill="rgba(255,159,243,0.5)"/>
           <rect x="20%" y="70%" width="40" height="20" fill="rgba(255,159,243,0.3)" rx="10"/>
         `;
         break;
@@ -158,9 +158,38 @@ Make the description vivid, specific, and detailed enough that an AI image gener
           <polygon points="20%,80% 30%,70% 40%,80% 30%,90%" fill="rgba(0,212,255,0.5)"/>
         `;
         break;
+      case 'minimalist':
+        gradientColors = '#ffffff,#f5f5f5';
+        accentColor = '#333333';
+        styleElements = `
+          <rect x="30%" y="30%" width="40%" height="40%" fill="none" stroke="rgba(51,51,51,0.3)" stroke-width="2"/>
+          <circle cx="50%" cy="50%" r="5" fill="rgba(51,51,51,0.6)"/>
+        `;
+        break;
+      case 'watercolor':
+        gradientColors = '#fef7f0,#fae0e4';
+        accentColor = '#d63384';
+        styleElements = `
+          <ellipse cx="30%" cy="40%" rx="40" ry="25" fill="rgba(214,51,132,0.2)" opacity="0.7"/>
+          <ellipse cx="70%" cy="60%" rx="30" ry="35" fill="rgba(214,51,132,0.15)" opacity="0.8"/>
+          <path d="M100,100 Q200,50 300,100" stroke="rgba(214,51,132,0.3)" stroke-width="8" fill="none" opacity="0.6"/>
+        `;
+        break;
+      case 'geometric':
+        gradientColors = '#e3f2fd,#bbdefb';
+        accentColor = '#1976d2';
+        styleElements = `
+          <polygon points="20%,20% 40%,20% 30%,40%" fill="rgba(25,118,210,0.4)"/>
+          <polygon points="60%,30% 80%,30% 70%,60%" fill="rgba(25,118,210,0.3)"/>
+          <rect x="40%" y="60%" width="20%" height="20%" fill="rgba(25,118,210,0.2)" transform="rotate(45 50 70)"/>
+        `;
+        break;
     }
 
     const [color1, color2] = gradientColors.split(',');
+    
+    // Create clean, safe text content for SVG
+    const safePrompt = prompt.replace(/[^\x00-\x7F]/g, "").substring(0, 100);
     
     // Create enhanced SVG with better visual representation
     const canvas = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
@@ -177,39 +206,34 @@ Make the description vivid, specific, and detailed enough that an AI image gener
       <rect width="100%" height="100%" fill="url(#bg)"/>
       ${styleElements}
       
-      <!-- Main content area -->
       <rect x="10%" y="25%" width="80%" height="50%" fill="rgba(255,255,255,0.1)" rx="8" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
       
-      <!-- Title section -->
       <text x="50%" y="15%" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="url(#textGrad)">
         AI Generated Preview
       </text>
       
-      <!-- Prompt display -->
-      <foreignObject x="15%" y="30%" width="70%" height="35%">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: Arial, sans-serif; font-size: 11px; color: ${accentColor}; line-height: 1.4; overflow: hidden; text-overflow: ellipsis;">
-          <strong>Prompt:</strong><br/>
-          ${prompt.length > 120 ? prompt.substring(0, 117) + '...' : prompt}
-        </div>
-      </foreignObject>
+      <text x="50%" y="35%" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="${accentColor}" opacity="0.8">
+        ${safePrompt}
+      </text>
       
-      <!-- Style and quality info -->
       <text x="50%" y="75%" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="${accentColor}" opacity="0.8">
         Style: ${style.charAt(0).toUpperCase() + style.slice(1)} • Quality: ${quality} • Size: ${size}
       </text>
       
-      <!-- Enhanced description preview -->
       <text x="50%" y="85%" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="${accentColor}" opacity="0.7">
         Enhanced with detailed visual instructions
       </text>
       
-      <!-- Branding -->
       <text x="50%" y="95%" text-anchor="middle" font-family="Arial, sans-serif" font-size="7" fill="${accentColor}" opacity="0.6">
         Powered by Gemini AI • Advanced Prompt Processing
       </text>
     </svg>`;
     
-    const imageUrl = `data:image/svg+xml;base64,${btoa(canvas)}`;
+    // Use TextEncoder to properly encode the SVG string
+    const encoder = new TextEncoder();
+    const svgBytes = encoder.encode(canvas);
+    const base64String = btoa(String.fromCharCode(...svgBytes));
+    const imageUrl = `data:image/svg+xml;base64,${base64String}`;
 
     console.log('Enhanced image generated successfully with detailed instructions');
 

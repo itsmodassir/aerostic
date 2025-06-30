@@ -2,12 +2,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
-import { Image, Loader2, Download, Sparkles, Info } from "lucide-react";
+import { Image, Loader2, Download, Sparkles, Info, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -24,12 +23,60 @@ const ImageGenerator = () => {
   const { user } = useAuth();
 
   const styles = [
-    { id: "realistic", name: "Realistic", description: "Photo-realistic images with natural details" },
-    { id: "artistic", name: "Artistic", description: "Creative and expressive artistic style" },
-    { id: "cartoon", name: "Cartoon", description: "Fun, colorful cartoon-style images" },
-    { id: "abstract", name: "Abstract", description: "Abstract and conceptual art" },
-    { id: "vintage", name: "Vintage", description: "Retro and nostalgic vintage look" },
-    { id: "futuristic", name: "Futuristic", description: "Modern and high-tech aesthetic" }
+    { 
+      id: "realistic", 
+      name: "Realistic", 
+      description: "Photo-realistic images with natural details and lifelike appearance",
+      color: "bg-blue-500"
+    },
+    { 
+      id: "artistic", 
+      name: "Artistic", 
+      description: "Creative and expressive artistic style with painterly effects",
+      color: "bg-purple-500"
+    },
+    { 
+      id: "cartoon", 
+      name: "Cartoon", 
+      description: "Fun, colorful cartoon-style images with bold colors",
+      color: "bg-pink-500"
+    },
+    { 
+      id: "abstract", 
+      name: "Abstract", 
+      description: "Abstract and conceptual art with creative interpretations",
+      color: "bg-indigo-500"
+    },
+    { 
+      id: "vintage", 
+      name: "Vintage", 
+      description: "Retro and nostalgic vintage look with aged aesthetics",
+      color: "bg-amber-600"
+    },
+    { 
+      id: "futuristic", 
+      name: "Futuristic", 
+      description: "Modern and high-tech aesthetic with sci-fi elements",
+      color: "bg-cyan-500"
+    },
+    { 
+      id: "minimalist", 
+      name: "Minimalist", 
+      description: "Clean, simple designs with focus on essential elements",
+      color: "bg-gray-500"
+    },
+    { 
+      id: "watercolor", 
+      name: "Watercolor", 
+      description: "Soft, flowing watercolor painting style with gentle blends",
+      color: "bg-rose-400"
+    },
+    { 
+      id: "geometric", 
+      name: "Geometric", 
+      description: "Sharp geometric shapes and patterns with structured design",
+      color: "bg-teal-500"
+    }
   ];
 
   const sizes = [
@@ -56,7 +103,7 @@ const ImageGenerator = () => {
 
       const { data, error } = await supabase.functions.invoke('gemini-image', {
         body: {
-          prompt,
+          prompt: prompt.trim(),
           style,
           size,
           quality
@@ -74,16 +121,20 @@ const ImageGenerator = () => {
         toast.success("🎨 Image generated with enhanced instructions!");
         
         // Save to user's generated images
-        await supabase
-          .from('generated_images')
-          .insert({
-            user_id: user.id,
-            prompt,
-            style,
-            size,
-            quality,
-            image_url: data.imageUrl
-          });
+        try {
+          await supabase
+            .from('generated_images')
+            .insert({
+              user_id: user.id,
+              prompt: prompt.trim(),
+              style,
+              size,
+              quality,
+              image_url: data.imageUrl
+            });
+        } catch (saveError) {
+          console.warn('Failed to save image to history:', saveError);
+        }
       } else {
         throw new Error("No image URL received from API");
       }
@@ -125,6 +176,8 @@ const ImageGenerator = () => {
       toast.error("Failed to download image");
     }
   };
+
+  const selectedStyle = styles.find(s => s.id === style);
 
   return (
     <ProtectedRoute>
@@ -175,32 +228,40 @@ const ImageGenerator = () => {
                   </div>
                   
                   <div>
-                    <Label className="text-base font-medium mb-3 block">Art Style</Label>
-                    <div className="grid grid-cols-1 gap-3">
-                      {styles.map((styleOption) => (
-                        <div
-                          key={styleOption.id}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                            style === styleOption.id
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                          }`}
-                          onClick={() => setStyle(styleOption.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-semibold text-sm">{styleOption.name}</h4>
-                              <p className="text-xs text-gray-600 mt-1">{styleOption.description}</p>
+                    <Label className="text-base font-medium mb-3 flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Art Style
+                    </Label>
+                    <Select value={style} onValueChange={setStyle}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {selectedStyle && (
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${selectedStyle.color}`}></div>
+                              <span>{selectedStyle.name}</span>
                             </div>
-                            {style === styleOption.id && (
-                              <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {styles.map((styleOption) => (
+                          <SelectItem key={styleOption.id} value={styleOption.id}>
+                            <div className="flex items-center gap-3 py-1">
+                              <div className={`w-3 h-3 rounded-full ${styleOption.color}`}></div>
+                              <div>
+                                <div className="font-medium">{styleOption.name}</div>
+                                <div className="text-xs text-gray-500">{styleOption.description}</div>
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedStyle && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        {selectedStyle.description}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -335,9 +396,9 @@ const ImageGenerator = () => {
                 <p className="text-sm text-gray-600">AI analyzes and enhances your instructions</p>
               </div>
               <div className="text-center p-6 bg-white/50 rounded-lg">
-                <Image className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold mb-2">Multiple Styles</h3>
-                <p className="text-sm text-gray-600">Choose from 6 distinct artistic styles</p>
+                <Palette className="h-8 w-8 text-primary mx-auto mb-3" />
+                <h3 className="font-semibold mb-2">9 Art Styles</h3>
+                <p className="text-sm text-gray-600">Choose from diverse artistic styles</p>
               </div>
               <div className="text-center p-6 bg-white/50 rounded-lg">
                 <Download className="h-8 w-8 text-primary mx-auto mb-3" />
