@@ -9,11 +9,16 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardLoading from "@/components/dashboard/DashboardLoading";
 import BlogPostsSection from "@/components/dashboard/BlogPostsSection";
 import ImagesSection from "@/components/dashboard/ImagesSection";
+import WebsitesSection from "@/components/dashboard/WebsitesSection";
+import PortfolioShowcase from "@/components/dashboard/PortfolioShowcase";
+import QuickActions from "@/components/dashboard/QuickActions";
+import DashboardStats from "@/components/dashboard/DashboardStats";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [blogPosts, setBlogPosts] = useState([]);
   const [generatedImages, setGeneratedImages] = useState([]);
+  const [websites, setWebsites] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +29,7 @@ const Dashboard = () => {
 
   const fetchUserData = async () => {
     try {
-      const [postsResponse, imagesResponse] = await Promise.all([
+      const [postsResponse, imagesResponse, websitesResponse] = await Promise.all([
         supabase
           .from('blog_posts')
           .select('*')
@@ -32,6 +37,11 @@ const Dashboard = () => {
           .order('created_at', { ascending: false }),
         supabase
           .from('generated_images' as any)
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('websites')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -47,6 +57,12 @@ const Dashboard = () => {
         console.error('Error fetching generated images:', imagesResponse.error);
       } else {
         setGeneratedImages(imagesResponse.data || []);
+      }
+
+      if (websitesResponse.error) {
+        console.error('Error fetching websites:', websitesResponse.error);
+      } else {
+        setWebsites(websitesResponse.data || []);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -64,6 +80,10 @@ const Dashboard = () => {
     setGeneratedImages(images => images.filter(image => image.id !== imageId));
   };
 
+  const handleWebsiteDeleted = (websiteId: string) => {
+    setWebsites(sites => sites.filter(site => site.id !== websiteId));
+  };
+
   if (loading) {
     return <DashboardLoading />;
   }
@@ -73,10 +93,20 @@ const Dashboard = () => {
       <Navigation />
       
       <div className="flex-1 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-8">
           <DashboardHeader />
+          
+          <DashboardStats 
+            blogCount={blogPosts.length}
+            imageCount={generatedImages.length}
+            websiteCount={websites.length}
+          />
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <QuickActions />
+
+          <PortfolioShowcase />
+
+          <div className="grid lg:grid-cols-3 gap-8">
             <BlogPostsSection 
               blogPosts={blogPosts} 
               onPostDeleted={handlePostDeleted}
@@ -84,6 +114,10 @@ const Dashboard = () => {
             <ImagesSection 
               images={generatedImages} 
               onImageDeleted={handleImageDeleted}
+            />
+            <WebsitesSection 
+              websites={websites} 
+              onWebsiteDeleted={handleWebsiteDeleted}
             />
           </div>
         </div>
