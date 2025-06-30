@@ -167,6 +167,36 @@ export type Database = {
         }
         Relationships: []
       }
+      website_requests: {
+        Row: {
+          created_at: string
+          details: string
+          email: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details: string
+          email: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          email?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       websites: {
         Row: {
           created_at: string
