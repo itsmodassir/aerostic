@@ -72,33 +72,33 @@ const Chat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col">
       <Navigation />
       
-      <div className="pt-16 h-screen">
-        <div className="h-full flex">
-          <div className="w-64 sm:w-72 md:w-80 lg:w-96 xl:w-80 flex-shrink-0 min-w-[250px] max-w-[400px] hidden md:block">
-            <ChatSidebar
-              conversations={conversations}
-              currentConversation={currentConversation}
-              loadingConversations={loadingConversations}
-              onSelectConversation={setCurrentConversation}
-              onCreateConversation={createNewConversation}
-              onDeleteConversation={deleteConversation}
-            />
-          </div>
+      <div className="flex-1 flex pt-16 overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-64 flex-shrink-0 hidden md:block border-r border-gray-200 bg-white">
+          <ChatSidebar
+            conversations={conversations}
+            currentConversation={currentConversation}
+            loadingConversations={loadingConversations}
+            onSelectConversation={setCurrentConversation}
+            onCreateConversation={createNewConversation}
+            onDeleteConversation={deleteConversation}
+          />
+        </div>
 
-          <div className="flex-1 min-w-0">
-            <ChatArea
-              currentConversation={currentConversation}
-              messages={messages}
-              inputMessage={inputMessage}
-              isLoading={isLoading}
-              onInputChange={setInputMessage}
-              onSendMessage={sendMessage}
-              onKeyPress={handleKeyPress}
-            />
-          </div>
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <ChatArea
+            currentConversation={currentConversation}
+            messages={messages}
+            inputMessage={inputMessage}
+            isLoading={isLoading}
+            onInputChange={setInputMessage}
+            onSendMessage={sendMessage}
+            onKeyPress={handleKeyPress}
+          />
         </div>
       </div>
     </div>

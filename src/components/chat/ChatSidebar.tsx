@@ -1,9 +1,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, Loader2, MessageCircle } from "lucide-react";
+import { Plus, Trash2, Loader2, MessageSquare, Edit3 } from "lucide-react";
 
 interface Conversation {
   id: string;
@@ -30,69 +29,78 @@ const ChatSidebar = ({
   onDeleteConversation
 }: ChatSidebarProps) => {
   return (
-    <Card className="lg:col-span-1">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Conversations</CardTitle>
-          <Button
-            onClick={onCreateConversation}
-            size="sm"
-            variant="outline"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-[500px]">
+    <div className="h-full flex flex-col bg-gray-900 text-white">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700">
+        <Button
+          onClick={onCreateConversation}
+          className="w-full justify-start bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white"
+          variant="outline"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New chat
+        </Button>
+      </div>
+
+      {/* Conversations List */}
+      <ScrollArea className="flex-1">
+        <div className="p-2">
           {loadingConversations ? (
             <div className="p-4 text-center">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
             </div>
           ) : conversations.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <div className="p-4 text-center text-gray-400">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No conversations yet</p>
-              <p className="text-xs mt-1">Start a new chat!</p>
             </div>
           ) : (
-            <div className="space-y-2 p-4">
+            <div className="space-y-1">
               {conversations.map((conversation) => (
                 <div
                   key={conversation.id}
                   className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
                     currentConversation === conversation.id
-                      ? 'bg-primary/10 border border-primary/20'
-                      : 'hover:bg-gray-50'
+                      ? 'bg-gray-800 text-white'
+                      : 'hover:bg-gray-800 text-gray-300 hover:text-white'
                   }`}
                   onClick={() => onSelectConversation(conversation.id)}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {conversation.title}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(conversation.updated_at).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center space-x-2">
+                      <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                      <p className="text-sm font-medium truncate">
+                        {conversation.title}
+                      </p>
+                    </div>
                   </div>
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conversation.id);
-                    }}
-                    size="sm"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(conversation.id);
+                      }}
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-400 hover:bg-gray-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </ScrollArea>
-      </CardContent>
-    </Card>
+        </div>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-700">
+        <div className="text-xs text-gray-400 text-center">
+          AI Chat Assistant
+        </div>
+      </div>
+    </div>
   );
 };
 
