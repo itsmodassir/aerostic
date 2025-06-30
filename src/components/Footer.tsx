@@ -33,6 +33,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/deploy" className="hover:text-white transition-colors">
+                  Deploy
+                </Link>
+              </li>
+              <li>
                 <Link to="/dashboard" className="hover:text-white transition-colors">
                   Dashboard
                 </Link>
