@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle, Home } from "lucide-react";
@@ -89,18 +88,11 @@ const Navigation = () => {
                 </NavigationMenuItem>
                 
                 {user && (
-                  <>
-                    <NavigationMenuItem>
-                      <Link to="/blog-editor" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                        Blog Editor
-                      </Link>
-                    </NavigationMenuItem>
-                    <NavigationMenuItem>
-                      <Link to="/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2">
-                        Dashboard
-                      </Link>
-                    </NavigationMenuItem>
-                  </>
+                  <NavigationMenuItem>
+                    <Link to="/blog-editor" className="text-gray-600 hover:text-gray-900 px-3 py-2">
+                      Blog Editor
+                    </Link>
+                  </NavigationMenuItem>
                 )}
               </NavigationMenuList>
             </NavigationMenu>
@@ -200,13 +192,6 @@ const Navigation = () => {
                     onClick={() => setIsOpen(false)}
                   >
                     Blog Editor
-                  </Link>
-                  <Link
-                    to="/dashboard"
-                    className="block px-3 py-2 text-gray-700 hover:text-primary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Dashboard
                   </Link>
                   <Button variant="outline" size="sm" className="w-full" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
