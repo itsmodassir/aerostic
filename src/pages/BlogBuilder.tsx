@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
-import { Sparkles, Loader2, Globe, Palette, FileText, Settings } from "lucide-react";
+import { Sparkles, Loader2, Globe, Palette, FileText, Settings, Send, Briefcase, Store, Camera, Code, Heart, Plane } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -21,6 +20,9 @@ const BlogBuilder = () => {
   const [selectedTheme, setSelectedTheme] = useState("modern");
   const [domainName, setDomainName] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestDetails, setRequestDetails] = useState("");
+  const [requestEmail, setRequestEmail] = useState("");
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     tagline: "",
@@ -36,6 +38,51 @@ const BlogBuilder = () => {
     { id: "lifestyle", name: "Lifestyle Blog", preview: "Warm colors, cozy feeling" },
     { id: "tech", name: "Tech & Innovation", preview: "Dark theme, futuristic elements" },
     { id: "travel", name: "Travel Adventures", preview: "Beautiful imagery, wanderlust vibes" }
+  ];
+
+  const websitePortfolio = [
+    {
+      title: "Business Portfolio",
+      description: "Professional websites for companies and entrepreneurs",
+      icon: <Briefcase className="h-8 w-8" />,
+      features: ["Company profiles", "Service showcases", "Contact forms", "Team sections"],
+      color: "bg-blue-50 border-blue-200"
+    },
+    {
+      title: "E-commerce Store",
+      description: "Online stores with product catalogs and shopping features",
+      icon: <Store className="h-8 w-8" />,
+      features: ["Product galleries", "Shopping cart", "Payment integration", "Inventory management"],
+      color: "bg-green-50 border-green-200"
+    },
+    {
+      title: "Photography Portfolio",
+      description: "Stunning galleries for photographers and artists",
+      icon: <Camera className="h-8 w-8" />,
+      features: ["Image galleries", "Portfolio showcases", "Client booking", "Print services"],
+      color: "bg-purple-50 border-purple-200"
+    },
+    {
+      title: "Tech Startup",
+      description: "Modern websites for technology companies",
+      icon: <Code className="h-8 w-8" />,
+      features: ["Product demos", "API documentation", "Developer resources", "Pricing pages"],
+      color: "bg-gray-50 border-gray-200"
+    },
+    {
+      title: "Wedding & Events",
+      description: "Beautiful websites for special occasions",
+      icon: <Heart className="h-8 w-8" />,
+      features: ["Event details", "RSVP forms", "Photo galleries", "Guest information"],
+      color: "bg-pink-50 border-pink-200"
+    },
+    {
+      title: "Travel & Tourism",
+      description: "Inspiring websites for travel businesses",
+      icon: <Plane className="h-8 w-8" />,
+      features: ["Destination guides", "Booking systems", "Travel packages", "Customer reviews"],
+      color: "bg-yellow-50 border-yellow-200"
+    }
   ];
 
   const generateBlogContent = async () => {
@@ -109,6 +156,37 @@ const BlogBuilder = () => {
     }
   };
 
+  const submitWebsiteRequest = async () => {
+    if (!requestDetails.trim() || !requestEmail.trim()) {
+      toast.error("Please fill in all request fields");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('website_requests')
+        .insert({
+          user_id: user?.id || null,
+          email: requestEmail,
+          details: requestDetails,
+          status: 'pending'
+        });
+
+      if (error) {
+        console.error('Database error:', error);
+        toast.error('Failed to submit request');
+      } else {
+        toast.success("🎉 Website request submitted successfully! We'll contact you soon.");
+        setShowRequestForm(false);
+        setRequestDetails("");
+        setRequestEmail("");
+      }
+    } catch (error) {
+      console.error('Error submitting request:', error);
+      toast.error('Failed to submit request');
+    }
+  };
+
   const nextStep = () => {
     if (step === 1) {
       if (!blogName.trim() || !blogTopic.trim()) {
@@ -123,6 +201,82 @@ const BlogBuilder = () => {
     setStep(step - 1);
   };
 
+  if (showRequestForm) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen gradient-bg">
+          <Navigation />
+          
+          <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl mx-auto">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Send className="h-5 w-5" />
+                    Request Custom Website
+                  </CardTitle>
+                  <p className="text-gray-600">
+                    Tell us about your custom website needs and we'll get back to you with a personalized solution.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <Label htmlFor="requestEmail">Email Address *</Label>
+                    <Input
+                      id="requestEmail"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={requestEmail}
+                      onChange={(e) => setRequestEmail(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="requestDetails">Website Details *</Label>
+                    <Textarea
+                      id="requestDetails"
+                      placeholder="Describe your website needs: type of business, features required, design preferences, target audience, etc."
+                      value={requestDetails}
+                      onChange={(e) => setRequestDetails(e.target.value)}
+                      className="mt-2"
+                      rows={6}
+                    />
+                  </div>
+
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h4 className="font-medium mb-2">What to include in your request:</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Type of business or website purpose</li>
+                      <li>• Specific features you need</li>
+                      <li>• Design style preferences</li>
+                      <li>• Target audience</li>
+                      <li>• Timeline and budget considerations</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button onClick={submitWebsiteRequest} className="flex-1">
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Request
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowRequestForm(false)}
+                      className="flex-1"
+                    >
+                      Back to Builder
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen gradient-bg">
@@ -134,11 +288,52 @@ const BlogBuilder = () => {
             <div className="text-center mb-12">
               <Globe className="h-12 w-12 text-primary mx-auto mb-4" />
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                AI Blog Builder
+                AI Website Builder
               </h1>
-              <p className="text-xl text-gray-600">
-                Create your complete blog website in 3 simple steps
+              <p className="text-xl text-gray-600 mb-6">
+                Create your complete website in 3 simple steps
               </p>
+              <div className="flex justify-center gap-4">
+                <Button 
+                  onClick={() => setShowRequestForm(true)}
+                  variant="outline"
+                  className="bg-white"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Request Custom Website
+                </Button>
+              </div>
+            </div>
+
+            {/* Website Portfolio */}
+            <div className="mb-16">
+              <h2 className="text-2xl font-bold text-center mb-8">Website Portfolio</h2>
+              <p className="text-center text-gray-600 mb-8">
+                Explore the different types of websites we can create for you
+              </p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {websitePortfolio.map((website, index) => (
+                  <Card key={index} className={`${website.color} border-2 hover:shadow-lg transition-shadow`}>
+                    <CardHeader className="text-center pb-4">
+                      <div className="text-primary mb-3">
+                        {website.icon}
+                      </div>
+                      <CardTitle className="text-lg">{website.title}</CardTitle>
+                      <p className="text-sm text-gray-600">{website.description}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {website.features.map((feature, featureIndex) => (
+                          <div key={featureIndex} className="flex items-center text-sm">
+                            <div className="w-2 h-2 bg-primary rounded-full mr-2" />
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
 
             {/* Progress Steps */}
@@ -350,7 +545,7 @@ const BlogBuilder = () => {
               <div className="text-center p-6 bg-white/50 rounded-lg">
                 <Globe className="h-8 w-8 text-primary mx-auto mb-3" />
                 <h3 className="font-semibold mb-2">Complete Website</h3>
-                <p className="text-sm text-gray-600">Full blog website with pages and navigation</p>
+                <p className="text-sm text-gray-600">Full website with pages and navigation</p>
               </div>
               <div className="text-center p-6 bg-white/50 rounded-lg">
                 <Sparkles className="h-8 w-8 text-primary mx-auto mb-3" />
