@@ -77,7 +77,7 @@ const Chat = () => {
       
       <div className="pt-16 h-screen">
         <div className="h-full flex">
-          <div className="w-80 flex-shrink-0">
+          <div className="w-64 sm:w-72 md:w-80 lg:w-96 xl:w-80 flex-shrink-0 min-w-[250px] max-w-[400px] hidden md:block">
             <ChatSidebar
               conversations={conversations}
               currentConversation={currentConversation}
@@ -88,7 +88,7 @@ const Chat = () => {
             />
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <ChatArea
               currentConversation={currentConversation}
               messages={messages}
