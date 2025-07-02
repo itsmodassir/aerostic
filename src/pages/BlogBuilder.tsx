@@ -213,19 +213,6 @@ const BlogBuilder = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {step === 1 && (
-                  <BasicInfoStep
-                    blogName={blogName}
-                    setBlogName={setBlogName}
-                    blogTopic={blogTopic}
-                    setBlogTopic={setBlogTopic}
-                    blogDescription={blogDescription}
-                    setBlogDescription={setBlogDescription}
-                    domainName={domainName}
-                    setDomainName={setDomainName}
-                  />
-                )}
-
                 {step === 2 && (
                   <DesignStep
                     selectedTheme={selectedTheme}
