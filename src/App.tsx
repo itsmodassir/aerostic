@@ -25,6 +25,7 @@ import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
 import Deploy from "./pages/Deploy";
+import HelpCenter from "./pages/HelpCenter";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/help" element={<HelpCenter />} />
               <Route path="/deploy" element={<Deploy />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/blog-post/:id" element={<BlogPost />} />
