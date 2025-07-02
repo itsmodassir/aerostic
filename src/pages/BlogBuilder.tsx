@@ -203,51 +203,7 @@ const BlogBuilder = () => {
             <WebsitePortfolio />
             <ProgressSteps currentStep={step} />
 
-            {/* Step Content */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {step === 1 && "Step 1: Basic Information"}
-                  {step === 2 && "Step 2: Choose Your Design"}
-                  {step === 3 && "Step 3: Preview & Launch"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {step === 2 && (
-                  <DesignStep
-                    selectedTheme={selectedTheme}
-                    setSelectedTheme={setSelectedTheme}
-                    isGenerating={isGenerating}
-                    onGenerateContent={generateBlogContent}
-                  />
-                )}
-
-                {step === 3 && (
-                  <PreviewStep
-                    generatedContent={generatedContent}
-                    blogName={blogName}
-                    onBuildWebsite={buildWebsite}
-                    onEditContent={() => setStep(2)}
-                  />
-                )}
-
-                {/* Navigation Buttons */}
-                {step < 3 && (
-                  <div className="flex justify-between mt-8">
-                    <Button 
-                      variant="outline" 
-                      onClick={prevStep}
-                      disabled={step === 1}
-                    >
-                      Previous
-                    </Button>
-                    <Button onClick={nextStep}>
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Step Content Removed */}
 
             <BenefitsSection />
           </div>
