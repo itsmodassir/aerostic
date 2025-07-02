@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -178,6 +179,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+      
+      <Footer />
     </div>
   );
 };
