@@ -7,10 +7,11 @@ interface DesignStepProps {
   selectedTheme: string;
   setSelectedTheme: (value: string) => void;
   isGenerating: boolean;
-  onGenerateContent: () => void;
+  onNext: () => Promise<void>;
+  onPrev: () => void;
 }
 
-const DesignStep = ({ selectedTheme, setSelectedTheme, isGenerating, onGenerateContent }: DesignStepProps) => {
+const DesignStep = ({ selectedTheme, setSelectedTheme, isGenerating, onNext, onPrev }: DesignStepProps) => {
   const themes = [
     { id: "modern", name: "Modern Minimalist", preview: "Clean lines, lots of white space" },
     { id: "creative", name: "Creative Portfolio", preview: "Bold colors, artistic layout" },
@@ -42,24 +43,34 @@ const DesignStep = ({ selectedTheme, setSelectedTheme, isGenerating, onGenerateC
         </div>
       </div>
 
-      <Button 
-        onClick={onGenerateContent} 
-        disabled={isGenerating}
-        className="w-full"
-        size="lg"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating Content...
-          </>
-        ) : (
-          <>
-            <Sparkles className="mr-2 h-4 w-4" />
-            Generate AI Content
-          </>
-        )}
-      </Button>
+      <div className="flex gap-4">
+        <Button 
+          onClick={onPrev} 
+          variant="outline"
+          className="flex-1"
+          size="lg"
+        >
+          Previous
+        </Button>
+        <Button 
+          onClick={onNext} 
+          disabled={isGenerating}
+          className="flex-1"
+          size="lg"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating Content...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate AI Content
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

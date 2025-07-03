@@ -12,11 +12,11 @@ interface GeneratedContent {
 interface PreviewStepProps {
   generatedContent: GeneratedContent;
   blogName: string;
-  onBuildWebsite: () => void;
-  onEditContent: () => void;
+  onBuild: () => Promise<void>;
+  onPrev: () => void;
 }
 
-const PreviewStep = ({ generatedContent, blogName, onBuildWebsite, onEditContent }: PreviewStepProps) => {
+const PreviewStep = ({ generatedContent, blogName, onBuild, onPrev }: PreviewStepProps) => {
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-6">
@@ -57,19 +57,20 @@ const PreviewStep = ({ generatedContent, blogName, onBuildWebsite, onEditContent
 
       <div className="flex gap-4">
         <Button 
-          onClick={onBuildWebsite} 
+          onClick={onPrev} 
+          variant="outline"
+          className="flex-1"
+          size="lg"
+        >
+          Previous
+        </Button>
+        <Button 
+          onClick={onBuild} 
           className="flex-1"
           size="lg"
         >
           <Globe className="mr-2 h-4 w-4" />
           Save My Website
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={onEditContent}
-          size="lg"
-        >
-          Edit Content
         </Button>
       </div>
     </div>

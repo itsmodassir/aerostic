@@ -104,6 +104,53 @@ export type Database = {
           },
         ]
       }
+      domain_verifications: {
+        Row: {
+          created_at: string
+          domain_name: string
+          id: string
+          status: string
+          updated_at: string
+          verification_token: string
+          verification_type: string
+          verification_value: string | null
+          verified_at: string | null
+          website_id: string
+        }
+        Insert: {
+          created_at?: string
+          domain_name: string
+          id?: string
+          status?: string
+          updated_at?: string
+          verification_token: string
+          verification_type: string
+          verification_value?: string | null
+          verified_at?: string | null
+          website_id: string
+        }
+        Update: {
+          created_at?: string
+          domain_name?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          verification_token?: string
+          verification_type?: string
+          verification_value?: string | null
+          verified_at?: string | null
+          website_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domain_verifications_website_id_fkey"
+            columns: ["website_id"]
+            isOneToOne: false
+            referencedRelation: "websites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_images: {
         Row: {
           created_at: string
@@ -201,38 +248,53 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          dns_configured: boolean | null
           domain_name: string | null
+          domain_status: string | null
+          domain_verified_at: string | null
           generated_content: Json | null
           id: string
           name: string
+          ssl_enabled: boolean | null
           theme: string
           topic: string
           updated_at: string
           user_id: string
+          verification_token: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
+          dns_configured?: boolean | null
           domain_name?: string | null
+          domain_status?: string | null
+          domain_verified_at?: string | null
           generated_content?: Json | null
           id?: string
           name: string
+          ssl_enabled?: boolean | null
           theme: string
           topic: string
           updated_at?: string
           user_id: string
+          verification_token?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
+          dns_configured?: boolean | null
           domain_name?: string | null
+          domain_status?: string | null
+          domain_verified_at?: string | null
           generated_content?: Json | null
           id?: string
           name?: string
+          ssl_enabled?: boolean | null
           theme?: string
           topic?: string
           updated_at?: string
           user_id?: string
+          verification_token?: string | null
         }
         Relationships: []
       }
@@ -241,7 +303,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_verification_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

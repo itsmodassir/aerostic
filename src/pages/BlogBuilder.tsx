@@ -15,6 +15,7 @@ import DesignStep from "@/components/blog-builder/DesignStep";
 import PreviewStep from "@/components/blog-builder/PreviewStep";
 import WebsiteRequestForm from "@/components/blog-builder/WebsiteRequestForm";
 import BenefitsSection from "@/components/blog-builder/BenefitsSection";
+import { DomainManager } from "@/components/domain/DomainManager";
 
 const BlogBuilder = () => {
   const [step, setStep] = useState(1);
@@ -27,6 +28,7 @@ const BlogBuilder = () => {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestDetails, setRequestDetails] = useState("");
   const [requestEmail, setRequestEmail] = useState("");
+  const [createdWebsiteId, setCreatedWebsiteId] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState({
     title: "",
     tagline: "",
@@ -82,7 +84,7 @@ const BlogBuilder = () => {
 
   const buildWebsite = async () => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('websites')
         .insert({
           user_id: user.id,
@@ -92,13 +94,19 @@ const BlogBuilder = () => {
           theme: selectedTheme,
           domain_name: domainName,
           generated_content: generatedContent
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Database error:', error);
         toast.error('Failed to save website');
       } else {
+        setCreatedWebsiteId(data.id);
         toast.success("🚀 Website built successfully!");
+        if (domainName) {
+          setStep(4); // Go to domain configuration step
+        }
       }
     } catch (error) {
       console.error('Error saving website:', error);
@@ -201,9 +209,58 @@ const BlogBuilder = () => {
             </div>
 
             <WebsitePortfolio />
-            <ProgressSteps currentStep={step} />
+            <ProgressSteps currentStep={Math.min(step, 3)} />
 
-            {/* Step Content Removed */}
+            {/* Step Content */}
+            {step === 1 && (
+              <BasicInfoStep
+                blogName={blogName}
+                setBlogName={setBlogName}
+                blogTopic={blogTopic}
+                setBlogTopic={setBlogTopic}
+                blogDescription={blogDescription}
+                setBlogDescription={setBlogDescription}
+                domainName={domainName}
+                setDomainName={setDomainName}
+                onNext={nextStep}
+              />
+            )}
+
+            {step === 2 && (
+              <DesignStep
+                selectedTheme={selectedTheme}
+                setSelectedTheme={setSelectedTheme}
+                onNext={generateBlogContent}
+                onPrev={prevStep}
+                isGenerating={isGenerating}
+              />
+            )}
+
+            {step === 3 && (
+              <PreviewStep
+                generatedContent={generatedContent}
+                blogName={blogName}
+                onBuild={buildWebsite}
+                onPrev={prevStep}
+              />
+            )}
+
+            {step === 4 && createdWebsiteId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configure Your Domain</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DomainManager
+                    websiteId={createdWebsiteId}
+                    currentDomain={domainName}
+                    onDomainVerified={(domain) => {
+                      toast.success(`Domain ${domain} verified successfully!`);
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             <BenefitsSection />
           </div>

@@ -2,6 +2,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 interface BasicInfoStepProps {
   blogName: string;
@@ -12,6 +13,7 @@ interface BasicInfoStepProps {
   setBlogDescription: (value: string) => void;
   domainName: string;
   setDomainName: (value: string) => void;
+  onNext: () => void;
 }
 
 const BasicInfoStep = ({
@@ -22,7 +24,8 @@ const BasicInfoStep = ({
   blogDescription,
   setBlogDescription,
   domainName,
-  setDomainName
+  setDomainName,
+  onNext
 }: BasicInfoStepProps) => {
   return (
     <div className="space-y-6">
@@ -69,6 +72,12 @@ const BasicInfoStep = ({
           onChange={(e) => setDomainName(e.target.value)}
           className="mt-2"
         />
+      </div>
+
+      <div className="flex justify-end mt-6">
+        <Button onClick={onNext} size="lg">
+          Next Step
+        </Button>
       </div>
     </div>
   );
