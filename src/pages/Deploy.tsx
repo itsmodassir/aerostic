@@ -19,7 +19,7 @@ import {
 const Deploy = () => {
   const deploymentOptions = [
     {
-      title: "BlogCraft Cloud",
+      title: "Aerostic Cloud",
       description: "Deploy instantly with zero configuration. Perfect for getting started quickly.",
       icon: <Cloud className="h-8 w-8" />,
       features: ["One-click deployment", "Auto-scaling", "SSL certificates", "CDN included"],
@@ -80,7 +80,7 @@ const Deploy = () => {
               Deploy Your App
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Launch your BlogCraft AI application to the world with our powerful deployment platform. 
+              Launch your Aerostic AI application to the world with our powerful deployment platform. 
               Choose from multiple hosting options to fit your needs.
             </p>
           </div>

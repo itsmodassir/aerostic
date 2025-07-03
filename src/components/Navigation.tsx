@@ -38,7 +38,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center space-x-2">
             <Sparkles className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">BlogCraft AI</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">Aerostic AI</span>
           </Link>
 
           {/* Desktop Navigation */}

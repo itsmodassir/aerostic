@@ -32,7 +32,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="blogcraft-theme">
+    <ThemeProvider defaultTheme="system" storageKey="aerostic-theme">
       <AuthProvider>
         <TooltipProvider>
           <MobileOptimizations />
