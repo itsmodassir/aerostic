@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  const apiKey = Deno.env.get('GEMINI_API_KEY_CHAT');
   
   if (!apiKey) {
     socket.close(1000, "API key not configured");
@@ -52,33 +52,33 @@ serve(async (req) => {
           conversationId
         }));
 
-        // Call OpenAI API with streaming
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Call Gemini API with streaming
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY') || apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
+            contents: [
               {
-                role: 'system',
-                content: `You are an intelligent AI assistant. Provide helpful, accurate, and engaging responses. Keep responses conversational and well-formatted. Use markdown for code blocks when appropriate.`
-              },
-              {
-                role: 'user',
-                content: message
+                parts: [
+                  {
+                    text: `You are an intelligent AI assistant. Provide helpful, accurate, and engaging responses. Keep responses conversational and well-formatted. Use markdown for code blocks when appropriate.\n\nUser: ${message}`
+                  }
+                ]
               }
             ],
-            stream: true,
-            temperature: 0.7,
-            max_tokens: 2000
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
           }),
         });
 
         if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`);
+          throw new Error(`Gemini API error: ${response.status}`);
         }
 
         const reader = response.body?.getReader();
@@ -115,7 +115,7 @@ serve(async (req) => {
 
                 try {
                   const parsed = JSON.parse(jsonStr);
-                  const content = parsed.choices?.[0]?.delta?.content;
+                  const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
                   
                   if (content) {
                     fullResponse += content;
@@ -134,6 +134,7 @@ serve(async (req) => {
                 }
               }
             }
+          }
           }
 
           // Send completion event
