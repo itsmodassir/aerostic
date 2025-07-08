@@ -2208,7 +2208,26 @@ The best is yet to come, and we can't wait to build it together.
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-12 pr-4 py-3 text-lg border-2 border-primary/20 focus:border-primary/40 rounded-xl"
             />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
+
+          {/* Search Results Info */}
+          {searchQuery && (
+            <div className="text-center mb-4">
+              <p className="text-muted-foreground">
+                Found {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''} matching "{searchQuery}"
+              </p>
+            </div>
+          )}
 
           {/* Category Filter */}
           <div className="flex flex-wrap justify-center gap-2">
@@ -2309,13 +2328,35 @@ The best is yet to come, and we can't wait to build it together.
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold text-foreground">
-              Latest Articles
+              {searchQuery ? `Search Results` : 'Latest Articles'}
             </h2>
             <div className="flex items-center gap-2 text-muted-foreground">
               <TrendingUp className="h-5 w-5" />
-              <span>{filteredArticles.length} articles found</span>
+              <span>{filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'}</span>
             </div>
           </div>
+          
+          {filteredArticles.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No articles found</h3>
+              <p className="text-muted-foreground">
+                {searchQuery 
+                  ? `No articles match your search for "${searchQuery}". Try different keywords or browse all articles.`
+                  : 'No articles available in this category.'
+                }
+              </p>
+              {searchQuery && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSearchQuery("")}
+                  className="mt-4"
+                >
+                  Clear search
+                </Button>
+              )}
+            </div>
+          ) : (
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredArticles.map((article, index) => (
@@ -2381,6 +2422,7 @@ The best is yet to come, and we can't wait to build it together.
               </Card>
             ))}
           </div>
+          )}
         </div>
       </section>
 
