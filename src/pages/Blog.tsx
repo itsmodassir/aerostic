@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Search, 
   Calendar, 
@@ -2179,11 +2179,45 @@ The best is yet to come, and we can't wait to build it together.
   };
 
   return (
-    <div className="min-h-screen gradient-bg">
-      <Navigation />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Dynamic Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5">
+        {/* Animated gradient orbs */}
+        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute top-20 right-10 w-72 h-72 bg-gradient-to-r from-accent/20 to-primary/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-gradient-to-r from-primary/30 to-accent/10 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+        
+        {/* Floating particles */}
+        <div className="absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-primary/20 rounded-full animate-float"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--primary-rgb),0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--primary-rgb),0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)]"></div>
+        
+        {/* Subtle animated lines */}
+        <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-pulse"></div>
+        <div className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent animate-pulse animation-delay-1000"></div>
+      </div>
+      
+      {/* Content wrapper with backdrop */}
+      <div className="relative z-10 backdrop-blur-[0.5px]">
+        <Navigation />
+      </div>
       
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="relative pt-24 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full mb-6">
             <BookOpen className="h-12 w-12 text-primary" />
@@ -2247,7 +2281,7 @@ The best is yet to come, and we can't wait to build it together.
       </section>
 
       {/* Featured Article */}
-      <section className="pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="relative pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
@@ -2324,7 +2358,7 @@ The best is yet to come, and we can't wait to build it together.
       </section>
 
       {/* Articles Grid */}
-      <section className="pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="relative pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold text-foreground">
@@ -2427,7 +2461,7 @@ The best is yet to come, and we can't wait to build it together.
       </section>
 
       {/* Sidebar Content */}
-      <section className="pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="relative pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Popular Tags */}
@@ -2541,6 +2575,10 @@ The best is yet to come, and we can't wait to build it together.
             </div>
           </DialogHeader>
           
+          <DialogDescription className="sr-only">
+            Full article content for {selectedArticle?.title}
+          </DialogDescription>
+          
           <div className="prose prose-lg max-w-none">
             <ReactMarkdown
               components={{
@@ -2571,6 +2609,11 @@ The best is yet to come, and we can't wait to build it together.
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Interactive background elements on scroll */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary/5 to-accent/5 rounded-full filter blur-3xl animate-pulse"></div>
+      </div>
     </div>
   );
 };
