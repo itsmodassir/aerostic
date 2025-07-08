@@ -10,7 +10,7 @@ const Footer = () => {
           <div className="col-span-1">
             <div className="flex items-center space-x-2 mb-4">
               <Globe className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold text-foreground">SetMyBlog AI</span>
+              <span className="text-xl font-bold text-foreground">Aerostic AI</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Create professional blogs and websites with the power of AI. Generate content, build sites, and manage your online presence effortlessly.
@@ -101,7 +101,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="mailto:support@setmyblog.ai" className="hover:text-primary transition-colors block">
+                <a href="mailto:support@aerostic.ai" className="hover:text-primary transition-colors block">
                   Support
                 </a>
               </li>
@@ -112,7 +112,7 @@ const Footer = () => {
         <div className="border-t border-border mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-sm text-muted-foreground mb-4 md:mb-0">
-              © 2024 SetMyBlog AI. All rights reserved.
+              © 2024 Aerostic AI. All rights reserved.
             </div>
             <div className="flex space-x-6 text-sm text-muted-foreground">
               <a href="#" className="hover:text-primary transition-colors">Privacy</a>

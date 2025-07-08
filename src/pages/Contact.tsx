@@ -21,7 +21,7 @@ const Contact = () => {
   const [chatMessages, setChatMessages] = useState([
     {
       role: "bot",
-      message: "Hi! I'm your SetMyBlog AI assistant. I'm available 24/7 to help you with features, pricing, technical questions, and more!"
+      message: "Hi! I'm your Aerostic AI assistant. I'm available 24/7 to help you with features, pricing, technical questions, and more!"
     }
   ]);
   
@@ -47,14 +47,14 @@ const Contact = () => {
     try {
       // Using a simulated AI response for now - you can replace this with your preferred AI API
       const responses = [
-        "SetMyBlog AI offers three pricing plans: Free Trial (limited features), Creator ($19/month), and Professional ($49/month) with unlimited AI posts, themes, and analytics.",
+        "Aerostic AI offers three pricing plans: Free Trial (limited features), Creator ($19/month), and Professional ($49/month) with unlimited AI posts, themes, and analytics.",
         "Our AI blog writing uses advanced language models to generate high-quality content. You can customize tone, length, and topic to match your brand perfectly.",
-        "Yes! SetMyBlog AI includes website building with multiple themes, custom domains, SEO optimization, and responsive design that works on all devices.",
+        "Yes! Aerostic AI includes website building with multiple themes, custom domains, SEO optimization, and responsive design that works on all devices.",
         "We offer 24/7 support through this chat, email support, and comprehensive documentation. Our response time is typically within 2-4 hours.",
         "You can schedule posts, track analytics, manage multiple websites, and export your content anytime. All plans include unlimited revisions.",
         "Our AI supports 50+ languages and can generate content in various tones: professional, casual, friendly, technical, and more.",
         "Yes, we have a 30-day money-back guarantee and you can cancel anytime. No long-term contracts required.",
-        "SetMyBlog AI integrates with popular platforms like WordPress, social media, and email marketing tools for seamless publishing."
+        "Aerostic AI integrates with popular platforms like WordPress, social media, and email marketing tools for seamless publishing."
       ];
       
       // Simulate API delay
@@ -66,11 +66,11 @@ const Contact = () => {
       // Add some context-aware responses
       const lowercaseMessage = userMessage.toLowerCase();
       if (lowercaseMessage.includes('price') || lowercaseMessage.includes('cost') || lowercaseMessage.includes('plan')) {
-        botResponse = "SetMyBlog AI offers three pricing plans: Free Trial (limited features), Creator ($19/month) with unlimited AI posts and basic themes, and Professional ($49/month) with advanced features, priority support, and custom domains. All plans include a 30-day money-back guarantee.";
+        botResponse = "Aerostic AI offers three pricing plans: Free Trial (limited features), Creator ($19/month) with unlimited AI posts and basic themes, and Professional ($49/month) with advanced features, priority support, and custom domains. All plans include a 30-day money-back guarantee.";
       } else if (lowercaseMessage.includes('feature') || lowercaseMessage.includes('what can')) {
-        botResponse = "SetMyBlog AI provides: AI-powered blog writing with customizable tone and length, website building with multiple themes, SEO optimization, content scheduling, analytics tracking, custom domains, and social media integration. You can manage multiple websites from one dashboard.";
+        botResponse = "Aerostic AI provides: AI-powered blog writing with customizable tone and length, website building with multiple themes, SEO optimization, content scheduling, analytics tracking, custom domains, and social media integration. You can manage multiple websites from one dashboard.";
       } else if (lowercaseMessage.includes('support') || lowercaseMessage.includes('help')) {
-        botResponse = "We offer 24/7 support through this AI chat, email support (support@setmyblog.ai), and comprehensive documentation. Our team typically responds within 2-4 hours during business hours and within 24 hours on weekends.";
+        botResponse = "We offer 24/7 support through this AI chat, email support (support@aerostic.ai), and comprehensive documentation. Our team typically responds within 2-4 hours during business hours and within 24 hours on weekends.";
       } else if (lowercaseMessage.includes('website') || lowercaseMessage.includes('build')) {
         botResponse = "Our AI website builder creates complete blog websites with professional themes, responsive design, SEO optimization, and fast loading speeds. You can customize colors, fonts, layouts, and add your own branding. All websites include analytics and social sharing.";
       }
@@ -84,7 +84,7 @@ const Contact = () => {
       console.error("Error in chat:", error);
       setChatMessages(prev => [...prev, { 
         role: "bot", 
-        message: "Thank you for your question! I'm here to help with information about SetMyBlog AI. For specific technical issues, please contact our support team at support@setmyblog.ai and we'll get back to you within 24 hours." 
+        message: "Thank you for your question! I'm here to help with information about Aerostic AI. For specific technical issues, please contact our support team at support@aerostic.ai and we'll get back to you within 24 hours." 
       }]);
     } finally {
       setIsChatLoading(false);
@@ -104,7 +104,7 @@ const Contact = () => {
               Get in Touch
             </h1>
             <p className="text-xl text-gray-600">
-              Have questions? We're here to help you succeed with SetMyBlog AI
+              Have questions? We're here to help you succeed with Aerostic AI
             </p>
           </div>
 
@@ -185,7 +185,7 @@ const Contact = () => {
                 <div className="mt-8 pt-8 border-t">
                   <h3 className="font-semibold mb-4">Other Ways to Reach Us</h3>
                   <div className="space-y-2 text-sm text-gray-600">
-                    <div>📧 Email: support@setmyblog.ai</div>
+                    <div>📧 Email: support@aerostic.ai</div>
                     <div>💬 Live Chat: Available 24/7</div>
                     <div>📞 Phone: +1 (555) 123-4567</div>
                     <div>⏰ Response Time: Within 2-4 hours</div>
@@ -238,7 +238,7 @@ const Contact = () => {
                   <Input
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Ask me anything about SetMyBlog AI..."
+                    placeholder="Ask me anything about Aerostic AI..."
                     onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
                     className="flex-1"
                   />

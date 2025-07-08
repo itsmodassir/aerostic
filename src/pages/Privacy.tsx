@@ -60,7 +60,7 @@ const Privacy = () => {
               <h2>Contact Us</h2>
               <p>
                 If you have questions about this Privacy Policy, please contact us at 
-                privacy@setmyblog.ai
+                privacy@aerostic.ai
               </p>
             </div>
           </div>

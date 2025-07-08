@@ -12,7 +12,7 @@ const About = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              About SetMyBlog AI
+              About Aerostic AI
             </h1>
             <p className="text-xl text-gray-600">
               Empowering creators with AI-powered content generation
@@ -21,7 +21,7 @@ const About = () => {
 
           <div className="prose prose-lg max-w-none mb-12">
             <p className="text-gray-700 leading-relaxed">
-              SetMyBlog AI is a revolutionary platform that combines the power of artificial intelligence 
+              Aerostic AI is a revolutionary platform that combines the power of artificial intelligence 
               with intuitive design to help content creators, bloggers, and businesses build their online 
               presence effortlessly. Our mission is to democratize content creation and make professional 
               blogging accessible to everyone.
@@ -90,7 +90,7 @@ const About = () => {
               Ready to Get Started?
             </h2>
             <p className="text-gray-600 mb-6">
-              Join thousands of creators who are already using SetMyBlog AI to build their online presence.
+              Join thousands of creators who are already using Aerostic AI to build their online presence.
             </p>
             <a 
               href="/auth" 

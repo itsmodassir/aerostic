@@ -22,13 +22,13 @@ const Terms = () => {
             <div className="prose prose-lg max-w-none">
               <h2>Acceptance of Terms</h2>
               <p>
-                By accessing and using SetMyBlog AI, you accept and agree to be bound by the terms 
+                By accessing and using Aerostic AI, you accept and agree to be bound by the terms 
                 and provision of this agreement.
               </p>
 
               <h2>Use License</h2>
               <p>
-                Permission is granted to temporarily use SetMyBlog AI for personal and commercial use. 
+                Permission is granted to temporarily use Aerostic AI for personal and commercial use. 
                 This is the grant of a license, not a transfer of title, and under this license you may not:
               </p>
               <ul>
@@ -72,7 +72,7 @@ const Terms = () => {
               <h2>Contact Information</h2>
               <p>
                 If you have any questions about these Terms of Service, please contact us at 
-                legal@setmyblog.ai
+                legal@aerostic.ai
               </p>
             </div>
           </div>

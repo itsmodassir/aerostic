@@ -16,7 +16,7 @@ const MobileOptimizations = () => {
     const iosMetaTags = [
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-      { name: 'apple-mobile-web-app-title', content: 'SetMyBlog AI' }
+      { name: 'apple-mobile-web-app-title', content: 'Aerostic AI' }
     ];
 
     iosMetaTags.forEach(tag => {

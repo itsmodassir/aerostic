@@ -12,7 +12,7 @@ const FAQ = () => {
       faqs: [
         {
           question: "How does the AI write content?",
-          answer: "SetMyBlog AI uses Google's advanced Gemini AI model to generate high-quality blog posts. Simply provide a topic, choose your preferred tone, and our AI analyzes millions of data points to create engaging, relevant content tailored to your audience."
+          answer: "Aerostic AI uses Google's advanced Gemini AI model to generate high-quality blog posts. Simply provide a topic, choose your preferred tone, and our AI analyzes millions of data points to create engaging, relevant content tailored to your audience."
         },
         {
           question: "Can I customize the AI's writing style?",
@@ -24,7 +24,7 @@ const FAQ = () => {
         },
         {
           question: "Can the AI write in different languages?",
-          answer: "Currently, SetMyBlog AI primarily supports English content generation. We're working on adding support for multiple languages in future updates."
+          answer: "Currently, Aerostic AI primarily supports English content generation. We're working on adding support for multiple languages in future updates."
         }
       ]
     },
@@ -123,7 +123,7 @@ const FAQ = () => {
               Frequently Asked Questions
             </h1>
             <p className="text-xl text-gray-600">
-              Find answers to common questions about SetMyBlog AI
+              Find answers to common questions about Aerostic AI
             </p>
           </div>
 
