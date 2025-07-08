@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
-  const apiKey = Deno.env.get('GEMINI_API_KEY_CHAT');
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
   
   if (!apiKey) {
     socket.close(1000, "API key not configured");
