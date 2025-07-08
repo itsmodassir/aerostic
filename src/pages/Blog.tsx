@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Search, 
   Calendar, 
@@ -17,13 +18,17 @@ import {
   Star,
   Share2,
   Heart,
-  Eye
+  Eye,
+  X
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import ReactMarkdown from 'react-markdown';
 
 const Blog = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const categories = ["All", "AI & Technology", "Product Updates", "Tutorials", "Industry News", "Company"];
 
@@ -2163,6 +2168,16 @@ The best is yet to come, and we can't wait to build it together.
 
   const popularTags = ["AI", "Content Creation", "Tutorials", "Product Updates", "Machine Learning", "Automation"];
 
+  const handleReadArticle = (article) => {
+    setSelectedArticle(article);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedArticle(null);
+  };
+
   return (
     <div className="min-h-screen gradient-bg">
       <Navigation />
@@ -2276,7 +2291,10 @@ The best is yet to come, and we can't wait to build it together.
                   </div>
                 </div>
                 
-                <Button className="group-hover:scale-105 transition-transform">
+                <Button 
+                  className="group-hover:scale-105 transition-transform"
+                  onClick={() => handleReadArticle(featuredArticle)}
+                >
                   Read Full Article
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -2354,6 +2372,7 @@ The best is yet to come, and we can't wait to build it together.
                     variant="outline" 
                     size="sm" 
                     className="w-full mt-4 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all"
+                    onClick={() => handleReadArticle(article)}
                   >
                     Read More
                     <ArrowRight className="h-3 w-3 ml-2" />
@@ -2439,6 +2458,77 @@ The best is yet to come, and we can't wait to build it together.
       </section>
 
       <Footer />
+      
+      {/* Article Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <DialogTitle className="text-2xl font-bold text-foreground mb-4">
+                  {selectedArticle?.title}
+                </DialogTitle>
+                <div className="flex items-center gap-4 mb-4">
+                  <Badge variant="outline" className="border-primary/30">
+                    {selectedArticle?.category}
+                  </Badge>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      {selectedArticle?.author}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {selectedArticle && new Date(selectedArticle.date).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {selectedArticle?.readTime}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeModal}
+                className="ml-4"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          <div className="prose prose-lg max-w-none">
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => <h1 className="text-3xl font-bold mb-6 text-foreground">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-2xl font-semibold mb-4 mt-8 text-foreground">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-xl font-medium mb-3 mt-6 text-foreground">{children}</h3>,
+                p: ({ children }) => <p className="mb-4 text-muted-foreground leading-relaxed">{children}</p>,
+                ul: ({ children }) => <ul className="list-disc list-inside mb-6 space-y-2 text-muted-foreground">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside mb-6 space-y-2 text-muted-foreground">{children}</ol>,
+                li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-primary pl-6 italic text-muted-foreground my-6 bg-muted/50 py-4 rounded-r-lg">
+                    {children}
+                  </blockquote>
+                ),
+                code: ({ children }) => (
+                  <code className="bg-muted px-2 py-1 rounded text-sm font-mono text-foreground">{children}</code>
+                ),
+                pre: ({ children }) => (
+                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4">{children}</pre>
+                ),
+              }}
+            >
+              {selectedArticle?.content}
+            </ReactMarkdown>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
