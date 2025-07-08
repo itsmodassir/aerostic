@@ -69,11 +69,7 @@ const App = () => (
                   <ImageGenerator />
                 </ProtectedRoute>
               } />
-              <Route path="/chat" element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              } />
+              <Route path="/chat" element={<Chat />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />

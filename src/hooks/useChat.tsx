@@ -28,9 +28,7 @@ export const useChat = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      fetchConversations();
-    }
+    fetchConversations();
   }, [user]);
 
   useEffect(() => {
@@ -41,6 +39,16 @@ export const useChat = () => {
 
   const fetchConversations = async () => {
     try {
+      if (!user) {
+        // For non-authenticated users, load from localStorage
+        const localConversations = localStorage.getItem('chat_conversations');
+        if (localConversations) {
+          setConversations(JSON.parse(localConversations));
+        }
+        setLoadingConversations(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('chat_conversations')
         .select('*')
@@ -59,6 +67,17 @@ export const useChat = () => {
 
   const fetchMessages = async (conversationId: string) => {
     try {
+      if (!user) {
+        // For non-authenticated users, load from localStorage
+        const localMessages = localStorage.getItem(`chat_messages_${conversationId}`);
+        if (localMessages) {
+          setMessages(JSON.parse(localMessages));
+        } else {
+          setMessages([]);
+        }
+        return;
+      }
+
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -84,6 +103,25 @@ export const useChat = () => {
   const createNewConversation = async () => {
     try {
       const title = `Enhanced Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+      
+      if (!user) {
+        // For non-authenticated users, create local conversation
+        const localConversation: Conversation = {
+          id: `local-${Date.now()}`,
+          title,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        const updatedConversations = [localConversation, ...conversations];
+        setConversations(updatedConversations);
+        localStorage.setItem('chat_conversations', JSON.stringify(updatedConversations));
+        setCurrentConversation(localConversation.id);
+        setMessages([]);
+        toast.success('New conversation started! Sign in to save your chat history.');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('chat_conversations')
         .insert({
@@ -107,6 +145,21 @@ export const useChat = () => {
 
   const deleteConversation = async (conversationId: string) => {
     try {
+      if (!user || conversationId.startsWith('local-')) {
+        // For non-authenticated users or local conversations
+        const updatedConversations = conversations.filter(c => c.id !== conversationId);
+        setConversations(updatedConversations);
+        localStorage.setItem('chat_conversations', JSON.stringify(updatedConversations));
+        localStorage.removeItem(`chat_messages_${conversationId}`);
+        
+        if (currentConversation === conversationId) {
+          setCurrentConversation(null);
+          setMessages([]);
+        }
+        toast.success('Conversation deleted');
+        return;
+      }
+
       const { error } = await supabase
         .from('chat_conversations')
         .delete()
@@ -127,6 +180,22 @@ export const useChat = () => {
   };
 
   const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string): Promise<Message> => {
+    const message: Message = {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      role,
+      content,
+      created_at: new Date().toISOString()
+    };
+
+    if (!user || conversationId.startsWith('local-')) {
+      // For non-authenticated users, save to localStorage
+      const existingMessages = localStorage.getItem(`chat_messages_${conversationId}`);
+      const messages = existingMessages ? JSON.parse(existingMessages) : [];
+      messages.push(message);
+      localStorage.setItem(`chat_messages_${conversationId}`, JSON.stringify(messages));
+      return message;
+    }
+
     try {
       const { data, error } = await supabase
         .from('chat_messages')
@@ -181,19 +250,35 @@ export const useChat = () => {
       try {
         const title = generateSmartTitle(inputMessage);
         
-        const { data, error } = await supabase
-          .from('chat_conversations')
-          .insert({
-            user_id: user?.id,
-            title
-          })
-          .select()
-          .single();
+        if (!user) {
+          // For non-authenticated users, create local conversation
+          const localConversation: Conversation = {
+            id: `local-${Date.now()}`,
+            title,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          conversationId = localConversation.id;
+          setCurrentConversation(conversationId);
+          const updatedConversations = [localConversation, ...conversations];
+          setConversations(updatedConversations);
+          localStorage.setItem('chat_conversations', JSON.stringify(updatedConversations));
+        } else {
+          const { data, error } = await supabase
+            .from('chat_conversations')
+            .insert({
+              user_id: user?.id,
+              title
+            })
+            .select()
+            .single();
 
-        if (error) throw error;
-        conversationId = data.id;
-        setCurrentConversation(conversationId);
-        setConversations(prev => [data, ...prev]);
+          if (error) throw error;
+          conversationId = data.id;
+          setCurrentConversation(conversationId);
+          setConversations(prev => [data, ...prev]);
+        }
       } catch (error) {
         console.error('Error creating conversation:', error);
         toast.error('Failed to create conversation. Please try again.');
@@ -240,11 +325,22 @@ export const useChat = () => {
       const savedAssistantMessage = await saveMessage(conversationId, 'assistant', data.response);
       setMessages(prev => [...prev, savedAssistantMessage]);
 
-      // Update conversation timestamp
-      await supabase
-        .from('chat_conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversationId);
+      // Update conversation timestamp for authenticated users
+      if (user && !conversationId.startsWith('local-')) {
+        await supabase
+          .from('chat_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId);
+      } else if (!user) {
+        // Update local conversation timestamp
+        const updatedConversations = conversations.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, updated_at: new Date().toISOString() }
+            : conv
+        );
+        setConversations(updatedConversations);
+        localStorage.setItem('chat_conversations', JSON.stringify(updatedConversations));
+      }
 
       // Show success message for enhanced features
       if (data.enhanced) {
