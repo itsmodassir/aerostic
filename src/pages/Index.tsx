@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle } from "lucide-react";
+import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle, Image } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -45,6 +45,12 @@ const Index = () => {
                   <Button variant="outline" size="lg" className="text-lg px-8 py-3">
                     <MessageCircle className="mr-2 h-5 w-5" />
                     Try AI Chat
+                  </Button>
+                </Link>
+                <Link to="/prompt-generator">
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-3">
+                    <Zap className="mr-2 h-5 w-5" />
+                    Prompt Generator
                   </Button>
                 </Link>
               </>
@@ -92,12 +98,24 @@ const Index = () => {
 
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
-                <Globe className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Image Generator</CardTitle>
+                <Zap className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>Prompt Generator</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Create stunning AI-generated images for your content with simple text prompts.
+                  Generate detailed AI prompts for any creative project with our advanced prompt builder.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <Globe className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>Website Builder</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Build complete websites with AI assistance, from blogs to business sites.
                 </p>
               </CardContent>
             </Card>
@@ -116,12 +134,12 @@ const Index = () => {
 
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
-                <Zap className="h-12 w-12 text-primary mx-auto mb-4" />
-                <CardTitle>Instant Generation</CardTitle>
+                <Image className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>Image Generator</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Get professional content in seconds with our advanced AI integration.
+                  Create stunning AI-generated images for your content with simple text prompts.
                 </p>
               </CardContent>
             </Card>

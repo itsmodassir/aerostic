@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle, Home } from "lucide-react";
+import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle, Home, FileText, Globe, Image, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPagesOpen, setIsPagesOpen] = useState(false);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -29,7 +30,18 @@ const Navigation = () => {
     { name: "Pricing", path: "/pricing" },
     { name: "Contact", path: "/contact" },
     { name: "FAQ", path: "/faq" },
+    { name: "About", path: "/about" },
+    { name: "Blog", path: "/blog" },
+    { name: "Help Center", path: "/help" },
     { name: "Deploy", path: "/deploy" }
+  ];
+
+  const aiTools = [
+    { name: "AI Chat", path: "/chat", icon: MessageCircle, description: "Chat with AI assistant" },
+    { name: "Prompt Generator", path: "/prompt-generator", icon: Zap, description: "Generate AI prompts" },
+    { name: "Blog Editor", path: "/blog-editor", icon: FileText, description: "AI-powered blog writing", protected: true },
+    { name: "Website Builder", path: "/blog-builder", icon: Globe, description: "Build websites with AI", protected: true },
+    { name: "Image Generator", path: "/image-generator", icon: Image, description: "Create AI images", protected: true }
   ];
 
   return (
@@ -81,21 +93,41 @@ const Navigation = () => {
                   </div>
                 </NavigationMenuItem>
 
-                {/* Main Navigation Items */}
+                {/* AI Tools Dropdown */}
                 <NavigationMenuItem>
-                  <Link to="/chat" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 flex items-center transition-colors">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    AI Chat
-                  </Link>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      onClick={() => setIsToolsOpen(!isToolsOpen)}
+                    >
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      <span>AI Tools</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                    {isToolsOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                        {aiTools.map((tool) => (
+                          <Link
+                            key={tool.path}
+                            to={tool.path}
+                            className="flex items-start px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => setIsToolsOpen(false)}
+                          >
+                            <tool.icon className="h-5 w-5 mr-3 mt-0.5 text-primary" />
+                            <div>
+                              <div className="font-medium">{tool.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{tool.description}</div>
+                              {tool.protected && !user && (
+                                <div className="text-xs text-primary font-medium mt-1">Sign in required</div>
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </NavigationMenuItem>
-                
-                {user && (
-                  <NavigationMenuItem>
-                    <Link to="/blog-editor" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 transition-colors">
-                      Blog Editor
-                    </Link>
-                  </NavigationMenuItem>
-                )}
               </NavigationMenuList>
             </NavigationMenu>
             
@@ -179,24 +211,48 @@ const Navigation = () => {
                 )}
               </div>
 
-              {/* Main Navigation */}
-              <Link
-                to="/chat"
-                className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                AI Chat
-              </Link>
+              {/* AI Tools Section */}
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between text-gray-700 dark:text-gray-300"
+                  onClick={() => setIsToolsOpen(!isToolsOpen)}
+                >
+                  <div className="flex items-center">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    <span>AI Tools</span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
+                </Button>
+                {isToolsOpen && (
+                  <div className="pl-4 space-y-1">
+                    {aiTools.map((tool) => (
+                      <Link
+                        key={tool.path}
+                        to={tool.path}
+                        className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <tool.icon className="h-4 w-4 mr-2" />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{tool.name}</div>
+                          {tool.protected && !user && (
+                            <div className="text-xs text-primary">Sign in required</div>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               
               {user ? (
                 <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <Link
-                    to="/blog-editor"
-                    className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Blog Editor
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      <User className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Button>
                   </Link>
                   <Button variant="outline" size="sm" className="w-full" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -208,8 +264,8 @@ const Navigation = () => {
                   <Link to="/auth" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" className="w-full">Sign In</Button>
                   </Link>
-                  <Link to="/blog-editor" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full">Try Free</Button>
+                  <Link to="/chat" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full">Try AI Chat</Button>
                   </Link>
                 </div>
               )}

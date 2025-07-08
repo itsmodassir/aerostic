@@ -27,6 +27,7 @@ import Chat from "./pages/Chat";
 import Deploy from "./pages/Deploy";
 import HelpCenter from "./pages/HelpCenter";
 import Blog from "./pages/Blog";
+import PromptGenerator from "./pages/PromptGenerator";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/chat" element={<Chat />} />
+              <Route path="/prompt-generator" element={<PromptGenerator />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
