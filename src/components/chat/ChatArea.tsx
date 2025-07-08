@@ -11,8 +11,6 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
-  isStreaming?: boolean;
-  isComplete?: boolean;
 }
 
 interface ChatAreaProps {
@@ -287,30 +285,15 @@ const ChatArea = ({
                             <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
                               Enhanced
                             </span>
-                           )}
-                           {message.isStreaming && (
-                             <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full flex items-center">
-                               <div className="flex space-x-1 mr-1">
-                                 <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
-                                 <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                                 <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                               </div>
-                               Streaming...
-                             </span>
-                           )}
-                         </div>
-                         <div className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200">
-                           {message.role === 'assistant' ? (
-                             <div className="space-y-4">
-                               {formatAIResponse(message.content)}
-                               {message.isStreaming && (
-                                 <span className="inline-block w-2 h-5 bg-blue-500 animate-pulse ml-1 align-text-bottom"></span>
-                               )}
-                             </div>
-                           ) : (
-                             <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
-                           )}
-                         </div>
+                          )}
+                        </div>
+                        <div className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200">
+                          {message.role === 'assistant' ? (
+                            <div className="space-y-4">{formatAIResponse(message.content)}</div>
+                          ) : (
+                            <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

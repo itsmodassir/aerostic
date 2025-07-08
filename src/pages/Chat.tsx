@@ -1,10 +1,10 @@
 
 import { useState } from "react";
 import Navigation from "@/components/Navigation";
-import { MessageCircle, Menu, X, Wifi, WifiOff } from "lucide-react";
+import { MessageCircle, Menu, X } from "lucide-react";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
-import { useRealtimeChat } from "@/hooks/useRealtimeChat";
+import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -19,14 +19,13 @@ const Chat = () => {
     inputMessage,
     isLoading,
     loadingConversations,
-    isConnected,
     setCurrentConversation,
     setInputMessage,
     createNewConversation,
     deleteConversation,
     sendMessage,
     handleKeyPress
-  } = useRealtimeChat();
+  } = useChat();
 
   // If user is not logged in, show a welcome message with login prompt
   if (!user) {
@@ -81,22 +80,6 @@ const Chat = () => {
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
       <Navigation />
-      
-      {/* Connection Status Indicator */}
-      <div className={`fixed top-16 right-4 z-50 px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-        isConnected 
-          ? 'bg-green-100 text-green-700 border border-green-200' 
-          : 'bg-red-100 text-red-700 border border-red-200'
-      }`}>
-        <div className="flex items-center space-x-1">
-          {isConnected ? (
-            <Wifi className="h-3 w-3" />
-          ) : (
-            <WifiOff className="h-3 w-3" />
-          )}
-          <span>{isConnected ? 'Real-time Connected' : 'Reconnecting...'}</span>
-        </div>
-      </div>
       
       <div className="flex-1 flex pt-16 overflow-hidden">
         {/* Mobile Sidebar Toggle Button */}
