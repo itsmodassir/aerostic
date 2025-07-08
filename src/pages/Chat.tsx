@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 
 const Chat = () => {
   const { user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Hide by default for better UX
   const {
     conversations,
     currentConversation,
