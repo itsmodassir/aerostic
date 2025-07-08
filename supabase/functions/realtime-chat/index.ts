@@ -135,7 +135,6 @@ serve(async (req) => {
               }
             }
           }
-          }
 
           // Send completion event
           socket.send(JSON.stringify({
