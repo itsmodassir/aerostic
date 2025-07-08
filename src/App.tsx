@@ -28,6 +28,7 @@ import Deploy from "./pages/Deploy";
 import HelpCenter from "./pages/HelpCenter";
 import Blog from "./pages/Blog";
 import PromptGenerator from "./pages/PromptGenerator";
+import CodeEditor from "./pages/CodeEditor";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
               } />
               <Route path="/chat" element={<Chat />} />
               <Route path="/prompt-generator" element={<PromptGenerator />} />
+              <Route path="/code-editor" element={<CodeEditor />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle, Image } from "lucide-react";
+import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle, Image, Code } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -92,6 +92,18 @@ const Index = () => {
               <CardContent>
                 <p className="text-gray-600">
                   Have intelligent conversations with our AI assistant powered by Aerostic AI.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <Code className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>Code Editor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Write, compile, and test code in multiple languages with our interactive code playground.
                 </p>
               </CardContent>
             </Card>
