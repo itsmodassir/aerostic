@@ -1,7 +1,7 @@
 
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Users, Target, Zap, Heart, Globe, Shield, Clock, TrendingUp, Lightbulb, Code, Image, MessageCircle } from "lucide-react";
+import { Users, Target, Zap, Heart, Globe, Shield, Clock, TrendingUp, Lightbulb, Code, Image, MessageCircle, Edit, Palette, Brain, Settings } from "lucide-react";
 
 const About = () => {
   return (
@@ -57,6 +57,131 @@ const About = () => {
               <p className="text-gray-600">
                 A world where anyone can build a powerful online presence, share their ideas, 
                 and connect with their audience through AI-assisted content creation.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-8 shadow-sm mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              Our Complete AI Toolkit
+            </h2>
+            <p className="text-gray-600 text-center mb-8 max-w-3xl mx-auto">
+              Aerostic AI offers a comprehensive suite of AI-powered tools designed to transform how you create, 
+              manage, and publish content. Each tool is built with cutting-edge artificial intelligence to deliver 
+              professional results in seconds.
+            </p>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
+                <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Edit className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">AI Blog Editor</h3>
+                <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                  Our flagship tool that generates complete, high-quality blog posts from simple prompts. 
+                  Customize tone, length, target audience, and topic to create content that perfectly matches your brand voice.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Custom tone and style settings</li>
+                  <li>• SEO-optimized content generation</li>
+                  <li>• Multiple word count options</li>
+                  <li>• Real-time editing and refinement</li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border border-green-100">
+                <div className="bg-green-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Globe className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">AI Website Builder</h3>
+                <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                  Transform ideas into complete, professional websites with AI-generated content, layouts, and themes. 
+                  Perfect for bloggers, businesses, and personal portfolios.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• AI-generated website content</li>
+                  <li>• Professional responsive themes</li>
+                  <li>• Custom domain integration</li>
+                  <li>• One-click deployment</li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-6 border border-purple-100">
+                <div className="bg-purple-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Image className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">AI Image Generator</h3>
+                <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                  Create stunning, custom visuals for your content using advanced AI image generation. 
+                  Generate blog headers, social media graphics, and promotional images instantly.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Multiple art styles and formats</li>
+                  <li>• High-resolution output options</li>
+                  <li>• Custom prompt optimization</li>
+                  <li>• Brand-consistent imagery</li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-6 border border-orange-100">
+                <div className="bg-orange-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <MessageCircle className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">AI Chat Assistant</h3>
+                <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                  Get instant help with content strategy, editing suggestions, and creative ideas. 
+                  Our AI assistant provides personalized guidance for all your content creation needs.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Real-time content consultation</li>
+                  <li>• Editing and improvement suggestions</li>
+                  <li>• Creative brainstorming partner</li>
+                  <li>• Multi-conversation management</li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-lg p-6 border border-cyan-100">
+                <div className="bg-cyan-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Code className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">AI Code Editor</h3>
+                <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                  Advanced code generation and editing with AI assistance. Generate, optimize, and debug code 
+                  across multiple programming languages with intelligent suggestions.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Multi-language code generation</li>
+                  <li>• Intelligent code completion</li>
+                  <li>• Error detection and fixes</li>
+                  <li>• Code optimization suggestions</li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-lg p-6 border border-pink-100">
+                <div className="bg-pink-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <Settings className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">Smart Dashboard</h3>
+                <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+                  Centralized hub for managing all your AI-generated content. Track performance, organize projects, 
+                  and get insights into your content strategy with intelligent analytics.
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Content performance analytics</li>
+                  <li>• Project organization tools</li>
+                  <li>• AI usage insights</li>
+                  <li>• Cross-platform integration</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6 text-center">
+              <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Powered by Advanced AI</h3>
+              <p className="text-gray-700 max-w-2xl mx-auto">
+                All our tools are powered by state-of-the-art artificial intelligence models, including GPT-4, 
+                DALL-E, and custom-trained models optimized for content creation. We continuously update our AI 
+                to deliver the latest in machine learning capabilities.
               </p>
             </div>
           </div>
