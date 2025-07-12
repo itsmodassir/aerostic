@@ -4,10 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Play, Code, Download, Share, Settings, Terminal, FileText, Loader2 } from "lucide-react";
+import { Play, Code, Download, Share, Settings, Terminal, FileText, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const CodeEditor = () => {
   const [language, setLanguage] = useState("javascript");
@@ -26,6 +29,8 @@ for (let i = 0; i < 10; i++) {
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState("editor");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const languages = [
@@ -283,6 +288,45 @@ Doubled: [2, 4, 6, 8, 10]
     }
   };
 
+  const generateWithAI = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Please enter a prompt for AI code generation");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-code', {
+        body: {
+          prompt: aiPrompt.trim(),
+          language: language,
+          context: code.trim() ? code : undefined
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.code) {
+        setCode(data.code);
+        toast.success("Code generated successfully!");
+        setAiPrompt("");
+      } else {
+        throw new Error("No code was generated");
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error(error.message || "Failed to generate code with AI");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen gradient-bg">
       <Navigation />
@@ -344,6 +388,53 @@ Doubled: [2, 4, 6, 8, 10]
             </CardContent>
           </Card>
 
+          {/* AI Code Generation */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                AI Code Generator
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="ai-prompt">Describe the code you want to generate</Label>
+                  <Input
+                    id="ai-prompt"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder={`e.g., "Create a function to sort an array of objects by date" or "Generate a login form with validation"`}
+                    className="mt-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && !isGenerating) {
+                        e.preventDefault();
+                        generateWithAI();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button 
+                    onClick={generateWithAI} 
+                    disabled={isGenerating || !aiPrompt.trim()}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-4 w-4" />
+                    )}
+                    {isGenerating ? "Generating..." : "Generate Code"}
+                  </Button>
+                  <div className="text-sm text-muted-foreground">
+                    Press Enter to generate • Current language: {languages.find(l => l.id === language)?.name}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Main Editor */}
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Code Editor */}
@@ -392,7 +483,15 @@ Doubled: [2, 4, 6, 8, 10]
           </div>
 
           {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
+          <div className="grid md:grid-cols-4 gap-6 mt-12">
+            <Card className="text-center p-6">
+              <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">AI Code Generation</h3>
+              <p className="text-gray-600">
+                Generate code using AI with natural language descriptions
+              </p>
+            </Card>
+            
             <Card className="text-center p-6">
               <Code className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Multi-Language Support</h3>
