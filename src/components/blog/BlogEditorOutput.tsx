@@ -50,15 +50,15 @@ const BlogEditorOutput = ({ generatedPost, topic }: BlogEditorOutputProps) => {
           <CardTitle>Generated Blog Post</CardTitle>
           {generatedPost && (
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copyToClipboard}>
+              <Button variant="outline" size="sm" onClick={copyToClipboard} aria-label="Copy blog post to clipboard">
                 <Copy className="h-4 w-4 mr-1" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm" onClick={downloadPost}>
+              <Button variant="outline" size="sm" onClick={downloadPost} aria-label="Download blog post as markdown file">
                 <Download className="h-4 w-4 mr-1" />
                 Download
               </Button>
-              <Button size="sm" onClick={publishPost}>
+              <Button size="sm" onClick={publishPost} aria-label="Save blog post to dashboard">
                 <Send className="h-4 w-4 mr-1" />
                 Saved
               </Button>

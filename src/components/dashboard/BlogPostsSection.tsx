@@ -54,7 +54,7 @@ const BlogPostsSection = ({ blogPosts, onPostDeleted }: BlogPostsSectionProps) =
             <FileText className="h-5 w-5" />
             Blog Posts ({blogPosts.length})
           </CardTitle>
-          <Button onClick={() => navigate('/blog-editor')} size="sm">
+          <Button onClick={() => navigate('/blog-editor')} size="sm" aria-label="Create new blog post">
             <Plus className="h-4 w-4 mr-1" />
             New Post
           </Button>
@@ -81,7 +81,7 @@ const BlogPostsSection = ({ blogPosts, onPostDeleted }: BlogPostsSectionProps) =
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label={`More options for ${post.title}`}>
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>

@@ -138,6 +138,7 @@ const ChatArea = ({
                   size="sm"
                   onClick={() => copyToClipboard(codeBlock.code)}
                   className="h-8 px-2"
+                  aria-label={`Copy ${codeBlock.language} code to clipboard`}
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
@@ -249,6 +250,7 @@ const ChatArea = ({
                       key={index}
                       onClick={() => onInputChange(suggestion.title)}
                       className="p-6 text-left border border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
+                      aria-label={`Use suggestion: ${suggestion.title} - ${suggestion.desc}`}
                     >
                       <div className="text-2xl mb-2">{suggestion.icon}</div>
                       <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400">
@@ -353,6 +355,7 @@ const ChatArea = ({
               disabled={!inputMessage.trim() || isLoading}
               size="lg"
               className="absolute right-3 bottom-3 h-10 w-10 p-0 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-all duration-200"
+              aria-label={isLoading ? "Sending message..." : "Send message"}
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-white" />

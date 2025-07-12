@@ -34,6 +34,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="sm"
       onClick={toggleTheme}
+      aria-label={getTooltip()}
       title={getTooltip()}
       className="transition-all duration-300 hover:scale-105"
     >

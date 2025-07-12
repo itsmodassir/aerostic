@@ -72,6 +72,9 @@ const Navigation = () => {
                       variant="ghost"
                       className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                       onClick={() => setIsPagesOpen(!isPagesOpen)}
+                      aria-label={`${isPagesOpen ? 'Close' : 'Open'} pages menu`}
+                      aria-expanded={isPagesOpen}
+                      aria-haspopup="true"
                     >
                       <span>Pages</span>
                       <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
@@ -100,6 +103,9 @@ const Navigation = () => {
                       variant="ghost"
                       className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                       onClick={() => setIsToolsOpen(!isToolsOpen)}
+                      aria-label={`${isToolsOpen ? 'Close' : 'Open'} AI tools menu`}
+                      aria-expanded={isToolsOpen}
+                      aria-haspopup="true"
                     >
                       <Sparkles className="h-4 w-4 mr-1" />
                       <span>AI Tools</span>
@@ -165,6 +171,9 @@ const Navigation = () => {
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
+              aria-label={`${isOpen ? 'Close' : 'Open'} mobile navigation menu`}
+              aria-expanded={isOpen}
+              aria-controls="mobile-nav"
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -173,7 +182,7 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden">
+          <div className="md:hidden" id="mobile-nav">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 transition-colors">
               {/* Home Button */}
               <Link
@@ -191,6 +200,8 @@ const Navigation = () => {
                   variant="ghost"
                   className="w-full justify-between text-gray-700 dark:text-gray-300"
                   onClick={() => setIsPagesOpen(!isPagesOpen)}
+                  aria-label={`${isPagesOpen ? 'Close' : 'Open'} pages section`}
+                  aria-expanded={isPagesOpen}
                 >
                   <span>Pages</span>
                   <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
@@ -217,6 +228,8 @@ const Navigation = () => {
                   variant="ghost"
                   className="w-full justify-between text-gray-700 dark:text-gray-300"
                   onClick={() => setIsToolsOpen(!isToolsOpen)}
+                  aria-label={`${isToolsOpen ? 'Close' : 'Open'} AI tools section`}
+                  aria-expanded={isToolsOpen}
                 >
                   <div className="flex items-center">
                     <Sparkles className="h-4 w-4 mr-2" />
