@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
+import { Link } from "react-router-dom";
 import { 
   Sparkles, 
   Zap, 
@@ -122,18 +123,18 @@ const Features = () => {
                 Start your free trial today and see how Aerostic AI can transform your blogging experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a 
-                  href="/blog-editor" 
+                <Link 
+                  to="/blog-editor" 
                   className="inline-flex items-center justify-center px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Try AI Editor
-                </a>
-                <a 
-                  href="/blog-builder" 
+                </Link>
+                <Link 
+                  to="/blog-builder" 
                   className="inline-flex items-center justify-center px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors"
                 >
                   Build Your Blog
-                </a>
+                </Link>
               </div>
             </div>
           </div>

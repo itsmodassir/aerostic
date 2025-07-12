@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Navigation from "@/components/Navigation";
+import { Link } from "react-router-dom";
 import { HelpCircle, Sparkles, Shield, Globe, Search, Headphones } from "lucide-react";
 
 const FAQ = () => {
@@ -162,18 +163,18 @@ const FAQ = () => {
               Can't find the answer you're looking for? Our support team is here to help.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="/contact" 
+              <Link 
+                to="/contact" 
                 className="inline-flex items-center justify-center px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               >
                 Contact Support
-              </a>
-              <a 
-                href="/blog-editor" 
+              </Link>
+              <Link 
+                to="/blog-editor" 
                 className="inline-flex items-center justify-center px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors"
               >
                 Try It Free
-              </a>
+              </Link>
             </div>
           </div>
         </div>

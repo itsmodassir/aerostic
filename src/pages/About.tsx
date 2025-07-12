@@ -1,6 +1,7 @@
 
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { Link } from "react-router-dom";
 import { Users, Target, Zap, Heart, Globe, Shield, Clock, TrendingUp, Lightbulb, Code, Image, MessageCircle, Edit, Palette, Brain, Settings } from "lucide-react";
 
 const About = () => {
@@ -378,12 +379,12 @@ const About = () => {
             <p className="text-gray-600 mb-6">
               Join thousands of creators who are already using Aerostic AI to build their online presence.
             </p>
-            <a 
-              href="/auth" 
+            <Link 
+              to="/auth" 
               className="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors"
             >
               Start Creating Today
-            </a>
+            </Link>
           </div>
         </div>
       </div>
