@@ -16,45 +16,60 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Create Amazing Content with{" "}
-            <span className="text-primary">AI Power</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Generate professional blog posts, create stunning images, and chat with AI. 
-            Let AI handle the heavy lifting while you focus on your ideas.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user ? (
-              <Link to="/dashboard">
-                <Button size="lg" className="text-lg px-8 py-3">
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Go to Dashboard
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link to="/auth">
-                  <Button size="lg" className="text-lg px-8 py-3">
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    Get Started Free
-                  </Button>
-                </Link>
-                <Link to="/chat">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                    <MessageCircle className="mr-2 h-5 w-5" />
-                    Try AI Chat
-                  </Button>
-                </Link>
-                <Link to="/prompt-generator">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                    <Zap className="mr-2 h-5 w-5" />
-                    Prompt Generator
-                  </Button>
-                </Link>
-              </>
-            )}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                Create Amazing Content with{" "}
+                <span className="text-primary">AI Power</span>
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto lg:mx-0">
+                Generate professional blog posts, create stunning images, and chat with AI. 
+                Let AI handle the heavy lifting while you focus on your ideas.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                {user ? (
+                  <Link to="/dashboard">
+                    <Button size="lg" className="text-lg px-8 py-3">
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth">
+                      <Button size="lg" className="text-lg px-8 py-3">
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        Get Started Free
+                      </Button>
+                    </Link>
+                    <Link to="/chat">
+                      <Button variant="outline" size="lg" className="text-lg px-8 py-3">
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Try AI Chat
+                      </Button>
+                    </Link>
+                    <Link to="/prompt-generator">
+                      <Button variant="outline" size="lg" className="text-lg px-8 py-3">
+                        <Zap className="mr-2 h-5 w-5" />
+                        Prompt Generator
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="hidden lg:block">
+              <img 
+                src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=1200&h=800&fit=crop&crop=center" 
+                alt="Modern laptop showing AI-powered content creation interface"
+                className="rounded-2xl shadow-2xl w-full h-auto"
+                loading="eager"
+                decoding="async"
+                width="600"
+                height="400"
+              />
+            </div>
           </div>
         </div>
       </section>
