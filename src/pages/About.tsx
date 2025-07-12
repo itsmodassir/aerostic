@@ -28,7 +28,7 @@ const About = () => {
             </p>
             
             <p className="text-gray-700 leading-relaxed mb-6">
-              Founded in 2024, we recognized that creating quality content consistently was one of the biggest 
+              Founded in 2025, we recognized that creating quality content consistently was one of the biggest 
               challenges facing digital creators. Whether you're a solo entrepreneur, small business owner, 
               or content creator, the time and expertise required to produce engaging blogs, websites, and 
               digital content can be overwhelming. That's where Aerostic AI comes in.
