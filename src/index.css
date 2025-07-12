@@ -6,40 +6,40 @@
 @layer base {
   :root {
     --primary-rgb: 51, 153, 255;
-    --background: 250 100% 98%;
+    --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     
-    --card: 255 100% 100%;
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     
-    --popover: 255 100% 100%;
+    --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     
-  --primary: 220 100% 70%;
-  --primary-foreground: 255 100% 100%;
-  --primary-glow: 220 100% 85%;
-  
-  --secondary: 270 60% 95%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  
-  --muted: 240 30% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  
-  --accent: 260 60% 92%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  
-  --tech-gradient: linear-gradient(135deg, hsl(220 100% 70%), hsl(260 100% 75%));
-  --tech-glow: 0 0 30px hsl(220 100% 70% / 0.3);
-  --tech-border: hsl(220 100% 70% / 0.2);
-  --glass-bg: rgba(255, 255, 255, 0.1);
-  --shimmer: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    --primary: 220 91% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 220 91% 85%;
     
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --secondary: 210 40% 94%;
+    --secondary-foreground: 222.2 84% 4.9%;
     
-    --border: 220 60% 90%;
-    --input: 220 60% 94%;
-    --ring: 220 100% 70%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 44%;
+    
+    --accent: 210 40% 94%;
+    --accent-foreground: 222.2 84% 4.9%;
+    
+    --tech-gradient: linear-gradient(135deg, hsl(220 91% 50%), hsl(260 91% 55%));
+    --tech-glow: 0 0 30px hsl(220 91% 50% / 0.3);
+    --tech-border: hsl(220 91% 50% / 0.2);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --shimmer: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    
+    --destructive: 0 84% 45%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 220 91% 50%;
     
     --radius: 1rem;
   }
@@ -54,7 +54,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 220 100% 70%;
+    --primary: 220 91% 60%;
     --primary-foreground: 222.2 84% 4.9%;
     
     --secondary: 217.2 32.6% 17.5%;
@@ -66,12 +66,12 @@
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 50%;
     --destructive-foreground: 210 40% 98%;
     
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 220 100% 70%;
+    --ring: 220 91% 60%;
   }
 }
 
@@ -149,8 +149,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(220 100% 70% / 0.3); }
-  50% { box-shadow: 0 0 40px hsl(220 100% 70% / 0.6); }
+  0%, 100% { box-shadow: 0 0 20px hsl(220 91% 50% / 0.3); }
+  50% { box-shadow: 0 0 40px hsl(220 91% 50% / 0.6); }
 }
 
 .float-animation {
