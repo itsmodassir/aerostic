@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import { Globe, Mail, FileText, Users } from "lucide-react";
-
 const Footer = () => {
-  return (
-    <footer className="relative bg-card/95 backdrop-blur-sm border-t border-border text-foreground py-12 mt-16">
+  return <footer className="relative bg-card/95 backdrop-blur-sm border-t border-border text-foreground py-12 mt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
@@ -111,9 +109,7 @@ const Footer = () => {
 
         <div className="border-t border-border mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-sm text-muted-foreground mb-4 md:mb-0">
-              © 2024 Aerostic AI. All rights reserved.
-            </div>
+            <div className="text-sm text-muted-foreground mb-4 md:mb-0">© 2025 Aerostic AI. All rights reserved.</div>
             <div className="flex space-x-6 text-sm text-muted-foreground">
               <a href="#" className="hover:text-primary transition-colors">Privacy</a>
               <a href="#" className="hover:text-primary transition-colors">Terms</a>
@@ -122,8 +118,6 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
