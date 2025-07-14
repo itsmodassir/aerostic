@@ -31,6 +31,15 @@ const config: CapacitorConfig = {
     Keyboard: {
       resize: 'body',
       resizeOnFullScreen: true
+    },
+    App: {
+      androidIsBackButtonEnabled: true
+    },
+    Device: {
+      // Device plugin configuration
+    },
+    Browser: {
+      // Browser plugin configuration
     }
   }
 };

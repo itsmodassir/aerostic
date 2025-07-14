@@ -8,6 +8,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MobileOptimizations from "@/components/MobileOptimizations";
+import AppUpdatePrompt from "@/components/AppUpdatePrompt";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
@@ -38,6 +39,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <MobileOptimizations />
+          <AppUpdatePrompt checkInterval={30} />
           <Toaster />
           <Sonner />
           <BrowserRouter>
