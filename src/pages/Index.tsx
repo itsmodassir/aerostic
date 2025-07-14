@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { Sparkles, FileText, Globe, Users, Zap, Target, ArrowRight, MessageCircle, Image, Code } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
+import ContactChat from "@/components/ContactChat";
 
 const Index = () => {
   const { user } = useAuth();
@@ -226,6 +227,7 @@ const Index = () => {
       </section>
       
       <Footer />
+      <ContactChat />
     </div>
   );
 };
