@@ -27,5 +27,19 @@ Allow: /
 User-agent: *
 Crawl-delay: 1
 
+# Important pages for AI chatbot and chat assistant
+Allow: /chat
+Allow: /blog
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /prompt-generator
+Allow: /image-generator
+
+# Block private pages from crawling
+Disallow: /dashboard
+Disallow: /auth
+
 # Sitemap location
-Sitemap: https://aerostic-ai.lovable.app/sitemap.xml
+Sitemap: https://aerostic.lovable.app/sitemap.xml

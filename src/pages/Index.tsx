@@ -15,11 +15,11 @@ const Index = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="pt-24 pb-16 px-4 sm:px-6 lg:px-8" role="banner" aria-labelledby="hero-heading">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+              <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
                 Create Amazing Content with{" "}
                 <span className="text-primary">AI Power</span>
               </h1>
@@ -62,7 +62,7 @@ const Index = () => {
             <div className="hidden lg:block">
               <img 
                 src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=1200&h=800&fit=crop&crop=center" 
-                alt="Modern laptop showing AI-powered content creation interface"
+                alt="AI chatbot interface on laptop screen showing content creation tools and chat assistant features"
                 className="rounded-2xl shadow-2xl w-full h-auto"
                 loading="eager"
                 decoding="async"
@@ -75,10 +75,10 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
+      <section className="py-16 px-4 sm:px-6 lg:px-8" role="main" aria-labelledby="features-heading">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 id="features-heading" className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Everything You Need to Create Content
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -187,9 +187,9 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
+      <section className="py-16 px-4 sm:px-6 lg:px-8" role="complementary" aria-labelledby="cta-heading">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <h2 id="cta-heading" className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
             Ready to Transform Your Content Creation?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
