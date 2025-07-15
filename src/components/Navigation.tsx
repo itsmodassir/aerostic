@@ -50,7 +50,7 @@ const Navigation = () => {
           {/* Logo - Hidden on mobile, show only "AI Chat" */}
           <Link to="/" className="flex items-center space-x-2">
             <img src="/lovable-uploads/6b557ed3-c2c1-4bb1-9062-0253b3944514.png" alt="Aerostic AI" className="h-10 w-auto hidden md:block" />
-            <span className="text-xl font-bold text-primary md:hidden">AI Chat</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white md:hidden">AI Chat</span>
           </Link>
 
           {/* Desktop Navigation */}
