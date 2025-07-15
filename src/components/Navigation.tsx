@@ -80,12 +80,12 @@ const Navigation = () => {
                       <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
                     </Button>
                     {isPagesOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">
                         {mainPages.map((page) => (
                           <Link
                             key={page.path}
                             to={page.path}
-                            className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
                             onClick={() => setIsPagesOpen(false)}
                           >
                             {page.name}
@@ -112,20 +112,20 @@ const Navigation = () => {
                       <ChevronDown className={`h-4 w-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
                     </Button>
                     {isToolsOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                      <div className="absolute top-full left-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-50">
                         {aiTools.map((tool) => (
                           <Link
                             key={tool.path}
                             to={tool.path}
-                            className="flex items-start px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="flex items-start px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
                             onClick={() => setIsToolsOpen(false)}
                           >
-                            <tool.icon className="h-5 w-5 mr-3 mt-0.5 text-primary" />
+                            <tool.icon className="h-5 w-5 mr-3 mt-0.5 text-primary dark:text-blue-400" />
                             <div>
                               <div className="font-medium">{tool.name}</div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">{tool.description}</div>
                               {tool.protected && !user && (
-                                <div className="text-xs text-primary font-medium mt-1">Sign in required</div>
+                                <div className="text-xs text-primary dark:text-blue-400 font-medium mt-1">Sign in required</div>
                               )}
                             </div>
                           </Link>
