@@ -81,15 +81,15 @@ const Chat = () => {
     <div className="h-screen bg-gray-50 flex flex-col">
       <Navigation />
       
-      <div className="flex-1 flex pt-16 overflow-hidden">
+      <div className="flex-1 flex pt-14 md:pt-16 overflow-hidden">
         {/* Mobile Sidebar Toggle Button */}
         <Button
           variant="ghost"
           size="sm"
-          className="fixed top-20 left-4 z-50 md:hidden bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+          className="fixed top-16 md:top-20 left-3 z-50 md:hidden bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 h-8 w-8 p-0"
           onClick={toggleSidebar}
         >
-          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          {sidebarOpen ? <X className="h-3 w-3" /> : <Menu className="h-3 w-3" />}
         </Button>
 
         {/* Desktop Sidebar Toggle Button */}

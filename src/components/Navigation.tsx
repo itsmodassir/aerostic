@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Sparkles, User, LogOut, ChevronDown, MessageCircle, Home, FileText, Globe, Image, Zap } from "lucide-react";
@@ -46,10 +45,12 @@ const Navigation = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 md:h-16">
+          {/* Logo - Hidden on mobile, show only "AI Chat" */}
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/lovable-uploads/6b557ed3-c2c1-4bb1-9062-0253b3944514.png" alt="Aerostic AI" className="h-10 w-auto" />
+            <img src="/lovable-uploads/6b557ed3-c2c1-4bb1-9062-0253b3944514.png" alt="Aerostic AI" className="h-10 w-auto hidden md:block" />
+            <span className="text-xl font-bold text-primary md:hidden">AI Chat</span>
           </Link>
 
           {/* Desktop Navigation */}

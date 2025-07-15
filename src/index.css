@@ -109,6 +109,31 @@
     }
   }
 
+  /* Mobile-specific chat optimizations */
+  @media (max-width: 768px) {
+    .chat-mobile-header {
+      height: 56px !important; /* h-14 */
+    }
+    
+    .chat-mobile-content {
+      padding-top: 56px !important;
+    }
+    
+    /* Optimize chat input for mobile */
+    .chat-input-mobile {
+      min-height: 60px !important;
+      padding: 12px 50px 12px 16px !important;
+      font-size: 16px !important;
+      border-radius: 16px !important;
+    }
+    
+    /* Mobile sidebar adjustments */
+    .chat-sidebar-mobile {
+      width: 280px !important;
+      max-width: 85vw !important;
+    }
+  }
+
   /* Prevent zoom on iOS */
   input, textarea, select {
     font-size: 16px !important;
