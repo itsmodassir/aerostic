@@ -475,7 +475,7 @@ export const EnhancedChatArea = ({
                   AI Chat
                 </h3>
                 <p className="text-muted-foreground mb-6 text-base leading-relaxed">
-                  Your intelligent companion for creative and technical tasks
+                  Ask me anything
                 </p>
                 
                 <div className="grid grid-cols-1 gap-3 text-left">
