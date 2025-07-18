@@ -472,7 +472,7 @@ export const EnhancedChatArea = ({
                 </div>
                 
                 <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Enhanced AI Assistant
+                  AI Chat
                 </h3>
                 <p className="text-muted-foreground mb-6 text-base leading-relaxed">
                   Your intelligent companion for creative and technical tasks
