@@ -257,26 +257,43 @@ export const EnhancedChatArea = ({
       const trimmedPart = part.trim();
       
       if (trimmedPart.includes('__CODE_BLOCK_')) {
-        // Render code block
+        // Render interactive code block
         const block = codeBlocks[codeBlockIndex];
         if (block) {
           elements.push(
-            <div key={`code-${index}`} className="my-4 relative">
-              <div className="flex items-center justify-between bg-muted px-4 py-2 rounded-t-lg border-b">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {block.language.toUpperCase()}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(block.code)}
-                  className="h-6 w-6 p-0"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
+            <div key={`code-${index}`} className="my-4 relative group">
+              <div className="flex items-center justify-between bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-3 rounded-t-lg border border-b-0">
+                <div className="flex items-center gap-2">
+                  <Code className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
+                    {block.language.toUpperCase()} Code
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(block.code)}
+                    className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => downloadCode(block.code, `code.${block.language}`)}
+                    className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download
+                  </Button>
+                </div>
               </div>
-              <pre className="bg-muted/50 p-4 rounded-b-lg overflow-x-auto">
-                <code className="text-sm">{block.code}</code>
+              <pre className="bg-card border border-t-0 p-4 rounded-b-lg overflow-x-auto shadow-sm">
+                <code className="text-sm font-mono leading-relaxed text-foreground">
+                  {block.code}
+                </code>
               </pre>
             </div>
           );
@@ -287,16 +304,40 @@ export const EnhancedChatArea = ({
 
       if (!trimmedPart) return;
 
+      // Handle explanations with *** pattern
+      if (trimmedPart.includes('***') || trimmedPart.match(/^\*{3,}/)) {
+        const explanationText = trimmedPart.replace(/\*+/g, '').trim();
+        elements.push(
+          <div key={index} className="my-4 p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200/50 dark:border-blue-800/30 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Bot className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 text-sm">
+                  💡 Code Explanation
+                </h4>
+                <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                  {explanationText}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+        return;
+      }
+
       // Handle different content types
       if (trimmedPart.startsWith('# ')) {
         elements.push(
-          <h1 key={index} className="text-2xl font-bold mt-6 mb-3 text-foreground">
+          <h1 key={index} className="text-2xl font-bold mt-6 mb-3 text-foreground border-b border-border pb-2">
             {trimmedPart.substring(2)}
           </h1>
         );
       } else if (trimmedPart.startsWith('## ')) {
         elements.push(
-          <h2 key={index} className="text-xl font-semibold mt-5 mb-2 text-foreground">
+          <h2 key={index} className="text-xl font-semibold mt-5 mb-2 text-foreground flex items-center gap-2">
+            <div className="w-1 h-6 bg-primary rounded-full"></div>
             {trimmedPart.substring(3)}
           </h2>
         );
@@ -307,36 +348,52 @@ export const EnhancedChatArea = ({
           </h3>
         );
       } else if (trimmedPart.match(/^\d+\./)) {
-        // Numbered list
+        // Enhanced numbered list
         const lines = trimmedPart.split('\n').filter(line => line.trim());
         elements.push(
-          <ol key={index} className="list-decimal list-inside my-3 space-y-1 text-foreground">
-            {lines.map((line, lineIndex) => (
-              <li key={lineIndex} className="text-sm leading-relaxed">
-                {line.replace(/^\d+\.\s*/, '')}
-              </li>
-            ))}
-          </ol>
+          <div key={index} className="my-4">
+            <ol className="space-y-2">
+              {lines.map((line, lineIndex) => (
+                <li key={lineIndex} className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
+                    {lineIndex + 1}
+                  </span>
+                  <span className="text-sm leading-relaxed text-foreground flex-1">
+                    {line.replace(/^\d+\.\s*/, '')}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
         );
       } else if (trimmedPart.includes('- ') || trimmedPart.includes('• ')) {
-        // Bulleted list
+        // Enhanced bulleted list
         const lines = trimmedPart.split('\n').filter(line => line.trim() && (line.includes('- ') || line.includes('• ')));
         elements.push(
-          <ul key={index} className="list-disc list-inside my-3 space-y-1 text-foreground">
-            {lines.map((line, lineIndex) => (
-              <li key={lineIndex} className="text-sm leading-relaxed">
-                {line.replace(/^[\s]*[-•]\s*/, '')}
-              </li>
-            ))}
-          </ul>
+          <div key={index} className="my-4">
+            <ul className="space-y-2">
+              {lines.map((line, lineIndex) => (
+                <li key={lineIndex} className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2"></div>
+                  <span className="text-sm leading-relaxed text-foreground flex-1">
+                    {line.replace(/^[\s]*[-•]\s*/, '')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         );
       } else {
-        // Regular paragraph with inline code highlighting
-        const processedText = trimmedPart.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm font-mono">$1</code>');
+        // Enhanced paragraph with inline code highlighting and better formatting
+        const processedText = trimmedPart
+          .replace(/`([^`]+)`/g, '<code class="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-sm font-mono border">$1</code>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em class="italic text-muted-foreground">$1</em>');
+        
         elements.push(
-          <p 
+          <div
             key={index} 
-            className="text-sm leading-relaxed my-2 text-foreground"
+            className="text-sm leading-relaxed my-3 text-foreground p-2 rounded-md hover:bg-muted/30 transition-colors"
             dangerouslySetInnerHTML={{ __html: processedText }}
           />
         );
@@ -344,12 +401,12 @@ export const EnhancedChatArea = ({
     });
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         {elements}
         {isLive && (
-          <div className="flex items-center text-muted-foreground text-xs mt-2">
-            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-            AI is thinking...
+          <div className="flex items-center text-muted-foreground text-xs mt-3 p-2 bg-muted/50 rounded-md">
+            <Loader2 className="h-3 w-3 animate-spin mr-2" />
+            <span>AI is analyzing and generating response...</span>
           </div>
         )}
       </div>
