@@ -9,7 +9,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MobileOptimizations from "@/components/MobileOptimizations";
 import AppUpdatePrompt from "@/components/AppUpdatePrompt";
-import { useState } from "react";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
@@ -32,16 +31,16 @@ import Blog from "./pages/Blog";
 import PromptGenerator from "./pages/PromptGenerator";
 import CodeEditor from "./pages/CodeEditor";
 
-function App() {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1,
-      },
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
     },
-  }));
+  },
+});
 
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="aerostic-theme">
