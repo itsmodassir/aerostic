@@ -456,19 +456,51 @@ export const EnhancedChatArea = ({
           </>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <Card className="p-8 text-center max-w-md">
-              <Bot className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Enhanced AI Assistant</h3>
-              <p className="text-muted-foreground mb-4">
-                I can help you with:
-              </p>
-              <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                <li>• Generate images and logos</li>
-                <li>• Create complete websites</li>
-                <li>• Write and debug code</li>
-                <li>• Answer questions</li>
-                <li>• Provide tutorials and guides</li>
-              </ul>
+            <Card className="relative p-8 text-center max-w-lg overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-2 border-primary/10 shadow-xl">
+              {/* Background decoration */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 opacity-50" />
+              <div className="absolute -top-10 -right-10 w-20 h-20 bg-primary/10 rounded-full blur-xl" />
+              <div className="absolute -bottom-10 -left-10 w-16 h-16 bg-secondary/10 rounded-full blur-xl" />
+              
+              {/* Content */}
+              <div className="relative z-10">
+                <div className="mb-6 relative">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
+                    <Bot className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl blur-lg w-16 h-16 mx-auto" />
+                </div>
+                
+                <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Enhanced AI Assistant
+                </h3>
+                <p className="text-muted-foreground mb-6 text-base leading-relaxed">
+                  Your intelligent companion for creative and technical tasks
+                </p>
+                
+                <div className="grid grid-cols-1 gap-3 text-left">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
+                    <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
+                    <span className="text-sm font-medium text-foreground">Generate stunning images and logos</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
+                    <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
+                    <span className="text-sm font-medium text-foreground">Create complete websites & applications</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
+                    <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
+                    <span className="text-sm font-medium text-foreground">Write, debug & optimize code</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
+                    <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
+                    <span className="text-sm font-medium text-foreground">Answer questions & provide tutorials</span>
+                  </div>
+                </div>
+                
+                <div className="mt-6 text-xs text-muted-foreground">
+                  Start by typing your request below ✨
+                </div>
+              </div>
             </Card>
           </div>
         )}
