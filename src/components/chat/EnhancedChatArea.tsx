@@ -434,7 +434,7 @@ export const EnhancedChatArea = ({
       {/* Input Area */}
       <div className="border-t p-4">
         <div className="flex gap-2">
-          <Textarea value={inputMessage} onChange={e => onInputChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask me to generate images, create websites, write code, or answer questions..." className="flex-1 min-h-[40px] max-h-32 resize-none" disabled={isLoading} />
+            <Textarea value={inputMessage} onChange={e => onInputChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask me anything..." className="flex-1 min-h-[40px] max-h-32 resize-none" disabled={isLoading} />
           <Button onClick={onSendMessage} disabled={!inputMessage.trim() || isLoading} size="icon" className="h-10 w-10">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
