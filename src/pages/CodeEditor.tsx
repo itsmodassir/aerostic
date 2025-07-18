@@ -6,9 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Play, Code, Download, Share, Settings, Terminal, FileText, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { Play, Code, Download, Share, Settings, Terminal, FileText, Loader2, Sparkles, Wand2, Cpu, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,6 +32,9 @@ for (let i = 0; i < 10; i++) {
   const [activeTab, setActiveTab] = useState("editor");
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [fullProjectPrompt, setFullProjectPrompt] = useState("");
+  const [isGeneratingProject, setIsGeneratingProject] = useState(false);
+  const [projectType, setProjectType] = useState("website");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const languages = [
@@ -327,6 +331,76 @@ Doubled: [2, 4, 6, 8, 10]
     }
   };
 
+  const generateFullProject = async () => {
+    if (!fullProjectPrompt.trim()) {
+      toast.error("Please describe your project requirements");
+      return;
+    }
+
+    setIsGeneratingProject(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-code', {
+        body: {
+          prompt: `Create a complete ${projectType} project based on these requirements: ${fullProjectPrompt.trim()}. 
+          
+          Provide a fully functional, production-ready ${projectType} with:
+          - Complete file structure
+          - All necessary components/modules
+          - Proper styling and responsive design
+          - Error handling and validation
+          - Documentation and comments
+          - Best practices implementation
+          
+          Make it a comprehensive, working solution that can be immediately used.`,
+          language: projectType === "website" ? "html" : projectType === "webapp" ? "javascript" : "python",
+          context: undefined
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.code) {
+        setCode(data.code);
+        // Set appropriate language based on project type
+        if (projectType === "website") {
+          setLanguage("html");
+        } else if (projectType === "webapp") {
+          setLanguage("javascript");
+        } else if (projectType === "api") {
+          setLanguage("javascript");
+        } else if (projectType === "script") {
+          setLanguage("python");
+        }
+        
+        toast.success("Full project generated successfully!");
+        setFullProjectPrompt("");
+        
+        // Switch to editor tab to show generated code
+        setActiveTab("editor");
+      } else {
+        throw new Error("No project code was generated");
+      }
+    } catch (error) {
+      console.error('Full project generation error:', error);
+      toast.error(error.message || "Failed to generate full project");
+    } finally {
+      setIsGeneratingProject(false);
+    }
+  };
+
+  const projectTypes = [
+    { id: "website", name: "Complete Website", description: "Full HTML/CSS/JS website with multiple pages" },
+    { id: "webapp", name: "Web Application", description: "Interactive web app with advanced functionality" },
+    { id: "api", name: "REST API", description: "Backend API with endpoints and database integration" },
+    { id: "script", name: "Automation Script", description: "Python/Node.js script for automation tasks" }
+  ];
+
   return (
     <div className="min-h-screen gradient-bg">
       <Navigation />
@@ -429,6 +503,131 @@ Doubled: [2, 4, 6, 8, 10]
                   </Button>
                   <div className="text-sm text-muted-foreground">
                     Press Enter to generate • Current language: {languages.find(l => l.id === language)?.name}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Full Project Generation */}
+          <Card className="mb-6 border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-blue-50 dark:to-blue-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center text-xl">
+                <Cpu className="mr-2 h-6 w-6 text-primary" />
+                Full Project Generator
+                <Badge variant="secondary" className="ml-2 text-xs">NEW</Badge>
+              </CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Generate complete, production-ready projects based on your detailed requirements
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Project Type Selection */}
+                <div>
+                  <Label className="text-base font-medium">Project Type</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
+                    {projectTypes.map((type) => (
+                      <div
+                        key={type.id}
+                        onClick={() => setProjectType(type.id)}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:scale-105 ${
+                          projectType === type.id
+                            ? 'border-primary bg-primary/10 shadow-md'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="flex items-center mb-2">
+                          <Layers className="h-5 w-5 text-primary mr-2" />
+                          <h4 className="font-medium text-sm">{type.name}</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{type.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Project Requirements */}
+                <div>
+                  <Label htmlFor="project-prompt" className="text-base font-medium">
+                    Project Requirements & Features
+                  </Label>
+                  <Textarea
+                    id="project-prompt"
+                    value={fullProjectPrompt}
+                    onChange={(e) => setFullProjectPrompt(e.target.value)}
+                    placeholder={`Describe your complete project requirements in detail:
+
+Example for a website:
+"Create an e-commerce website for a clothing store with:
+- Homepage with hero section and featured products
+- Product catalog with filters and search
+- Shopping cart functionality
+- User registration and login
+- Responsive design for mobile and desktop
+- Contact page with form
+- Modern, professional styling"
+
+Be as detailed as possible about features, styling, and functionality you want.`}
+                    className="mt-2 min-h-[120px] text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.ctrlKey && !isGeneratingProject) {
+                        e.preventDefault();
+                        generateFullProject();
+                      }
+                    }}
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="text-xs text-muted-foreground">
+                      Ctrl+Enter to generate • Selected: {projectTypes.find(t => t.id === projectType)?.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {fullProjectPrompt.length}/2000 characters
+                    </div>
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <div className="flex items-center gap-3">
+                  <Button 
+                    onClick={generateFullProject} 
+                    disabled={isGeneratingProject || !fullProjectPrompt.trim() || fullProjectPrompt.length < 20}
+                    className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-medium px-6 py-3 text-base"
+                    size="lg"
+                  >
+                    {isGeneratingProject ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Generating Full Project...
+                      </>
+                    ) : (
+                      <>
+                        <Cpu className="mr-2 h-5 w-5" />
+                        Generate Complete Project
+                      </>
+                    )}
+                  </Button>
+                  
+                  {isGeneratingProject && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <div className="animate-pulse flex space-x-1">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <div className="w-2 h-2 bg-primary rounded-full animation-delay-200"></div>
+                        <div className="w-2 h-2 bg-primary rounded-full animation-delay-400"></div>
+                      </div>
+                      <span className="ml-2">AI is crafting your complete project...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Examples */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <h4 className="font-medium mb-2 text-sm">💡 Example Project Ideas:</h4>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <div>• <strong>Portfolio Website:</strong> "Personal portfolio with project showcase, about section, contact form, and blog"</div>
+                    <div>• <strong>Task Manager App:</strong> "Todo app with user auth, categories, deadlines, and progress tracking"</div>
+                    <div>• <strong>Restaurant Website:</strong> "Restaurant site with menu, reservations, gallery, and location map"</div>
+                    <div>• <strong>Data Dashboard:</strong> "Analytics dashboard with charts, tables, filters, and export functionality"</div>
                   </div>
                 </div>
               </div>
