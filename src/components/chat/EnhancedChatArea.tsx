@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Copy, User, Bot, Send, Eye, Download, Code, Image, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -235,174 +237,171 @@ export const EnhancedChatArea = ({
   };
 
   const formatAIResponse = (content: string, isLive = false): React.ReactNode => {
-    // Extract code blocks
-    const codeBlocks = extractCode(content);
-    let processedContent = content;
-
-    // Create processed content with code blocks replaced
-    codeBlocks.forEach((block, index) => {
-      const placeholder = `__CODE_BLOCK_${index}__`;
-      processedContent = processedContent.replace(
-        new RegExp('```' + block.language + '[\\s\\S]*?```', 'g'),
-        placeholder
-      );
-    });
-
-    // Split content by paragraphs and process
-    const parts = processedContent.split('\n\n');
-    const elements: React.ReactNode[] = [];
-    let codeBlockIndex = 0;
-
-    parts.forEach((part, index) => {
-      const trimmedPart = part.trim();
-      
-      if (trimmedPart.includes('__CODE_BLOCK_')) {
-        // Render interactive code block
-        const block = codeBlocks[codeBlockIndex];
-        if (block) {
-          elements.push(
-            <div key={`code-${index}`} className="my-4 relative group">
-              <div className="flex items-center justify-between bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-3 rounded-t-lg border border-b-0">
-                <div className="flex items-center gap-2">
-                  <Code className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">
-                    {block.language.toUpperCase()} Code
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(block.code)}
-                    className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    Copy
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => downloadCode(block.code, `code.${block.language}`)}
-                    className="h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-              <pre className="bg-card border border-t-0 p-4 rounded-b-lg overflow-x-auto shadow-sm">
-                <code className="text-sm font-mono leading-relaxed text-foreground">
-                  {block.code}
-                </code>
-              </pre>
-            </div>
-          );
-          codeBlockIndex++;
-        }
-        return;
-      }
-
-      if (!trimmedPart) return;
-
-      // Handle explanations with *** pattern
-      if (trimmedPart.includes('***') || trimmedPart.match(/^\*{3,}/)) {
-        const explanationText = trimmedPart.replace(/\*+/g, '').trim();
-        elements.push(
-          <div key={index} className="my-4 p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200/50 dark:border-blue-800/30 rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Bot className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 text-sm">
-                  💡 Code Explanation
-                </h4>
-                <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
-                  {explanationText}
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-        return;
-      }
-
-      // Handle different content types
-      if (trimmedPart.startsWith('# ')) {
-        elements.push(
-          <h1 key={index} className="text-2xl font-bold mt-6 mb-3 text-foreground border-b border-border pb-2">
-            {trimmedPart.substring(2)}
-          </h1>
-        );
-      } else if (trimmedPart.startsWith('## ')) {
-        elements.push(
-          <h2 key={index} className="text-xl font-semibold mt-5 mb-2 text-foreground flex items-center gap-2">
-            <div className="w-1 h-6 bg-primary rounded-full"></div>
-            {trimmedPart.substring(3)}
-          </h2>
-        );
-      } else if (trimmedPart.startsWith('### ')) {
-        elements.push(
-          <h3 key={index} className="text-lg font-medium mt-4 mb-2 text-foreground">
-            {trimmedPart.substring(4)}
-          </h3>
-        );
-      } else if (trimmedPart.match(/^\d+\./)) {
-        // Enhanced numbered list
-        const lines = trimmedPart.split('\n').filter(line => line.trim());
-        elements.push(
-          <div key={index} className="my-4">
-            <ol className="space-y-2">
-              {lines.map((line, lineIndex) => (
-                <li key={lineIndex} className="flex items-start gap-3">
-                  <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                    {lineIndex + 1}
-                  </span>
-                  <span className="text-sm leading-relaxed text-foreground flex-1">
-                    {line.replace(/^\d+\.\s*/, '')}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        );
-      } else if (trimmedPart.includes('- ') || trimmedPart.includes('• ')) {
-        // Enhanced bulleted list
-        const lines = trimmedPart.split('\n').filter(line => line.trim() && (line.includes('- ') || line.includes('• ')));
-        elements.push(
-          <div key={index} className="my-4">
-            <ul className="space-y-2">
-              {lines.map((line, lineIndex) => (
-                <li key={lineIndex} className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2"></div>
-                  <span className="text-sm leading-relaxed text-foreground flex-1">
-                    {line.replace(/^[\s]*[-•]\s*/, '')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      } else {
-        // Enhanced paragraph with inline code highlighting and better formatting
-        const processedText = trimmedPart
-          .replace(/`([^`]+)`/g, '<code class="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-sm font-mono border">$1</code>')
-          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em class="italic text-muted-foreground">$1</em>');
-        
-        elements.push(
-          <div
-            key={index} 
-            className="text-sm leading-relaxed my-3 text-foreground p-2 rounded-md hover:bg-muted/30 transition-colors"
-            dangerouslySetInnerHTML={{ __html: processedText }}
-          />
-        );
-      }
-    });
-
     return (
-      <div className="space-y-1">
-        {elements}
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            code: ({ node, inline, className, children, ...props }: any) => {
+              const match = /language-(\w+)/.exec(className || '');
+              const language = match ? match[1] : '';
+              
+              if (!inline && children) {
+                return (
+                  <div className="relative group my-4">
+                    <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-0.5 rounded-lg">
+                      <div className="bg-background rounded-lg overflow-hidden">
+                        <div className="flex justify-between items-center px-4 py-2 bg-muted border-b">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              {language || 'code'}
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2"
+                              onClick={() => copyToClipboard(String(children))}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2"
+                              onClick={() => downloadCode(String(children), `code.${language || 'txt'}`)}
+                            >
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <pre className="p-4 overflow-x-auto bg-slate-950 text-slate-100">
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <code className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-mono" {...props}>
+                  {children}
+                </code>
+              );
+            },
+            h1: ({ children }) => (
+              <div className="mb-6">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-3">
+                  {children}
+                </h1>
+                <div className="h-1 bg-gradient-to-r from-primary to-secondary rounded-full w-20"></div>
+              </div>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-2xl font-bold text-foreground mb-4 mt-8 flex items-center gap-3">
+                <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-xl font-semibold text-foreground mb-3 mt-6 flex items-center gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                {children}
+              </h3>
+            ),
+            h4: ({ children }) => (
+              <h4 className="text-lg font-medium text-muted-foreground mb-2 mt-4">
+                {children}
+              </h4>
+            ),
+            p: ({ children }) => (
+              <p className="mb-4 leading-relaxed text-foreground text-base">
+                {children}
+              </p>
+            ),
+            ul: ({ children }) => (
+              <ul className="mb-6 space-y-2 ml-4">
+                {children}
+              </ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="mb-6 space-y-2 ml-4">
+                {children}
+              </ol>
+            ),
+            li: ({ children }) => (
+              <li className="leading-relaxed text-foreground flex items-start gap-2">
+                <span className="text-primary mt-1">•</span>
+                <span>{children}</span>
+              </li>
+            ),
+            blockquote: ({ children }) => (
+              <div className="my-6 relative">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
+                <blockquote className="ml-6 pl-6 py-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-r-lg border-l-0">
+                  <div className="text-foreground italic text-base leading-relaxed">
+                    {children}
+                  </div>
+                </blockquote>
+              </div>
+            ),
+            table: ({ children }) => (
+              <div className="overflow-x-auto my-6 rounded-lg border border-border shadow-sm">
+                <table className="min-w-full divide-y divide-border">
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children }) => (
+              <thead className="bg-gradient-to-r from-primary/10 to-secondary/10">
+                {children}
+              </thead>
+            ),
+            th: ({ children }) => (
+              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground uppercase tracking-wider">
+                {children}
+              </th>
+            ),
+            tbody: ({ children }) => (
+              <tbody className="bg-background divide-y divide-border">
+                {children}
+              </tbody>
+            ),
+            tr: ({ children }) => (
+              <tr className="hover:bg-muted/50 transition-colors">
+                {children}
+              </tr>
+            ),
+            td: ({ children }) => (
+              <td className="px-6 py-4 text-sm text-foreground">
+                {children}
+              </td>
+            ),
+            strong: ({ children }) => (
+              <strong className="font-bold text-primary">
+                {children}
+              </strong>
+            ),
+            em: ({ children }) => (
+              <em className="italic text-muted-foreground">
+                {children}
+              </em>
+            ),
+            hr: () => (
+              <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
         {isLive && (
           <div className="flex items-center text-muted-foreground text-xs mt-3 p-2 bg-muted/50 rounded-md">
             <Loader2 className="h-3 w-3 animate-spin mr-2" />
