@@ -370,14 +370,20 @@ What specific coding challenge can I help you solve?`,
   }
 }
 
-// Web search handler
+// Web search handler with Gemini interpretation
 async function handleWebSearch(message: string, conversationId: string, supabase: any) {
   try {
-    console.log('🔍 Handling web search request');
+    console.log('🔍 Handling web search request with Gemini interpretation');
     
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY_CHAT');
+    
     if (!perplexityApiKey) {
       throw new Error('Perplexity API key not configured. Please add your API key to continue.');
+    }
+
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured. Please check your configuration.');
     }
 
     // Extract search query from message
@@ -385,7 +391,8 @@ async function handleWebSearch(message: string, conversationId: string, supabase
     
     console.log('Searching for:', searchQuery);
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    // Step 1: Get raw web search results from Perplexity
+    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${perplexityApiKey}`,
@@ -396,55 +403,136 @@ async function handleWebSearch(message: string, conversationId: string, supabase
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful AI assistant that provides accurate, up-to-date information from web searches. Always cite your sources and provide comprehensive, well-structured answers with the latest information available.'
+            content: 'You are a web search assistant. Provide accurate, factual information from reliable sources. Include specific details, numbers, dates, and sources when available. Be comprehensive but concise.'
           },
           {
             role: 'user',
             content: searchQuery
           }
         ],
-        temperature: 0.2,
+        temperature: 0.1,
         top_p: 0.9,
-        max_tokens: 2000,
+        max_tokens: 1500,
         return_images: false,
-        return_related_questions: true,
+        return_related_questions: false,
         search_recency_filter: 'month',
         frequency_penalty: 1,
         presence_penalty: 0
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
+    if (!perplexityResponse.ok) {
+      const errorText = await perplexityResponse.text();
+      throw new Error(`Perplexity API error: ${perplexityResponse.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const perplexityData = await perplexityResponse.json();
     
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!perplexityData.choices || !perplexityData.choices[0] || !perplexityData.choices[0].message) {
       throw new Error('Invalid response from Perplexity API');
     }
 
-    const searchResult = data.choices[0].message.content;
+    const rawSearchResults = perplexityData.choices[0].message.content;
+    console.log('Raw search results obtained, processing with Gemini...');
 
-    const formattedResponse = `🔍 **Web Search Results**
+    // Step 2: Use Gemini to interpret and enhance the search results
+    const geminiInterpretationPrompt = `You are an expert AI assistant that interprets and enhances web search results. 
 
-${searchResult}
+**User's Original Question:** ${message}
 
-**💡 Search Information:**
+**Raw Web Search Results:**
+${rawSearchResults}
+
+**Your Task:**
+Analyze the search results and provide a comprehensive, well-structured response that:
+
+1. **Directly answers the user's question** with the most relevant information
+2. **Synthesizes multiple sources** if available to give a complete picture
+3. **Highlights key facts, numbers, and dates** that are most important
+4. **Provides context and explanation** for complex topics
+5. **Organizes information logically** using proper markdown formatting
+6. **Includes actionable insights** or recommendations when appropriate
+7. **Mentions data freshness** and any limitations
+
+**Formatting Requirements:**
+- Use # ## ### headings to structure your response
+- Use **bold** for key facts and figures
+- Use bullet points (-) for lists
+- Use > blockquotes for important insights or quotes
+- Add relevant emojis sparingly (📊 💡 🚀 ⚠️ 📈)
+- Make it engaging and easy to read
+
+**Response Style:**
+- Be authoritative but acknowledge uncertainties
+- Provide practical value to the user
+- Connect different pieces of information meaningfully
+- End with helpful next steps or related suggestions if appropriate
+
+Remember: You're not just summarizing - you're adding intelligence, context, and value to the raw search data.`;
+
+    const geminiRequest = {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: geminiInterpretationPrompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.3,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 3072,
+        candidateCount: 1,
+      }
+    };
+
+    console.log('Sending interpretation request to Gemini...');
+
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(geminiRequest),
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`);
+    }
+
+    const geminiData = await geminiResponse.json();
+    
+    if (!geminiData.candidates || !geminiData.candidates[0] || !geminiData.candidates[0].content) {
+      throw new Error('Invalid response from Gemini API');
+    }
+
+    const interpretedResults = geminiData.candidates[0].content.parts[0].text;
+
+    // Format the final response
+    const finalResponse = `🔍 **Real-time Web Search Results**
+
+${interpretedResults}
+
+---
+
+**🔧 Search Details:**
 - **Query:** ${searchQuery}
-- **Source:** Live web search via Perplexity AI
+- **Data Sources:** Live web search via Perplexity AI
+- **AI Enhancement:** Interpreted and analyzed by Gemini AI
 - **Recency:** Latest available information (within the last month)
 
-**🚀 Need More Information?**
-Feel free to ask for more specific details or related questions about this topic!`;
+**💡 Need More Information?**
+Feel free to ask follow-up questions or request more specific details about any aspect of this topic!`;
 
     return new Response(JSON.stringify({ 
-      response: formattedResponse,
+      response: finalResponse,
       conversationId,
       enhanced: true,
-      type: 'web_search',
-      searchQuery: searchQuery
+      type: 'web_search_interpreted',
+      searchQuery: searchQuery,
+      hasGeminiInterpretation: true
     }), {
       headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
     });
@@ -457,14 +545,21 @@ Feel free to ask for more specific details or related questions about this topic
       return new Response(JSON.stringify({ 
         response: `🔐 **Web Search Setup Required**
 
-To enable web search capabilities, I need access to the Perplexity API. Here's how to set it up:
+To enable intelligent web search capabilities, I need access to both Perplexity and Gemini APIs:
 
-**📋 Setup Steps:**
-1. Get a Perplexity API key from [perplexity.ai](https://perplexity.ai)
-2. Add it to your Supabase Edge Function secrets as \`PERPLEXITY_API_KEY\`
-3. Your AI assistant will then be able to search the web for real-time information!
+**📋 Setup Requirements:**
+1. **Perplexity API** (for real-time web search): Get your key from [perplexity.ai](https://perplexity.ai)
+2. **Gemini API** (for intelligent interpretation): Already configured ✅
 
-**💡 What I Can Do Without Web Search:**
+Add the Perplexity API key to your Supabase Edge Function secrets as \`PERPLEXITY_API_KEY\`
+
+**🎯 What This Enables:**
+- Real-time web search for current information
+- Intelligent analysis and interpretation by Gemini AI
+- Comprehensive, well-structured answers
+- Context-aware responses tailored to your questions
+
+**💡 What I Can Do Now:**
 - Answer questions from my training data
 - Generate images and logos
 - Write code and build websites
@@ -481,15 +576,15 @@ Would you like me to help you with any of these instead?`,
     }
 
     return new Response(JSON.stringify({ 
-      response: `❌ **Web Search Failed**
+      response: `❌ **Intelligent Web Search Failed**
 
-I encountered an issue searching the web: ${error.message}
+I encountered an issue with the web search: ${error.message}
 
-**🔍 I can still help you with:**
-- Answering questions from my knowledge base
-- Generating content and code
-- Creating images and websites
-- Providing general information and guidance
+**🔍 Alternative Options:**
+- I can answer questions from my knowledge base
+- Generate content and code
+- Create images and websites
+- Provide general information and guidance
 
 What would you like me to help you with instead?`,
       conversationId,
@@ -584,9 +679,11 @@ async function handleMultiplePrompts(prompts: string[], conversationId: string, 
         try {
           const searchQuery = extractSearchQuery(prompt);
           const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+          const geminiApiKey = Deno.env.get('GEMINI_API_KEY_CHAT');
           
-          if (perplexityApiKey) {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+          if (perplexityApiKey && geminiApiKey) {
+            // Step 1: Get raw search results from Perplexity
+            const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${perplexityApiKey}`,
@@ -597,31 +694,56 @@ async function handleMultiplePrompts(prompts: string[], conversationId: string, 
                 messages: [
                   {
                     role: 'system',
-                    content: 'You are a helpful AI assistant that provides accurate, up-to-date information from web searches. Be concise but comprehensive.'
+                    content: 'You are a web search assistant. Provide accurate, factual information from reliable sources. Be concise but comprehensive.'
                   },
                   {
                     role: 'user',
                     content: searchQuery
                   }
                 ],
-                temperature: 0.2,
+                temperature: 0.1,
                 top_p: 0.9,
-                max_tokens: 1000,
+                max_tokens: 800,
                 return_images: false,
                 return_related_questions: false,
                 search_recency_filter: 'month'
               }),
             });
             
-            if (response.ok) {
-              const data = await response.json();
-              const searchResult = data.choices[0].message.content;
-              combinedResponse += `🔍 **Web Search Results:**\n\n${searchResult}\n\n`;
+            if (perplexityResponse.ok) {
+              const perplexityData = await perplexityResponse.json();
+              const rawSearchResults = perplexityData.choices[0].message.content;
+              
+              // Step 2: Use Gemini to interpret the results
+              const geminiInterpretationPrompt = `Analyze and enhance this web search result for the query "${searchQuery}":
+
+${rawSearchResults}
+
+Provide a concise, well-structured summary that highlights the most important information. Use markdown formatting and include key facts and figures.`;
+
+              const geminiRequest = {
+                contents: [{ role: 'user', parts: [{ text: geminiInterpretationPrompt }] }],
+                generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+              };
+
+              const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(geminiRequest),
+              });
+
+              if (geminiResponse.ok) {
+                const geminiData = await geminiResponse.json();
+                const interpretedResults = geminiData.candidates[0].content.parts[0].text;
+                combinedResponse += `🔍 **Intelligent Web Search Results:**\n\n${interpretedResults}\n\n`;
+              } else {
+                combinedResponse += `🔍 **Web Search Results:**\n\n${rawSearchResults}\n\n`;
+              }
             } else {
               combinedResponse += `❌ Web search failed for this query\n\n`;
             }
           } else {
-            combinedResponse += `❌ Web search unavailable (API key not configured)\n\n`;
+            combinedResponse += `❌ Web search unavailable (API keys not configured)\n\n`;
           }
         } catch (error) {
           combinedResponse += `❌ Web search error: ${error.message}\n\n`;
