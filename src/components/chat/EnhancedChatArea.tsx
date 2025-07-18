@@ -383,10 +383,9 @@ export const EnhancedChatArea = ({
           </> : <div className="flex items-center justify-center h-full p-4">
             <Card className="relative p-10 text-center max-w-2xl overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-2 border-primary/20 shadow-2xl backdrop-blur-sm animate-fade-in">
               {/* Enhanced Background decoration */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-secondary/10 opacity-40 animate-pulse" />
-              <div className="absolute -top-16 -right-16 w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-2xl animate-pulse" />
-              <div className="absolute -bottom-16 -left-16 w-24 h-24 bg-gradient-to-tr from-secondary/20 to-primary/20 rounded-full blur-2xl animate-pulse" />
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-full blur-3xl" />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/5 opacity-60" />
+              <div className="absolute -top-8 -right-8 w-16 h-16 bg-primary/20 rounded-full blur-xl" />
+              <div className="absolute -bottom-8 -left-8 w-12 h-12 bg-secondary/20 rounded-full blur-lg" />
               
               {/* Content */}
               <div className="relative z-10">
