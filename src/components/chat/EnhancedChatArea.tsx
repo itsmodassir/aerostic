@@ -380,27 +380,28 @@ export const EnhancedChatArea = ({
               </div>}
             
             <div ref={messagesEndRef} />
-          </> : <div className="flex items-center justify-center h-full">
-            <Card className="relative p-8 text-center max-w-lg overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-2 border-primary/10 shadow-xl">
-              {/* Background decoration */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-background opacity-30" />
-              <div className="absolute -top-10 -right-10 w-20 h-20 bg-primary/10 rounded-full blur-xl" />
-              <div className="absolute -bottom-10 -left-10 w-16 h-16 bg-secondary/10 rounded-full blur-xl" />
+          </> : <div className="flex items-center justify-center h-full p-4">
+            <Card className="relative p-10 text-center max-w-2xl overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-2 border-primary/20 shadow-2xl backdrop-blur-sm animate-fade-in">
+              {/* Enhanced Background decoration */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/15 to-secondary/10 opacity-40 animate-pulse" />
+              <div className="absolute -top-16 -right-16 w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-2xl animate-pulse" />
+              <div className="absolute -bottom-16 -left-16 w-24 h-24 bg-gradient-to-tr from-secondary/20 to-primary/20 rounded-full blur-2xl animate-pulse" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-full blur-3xl" />
               
               {/* Content */}
               <div className="relative z-10">
-                <div className="mb-6 relative">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center shadow-lg">
-                    <Bot className="h-8 w-8 text-white" />
+                <div className="mb-8 relative">
+                  <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-primary via-primary to-secondary rounded-3xl flex items-center justify-center shadow-2xl hover:scale-110 transition-all duration-300 animate-scale-in">
+                    <Bot className="h-10 w-10 text-white drop-shadow-lg" />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl blur-lg w-16 h-16 mx-auto" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-3xl blur-xl w-20 h-20 mx-auto animate-pulse" />
                 </div>
                 
-                <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  AI Chat
+                <h3 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent animate-fade-in">
+                  AI Chat Assistant
                 </h3>
-                <p className="text-muted-foreground mb-6 text-base leading-relaxed">
-                  Ask me anything
+                <p className="text-muted-foreground mb-8 text-lg leading-relaxed max-w-md mx-auto">
+                  Your intelligent companion for any question or task
                 </p>
                 
                 <div className="grid grid-cols-1 gap-3 text-left">
