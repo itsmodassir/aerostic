@@ -8,21 +8,18 @@ import { Loader2, Copy, User, Bot, Send, Eye, Download, Code, Image, Globe } fro
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
 }
-
 interface EnhancedMessage extends Message {
   type?: string;
   imageUrl?: string;
   generatedCode?: string;
   language?: string;
 }
-
 interface ChatAreaProps {
   currentConversation: string | null;
   messages: Message[];
@@ -32,34 +29,35 @@ interface ChatAreaProps {
   onSendMessage: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
 }
-
-export const EnhancedChatArea = ({ 
-  currentConversation, 
-  messages, 
-  inputMessage, 
-  isLoading, 
-  onInputChange, 
-  onSendMessage, 
-  onKeyPress 
+export const EnhancedChatArea = ({
+  currentConversation,
+  messages,
+  inputMessage,
+  isLoading,
+  onInputChange,
+  onSendMessage,
+  onKeyPress
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [previewData, setPreviewData] = useState<{ type: string; content: string; url?: string } | null>(null);
-
+  const [previewData, setPreviewData] = useState<{
+    type: string;
+    content: string;
+    url?: string;
+  } | null>(null);
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
   };
-
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSendMessage();
     }
   };
-
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -68,9 +66,10 @@ export const EnhancedChatArea = ({
       toast.error('Failed to copy text');
     }
   };
-
   const downloadCode = (code: string, filename: string) => {
-    const blob = new Blob([code], { type: 'text/plain' });
+    const blob = new Blob([code], {
+      type: 'text/plain'
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -81,174 +80,126 @@ export const EnhancedChatArea = ({
     URL.revokeObjectURL(url);
     toast.success('Code downloaded!');
   };
-
   const openPreview = (type: string, content: string, url?: string) => {
-    setPreviewData({ type, content, url });
+    setPreviewData({
+      type,
+      content,
+      url
+    });
   };
-
-  const extractCode = (content: string): { language: string; code: string }[] => {
+  const extractCode = (content: string): {
+    language: string;
+    code: string;
+  }[] => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     const matches = [];
     let match;
-    
     while ((match = codeBlockRegex.exec(content)) !== null) {
       matches.push({
         language: match[1] || 'text',
         code: match[2].trim()
       });
     }
-    
     return matches;
   };
-
   const renderEnhancedMessage = (message: EnhancedMessage): React.ReactNode => {
     const content = message.content;
-    
+
     // Check if this is an enhanced message with special features
     if (message.type && message.type !== 'general_chat') {
-      return (
-        <div className="space-y-4">
+      return <div className="space-y-4">
           {/* Render the main content */}
           {formatAIResponse(content)}
           
           {/* Render enhanced features based on type */}
-          {message.type === 'image_generation' && message.imageUrl && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+          {message.type === 'image_generation' && message.imageUrl && <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
               <div className="flex items-center gap-2 mb-3">
                 <Image className="h-4 w-4 text-primary" />
                 <span className="font-medium text-sm">Generated Image</span>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openPreview('image', content, message.imageUrl)}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => openPreview('image', content, message.imageUrl)} className="flex items-center gap-2">
                   <Eye className="h-3 w-3" />
                   Preview
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = message.imageUrl!;
-                    a.download = 'generated-image.png';
-                    a.click();
-                    toast.success('Image download started!');
-                  }}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => {
+              const a = document.createElement('a');
+              a.href = message.imageUrl!;
+              a.download = 'generated-image.png';
+              a.click();
+              toast.success('Image download started!');
+            }} className="flex items-center gap-2">
                   <Download className="h-3 w-3" />
                   Download
                 </Button>
               </div>
-            </div>
-          )}
+            </div>}
           
-          {message.type === 'logo_generation' && message.imageUrl && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+          {message.type === 'logo_generation' && message.imageUrl && <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
               <div className="flex items-center gap-2 mb-3">
                 <Image className="h-4 w-4 text-primary" />
                 <span className="font-medium text-sm">Generated Logo</span>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openPreview('logo', content, message.imageUrl)}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => openPreview('logo', content, message.imageUrl)} className="flex items-center gap-2">
                   <Eye className="h-3 w-3" />
                   Preview Logo
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = message.imageUrl!;
-                    a.download = 'logo-design.png';
-                    a.click();
-                    toast.success('Logo download started!');
-                  }}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => {
+              const a = document.createElement('a');
+              a.href = message.imageUrl!;
+              a.download = 'logo-design.png';
+              a.click();
+              toast.success('Logo download started!');
+            }} className="flex items-center gap-2">
                   <Download className="h-3 w-3" />
                   Download
                 </Button>
               </div>
-            </div>
-          )}
+            </div>}
           
-          {(message.type === 'website_generation' || message.type === 'code_generation') && message.generatedCode && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+          {(message.type === 'website_generation' || message.type === 'code_generation') && message.generatedCode && <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
               <div className="flex items-center gap-2 mb-3">
-                {message.type === 'website_generation' ? (
-                  <Globe className="h-4 w-4 text-primary" />
-                ) : (
-                  <Code className="h-4 w-4 text-primary" />
-                )}
+                {message.type === 'website_generation' ? <Globe className="h-4 w-4 text-primary" /> : <Code className="h-4 w-4 text-primary" />}
                 <span className="font-medium text-sm">
                   {message.type === 'website_generation' ? 'Generated Website' : 'Generated Code'}
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openPreview(message.type === 'website_generation' ? 'website' : 'code', message.generatedCode!)}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => openPreview(message.type === 'website_generation' ? 'website' : 'code', message.generatedCode!)} className="flex items-center gap-2">
                   <Eye className="h-3 w-3" />
                   Preview {message.type === 'website_generation' ? 'Website' : 'Code'}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => downloadCode(
-                    message.generatedCode!, 
-                    message.type === 'website_generation' ? 'website.html' : `code.${message.language || 'txt'}`
-                  )}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => downloadCode(message.generatedCode!, message.type === 'website_generation' ? 'website.html' : `code.${message.language || 'txt'}`)} className="flex items-center gap-2">
                   <Download className="h-3 w-3" />
                   Download
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(message.generatedCode!)}
-                  className="flex items-center gap-2"
-                >
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(message.generatedCode!)} className="flex items-center gap-2">
                   <Copy className="h-3 w-3" />
                   Copy
                 </Button>
               </div>
-            </div>
-          )}
-        </div>
-      );
+            </div>}
+        </div>;
     }
-    
+
     // Regular message formatting
     return formatAIResponse(content);
   };
-
   const formatAIResponse = (content: string, isLive = false): React.ReactNode => {
-    return (
-      <div className="prose prose-sm max-w-none dark:prose-invert">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            code: ({ node, inline, className, children, ...props }: any) => {
-              const match = /language-(\w+)/.exec(className || '');
-              const language = match ? match[1] : '';
-              
-              if (!inline && children) {
-                return (
-                  <div className="relative group my-4">
+    return <div className="prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+        code: ({
+          node,
+          inline,
+          className,
+          children,
+          ...props
+        }: any) => {
+          const match = /language-(\w+)/.exec(className || '');
+          const language = match ? match[1] : '';
+          if (!inline && children) {
+            return <div className="relative group my-4">
                     <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-0.5 rounded-lg">
                       <div className="bg-background rounded-lg overflow-hidden">
                         <div className="flex justify-between items-center px-4 py-2 bg-muted border-b">
@@ -263,20 +214,10 @@ export const EnhancedChatArea = ({
                             </span>
                           </div>
                           <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2"
-                              onClick={() => copyToClipboard(String(children))}
-                            >
+                            <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2" onClick={() => copyToClipboard(String(children))}>
                               <Copy className="h-3 w-3" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2"
-                              onClick={() => downloadCode(String(children), `code.${language || 'txt'}`)}
-                            >
+                            <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2" onClick={() => downloadCode(String(children), `code.${language || 'txt'}`)}>
                               <Download className="h-3 w-3" />
                             </Button>
                           </div>
@@ -288,158 +229,137 @@ export const EnhancedChatArea = ({
                         </pre>
                       </div>
                     </div>
-                  </div>
-                );
-              }
-              return (
-                <code className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-mono" {...props}>
+                  </div>;
+          }
+          return <code className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-mono" {...props}>
                   {children}
-                </code>
-              );
-            },
-            h1: ({ children }) => (
-              <div className="mb-6">
+                </code>;
+        },
+        h1: ({
+          children
+        }) => <div className="mb-6">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-3">
                   {children}
                 </h1>
                 <div className="h-1 bg-gradient-to-r from-primary to-secondary rounded-full w-20"></div>
-              </div>
-            ),
-            h2: ({ children }) => (
-              <h2 className="text-2xl font-bold text-foreground mb-4 mt-8 flex items-center gap-3">
+              </div>,
+        h2: ({
+          children
+        }) => <h2 className="text-2xl font-bold text-foreground mb-4 mt-8 flex items-center gap-3">
                 <div className="w-1 h-6 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
                 {children}
-              </h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="text-xl font-semibold text-foreground mb-3 mt-6 flex items-center gap-2">
+              </h2>,
+        h3: ({
+          children
+        }) => <h3 className="text-xl font-semibold text-foreground mb-3 mt-6 flex items-center gap-2">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 {children}
-              </h3>
-            ),
-            h4: ({ children }) => (
-              <h4 className="text-lg font-medium text-muted-foreground mb-2 mt-4">
+              </h3>,
+        h4: ({
+          children
+        }) => <h4 className="text-lg font-medium text-muted-foreground mb-2 mt-4">
                 {children}
-              </h4>
-            ),
-            p: ({ children }) => (
-              <p className="mb-4 leading-relaxed text-foreground text-base">
+              </h4>,
+        p: ({
+          children
+        }) => <p className="mb-4 leading-relaxed text-foreground text-base">
                 {children}
-              </p>
-            ),
-            ul: ({ children }) => (
-              <ul className="mb-6 space-y-2 ml-4">
+              </p>,
+        ul: ({
+          children
+        }) => <ul className="mb-6 space-y-2 ml-4">
                 {children}
-              </ul>
-            ),
-            ol: ({ children }) => (
-              <ol className="mb-6 space-y-2 ml-4">
+              </ul>,
+        ol: ({
+          children
+        }) => <ol className="mb-6 space-y-2 ml-4">
                 {children}
-              </ol>
-            ),
-            li: ({ children }) => (
-              <li className="leading-relaxed text-foreground flex items-start gap-2">
+              </ol>,
+        li: ({
+          children
+        }) => <li className="leading-relaxed text-foreground flex items-start gap-2">
                 <span className="text-primary mt-1">•</span>
                 <span>{children}</span>
-              </li>
-            ),
-            blockquote: ({ children }) => (
-              <div className="my-6 relative">
+              </li>,
+        blockquote: ({
+          children
+        }) => <div className="my-6 relative">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary rounded-full"></div>
                 <blockquote className="ml-6 pl-6 py-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-r-lg border-l-0">
                   <div className="text-foreground italic text-base leading-relaxed">
                     {children}
                   </div>
                 </blockquote>
-              </div>
-            ),
-            table: ({ children }) => (
-              <div className="overflow-x-auto my-6 rounded-lg border border-border shadow-sm">
+              </div>,
+        table: ({
+          children
+        }) => <div className="overflow-x-auto my-6 rounded-lg border border-border shadow-sm">
                 <table className="min-w-full divide-y divide-border">
                   {children}
                 </table>
-              </div>
-            ),
-            thead: ({ children }) => (
-              <thead className="bg-gradient-to-r from-primary/10 to-secondary/10">
+              </div>,
+        thead: ({
+          children
+        }) => <thead className="bg-gradient-to-r from-primary/10 to-secondary/10">
                 {children}
-              </thead>
-            ),
-            th: ({ children }) => (
-              <th className="px-6 py-3 text-left text-sm font-semibold text-foreground uppercase tracking-wider">
+              </thead>,
+        th: ({
+          children
+        }) => <th className="px-6 py-3 text-left text-sm font-semibold text-foreground uppercase tracking-wider">
                 {children}
-              </th>
-            ),
-            tbody: ({ children }) => (
-              <tbody className="bg-background divide-y divide-border">
+              </th>,
+        tbody: ({
+          children
+        }) => <tbody className="bg-background divide-y divide-border">
                 {children}
-              </tbody>
-            ),
-            tr: ({ children }) => (
-              <tr className="hover:bg-muted/50 transition-colors">
+              </tbody>,
+        tr: ({
+          children
+        }) => <tr className="hover:bg-muted/50 transition-colors">
                 {children}
-              </tr>
-            ),
-            td: ({ children }) => (
-              <td className="px-6 py-4 text-sm text-foreground">
+              </tr>,
+        td: ({
+          children
+        }) => <td className="px-6 py-4 text-sm text-foreground">
                 {children}
-              </td>
-            ),
-            strong: ({ children }) => (
-              <strong className="font-bold text-primary">
+              </td>,
+        strong: ({
+          children
+        }) => <strong className="font-bold text-primary">
                 {children}
-              </strong>
-            ),
-            em: ({ children }) => (
-              <em className="italic text-muted-foreground">
+              </strong>,
+        em: ({
+          children
+        }) => <em className="italic text-muted-foreground">
                 {children}
-              </em>
-            ),
-            hr: () => (
-              <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-            ),
-          }}
-        >
+              </em>,
+        hr: () => <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+      }}>
           {content}
         </ReactMarkdown>
-        {isLive && (
-          <div className="flex items-center text-muted-foreground text-xs mt-3 p-2 bg-muted/50 rounded-md">
+        {isLive && <div className="flex items-center text-muted-foreground text-xs mt-3 p-2 bg-muted/50 rounded-md">
             <Loader2 className="h-3 w-3 animate-spin mr-2" />
             <span>AI is analyzing and generating response...</span>
-          </div>
-        )}
-      </div>
-    );
+          </div>}
+      </div>;
   };
-
-  return (
-    <div className="flex flex-col h-full">
+  return <div className="flex flex-col h-full">
       {/* Chat Messages */}
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {currentConversation ? (
-          <>
-            {messages.map((message) => (
-              <div key={message.id} className="flex gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
-                }`}>
+        {currentConversation ? <>
+            {messages.map(message => <div key={message.id} className="flex gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
                   {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
                 
                 <Card className="flex-1 p-4">
                   <div className="text-sm">
-                    {message.role === 'user' ? (
-                      <p className="text-foreground leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    ) : (
-                      renderEnhancedMessage(message as EnhancedMessage)
-                    )}
+                    {message.role === 'user' ? <p className="text-foreground leading-relaxed whitespace-pre-wrap">{message.content}</p> : renderEnhancedMessage(message as EnhancedMessage)}
                   </div>
                 </Card>
-              </div>
-            ))}
+              </div>)}
             
-            {isLoading && (
-              <div className="flex gap-3">
+            {isLoading && <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary text-secondary-foreground">
                   <Bot className="h-4 w-4" />
                 </div>
@@ -449,13 +369,10 @@ export const EnhancedChatArea = ({
                     <span className="text-sm">AI is thinking...</span>
                   </div>
                 </Card>
-              </div>
-            )}
+              </div>}
             
             <div ref={messagesEndRef} />
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full">
+          </> : <div className="flex items-center justify-center h-full">
             <Card className="relative p-8 text-center max-w-lg overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-2 border-primary/10 shadow-xl">
               {/* Background decoration */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-background opacity-30" />
@@ -481,7 +398,7 @@ export const EnhancedChatArea = ({
                 <div className="grid grid-cols-1 gap-3 text-left">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">Generate stunning images and logos</span>
+                    <span className="text-sm font-medium text-foreground">I have give you the answer what you want</span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
@@ -502,32 +419,15 @@ export const EnhancedChatArea = ({
                 </div>
               </div>
             </Card>
-          </div>
-        )}
+          </div>}
       </div>
 
       {/* Input Area */}
       <div className="border-t p-4">
         <div className="flex gap-2">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask me to generate images, create websites, write code, or answer questions..."
-            className="flex-1 min-h-[40px] max-h-32 resize-none"
-            disabled={isLoading}
-          />
-          <Button 
-            onClick={onSendMessage} 
-            disabled={!inputMessage.trim() || isLoading}
-            size="icon"
-            className="h-10 w-10"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+          <Textarea value={inputMessage} onChange={e => onInputChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask me to generate images, create websites, write code, or answer questions..." className="flex-1 min-h-[40px] max-h-32 resize-none" disabled={isLoading} />
+          <Button onClick={onSendMessage} disabled={!inputMessage.trim() || isLoading} size="icon" className="h-10 w-10">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>
@@ -549,30 +449,18 @@ export const EnhancedChatArea = ({
           </DialogHeader>
           
           <div className="overflow-auto max-h-[60vh]">
-            {(previewData?.type === 'image' || previewData?.type === 'logo') && previewData.url && (
-              <div className="text-center">
-                <img 
-                  src={previewData.url} 
-                  alt="Generated content" 
-                  className="max-w-full h-auto rounded-lg shadow-lg"
-                />
-              </div>
-            )}
+            {(previewData?.type === 'image' || previewData?.type === 'logo') && previewData.url && <div className="text-center">
+                <img src={previewData.url} alt="Generated content" className="max-w-full h-auto rounded-lg shadow-lg" />
+              </div>}
             
-            {previewData?.type === 'website' && (
-              <Tabs defaultValue="preview" className="w-full">
+            {previewData?.type === 'website' && <Tabs defaultValue="preview" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="preview">Live Preview</TabsTrigger>
                   <TabsTrigger value="code">Source Code</TabsTrigger>
                 </TabsList>
                 <TabsContent value="preview" className="mt-4">
                   <div className="border rounded-lg overflow-hidden">
-                    <iframe
-                      srcDoc={previewData.content}
-                      className="w-full h-96"
-                      title="Website Preview"
-                      sandbox="allow-scripts allow-same-origin"
-                    />
+                    <iframe srcDoc={previewData.content} className="w-full h-96" title="Website Preview" sandbox="allow-scripts allow-same-origin" />
                   </div>
                 </TabsContent>
                 <TabsContent value="code" className="mt-4">
@@ -580,17 +468,13 @@ export const EnhancedChatArea = ({
                     <code>{previewData.content}</code>
                   </pre>
                 </TabsContent>
-              </Tabs>
-            )}
+              </Tabs>}
             
-            {previewData?.type === 'code' && (
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
+            {previewData?.type === 'code' && <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                 <code>{previewData.content}</code>
-              </pre>
-            )}
+              </pre>}
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
