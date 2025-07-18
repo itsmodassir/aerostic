@@ -6,7 +6,10 @@ interface GeneratedContent {
   title: string;
   tagline: string;
   aboutContent: string;
-  firstPost: string;
+  firstPost: {
+    title: string;
+    content: string;
+  };
 }
 
 interface PreviewStepProps {
@@ -40,7 +43,7 @@ const PreviewStep = ({ generatedContent, blogName, onBuild, onPrev }: PreviewSte
           
           <div>
             <h4 className="font-medium text-gray-700">Sample First Post:</h4>
-            <p className="text-sm">{generatedContent.firstPost?.substring(0, 200)}...</p>
+            <p className="text-sm">{generatedContent.firstPost?.content?.substring(0, 200)}...</p>
           </div>
         </div>
       </div>

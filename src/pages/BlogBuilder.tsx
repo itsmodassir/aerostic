@@ -33,7 +33,10 @@ const BlogBuilder = () => {
     title: "",
     tagline: "",
     aboutContent: "",
-    firstPost: ""
+    firstPost: {
+      title: "",
+      content: ""
+    }
   });
   const { user } = useAuth();
 
