@@ -33,61 +33,63 @@ import CodeEditor from "./pages/CodeEditor";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="aerostic-theme">
-      <AuthProvider>
-        <TooltipProvider>
-          <MobileOptimizations />
-          <AppUpdatePrompt checkInterval={30} />
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Chat />} />
-              <Route path="/landing" element={<Index />} />
-              <Route path="/features" element={<Features />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/help" element={<HelpCenter />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/deploy" element={<Deploy />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/blog-post/:id" element={<BlogPost />} />
-              <Route path="/blog-editor" element={
-                <ProtectedRoute>
-                  <BlogEditor />
-                </ProtectedRoute>
-              } />
-              <Route path="/blog-builder" element={
-                <ProtectedRoute>
-                  <BlogBuilder />
-                </ProtectedRoute>
-              } />
-              <Route path="/image-generator" element={
-                <ProtectedRoute>
-                  <ImageGenerator />
-                </ProtectedRoute>
-              } />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/prompt-generator" element={<PromptGenerator />} />
-              <Route path="/code-editor" element={<CodeEditor />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="system" storageKey="aerostic-theme">
+        <AuthProvider>
+          <TooltipProvider>
+            <MobileOptimizations />
+            <AppUpdatePrompt checkInterval={30} />
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Chat />} />
+                <Route path="/landing" element={<Index />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/deploy" element={<Deploy />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/blog-post/:id" element={<BlogPost />} />
+                <Route path="/blog-editor" element={
+                  <ProtectedRoute>
+                    <BlogEditor />
+                  </ProtectedRoute>
+                } />
+                <Route path="/blog-builder" element={
+                  <ProtectedRoute>
+                    <BlogBuilder />
+                  </ProtectedRoute>
+                } />
+                <Route path="/image-generator" element={
+                  <ProtectedRoute>
+                    <ImageGenerator />
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/prompt-generator" element={<PromptGenerator />} />
+                <Route path="/code-editor" element={<CodeEditor />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
