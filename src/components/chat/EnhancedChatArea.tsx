@@ -403,33 +403,6 @@ export const EnhancedChatArea = ({
                   Your intelligent companion for any question or task
                 </p>
                 
-                <div className="grid grid-cols-1 gap-3 text-left">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
-                    <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">Handle multiple prompts in one message</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
-                    <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">
-                </span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
-                    <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">
-                </span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
-                    <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">
-                </span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
-                    <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">
-                </span>
-                  </div>
-                </div>
-                
                 <div className="mt-6 text-xs text-muted-foreground">
                   Start by typing your request below ✨
                 </div>
