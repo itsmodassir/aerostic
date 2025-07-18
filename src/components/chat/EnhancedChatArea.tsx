@@ -353,16 +353,9 @@ export const EnhancedChatArea = ({
                 </div>
                 
                 <Card className="flex-1 p-4 group relative">
-                  {message.role === 'assistant' && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                      onClick={() => copyToClipboard(message.content)}
-                    >
+                  {message.role === 'assistant' && <Button size="sm" variant="ghost" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0" onClick={() => copyToClipboard(message.content)}>
                       <Copy className="h-3 w-3" />
-                    </Button>
-                  )}
+                    </Button>}
                   <div className="text-sm select-text">
                     {message.role === 'user' ? <p className="text-foreground leading-relaxed whitespace-pre-wrap select-text">{message.content}</p> : renderEnhancedMessage(message as EnhancedMessage)}
                   </div>
@@ -417,19 +410,23 @@ export const EnhancedChatArea = ({
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">Sequential responses with full context</span>
+                    <span className="text-sm font-medium text-foreground">
+                </span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">Create complete websites & applications</span>
+                    <span className="text-sm font-medium text-foreground">
+                </span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">Write, debug & optimize code</span>
+                    <span className="text-sm font-medium text-foreground">
+                </span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">Answer questions & provide tutorials</span>
+                    <span className="text-sm font-medium text-foreground">
+                </span>
                   </div>
                 </div>
                 
