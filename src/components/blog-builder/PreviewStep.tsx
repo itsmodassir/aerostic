@@ -22,35 +22,35 @@ interface PreviewStepProps {
 const PreviewStep = ({ generatedContent, blogName, onBuild, onPrev }: PreviewStepProps) => {
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50 rounded-lg p-6">
+      <div className="bg-muted rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Your Generated Blog Preview</h3>
         
         <div className="space-y-4">
           <div>
-            <h4 className="font-medium text-gray-700">Blog Title:</h4>
+            <h4 className="font-medium text-foreground">Blog Title:</h4>
             <p className="text-lg">{generatedContent.title || blogName}</p>
           </div>
           
           <div>
-            <h4 className="font-medium text-gray-700">Tagline:</h4>
+            <h4 className="font-medium text-foreground">Tagline:</h4>
             <p>{generatedContent.tagline}</p>
           </div>
           
           <div>
-            <h4 className="font-medium text-gray-700">About Section:</h4>
+            <h4 className="font-medium text-foreground">About Section:</h4>
             <p className="text-sm">{generatedContent.aboutContent?.substring(0, 200)}...</p>
           </div>
           
           <div>
-            <h4 className="font-medium text-gray-700">Sample First Post:</h4>
+            <h4 className="font-medium text-foreground">Sample First Post:</h4>
             <p className="text-sm">{generatedContent.firstPost?.content?.substring(0, 200)}...</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-blue-50 rounded-lg p-4">
+      <div className="bg-accent rounded-lg p-4">
         <h4 className="font-medium mb-2">What happens next?</h4>
-        <ul className="text-sm text-gray-600 space-y-1">
+        <ul className="text-sm text-muted-foreground space-y-1">
           <li>• Your blog website will be saved to your dashboard</li>
           <li>• AI-generated content will be stored</li>
           <li>• You can access and edit it anytime</li>

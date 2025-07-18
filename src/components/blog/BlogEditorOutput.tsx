@@ -68,21 +68,21 @@ const BlogEditorOutput = ({ generatedPost, topic }: BlogEditorOutputProps) => {
       </CardHeader>
       <CardContent>
         {generatedPost ? (
-          <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
+          <div className="bg-muted rounded-lg p-6 max-h-96 overflow-y-auto">
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
-                  h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 text-gray-900">{children}</h1>,
-                  h2: ({ children }) => <h2 className="text-xl font-semibold mb-3 mt-6 text-gray-800">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-lg font-medium mb-2 mt-4 text-gray-700">{children}</h3>,
-                  p: ({ children }) => <p className="mb-4 text-gray-600 leading-relaxed">{children}</p>,
-                  ul: ({ children }) => <ul className="list-disc list-inside mb-4 space-y-1 text-gray-600">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal list-inside mb-4 space-y-1 text-gray-600">{children}</ol>,
-                  li: ({ children }) => <li className="text-gray-600">{children}</li>,
-                  strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
-                  em: ({ children }) => <em className="italic text-gray-700">{children}</em>,
+                  h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 text-foreground">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xl font-semibold mb-3 mt-6 text-foreground">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-lg font-medium mb-2 mt-4 text-foreground">{children}</h3>,
+                  p: ({ children }) => <p className="mb-4 text-muted-foreground leading-relaxed">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside mb-4 space-y-1 text-muted-foreground">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside mb-4 space-y-1 text-muted-foreground">{children}</ol>,
+                  li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
+                  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                  em: ({ children }) => <em className="italic text-foreground">{children}</em>,
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-primary pl-4 italic text-gray-700 my-4">
+                    <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground my-4">
                       {children}
                     </blockquote>
                   ),
@@ -93,7 +93,7 @@ const BlogEditorOutput = ({ generatedPost, topic }: BlogEditorOutputProps) => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-semibold mb-2">Ready to Create Amazing Content!</h3>
             <p className="mb-2">Your AI-generated blog post will appear here with beautiful formatting</p>

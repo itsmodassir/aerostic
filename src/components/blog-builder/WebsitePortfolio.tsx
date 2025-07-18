@@ -51,7 +51,7 @@ const WebsitePortfolio = () => {
   return (
     <div className="mb-16">
       <h2 className="text-2xl font-bold text-center mb-8">Website Portfolio</h2>
-      <p className="text-center text-gray-600 mb-8">
+      <p className="text-center text-muted-foreground mb-8">
         Explore the different types of websites we can create for you
       </p>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -62,7 +62,7 @@ const WebsitePortfolio = () => {
                 {website.icon}
               </div>
               <CardTitle className="text-lg">{website.title}</CardTitle>
-              <p className="text-sm text-gray-600">{website.description}</p>
+              <p className="text-sm text-muted-foreground">{website.description}</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">

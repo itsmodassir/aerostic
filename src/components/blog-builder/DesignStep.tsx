@@ -32,12 +32,12 @@ const DesignStep = ({ selectedTheme, setSelectedTheme, isGenerating, onNext, onP
               className={`p-4 border rounded-lg cursor-pointer transition-all ${
                 selectedTheme === theme.id
                   ? 'border-primary bg-primary/5'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-border hover:border-muted-foreground'
               }`}
               onClick={() => setSelectedTheme(theme.id)}
             >
               <h3 className="font-semibold mb-2">{theme.name}</h3>
-              <p className="text-sm text-gray-600">{theme.preview}</p>
+              <p className="text-sm text-muted-foreground">{theme.preview}</p>
             </div>
           ))}
         </div>

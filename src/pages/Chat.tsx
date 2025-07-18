@@ -36,15 +36,15 @@ const Chat = () => {
         <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <MessageCircle className="h-16 w-16 text-primary mx-auto mb-6" />
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="text-5xl font-bold text-foreground mb-6">
               AI Chat Assistant
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-xl text-muted-foreground mb-8">
               Welcome to your intelligent AI assistant. Get instant help, answers, and have meaningful conversations.
             </p>
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Ready to get started?</h2>
-              <p className="text-gray-600 mb-6">
+            <div className="bg-card rounded-lg shadow-lg p-8 mb-8">
+              <h2 className="text-2xl font-semibold text-card-foreground mb-4">Ready to get started?</h2>
+              <p className="text-muted-foreground mb-6">
                 Sign in to access your personal AI chat assistant and start having intelligent conversations.
               </p>
               <Link to="/auth">
@@ -54,17 +54,17 @@ const Chat = () => {
               </Link>
             </div>
             <div className="grid md:grid-cols-3 gap-6 text-left">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-800 mb-2">💬 Intelligent Conversations</h3>
-                <p className="text-gray-600 text-sm">Have natural conversations with our advanced AI assistant</p>
+              <div className="bg-card p-6 rounded-lg shadow">
+                <h3 className="font-semibold text-card-foreground mb-2">💬 Intelligent Conversations</h3>
+                <p className="text-muted-foreground text-sm">Have natural conversations with our advanced AI assistant</p>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-800 mb-2">📚 Knowledge Base</h3>
-                <p className="text-gray-600 text-sm">Get answers to questions across various topics and subjects</p>
+              <div className="bg-card p-6 rounded-lg shadow">
+                <h3 className="font-semibold text-card-foreground mb-2">📚 Knowledge Base</h3>
+                <p className="text-muted-foreground text-sm">Get answers to questions across various topics and subjects</p>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-800 mb-2">🔄 Persistent History</h3>
-                <p className="text-gray-600 text-sm">Your conversations are saved and organized for easy reference</p>
+              <div className="bg-card p-6 rounded-lg shadow">
+                <h3 className="font-semibold text-card-foreground mb-2">🔄 Persistent History</h3>
+                <p className="text-muted-foreground text-sm">Your conversations are saved and organized for easy reference</p>
               </div>
             </div>
           </div>
@@ -78,7 +78,7 @@ const Chat = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       <Navigation />
       
       <div className="flex-1 flex pt-14 md:pt-16 overflow-hidden">
@@ -86,7 +86,7 @@ const Chat = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="fixed top-16 md:top-20 left-3 z-50 md:hidden bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 h-8 w-8 p-0"
+          className="fixed top-16 md:top-20 left-3 z-50 md:hidden bg-card border border-border rounded-md shadow-sm hover:bg-muted h-8 w-8 p-0"
           onClick={toggleSidebar}
         >
           {sidebarOpen ? <X className="h-3 w-3" /> : <Menu className="h-3 w-3" />}
@@ -96,7 +96,7 @@ const Chat = () => {
         <Button
           variant="ghost"
           size="sm"
-          className={`hidden md:flex items-center justify-center w-8 h-8 fixed top-20 z-50 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition-all duration-300 ${
+          className={`hidden md:flex items-center justify-center w-8 h-8 fixed top-20 z-50 bg-card border border-border rounded-md shadow-sm hover:bg-muted transition-all duration-300 ${
             sidebarOpen ? 'left-60' : 'left-2'
           }`}
           onClick={toggleSidebar}
@@ -108,7 +108,7 @@ const Chat = () => {
         {/* Sidebar */}
         <div className={`${
           sidebarOpen ? 'w-64' : 'w-0'
-        } flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-gray-200 bg-white ${
+        } flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-border bg-card ${
           sidebarOpen ? 'block' : 'hidden'
         } md:block fixed md:relative z-40 h-full md:h-auto`}>
           <ChatSidebar

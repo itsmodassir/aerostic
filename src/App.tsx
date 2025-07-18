@@ -37,13 +37,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="aerostic-theme">
-        <AuthProvider>
-          <TooltipProvider>
-            <MobileOptimizations />
-            <AppUpdatePrompt checkInterval={30} />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+        <div className="min-h-screen bg-background text-foreground">
+          <AuthProvider>
+            <TooltipProvider>
+              <MobileOptimizations />
+              <AppUpdatePrompt checkInterval={30} />
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Chat />} />
                 <Route path="/landing" element={<Index />} />
@@ -87,6 +88,7 @@ function App() {
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
+        </div>
       </ThemeProvider>
     </QueryClientProvider>
   );

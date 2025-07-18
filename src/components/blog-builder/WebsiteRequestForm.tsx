@@ -66,7 +66,7 @@ const WebsiteRequestForm = ({
             <Send className="h-5 w-5" />
             Request Custom Website
           </CardTitle>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Tell us about your custom website needs and we'll get back to you with a personalized solution.
           </p>
         </CardHeader>
@@ -100,7 +100,7 @@ const WebsiteRequestForm = ({
 
             <div className="bg-blue-50 rounded-lg p-4">
               <h4 className="font-medium mb-2">What to include in your request:</h4>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Type of business or website purpose</li>
                 <li>• Specific features you need</li>
                 <li>• Design style preferences</li>
