@@ -1,5 +1,5 @@
 
-# Welcome to your BlogCraft project
+# Welcome to your Aerostic project
 
 ## Project info
 
