@@ -364,9 +364,14 @@ export const EnhancedChatArea = ({
                   <Bot className="h-4 w-4" />
                 </div>
                 <Card className="flex-1 p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">AI is thinking...</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">AI is processing your request...</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border-l-2 border-primary/30">
+                      💡 <strong>Multi-Prompt Support:</strong> If you included multiple requests in one message (like "explain cats and then generate an image"), I'll process each one sequentially with full context!
+                    </div>
                   </div>
                 </Card>
               </div>}
@@ -398,7 +403,11 @@ export const EnhancedChatArea = ({
                 <div className="grid grid-cols-1 gap-3 text-left">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-primary rounded-full group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-medium text-foreground">I have give you the answer what you want</span>
+                    <span className="text-sm font-medium text-foreground">Handle multiple prompts in one message</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
+                    <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />
+                    <span className="text-sm font-medium text-foreground">Sequential responses with full context</span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-secondary/5 to-transparent hover:from-secondary/10 transition-all duration-200 group">
                     <div className="w-2 h-2 bg-secondary rounded-full group-hover:scale-125 transition-transform" />

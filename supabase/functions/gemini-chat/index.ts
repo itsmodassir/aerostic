@@ -4,6 +4,47 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
 // Request type detection
+// Parse multiple prompts from a single message
+function parseMultiplePrompts(message: string): string[] {
+  // Split by common separators for multiple requests
+  const separators = [
+    ' and then ',
+    ' then ',
+    ' after that ',
+    ' next ',
+    ' also ',
+    ' additionally ',
+    '\n\n',
+    '. Then ',
+    '. Next ',
+    '. Also ',
+    '. Additionally ',
+    '. After that '
+  ];
+  
+  let prompts = [message];
+  
+  // Split by separators
+  for (const separator of separators) {
+    const newPrompts: string[] = [];
+    for (const prompt of prompts) {
+      if (prompt.toLowerCase().includes(separator.toLowerCase())) {
+        const parts = prompt.split(new RegExp(separator, 'gi'));
+        newPrompts.push(...parts);
+      } else {
+        newPrompts.push(prompt);
+      }
+    }
+    prompts = newPrompts;
+  }
+  
+  // Clean and filter prompts
+  return prompts
+    .map(p => p.trim())
+    .filter(p => p.length > 3) // Remove very short prompts
+    .slice(0, 5); // Limit to 5 prompts max for performance
+}
+
 function detectRequestType(message: string) {
   const lowerMessage = message.toLowerCase();
   
@@ -361,6 +402,146 @@ function extractLogoPrompt(message: string): string {
   return message.replace(/generate logo|create logo|make logo|design logo|logo/gi, '').trim();
 }
 
+// Handle multiple prompts sequentially
+async function handleMultiplePrompts(prompts: string[], conversationId: string, supabase: any, conversationHistory: any[]) {
+  console.log(`🔄 Processing ${prompts.length} prompts sequentially`);
+  
+  let combinedResponse = `# 🎯 Multi-Prompt Response\n\nI'll address each of your requests in order:\n\n`;
+  let promptIndex = 1;
+  
+  for (const prompt of prompts) {
+    try {
+      console.log(`Processing prompt ${promptIndex}/${prompts.length}: ${prompt}`);
+      
+      combinedResponse += `## ${promptIndex}. ${prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt}\n\n`;
+      
+      // Detect request type for this specific prompt
+      const requestType = detectRequestType(prompt);
+      
+      if (requestType.type === 'image_generation') {
+        const imagePrompt = extractImagePrompt(prompt);
+        const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
+          body: { prompt: imagePrompt, size: "1024x1024", quality: "hd" }
+        });
+        
+        if (!imageError && imageData) {
+          combinedResponse += `🎨 **Image Generated:**\n\n![Generated Image](${imageData.imageUrl})\n\n`;
+        } else {
+          combinedResponse += `❌ Image generation failed: ${imageError?.message || 'Unknown error'}\n\n`;
+        }
+        
+      } else if (requestType.type === 'logo_generation') {
+        const logoPrompt = `Professional logo design: ${extractLogoPrompt(prompt)}. Modern, clean, memorable design suitable for branding.`;
+        const { data: logoData, error: logoError } = await supabase.functions.invoke('generate-image', {
+          body: { prompt: logoPrompt, size: "1024x1024", quality: "hd" }
+        });
+        
+        if (!logoError && logoData) {
+          combinedResponse += `🏷️ **Logo Generated:**\n\n![Logo Design](${logoData.imageUrl})\n\n`;
+        } else {
+          combinedResponse += `❌ Logo generation failed: ${logoError?.message || 'Unknown error'}\n\n`;
+        }
+        
+      } else if (requestType.type === 'code_generation') {
+        const language = extractLanguage(prompt);
+        const { data: codeData, error: codeError } = await supabase.functions.invoke('generate-code', {
+          body: { prompt, language }
+        });
+        
+        if (!codeError && codeData) {
+          combinedResponse += `💻 **Code Generated:**\n\n\`\`\`${language}\n${codeData.generatedCode}\n\`\`\`\n\n`;
+        } else {
+          combinedResponse += `❌ Code generation failed: ${codeError?.message || 'Unknown error'}\n\n`;
+        }
+        
+      } else {
+        // Handle as general chat with Gemini API
+        const response = await processWithGemini(prompt, conversationHistory);
+        combinedResponse += `${response}\n\n`;
+      }
+      
+      combinedResponse += `---\n\n`;
+      promptIndex++;
+      
+    } catch (error) {
+      console.error(`Error processing prompt ${promptIndex}:`, error);
+      combinedResponse += `❌ **Error processing this request:** ${error.message}\n\n---\n\n`;
+      promptIndex++;
+    }
+  }
+  
+  combinedResponse += `✅ **All ${prompts.length} prompts processed successfully!**\n\nIs there anything specific you'd like me to elaborate on or modify?`;
+  
+  return new Response(JSON.stringify({ 
+    response: combinedResponse,
+    conversationId,
+    enhanced: true,
+    multiPrompt: true,
+    promptCount: prompts.length
+  }), {
+    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+  });
+}
+
+// Process single prompt with Gemini API
+async function processWithGemini(prompt: string, conversationHistory: any[]): Promise<string> {
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY_CHAT');
+  
+  const systemPrompt = `You are a helpful AI assistant. Provide clear, concise, and well-formatted responses.`;
+  
+  const conversationContext = [
+    {
+      role: 'user',
+      parts: [{ text: systemPrompt }]
+    }
+  ];
+
+  // Add conversation history
+  conversationHistory.forEach(msg => {
+    conversationContext.push({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    });
+  });
+
+  // Add the current prompt
+  conversationContext.push({
+    role: 'user',
+    parts: [{ text: prompt }]
+  });
+
+  const geminiRequest = {
+    contents: conversationContext,
+    generationConfig: {
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 2048,
+      candidateCount: 1,
+    },
+  };
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(geminiRequest),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+    throw new Error('Invalid response from Gemini API');
+  }
+
+  return data.candidates[0].content.parts[0].text;
+}
+
 function extractLanguage(message: string): string {
   const lowerMessage = message.toLowerCase();
   
@@ -432,7 +613,16 @@ serve(async (req) => {
       }
     }
 
-    // Detect request type and route accordingly
+    // Parse multiple prompts
+    const prompts = parseMultiplePrompts(message);
+    console.log(`Detected ${prompts.length} prompt(s):`, prompts);
+    
+    // If multiple prompts detected, process them sequentially
+    if (prompts.length > 1) {
+      return await handleMultiplePrompts(prompts, conversationId, supabase, conversationHistory);
+    }
+    
+    // Single prompt - detect request type and route accordingly
     const requestType = detectRequestType(message);
     console.log('Detected request type:', requestType);
 

@@ -345,6 +345,11 @@ export const useChat = () => {
       // Show success message for enhanced features
       if (data.enhanced) {
         console.log('🌟 Enhanced AI features active: context awareness, better formatting, code generation');
+        
+        // Show special toast for multi-prompt responses
+        if (data.multiPrompt && data.promptCount) {
+          toast.success(`✅ Successfully processed ${data.promptCount} prompts in sequence!`);
+        }
       }
 
     } catch (error) {
