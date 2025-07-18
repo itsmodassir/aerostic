@@ -352,9 +352,19 @@ export const EnhancedChatArea = ({
                   {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
                 
-                <Card className="flex-1 p-4">
-                  <div className="text-sm">
-                    {message.role === 'user' ? <p className="text-foreground leading-relaxed whitespace-pre-wrap">{message.content}</p> : renderEnhancedMessage(message as EnhancedMessage)}
+                <Card className="flex-1 p-4 group relative">
+                  {message.role === 'assistant' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                      onClick={() => copyToClipboard(message.content)}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <div className="text-sm select-text">
+                    {message.role === 'user' ? <p className="text-foreground leading-relaxed whitespace-pre-wrap select-text">{message.content}</p> : renderEnhancedMessage(message as EnhancedMessage)}
                   </div>
                 </Card>
               </div>)}
