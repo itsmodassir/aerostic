@@ -44,13 +44,13 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 md:h-16">
           {/* Logo - Hidden on mobile, show only "AI Chat" */}
           <Link to="/" className="flex items-center space-x-2">
             <img src="/lovable-uploads/6b557ed3-c2c1-4bb1-9062-0253b3944514.png" alt="Aerostic AI" className="h-10 w-auto hidden md:block" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white md:hidden">AI Chat</span>
+            <span className="text-xl font-bold text-foreground md:hidden">AI Chat</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -59,7 +59,7 @@ const Navigation = () => {
               <NavigationMenuList>
                 {/* Home Button */}
                 <NavigationMenuItem>
-                  <Link to="/landing" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 flex items-center transition-colors">
+                  <Link to="/landing" className="text-muted-foreground hover:text-foreground px-3 py-2 flex items-center transition-colors">
                     <Home className="h-4 w-4 mr-2" />
                     Home
                   </Link>
@@ -70,7 +70,7 @@ const Navigation = () => {
                   <div className="relative">
                     <Button
                       variant="ghost"
-                      className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      className="flex items-center space-x-1 text-muted-foreground hover:text-foreground"
                       onClick={() => setIsPagesOpen(!isPagesOpen)}
                       aria-label={`${isPagesOpen ? 'Close' : 'Open'} pages menu`}
                       aria-expanded={isPagesOpen}
@@ -80,12 +80,12 @@ const Navigation = () => {
                       <ChevronDown className={`h-4 w-4 transition-transform ${isPagesOpen ? 'rotate-180' : ''}`} />
                     </Button>
                     {isPagesOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50">
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-popover rounded-md shadow-lg border border-border py-1 z-50">
                         {mainPages.map((page) => (
                           <Link
                             key={page.path}
                             to={page.path}
-                            className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            className="block px-4 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                             onClick={() => setIsPagesOpen(false)}
                           >
                             {page.name}
@@ -101,7 +101,7 @@ const Navigation = () => {
                   <div className="relative">
                     <Button
                       variant="ghost"
-                      className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      className="flex items-center space-x-1 text-muted-foreground hover:text-foreground"
                       onClick={() => setIsToolsOpen(!isToolsOpen)}
                       aria-label={`${isToolsOpen ? 'Close' : 'Open'} AI tools menu`}
                       aria-expanded={isToolsOpen}
@@ -112,20 +112,20 @@ const Navigation = () => {
                       <ChevronDown className={`h-4 w-4 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
                     </Button>
                     {isToolsOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-50">
+                      <div className="absolute top-full left-0 mt-1 w-72 bg-popover rounded-md shadow-lg border border-border py-2 z-50">
                         {aiTools.map((tool) => (
                           <Link
                             key={tool.path}
                             to={tool.path}
-                            className="flex items-start px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
+                            className="flex items-start px-4 py-3 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                             onClick={() => setIsToolsOpen(false)}
                           >
-                            <tool.icon className="h-5 w-5 mr-3 mt-0.5 text-primary dark:text-blue-400" />
+                            <tool.icon className="h-5 w-5 mr-3 mt-0.5 text-primary" />
                             <div>
                               <div className="font-medium">{tool.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">{tool.description}</div>
+                              <div className="text-xs text-muted-foreground">{tool.description}</div>
                               {tool.protected && !user && (
-                                <div className="text-xs text-primary dark:text-blue-400 font-medium mt-1">Sign in required</div>
+                                <div className="text-xs text-primary font-medium mt-1">Sign in required</div>
                               )}
                             </div>
                           </Link>
@@ -183,11 +183,11 @@ const Navigation = () => {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden" id="mobile-nav">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 transition-colors">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border transition-colors">
               {/* Home Button */}
               <Link
                 to="/landing"
-                className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
+                className="flex items-center px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <Home className="h-4 w-4 mr-2" />
@@ -198,7 +198,7 @@ const Navigation = () => {
               <div className="space-y-1">
                 <Button
                   variant="ghost"
-                  className="w-full justify-between text-gray-700 dark:text-gray-300"
+                  className="w-full justify-between text-muted-foreground"
                   onClick={() => setIsPagesOpen(!isPagesOpen)}
                   aria-label={`${isPagesOpen ? 'Close' : 'Open'} pages section`}
                   aria-expanded={isPagesOpen}
@@ -212,7 +212,7 @@ const Navigation = () => {
                       <Link
                         key={page.path}
                         to={page.path}
-                        className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
+                        className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         {page.name}
@@ -226,7 +226,7 @@ const Navigation = () => {
               <div className="space-y-1">
                 <Button
                   variant="ghost"
-                  className="w-full justify-between text-gray-700 dark:text-gray-300"
+                  className="w-full justify-between text-muted-foreground"
                   onClick={() => setIsToolsOpen(!isToolsOpen)}
                   aria-label={`${isToolsOpen ? 'Close' : 'Open'} AI tools section`}
                   aria-expanded={isToolsOpen}
@@ -243,7 +243,7 @@ const Navigation = () => {
                       <Link
                         key={tool.path}
                         to={tool.path}
-                        className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
+                        className="flex items-center px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
                         onClick={() => setIsOpen(false)}
                       >
                         <tool.icon className="h-4 w-4 mr-2" />
@@ -260,7 +260,7 @@ const Navigation = () => {
               </div>
               
               {user ? (
-                <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="space-y-2 pt-2 border-t border-border">
                   <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" className="w-full">
                       <User className="h-4 w-4 mr-2" />
@@ -273,7 +273,7 @@ const Navigation = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="space-y-2 pt-2 border-t border-border">
                   <Link to="/auth" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" className="w-full">Sign In</Button>
                   </Link>
