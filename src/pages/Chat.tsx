@@ -3,7 +3,7 @@ import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import { MessageCircle, Menu, X } from "lucide-react";
 import ChatSidebar from "@/components/chat/ChatSidebar";
-import ChatArea from "@/components/chat/ChatArea";
+import { EnhancedChatArea } from "@/components/chat/EnhancedChatArea";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -125,7 +125,7 @@ const Chat = () => {
         <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
           sidebarOpen ? 'md:ml-0' : 'md:ml-0'
         }`}>
-          <ChatArea
+          <EnhancedChatArea
             currentConversation={currentConversation}
             messages={messages}
             inputMessage={inputMessage}

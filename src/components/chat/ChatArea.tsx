@@ -23,6 +23,13 @@ interface ChatAreaProps {
   onKeyPress: (e: React.KeyboardEvent) => void;
 }
 
+interface EnhancedMessage extends Message {
+  type?: string;
+  imageUrl?: string;
+  generatedCode?: string;
+  language?: string;
+}
+
 const ChatArea = ({
   currentConversation,
   messages,
