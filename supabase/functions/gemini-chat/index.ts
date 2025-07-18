@@ -48,6 +48,9 @@ function parseMultiplePrompts(message: string): string[] {
 function detectRequestType(message: string) {
   const lowerMessage = message.toLowerCase();
   
+  // Web search keywords
+  const webSearchKeywords = ['search on web', 'search web', 'search for', 'look up', 'find information about', 'current news', 'latest', 'recent', 'today', 'what is happening', 'real time', 'current price', 'stock price', 'weather', 'news about'];
+  
   // Image generation keywords
   const imageKeywords = ['generate image', 'create image', 'make image', 'generate picture', 'create picture', 'draw', 'illustrate'];
   
@@ -60,7 +63,9 @@ function detectRequestType(message: string) {
   // Code generation keywords
   const codeKeywords = ['generate code', 'write code', 'create code', 'build app', 'develop app', 'create app', 'make app'];
 
-  if (logoKeywords.some(keyword => lowerMessage.includes(keyword))) {
+  if (webSearchKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    return { type: 'web_search', keywords: webSearchKeywords.filter(k => lowerMessage.includes(k)) };
+  } else if (logoKeywords.some(keyword => lowerMessage.includes(keyword))) {
     return { type: 'logo_generation', keywords: logoKeywords.filter(k => lowerMessage.includes(k)) };
   } else if (websiteKeywords.some(keyword => lowerMessage.includes(keyword))) {
     return { type: 'website_generation', keywords: websiteKeywords.filter(k => lowerMessage.includes(k)) };
@@ -365,6 +370,138 @@ What specific coding challenge can I help you solve?`,
   }
 }
 
+// Web search handler
+async function handleWebSearch(message: string, conversationId: string, supabase: any) {
+  try {
+    console.log('🔍 Handling web search request');
+    
+    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!perplexityApiKey) {
+      throw new Error('Perplexity API key not configured. Please add your API key to continue.');
+    }
+
+    // Extract search query from message
+    const searchQuery = extractSearchQuery(message);
+    
+    console.log('Searching for:', searchQuery);
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${perplexityApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful AI assistant that provides accurate, up-to-date information from web searches. Always cite your sources and provide comprehensive, well-structured answers with the latest information available.'
+          },
+          {
+            role: 'user',
+            content: searchQuery
+          }
+        ],
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: 2000,
+        return_images: false,
+        return_related_questions: true,
+        search_recency_filter: 'month',
+        frequency_penalty: 1,
+        presence_penalty: 0
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response from Perplexity API');
+    }
+
+    const searchResult = data.choices[0].message.content;
+
+    const formattedResponse = `🔍 **Web Search Results**
+
+${searchResult}
+
+**💡 Search Information:**
+- **Query:** ${searchQuery}
+- **Source:** Live web search via Perplexity AI
+- **Recency:** Latest available information (within the last month)
+
+**🚀 Need More Information?**
+Feel free to ask for more specific details or related questions about this topic!`;
+
+    return new Response(JSON.stringify({ 
+      response: formattedResponse,
+      conversationId,
+      enhanced: true,
+      type: 'web_search',
+      searchQuery: searchQuery
+    }), {
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    });
+    
+  } catch (error) {
+    console.error('Web search error:', error);
+    
+    // Check if it's an API key issue
+    if (error.message.includes('API key not configured')) {
+      return new Response(JSON.stringify({ 
+        response: `🔐 **Web Search Setup Required**
+
+To enable web search capabilities, I need access to the Perplexity API. Here's how to set it up:
+
+**📋 Setup Steps:**
+1. Get a Perplexity API key from [perplexity.ai](https://perplexity.ai)
+2. Add it to your Supabase Edge Function secrets as \`PERPLEXITY_API_KEY\`
+3. Your AI assistant will then be able to search the web for real-time information!
+
+**💡 What I Can Do Without Web Search:**
+- Answer questions from my training data
+- Generate images and logos
+- Write code and build websites
+- Create articles and content
+- Help with general tasks
+
+Would you like me to help you with any of these instead?`,
+        conversationId,
+        error: true,
+        needsApiKey: true
+      }), {
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ 
+      response: `❌ **Web Search Failed**
+
+I encountered an issue searching the web: ${error.message}
+
+**🔍 I can still help you with:**
+- Answering questions from my knowledge base
+- Generating content and code
+- Creating images and websites
+- Providing general information and guidance
+
+What would you like me to help you with instead?`,
+      conversationId,
+      error: true
+    }), {
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Helper functions
+
 // Helper functions
 function extractImagePrompt(message: string): string {
   const patterns = [
@@ -402,6 +539,31 @@ function extractLogoPrompt(message: string): string {
   return message.replace(/generate logo|create logo|make logo|design logo|logo/gi, '').trim();
 }
 
+function extractSearchQuery(message: string): string {
+  const patterns = [
+    /search (?:on web|web|for) (.+)/i,
+    /look up (.+)/i,
+    /find information about (.+)/i,
+    /search (.+)/i,
+    /what is (.+)/i,
+    /tell me about (.+)/i,
+    /current (.+)/i,
+    /latest (.+)/i,
+    /recent (.+)/i,
+    /today(?:'s)? (.+)/i,
+    /what is happening (?:with )?(.+)/i,
+    /news about (.+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match) return match[1].trim();
+  }
+  
+  // Remove common web search keywords and return the rest
+  return message.replace(/search on web|search web|search for|look up|find information about|current news|latest|recent|today|what is happening|real time|news about/gi, '').trim() || message;
+}
+
 // Handle multiple prompts sequentially
 async function handleMultiplePrompts(prompts: string[], conversationId: string, supabase: any, conversationHistory: any[]) {
   console.log(`🔄 Processing ${prompts.length} prompts sequentially`);
@@ -418,7 +580,54 @@ async function handleMultiplePrompts(prompts: string[], conversationId: string, 
       // Detect request type for this specific prompt
       const requestType = detectRequestType(prompt);
       
-      if (requestType.type === 'image_generation') {
+      if (requestType.type === 'web_search') {
+        try {
+          const searchQuery = extractSearchQuery(prompt);
+          const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+          
+          if (perplexityApiKey) {
+            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${perplexityApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'llama-3.1-sonar-small-128k-online',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a helpful AI assistant that provides accurate, up-to-date information from web searches. Be concise but comprehensive.'
+                  },
+                  {
+                    role: 'user',
+                    content: searchQuery
+                  }
+                ],
+                temperature: 0.2,
+                top_p: 0.9,
+                max_tokens: 1000,
+                return_images: false,
+                return_related_questions: false,
+                search_recency_filter: 'month'
+              }),
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const searchResult = data.choices[0].message.content;
+              combinedResponse += `🔍 **Web Search Results:**\n\n${searchResult}\n\n`;
+            } else {
+              combinedResponse += `❌ Web search failed for this query\n\n`;
+            }
+          } else {
+            combinedResponse += `❌ Web search unavailable (API key not configured)\n\n`;
+          }
+        } catch (error) {
+          combinedResponse += `❌ Web search error: ${error.message}\n\n`;
+        }
+        
+      } else if (requestType.type === 'image_generation') {
         const imagePrompt = extractImagePrompt(prompt);
         const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
           body: { prompt: imagePrompt, size: "1024x1024", quality: "hd" }
@@ -627,7 +836,9 @@ serve(async (req) => {
     console.log('Detected request type:', requestType);
 
     // Route to specialized handlers
-    if (requestType.type === 'image_generation') {
+    if (requestType.type === 'web_search') {
+      return await handleWebSearch(message, conversationId, supabase);
+    } else if (requestType.type === 'image_generation') {
       return await handleImageGeneration(message, conversationId, supabase);
     } else if (requestType.type === 'logo_generation') {
       return await handleLogoGeneration(message, conversationId, supabase);
@@ -681,6 +892,7 @@ ${isArticleRequest ? `
 - Business and marketing insights
 
 🚀 SPECIAL FEATURES:
+- Search the web for real-time information (ask me to "search on web" or "find information about")
 - Generate images with detailed prompts (ask me to "generate image")
 - Create professional logos (ask me to "create logo")
 - Build complete websites (ask me to "build website")
