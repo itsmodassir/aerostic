@@ -30,6 +30,7 @@ import HelpCenter from "./pages/HelpCenter";
 import Blog from "./pages/Blog";
 import PromptGenerator from "./pages/PromptGenerator";
 import CodeEditor from "./pages/CodeEditor";
+import ProjectStatus from "./pages/ProjectStatus";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +91,7 @@ function App() {
                       <Dashboard />
                     </ProtectedRoute>
                   } />
+                  <Route path="/project-status" element={<ProjectStatus />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
