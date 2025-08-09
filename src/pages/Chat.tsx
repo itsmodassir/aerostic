@@ -8,15 +8,20 @@ import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Chat = () => {
   const { user } = useAuth();
+  const [historyOpen, setHistoryOpen] = useState(false);
   
   const {
+    conversations,
     currentConversation,
     messages,
     inputMessage,
     isLoading,
+    loadingConversations,
+    setCurrentConversation,
     setInputMessage,
     sendMessage,
     handleKeyPress
@@ -73,7 +78,14 @@ const Chat = () => {
     <div className="h-screen bg-background flex flex-col">
       <Navigation />
       
-      <div className="flex-1 pt-14 md:pt-16">
+      {/* Top bar with History */}
+      <div className="pt-14 md:pt-16">
+        <div className="border-b border-border">
+          <div className="max-w-4xl mx-auto px-4 py-2 flex justify-end">
+            <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(true)}>History</Button>
+          </div>
+        </div>
+
         <ChatArea
           currentConversation={currentConversation}
           messages={messages}
@@ -84,6 +96,36 @@ const Chat = () => {
           onKeyPress={handleKeyPress}
         />
       </div>
+
+      {/* History Dialog */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chat History</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-auto">
+            {loadingConversations ? (
+              <div className="text-sm text-muted-foreground">Loading…</div>
+            ) : conversations.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No conversations yet.</div>
+            ) : (
+              conversations.map((c) => (
+                <Button
+                  key={c.id}
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setCurrentConversation(c.id);
+                    setHistoryOpen(false);
+                  }}
+                >
+                  {c.title}
+                </Button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

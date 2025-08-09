@@ -107,6 +107,9 @@ const ChatArea = ({
       .replace(/\*\*\*/g, '')
       .replace(/\*\*/g, '')
       .replace(/\*/g, '')
+      .split('\n')
+      .map(line => line.replace(/^#{1,6}\s*/, '')) // remove markdown heading markers like #, ##, etc.
+      .join('\n')
       .trim();
 
     // Extract code blocks first
@@ -229,7 +232,7 @@ const ChatArea = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 transition-colors">
+    <div className="flex flex-col h-full bg-background transition-colors">
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
@@ -239,8 +242,8 @@ const ChatArea = ({
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
                   <Bot className="h-10 w-10 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">
-                  Enhanced AI Assistant
+                <h2 className="text-3xl font-bold mb-6">
+                  Chat Assistant
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
                   I'm your intelligent coding companion! I learn from our conversations and provide contextual, 
@@ -343,8 +346,7 @@ const ChatArea = ({
         </ScrollArea>
       </div>
 
-      {/* Enhanced Input Area */}
-      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="border-t border-border bg-background">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="relative">
             <Textarea
@@ -352,8 +354,8 @@ const ChatArea = ({
               value={inputMessage}
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask me anything about coding, web development, or get help with your projects..."
-              className="min-h-[80px] max-h-40 resize-none border-gray-300 dark:border-gray-600 rounded-2xl pr-16 text-base leading-relaxed focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all duration-200"
+              placeholder="Send a message..."
+              className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-16 text-base leading-relaxed transition-all"
               disabled={isLoading}
               rows={3}
             />
@@ -361,18 +363,17 @@ const ChatArea = ({
               onClick={onSendMessage}
               disabled={!inputMessage.trim() || isLoading}
               size="lg"
-              className="absolute right-3 bottom-3 h-10 w-10 p-0 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-all duration-200"
+              className="absolute right-3 bottom-3 h-10 w-10 p-0 rounded-xl"
               aria-label={isLoading ? "Sending message..." : "Send message"}
             >
               {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-white" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Send className="h-5 w-5 text-white" />
+                <Send className="h-5 w-5" />
               )}
             </Button>
           </div>
-          <div className="flex items-center justify-between mt-4 text-xs text-gray-500 dark:text-gray-400">
-            <p>Enhanced AI with context awareness and code generation</p>
+          <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
             <p>Press Enter to send, Shift+Enter for new line</p>
           </div>
         </div>
