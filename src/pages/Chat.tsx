@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import Navigation from "@/components/Navigation";
-import { MessageCircle, Menu, X } from "lucide-react";
-import ChatSidebar from "@/components/chat/ChatSidebar";
-import { EnhancedChatArea } from "@/components/chat/EnhancedChatArea";
+import { MessageCircle } from "lucide-react";
+
+import ChatArea from "@/components/chat/ChatArea";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -11,18 +11,13 @@ import { Link } from "react-router-dom";
 
 const Chat = () => {
   const { user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Hide by default for better UX
+  
   const {
-    conversations,
     currentConversation,
     messages,
     inputMessage,
     isLoading,
-    loadingConversations,
-    setCurrentConversation,
     setInputMessage,
-    createNewConversation,
-    deleteConversation,
     sendMessage,
     handleKeyPress
   } = useChat();
@@ -73,76 +68,21 @@ const Chat = () => {
     );
   }
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   return (
     <div className="h-screen bg-background flex flex-col">
       <Navigation />
       
-      <div className="flex-1 flex pt-14 md:pt-16 overflow-hidden">
-        {/* Mobile Sidebar Toggle Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="fixed top-16 md:top-20 left-3 z-50 md:hidden bg-card border border-border rounded-md shadow-sm hover:bg-muted h-8 w-8 p-0"
-          onClick={toggleSidebar}
-        >
-          {sidebarOpen ? <X className="h-3 w-3" /> : <Menu className="h-3 w-3" />}
-        </Button>
-
-        {/* Desktop Sidebar Toggle Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`hidden md:flex items-center justify-center w-8 h-8 fixed top-20 z-50 bg-card border border-border rounded-md shadow-sm hover:bg-muted transition-all duration-300 ${
-            sidebarOpen ? 'left-60' : 'left-2'
-          }`}
-          onClick={toggleSidebar}
-          title={sidebarOpen ? 'Hide chat history' : 'Show chat history'}
-        >
-          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
-
-        {/* Sidebar */}
-        <div className={`${
-          sidebarOpen ? 'w-64' : 'w-0'
-        } flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-border bg-card ${
-          sidebarOpen ? 'block' : 'hidden'
-        } md:block fixed md:relative z-40 h-full md:h-auto`}>
-          <ChatSidebar
-            conversations={conversations}
-            currentConversation={currentConversation}
-            loadingConversations={loadingConversations}
-            onSelectConversation={setCurrentConversation}
-            onCreateConversation={createNewConversation}
-            onDeleteConversation={deleteConversation}
-          />
-        </div>
-
-        {/* Main Chat Area */}
-        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          sidebarOpen ? 'md:ml-0' : 'md:ml-0'
-        }`}>
-          <EnhancedChatArea
-            currentConversation={currentConversation}
-            messages={messages}
-            inputMessage={inputMessage}
-            isLoading={isLoading}
-            onInputChange={setInputMessage}
-            onSendMessage={sendMessage}
-            onKeyPress={handleKeyPress}
-          />
-        </div>
-
-        {/* Mobile Overlay */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-            onClick={toggleSidebar}
-          />
-        )}
+      <div className="flex-1 pt-14 md:pt-16">
+        <ChatArea
+          currentConversation={currentConversation}
+          messages={messages}
+          inputMessage={inputMessage}
+          isLoading={isLoading}
+          onInputChange={setInputMessage}
+          onSendMessage={sendMessage}
+          onKeyPress={handleKeyPress}
+        />
       </div>
     </div>
   );
