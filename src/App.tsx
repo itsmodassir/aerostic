@@ -31,6 +31,7 @@ import Blog from "./pages/Blog";
 import PromptGenerator from "./pages/PromptGenerator";
 import CodeEditor from "./pages/CodeEditor";
 import ProjectStatus from "./pages/ProjectStatus";
+import CreateMyApp from "./pages/CreateMyApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,7 @@ function App() {
                   } />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/prompt-generator" element={<PromptGenerator />} />
+                  <Route path="/create-app" element={<CreateMyApp />} />
                   <Route path="/code-editor" element={<CodeEditor />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>

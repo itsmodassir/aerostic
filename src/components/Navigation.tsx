@@ -38,6 +38,7 @@ const Navigation = () => {
   const aiTools = [
     { name: "AI Chat", path: "/chat", icon: MessageCircle, description: "Chat with AI assistant" },
     { name: "Code Editor", path: "/code-editor", icon: FileText, description: "Write and compile code" },
+    { name: "Auto-Code Generator", path: "/create-app", icon: Zap, description: "Generate and preview app code" },
     { name: "Blog Editor", path: "/blog-editor", icon: FileText, description: "AI-powered blog writing", protected: true },
     { name: "Website Builder", path: "/blog-builder", icon: Globe, description: "Build websites with AI", protected: true },
     { name: "Image Generator", path: "/image-generator", icon: Image, description: "Create AI images", protected: true }
