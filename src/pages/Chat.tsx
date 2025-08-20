@@ -27,61 +27,25 @@ const Chat = () => {
     handleKeyPress
   } = useChat();
 
-  // If user is not logged in, show a welcome message with login prompt
-  if (!user) {
-    return (
-      <div className="min-h-screen gradient-bg">
-        <Navigation />
-        
-        <div className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <MessageCircle className="h-16 w-16 text-primary mx-auto mb-6" />
-            <h1 className="text-5xl font-bold text-foreground mb-6">
-              AI Chat Assistant
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Welcome to your intelligent AI assistant. Get instant help, answers, and have meaningful conversations.
-            </p>
-            <div className="bg-card rounded-lg shadow-lg p-8 mb-8">
-              <h2 className="text-2xl font-semibold text-card-foreground mb-4">Ready to get started?</h2>
-              <p className="text-muted-foreground mb-6">
-                Sign in to access your personal AI chat assistant and start having intelligent conversations.
-              </p>
-              <Link to="/auth">
-                <Button size="lg" className="text-lg px-8 py-3">
-                  Sign In to Start Chatting
-                </Button>
-              </Link>
-            </div>
-            <div className="grid md:grid-cols-3 gap-6 text-left">
-              <div className="bg-card p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-card-foreground mb-2">💬 Intelligent Conversations</h3>
-                <p className="text-muted-foreground text-sm">Have natural conversations with our advanced AI assistant</p>
-              </div>
-              <div className="bg-card p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-card-foreground mb-2">📚 Knowledge Base</h3>
-                <p className="text-muted-foreground text-sm">Get answers to questions across various topics and subjects</p>
-              </div>
-              <div className="bg-card p-6 rounded-lg shadow">
-                <h3 className="font-semibold text-card-foreground mb-2">🔄 Persistent History</h3>
-                <p className="text-muted-foreground text-sm">Your conversations are saved and organized for easy reference</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
 
   return (
     <div className="h-screen bg-background flex flex-col">
       <Navigation />
       
-      {/* Top bar with History */}
+      {/* Top bar with History and Auth status */}
       <div className="pt-14 md:pt-16">
         <div className="border-b border-border">
-          <div className="max-w-4xl mx-auto px-4 py-2 flex justify-end">
+          <div className="max-w-4xl mx-auto px-4 py-2 flex justify-between items-center">
+            {!user && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>💬 Chatting as guest</span>
+                <Link to="/auth">
+                  <Button variant="outline" size="sm">Sign in to save chats</Button>
+                </Link>
+              </div>
+            )}
+            {user && <div />}
             <Button variant="ghost" size="sm" onClick={() => setHistoryOpen(true)}>History</Button>
           </div>
         </div>
