@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Bot, User, Copy, Play, Code } from "lucide-react";
+import { Send, Loader2, Bot, User, Copy, Play, Code, Reply, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -43,6 +43,8 @@ const ChatArea = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [typingText, setTypingText] = useState("");
   const [showTypingPreview, setShowTypingPreview] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<{text: string, messageId: string} | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,6 +76,58 @@ const ChatArea = ({
     } catch (err) {
       toast.error("Failed to copy text");
     }
+  };
+
+  const handleTextSelection = (messageId: string) => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim();
+    
+    if (selectedText && selectedText.length > 0) {
+      // Clear previous selection state
+      setSelectedText("");
+      
+      // Set new selection with delay to prevent flicker
+      setTimeout(() => {
+        setSelectedText(selectedText);
+        // Store which message this selection belongs to
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+          messageElement.setAttribute('data-has-selection', 'true');
+        }
+      }, 50);
+    } else {
+      // Clear selection if nothing is selected
+      setSelectedText("");
+      document.querySelectorAll('[data-has-selection]').forEach(el => {
+        el.removeAttribute('data-has-selection');
+      });
+    }
+  };
+
+  // Clear selection when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (!window.getSelection()?.toString()) {
+        setSelectedText("");
+        document.querySelectorAll('[data-has-selection]').forEach(el => {
+          el.removeAttribute('data-has-selection');
+        });
+      }
+    };
+
+    document.addEventListener('mouseup', handleClickOutside);
+    return () => document.removeEventListener('mouseup', handleClickOutside);
+  }, []);
+
+  const replyToSelection = (text: string, messageId: string) => {
+    setReplyingTo({ text, messageId });
+    onInputChange(`Regarding: "${text}"\n\n`);
+    textareaRef.current?.focus();
+  };
+
+  const clearReplyContext = () => {
+    setReplyingTo(null);
+    onInputChange("");
   };
 
   const extractCode = (content: string) => {
@@ -291,19 +345,60 @@ const ChatArea = ({
                       
                       {/* Message Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-                          {message.role === 'user' ? 'You' : 'AI Assistant'}
-                          {message.role === 'assistant' && (
-                            <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
-                              Enhanced
-                            </span>
-                          )}
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center justify-between">
+                          <div className="flex items-center">
+                            {message.role === 'user' ? 'You' : 'AI Assistant'}
+                            {message.role === 'assistant' && (
+                              <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
+                                Enhanced
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Message Actions */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(message.content)}
+                              className="h-8 w-8 p-0"
+                              aria-label="Copy message"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200">
+                        
+                        <div 
+                          className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 select-text"
+                          data-message-id={message.id}
+                          onMouseUp={() => handleTextSelection(message.id)}
+                        >
                           {message.role === 'assistant' ? (
                             <div className="space-y-4">{formatAIResponse(message.content)}</div>
                           ) : (
                             <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
+                          )}
+                          
+                          {/* Reply to Selection Button - shown when text is selected in this message */}
+                          {selectedText && (
+                            <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Selected text:</p>
+                                  <p className="text-sm text-blue-800 dark:text-blue-200 truncate">"{selectedText}"</p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => replyToSelection(selectedText, message.id)}
+                                  className="ml-3 h-8 text-xs border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-800"
+                                >
+                                  <Reply className="h-3 w-3 mr-1" />
+                                  Reply
+                                </Button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -348,13 +443,35 @@ const ChatArea = ({
 
       <div className="border-t border-border bg-background">
         <div className="max-w-4xl mx-auto px-4 py-6">
+          {/* Reply Context Bar */}
+          {replyingTo && (
+            <div className="mb-4 p-3 bg-muted rounded-lg border-l-4 border-primary">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="text-xs text-muted-foreground mb-1">Replying to:</div>
+                  <div className="text-sm text-foreground truncate max-w-md">
+                    "{replyingTo.text}"
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearReplyContext}
+                  className="h-6 w-6 p-0 ml-2"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <div className="relative">
             <Textarea
               ref={textareaRef}
               value={inputMessage}
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Send a message..."
+              placeholder={replyingTo ? "Continue your reply..." : "Send a message..."}
               className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-16 text-base leading-relaxed transition-all"
               disabled={isLoading}
               rows={3}
@@ -375,6 +492,9 @@ const ChatArea = ({
           </div>
           <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
             <p>Press Enter to send, Shift+Enter for new line</p>
+            {replyingTo && (
+              <p className="text-primary">Replying to selected text</p>
+            )}
           </div>
         </div>
       </div>
