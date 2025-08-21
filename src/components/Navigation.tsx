@@ -50,7 +50,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-14 md:h-16">
           {/* Logo - Hidden on mobile, show only "AI Chat" */}
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" alt="Aerostic AI" className="h-10 w-auto hidden md:block" />
+            <img src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" alt="Aerostic AI" className="h-12 w-auto hidden md:block transition-transform hover:scale-105" />
             <span className="text-xl font-bold text-foreground md:hidden">AI Chat</span>
           </Link>
 
