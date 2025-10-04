@@ -188,8 +188,8 @@ const ChatArea = ({
         if (!codeBlock) return null;
         
         return (
-          <div key={`code-${index}`} className="my-6 rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+          <div key={`code-${crypto.randomUUID()}`} className="my-6 rounded-lg border border-border dark:border-border overflow-hidden">
+            <div className="bg-muted px-4 py-2 border-b border-border flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Code className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700 capitalize">
@@ -208,7 +208,7 @@ const ChatArea = ({
                 </Button>
               </div>
             </div>
-            <div className="bg-gray-900 text-gray-100 p-4 overflow-x-auto">
+            <div className="bg-secondary-foreground text-secondary p-4 overflow-x-auto">
               <pre className="text-sm">
                 <code>{codeBlock.code}</code>
               </pre>

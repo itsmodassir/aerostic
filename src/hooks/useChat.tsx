@@ -181,7 +181,7 @@ export const useChat = () => {
 
   const saveMessage = async (conversationId: string, role: 'user' | 'assistant', content: string): Promise<Message> => {
     const message: Message = {
-      id: `msg-${Date.now()}-${Math.random()}`,
+      id: crypto.randomUUID(),
       role,
       content,
       created_at: new Date().toISOString()
