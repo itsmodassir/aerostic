@@ -58,7 +58,7 @@ Please provide a comprehensive description that includes:
 Make the description vivid, specific, and detailed enough that an AI image generator could create a high-quality, accurate image that follows the user's instructions precisely. Focus on translating the user's intent into clear visual directions.`;
 
     // Use the correct Gemini API endpoint
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
