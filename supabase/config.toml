@@ -64,6 +64,9 @@ verify_jwt = false
 [functions.publish-project]
 verify_jwt = false
 
+[functions.generate-full-project]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

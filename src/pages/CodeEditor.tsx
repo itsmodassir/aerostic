@@ -11,8 +11,9 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { FileTree } from "@/components/code-editor/FileTree";
 import { LivePreview } from "@/components/code-editor/LivePreview";
+import { AIProjectGenerator } from "@/components/code-editor/AIProjectGenerator";
 import { useProjectManager } from "@/hooks/useProjectManager";
-import { Code, Save, FolderOpen, Github, Globe, Plus, Trash2, Loader2, Download } from "lucide-react";
+import { Code, Save, FolderOpen, Github, Globe, Plus, Trash2, Loader2, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -454,18 +455,60 @@ const CodeEditor = () => {
             </ResizablePanelGroup>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <Card className="p-12 text-center max-w-md">
-              <Code className="h-16 w-16 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Welcome to Vibe Coding</h2>
-              <p className="text-muted-foreground mb-6">
-                Create, develop, and deploy full websites and apps with AI-powered tools, GitHub integration, and one-click publishing.
-              </p>
-              <Button size="lg" onClick={() => setShowNewProjectDialog(true)}>
-                <Plus className="mr-2 h-5 w-5" />
-                Create Your First Project
-              </Button>
-            </Card>
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="max-w-4xl mx-auto space-y-8">
+              {/* AI Generator */}
+              <AIProjectGenerator onProjectCreated={loadProject} />
+
+              {/* Or divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-background text-muted-foreground">or start from scratch</span>
+                </div>
+              </div>
+
+              {/* Manual Project Creation */}
+              <Card className="p-8 text-center">
+                <Code className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h2 className="text-xl font-bold mb-2">Create Empty Project</h2>
+                <p className="text-muted-foreground mb-6">
+                  Start with a blank template and build your project manually
+                </p>
+                <Button size="lg" onClick={() => setShowNewProjectDialog(true)}>
+                  <Plus className="mr-2 h-5 w-5" />
+                  Create Blank Project
+                </Button>
+              </Card>
+
+              {/* Existing Projects */}
+              {projects.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Your Recent Projects</h3>
+                  <div className="grid gap-4">
+                    {projects.slice(0, 5).map(project => (
+                      <Card
+                        key={project.id}
+                        className="p-4 cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => loadProject(project.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-semibold">{project.name}</h4>
+                            {project.description && (
+                              <p className="text-sm text-muted-foreground">{project.description}</p>
+                            )}
+                          </div>
+                          <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
