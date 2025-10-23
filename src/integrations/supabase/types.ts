@@ -192,6 +192,41 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          id: string
+          inserted_at: string | null
+          metadata: Json | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          id?: string
+          inserted_at?: string | null
+          metadata?: Json | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          id?: string
+          inserted_at?: string | null
+          metadata?: Json | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -216,6 +251,136 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      project_files: {
+        Row: {
+          content: string
+          created_at: string
+          file_path: string
+          id: string
+          language: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          file_path: string
+          id?: string
+          language?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          file_path?: string
+          id?: string
+          language?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          github_connected: boolean | null
+          github_repo_url: string | null
+          id: string
+          is_published: boolean | null
+          name: string
+          published_url: string | null
+          template_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          github_connected?: boolean | null
+          github_repo_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          name: string
+          published_url?: string | null
+          template_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          github_connected?: boolean | null
+          github_repo_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          name?: string
+          published_url?: string | null
+          template_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      room_members: {
+        Row: {
+          joined_at: string | null
+          role: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string | null
+          role?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string | null
+          role?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
         }
         Relationships: []
       }
@@ -308,10 +473,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_verification_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_verification_token: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
