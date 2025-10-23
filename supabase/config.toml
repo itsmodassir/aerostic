@@ -58,6 +58,12 @@ verify_jwt = false
 [functions.project-health]
 verify_jwt = false
 
+[functions.github-integration]
+verify_jwt = false
+
+[functions.publish-project]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083
