@@ -65,24 +65,23 @@ const Chat = () => {
 
 
   return (
-    <div className="h-screen bg-background flex flex-col">
-      {/* Mobile Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border shadow-sm safe-top">
-        <div className="flex items-center justify-center h-14 px-4">
-          {/* Center: Logo/Title */}
+    <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
+      {/* Top Header - Fixed */}
+      <header className="flex-none w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+        <div className="h-14 flex items-center justify-center px-4">
           <div className="flex items-center gap-2">
             <img 
               src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" 
               alt="Aerostic AI" 
-              className="h-8 w-auto"
+              className="h-7 w-auto"
             />
-            <span className="text-lg font-bold">AI Chat</span>
+            <span className="text-base font-semibold">AI Chat</span>
           </div>
         </div>
       </header>
       
-      {/* Chat Area */}
-      <div className="pt-14 pb-24">
+      {/* Chat Area - Flexible */}
+      <div className="flex-1 overflow-hidden">
         <ChatArea
           currentConversation={currentConversation}
           messages={messages}

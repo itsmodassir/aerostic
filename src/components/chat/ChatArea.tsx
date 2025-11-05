@@ -286,163 +286,161 @@ const ChatArea = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background transition-colors">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="max-w-4xl mx-auto px-4 py-6">
-            {messages.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
-                  <Bot className="h-10 w-10 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold mb-6">
-                  Chat Assistant
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-                  I'm your intelligent coding companion! I learn from our conversations and provide contextual, 
-                  detailed answers with live code examples and step-by-step explanations.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mt-8">
-                  {[
-                    { icon: "🌐", title: "Build a React website", desc: "Get complete code with explanations" },
-                    { icon: "🎨", title: "Design system help", desc: "UI/UX principles and best practices" },
-                    { icon: "🔧", title: "Debug my code", desc: "Step-by-step problem solving" },
-                    { icon: "📚", title: "Learn new concepts", desc: "Clear explanations with examples" }
-                  ].map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => onInputChange(suggestion.title)}
-                      className="p-6 text-left border border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
-                      aria-label={`Use suggestion: ${suggestion.title} - ${suggestion.desc}`}
-                    >
-                      <div className="text-2xl mb-2">{suggestion.icon}</div>
-                      <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                        {suggestion.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{suggestion.desc}</p>
-                    </button>
-                  ))}
-                </div>
+    <div className="h-full w-full flex flex-col bg-background">
+      {/* Messages Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          {messages.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
+                <Bot className="h-10 w-10 text-white" />
               </div>
-            ) : (
-              <div className="space-y-8 py-4">
-                {messages.map((message) => (
-                  <div key={message.id} className="group">
-                    <div className="flex items-start space-x-4">
-                      {/* Avatar */}
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                        message.role === 'user' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white'
-                      }`}>
-                        {message.role === 'user' ? (
-                          <User className="h-5 w-5" />
-                        ) : (
-                          <Bot className="h-5 w-5" />
-                        )}
-                      </div>
-                      
-                      {/* Message Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center justify-between">
-                          <div className="flex items-center">
-                            {message.role === 'user' ? 'You' : 'AI Assistant'}
-                            {message.role === 'assistant' && (
-                              <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
-                                Enhanced
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Message Actions */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(message.content)}
-                              className="h-8 w-8 p-0"
-                              aria-label="Copy message"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
+              <h2 className="text-3xl font-bold mb-6">
+                Chat Assistant
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+                I'm your intelligent coding companion! I learn from our conversations and provide contextual, 
+                detailed answers with live code examples and step-by-step explanations.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mt-8">
+                {[
+                  { icon: "🌐", title: "Build a React website", desc: "Get complete code with explanations" },
+                  { icon: "🎨", title: "Design system help", desc: "UI/UX principles and best practices" },
+                  { icon: "🔧", title: "Debug my code", desc: "Step-by-step problem solving" },
+                  { icon: "📚", title: "Learn new concepts", desc: "Clear explanations with examples" }
+                ].map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => onInputChange(suggestion.title)}
+                    className="p-6 text-left border border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
+                    aria-label={`Use suggestion: ${suggestion.title} - ${suggestion.desc}`}
+                  >
+                    <div className="text-2xl mb-2">{suggestion.icon}</div>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                      {suggestion.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{suggestion.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8 py-4">
+              {messages.map((message) => (
+                <div key={message.id} className="group">
+                  <div className="flex items-start space-x-4">
+                    {/* Avatar */}
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                      message.role === 'user' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white'
+                    }`}>
+                      {message.role === 'user' ? (
+                        <User className="h-5 w-5" />
+                      ) : (
+                        <Bot className="h-5 w-5" />
+                      )}
+                    </div>
+                    
+                    {/* Message Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center justify-between">
+                        <div className="flex items-center">
+                          {message.role === 'user' ? 'You' : 'AI Assistant'}
+                          {message.role === 'assistant' && (
+                            <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
+                              Enhanced
+                            </span>
+                          )}
                         </div>
                         
-                        <div 
-                          className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 select-text"
-                          data-message-id={message.id}
-                          onMouseUp={() => handleTextSelection(message.id)}
-                        >
-                          {message.role === 'assistant' ? (
-                            <div className="space-y-4">{formatAIResponse(message.content)}</div>
-                          ) : (
-                            <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
-                          )}
-                          
-                          {/* Reply to Selection Button - shown when text is selected in this message */}
-                          {selectedText && (
-                            <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Selected text:</p>
-                                  <p className="text-sm text-blue-800 dark:text-blue-200 truncate">"{selectedText}"</p>
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => replyToSelection(selectedText, message.id)}
-                                  className="ml-3 h-8 text-xs border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-800"
-                                >
-                                  <Reply className="h-3 w-3 mr-1" />
-                                  Reply
-                                </Button>
+                        {/* Message Actions */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(message.content)}
+                            className="h-8 w-8 p-0"
+                            aria-label="Copy message"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div 
+                        className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 select-text"
+                        data-message-id={message.id}
+                        onMouseUp={() => handleTextSelection(message.id)}
+                      >
+                        {message.role === 'assistant' ? (
+                          <div className="space-y-4">{formatAIResponse(message.content)}</div>
+                        ) : (
+                          <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
+                        )}
+                        
+                        {/* Reply to Selection Button */}
+                        {selectedText && (
+                          <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Selected text:</p>
+                                <p className="text-sm text-blue-800 dark:text-blue-200 truncate">"{selectedText}"</p>
                               </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => replyToSelection(selectedText, message.id)}
+                                className="ml-3 h-8 text-xs border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-800"
+                              >
+                                <Reply className="h-3 w-3 mr-1" />
+                                Reply
+                              </Button>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Live typing preview */}
-                {isLoading && (
-                  <div className="group">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
-                        <Bot className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-                          AI Assistant
-                          <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
-                            Thinking...
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                           </div>
-                          <span className="text-sm">Analyzing context and generating response...</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Live typing preview */}
+              {isLoading && (
+                <div className="group">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                      <Bot className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                        AI Assistant
+                        <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                          Thinking...
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="border-t border-border bg-background">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Input Area - Fixed at bottom with padding for bottom nav */}
+      <div className="flex-none border-t border-border bg-background pb-16">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           {/* Reply Context Bar */}
           {replyingTo && (
             <div className="mb-4 p-3 bg-muted rounded-lg border-l-4 border-primary">
@@ -472,7 +470,7 @@ const ChatArea = ({
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={replyingTo ? "Continue your reply..." : "Send a message..."}
-              className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-16 text-base leading-relaxed transition-all"
+              className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-16 text-base leading-relaxed"
               disabled={isLoading}
               rows={3}
             />
@@ -490,7 +488,7 @@ const ChatArea = ({
               )}
             </Button>
           </div>
-          <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
             <p>Press Enter to send, Shift+Enter for new line</p>
             {replyingTo && (
               <p className="text-primary">Replying to selected text</p>
