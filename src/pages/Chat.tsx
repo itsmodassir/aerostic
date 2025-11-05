@@ -68,12 +68,66 @@ const Chat = () => {
     <div className="h-screen bg-background flex flex-col">
       {/* Mobile Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border shadow-sm safe-top">
-        <div className="flex items-center justify-between h-16 px-4">
-          {/* Left: Menu Button */}
+        <div className="flex items-center justify-center h-14 px-4">
+          {/* Center: Logo/Title */}
+          <div className="flex items-center gap-2">
+            <img 
+              src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" 
+              alt="Aerostic AI" 
+              className="h-8 w-auto"
+            />
+            <span className="text-lg font-bold">AI Chat</span>
+          </div>
+        </div>
+      </header>
+      
+      {/* Chat Area */}
+      <div className="pt-14 pb-20">
+        <ChatArea
+          currentConversation={currentConversation}
+          messages={messages}
+          inputMessage={inputMessage}
+          isLoading={isLoading}
+          onInputChange={setInputMessage}
+          onSendMessage={sendMessage}
+          onKeyPress={handleKeyPress}
+        />
+      </div>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-lg safe-bottom">
+        <div className="flex items-center justify-around h-16 px-2">
+          <Link to="/landing">
+            <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
+              <Home className="h-6 w-6" />
+              <span className="text-xs mt-1">Home</span>
+            </Button>
+          </Link>
+
+          <Button 
+            variant="ghost" 
+            size="lg" 
+            className="flex-col h-14 w-16 touch-target"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History className="h-6 w-6" />
+            <span className="text-xs mt-1">History</span>
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            size="lg" 
+            className="flex-col h-14 w-16 touch-target bg-primary/10"
+          >
+            <MessageCircle className="h-6 w-6 text-primary" />
+            <span className="text-xs mt-1 text-primary">Chat</span>
+          </Button>
+
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>
-              <Button variant="ghost" size="lg" className="touch-target">
+              <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
                 <Menu className="h-6 w-6" />
+                <span className="text-xs mt-1">More</span>
               </Button>
             </DrawerTrigger>
             <DrawerContent className="h-[85vh] safe-bottom">
@@ -113,24 +167,6 @@ const Chat = () => {
                     </div>
                   </div>
                 )}
-
-                <Separator />
-
-                {/* Chat History */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground px-2">Chat</h3>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start touch-target"
-                    onClick={() => {
-                      setHistoryOpen(true);
-                      setDrawerOpen(false);
-                    }}
-                  >
-                    <History className="h-5 w-5 mr-3" />
-                    Chat History
-                  </Button>
-                </div>
 
                 <Separator />
 
@@ -194,43 +230,23 @@ const Chat = () => {
             </DrawerContent>
           </Drawer>
 
-          {/* Center: Logo/Title */}
-          <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" 
-              alt="Aerostic AI" 
-              className="h-8 w-auto"
-            />
-            <span className="text-lg font-bold">AI Chat</span>
-          </div>
-
-          {/* Right: History Button (desktop) */}
-          {!isMobile && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setHistoryOpen(true)}
-            >
-              <History className="h-5 w-5 mr-2" />
-              History
-            </Button>
+          {user ? (
+            <Link to="/dashboard">
+              <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
+                <User className="h-6 w-6" />
+                <span className="text-xs mt-1">Profile</span>
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/auth">
+              <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
+                <User className="h-6 w-6" />
+                <span className="text-xs mt-1">Sign In</span>
+              </Button>
+            </Link>
           )}
-          {isMobile && <div className="w-12" />} {/* Spacer for mobile */}
         </div>
-      </header>
-      
-      {/* Chat Area */}
-      <div className="pt-16">
-        <ChatArea
-          currentConversation={currentConversation}
-          messages={messages}
-          inputMessage={inputMessage}
-          isLoading={isLoading}
-          onInputChange={setInputMessage}
-          onSendMessage={sendMessage}
-          onKeyPress={handleKeyPress}
-        />
-      </div>
+      </nav>
 
       {/* History Dialog */}
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
