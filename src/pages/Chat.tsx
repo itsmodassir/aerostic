@@ -82,7 +82,7 @@ const Chat = () => {
       </header>
       
       {/* Chat Area */}
-      <div className="pt-14 pb-20">
+      <div className="pt-14 pb-24">
         <ChatArea
           currentConversation={currentConversation}
           messages={messages}
@@ -94,43 +94,47 @@ const Chat = () => {
         />
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border shadow-lg pb-safe">
-        <div className="flex items-center justify-around h-16 px-2 pb-2">
+      {/* Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t pb-safe">
+        <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto px-4">
+          {/* Home */}
           <Link to="/landing">
-            <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
-              <Home className="h-6 w-6" />
-              <span className="text-xs mt-1">Home</span>
+            <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+              <Home className="h-5 w-5" />
+              <span className="text-[10px]">Home</span>
             </Button>
           </Link>
 
+          {/* History */}
           <Button 
             variant="ghost" 
             size="lg" 
-            className="flex-col h-14 w-16 touch-target"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-3"
             onClick={() => setHistoryOpen(true)}
           >
-            <History className="h-6 w-6" />
-            <span className="text-xs mt-1">History</span>
+            <History className="h-5 w-5" />
+            <span className="text-[10px]">History</span>
           </Button>
 
+          {/* Chat (Active) */}
           <Button 
             variant="ghost" 
             size="lg" 
-            className="flex-col h-14 w-16 touch-target bg-primary/10"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-primary"
           >
-            <MessageCircle className="h-6 w-6 text-primary" />
-            <span className="text-xs mt-1 text-primary">Chat</span>
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Chat</span>
           </Button>
 
+          {/* More Menu */}
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>
-              <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
-                <Menu className="h-6 w-6" />
-                <span className="text-xs mt-1">More</span>
+              <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                <Menu className="h-5 w-5" />
+                <span className="text-[10px]">Menu</span>
               </Button>
             </DrawerTrigger>
-            <DrawerContent className="h-[85vh] safe-bottom">
+            <DrawerContent className="h-[85vh]">
               <DrawerHeader className="border-b">
                 <DrawerTitle>Menu</DrawerTitle>
               </DrawerHeader>
@@ -151,7 +155,7 @@ const Chat = () => {
                     </div>
                     
                     <Link to="/dashboard" onClick={() => setDrawerOpen(false)}>
-                      <Button variant="outline" className="w-full justify-start touch-target">
+                      <Button variant="outline" className="w-full justify-start">
                         <User className="h-5 w-5 mr-3" />
                         Dashboard
                       </Button>
@@ -162,7 +166,7 @@ const Chat = () => {
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <p className="text-sm text-muted-foreground mb-2">💬 Chatting as guest</p>
                       <Link to="/auth" onClick={() => setDrawerOpen(false)}>
-                        <Button className="w-full touch-target">Sign In</Button>
+                        <Button className="w-full">Sign In</Button>
                       </Link>
                     </div>
                   </div>
@@ -181,7 +185,7 @@ const Chat = () => {
                     >
                       <Button 
                         variant="ghost" 
-                        className="w-full justify-start touch-target"
+                        className="w-full justify-start"
                         disabled={tool.protected && !user}
                       >
                         <tool.icon className="h-5 w-5 mr-3" />
@@ -205,7 +209,7 @@ const Chat = () => {
                       to={page.path}
                       onClick={() => setDrawerOpen(false)}
                     >
-                      <Button variant="ghost" className="w-full justify-start touch-target">
+                      <Button variant="ghost" className="w-full justify-start">
                         <page.icon className="h-5 w-5 mr-3" />
                         {page.name}
                       </Button>
@@ -218,7 +222,7 @@ const Chat = () => {
                     <Separator />
                     <Button 
                       variant="outline" 
-                      className="w-full justify-start touch-target text-destructive hover:text-destructive"
+                      className="w-full justify-start text-destructive hover:text-destructive"
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-5 w-5 mr-3" />
@@ -230,23 +234,25 @@ const Chat = () => {
             </DrawerContent>
           </Drawer>
 
+          {/* Profile */}
           {user ? (
             <Link to="/dashboard">
-              <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
-                <User className="h-6 w-6" />
-                <span className="text-xs mt-1">Profile</span>
+              <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                <User className="h-5 w-5" />
+                <span className="text-[10px]">Profile</span>
               </Button>
             </Link>
           ) : (
             <Link to="/auth">
-              <Button variant="ghost" size="lg" className="flex-col h-14 w-16 touch-target">
-                <User className="h-6 w-6" />
-                <span className="text-xs mt-1">Sign In</span>
+              <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+                <User className="h-5 w-5" />
+                <span className="text-[10px]">Sign In</span>
               </Button>
             </Link>
           )}
         </div>
-      </nav>
+      </div>
+
 
       {/* History Dialog */}
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
