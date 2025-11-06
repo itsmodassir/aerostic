@@ -496,26 +496,29 @@ const ChatArea = ({
                 </div>
               ))}
               
-              {/* Live typing preview */}
+              {/* Enhanced typing indicator */}
               {isLoading && (
                 <div className="group">
                   <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 text-white flex items-center justify-center animate-pulse shadow-lg">
                       <Bot className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                         AI Assistant
-                        <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+                        <span className="ml-2 text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full animate-pulse shadow-sm">
                           Thinking...
                         </span>
                       </div>
-                      <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      <div className="bg-muted/50 rounded-2xl p-4 max-w-md">
+                        <div className="flex items-center space-x-3">
+                          <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                          <div className="flex space-x-1.5">
+                            <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce"></div>
+                            <div className="w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                            <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                          </div>
+                          <span className="text-xs text-muted-foreground animate-pulse">Generating response</span>
                         </div>
                       </div>
                     </div>

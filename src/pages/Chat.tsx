@@ -1,9 +1,11 @@
 
-import { useState } from "react";
-import { Menu, History, User, Settings, Home, FileText, Globe, Image, Zap, MessageCircle, Code, LogOut, Sparkles } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Menu, History, User, Settings, Home, FileText, Globe, Image, Zap, MessageCircle, Code, LogOut, Sparkles, FolderKanban } from "lucide-react";
 
 import ChatArea from "@/components/chat/ChatArea";
+import { FolderManager } from "@/components/chat/FolderManager";
 import { useChat } from "@/hooks/useChat";
+import { useChatFolders } from "@/hooks/useChatFolders";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -13,13 +15,16 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Chat = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const { folders, moveConversationToFolder } = useChatFolders();
   
   const {
     conversations,
@@ -39,6 +44,16 @@ const Chat = () => {
     if (currentConversation) {
       await fetchMessages(currentConversation);
     }
+  };
+
+  // Filter conversations by selected folder
+  const filteredConversations = useMemo(() => {
+    if (!selectedFolderId) return conversations;
+    return conversations.filter((c: any) => c.folder_id === selectedFolderId);
+  }, [conversations, selectedFolderId]);
+
+  const handleMoveToFolder = async (conversationId: string, folderId: string) => {
+    await moveConversationToFolder(conversationId, folderId === 'none' ? null : folderId);
   };
 
   const handleSignOut = async () => {
@@ -261,32 +276,70 @@ const Chat = () => {
       </div>
 
 
-      {/* History Dialog */}
+      {/* History Dialog with Folders */}
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Chat History</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5" />
+              Chat History
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 max-h-[50vh] overflow-auto">
-            {loadingConversations ? (
-              <div className="text-sm text-muted-foreground">Loading…</div>
-            ) : conversations.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No conversations yet.</div>
-            ) : (
-              conversations.map((c) => (
-                <Button
-                  key={c.id}
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setCurrentConversation(c.id);
-                    setHistoryOpen(false);
-                  }}
-                >
-                  {c.title}
-                </Button>
-              ))
+          <div className="space-y-4">
+            {/* Folder Manager */}
+            {user && (
+              <>
+                <FolderManager 
+                  onSelectFolder={setSelectedFolderId}
+                  selectedFolderId={selectedFolderId}
+                />
+                <Separator />
+              </>
             )}
+            
+            {/* Conversations List */}
+            <div className="space-y-2 max-h-[40vh] overflow-auto">
+              {loadingConversations ? (
+                <div className="text-sm text-muted-foreground">Loading…</div>
+              ) : filteredConversations.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-4">
+                  {selectedFolderId ? 'No conversations in this folder' : 'No conversations yet'}
+                </div>
+              ) : (
+                filteredConversations.map((c: any) => (
+                  <div key={c.id} className="group flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 justify-start"
+                      onClick={() => {
+                        setCurrentConversation(c.id);
+                        setHistoryOpen(false);
+                      }}
+                    >
+                      {c.title}
+                    </Button>
+                    {user && folders.length > 0 && (
+                      <Select
+                        value={c.folder_id || 'none'}
+                        onValueChange={(value) => handleMoveToFolder(c.id, value)}
+                      >
+                        <SelectTrigger className="w-[120px] h-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <SelectValue placeholder="Folder" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Folder</SelectItem>
+                          {folders.map((folder) => (
+                            <SelectItem key={folder.id} value={folder.id}>
+                              {folder.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
