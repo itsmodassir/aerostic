@@ -1,0 +1,34 @@
+{
+  "name": "Aerostic AI - AI Chat Assistant",
+  "short_name": "Aerostic AI",
+  "description": "AI chatbot and chat assistant for content creation. Generate blog posts, images, and code with advanced AI tools.",
+  "theme_color": "#7c3aed",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities", "ai"],
+  "screenshots": [
+    {
+      "src": "/lovable-uploads/6b557ed3-c2c1-4bb1-9062-0253b3944514.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}

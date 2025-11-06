@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MobileOptimizations from "@/components/MobileOptimizations";
 import AppUpdatePrompt from "@/components/AppUpdatePrompt";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
@@ -51,6 +52,7 @@ function App() {
             <TooltipProvider>
               <MobileOptimizations />
               <AppUpdatePrompt checkInterval={30} />
+              <PWAInstallPrompt />
               <Toaster />
               <Sonner />
               <BrowserRouter>
