@@ -385,6 +385,7 @@ export const useChat = () => {
     createNewConversation,
     deleteConversation,
     sendMessage,
-    handleKeyPress
+    handleKeyPress,
+    fetchMessages
   };
 };

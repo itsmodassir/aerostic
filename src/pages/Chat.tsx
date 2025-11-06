@@ -31,8 +31,15 @@ const Chat = () => {
     setCurrentConversation,
     setInputMessage,
     sendMessage,
-    handleKeyPress
+    handleKeyPress,
+    fetchMessages
   } = useChat();
+
+  const handleRefresh = async () => {
+    if (currentConversation) {
+      await fetchMessages(currentConversation);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -90,6 +97,7 @@ const Chat = () => {
           onInputChange={setInputMessage}
           onSendMessage={sendMessage}
           onKeyPress={handleKeyPress}
+          onRefresh={handleRefresh}
         />
       </div>
 

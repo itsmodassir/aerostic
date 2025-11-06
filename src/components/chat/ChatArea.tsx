@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Bot, User, Copy, Play, Code, Reply, X } from "lucide-react";
+import { Send, Loader2, Bot, User, Copy, Play, Code, Reply, X, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -21,6 +21,7 @@ interface ChatAreaProps {
   onInputChange: (value: string) => void;
   onSendMessage: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  onRefresh?: () => void;
 }
 
 interface EnhancedMessage extends Message {
@@ -37,14 +38,25 @@ const ChatArea = ({
   isLoading,
   onInputChange,
   onSendMessage,
-  onKeyPress
+  onKeyPress,
+  onRefresh
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [typingText, setTypingText] = useState("");
   const [showTypingPreview, setShowTypingPreview] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [replyingTo, setReplyingTo] = useState<{text: string, messageId: string} | null>(null);
+  
+  // Pull-to-refresh state
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartY = useRef(0);
+  const scrollTop = useRef(0);
+  
+  const PULL_THRESHOLD = 80;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -128,6 +140,55 @@ const ChatArea = ({
   const clearReplyContext = () => {
     setReplyingTo(null);
     onInputChange("");
+  };
+
+  // Pull-to-refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!scrollContainerRef.current) return;
+    touchStartY.current = e.touches[0].clientY;
+    scrollTop.current = scrollContainerRef.current.scrollTop;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!scrollContainerRef.current || isRefreshing) return;
+    
+    const currentScrollTop = scrollContainerRef.current.scrollTop;
+    const touchY = e.touches[0].clientY;
+    const pullDistance = touchY - touchStartY.current;
+    
+    // Only allow pull if at the top of the scroll
+    if (currentScrollTop <= 0 && pullDistance > 0) {
+      setIsPulling(true);
+      setPullDistance(Math.min(pullDistance * 0.5, PULL_THRESHOLD + 20));
+      
+      // Prevent default scroll behavior
+      if (pullDistance > 10) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!isPulling) return;
+    
+    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
+      setIsRefreshing(true);
+      toast.info("Refreshing messages...");
+      
+      // Trigger refresh callback
+      if (onRefresh) {
+        await onRefresh();
+      }
+      
+      // Simulate minimum refresh time for better UX
+      setTimeout(() => {
+        setIsRefreshing(false);
+        toast.success("Messages refreshed!");
+      }, 1000);
+    }
+    
+    setIsPulling(false);
+    setPullDistance(0);
   };
 
   const extractCode = (content: string) => {
@@ -288,8 +349,38 @@ const ChatArea = ({
   return (
     <div className="h-full w-full flex flex-col bg-background">
       {/* Messages Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto relative"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull-to-refresh indicator */}
+        <div 
+          className="absolute top-0 left-0 right-0 flex items-center justify-center transition-all duration-200 pointer-events-none"
+          style={{ 
+            height: `${pullDistance}px`,
+            opacity: isPulling ? 1 : 0,
+          }}
+        >
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 transition-transform duration-200 ${
+            pullDistance >= PULL_THRESHOLD ? 'scale-110' : 'scale-100'
+          }`}>
+            <RefreshCw 
+              className={`h-5 w-5 text-primary transition-transform duration-300 ${
+                isRefreshing ? 'animate-spin' : pullDistance >= PULL_THRESHOLD ? 'rotate-180' : ''
+              }`} 
+            />
+          </div>
+        </div>
+        
+        <div 
+          className="max-w-4xl mx-auto px-4 py-6 transition-transform duration-200"
+          style={{ 
+            transform: `translateY(${pullDistance > 0 ? pullDistance : 0}px)`,
+          }}
+        >
           {messages.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
