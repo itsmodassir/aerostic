@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from "react";
-import { Menu, History, User, Settings, Home, FileText, Globe, Image, Zap, MessageCircle, Code, LogOut, Sparkles, FolderKanban } from "lucide-react";
+import { Menu, History, User, Settings, Home, FileText, Globe, Image, Zap, MessageCircle, Code, LogOut, Sparkles, FolderKanban, Pin } from "lucide-react";
 
 import ChatArea from "@/components/chat/ChatArea";
 import { FolderManager } from "@/components/chat/FolderManager";
@@ -37,7 +37,8 @@ const Chat = () => {
     setInputMessage,
     sendMessage,
     handleKeyPress,
-    fetchMessages
+    fetchMessages,
+    togglePin
   } = useChat();
 
   const handleRefresh = async () => {
@@ -48,8 +49,16 @@ const Chat = () => {
 
   // Filter conversations by selected folder
   const filteredConversations = useMemo(() => {
-    if (!selectedFolderId) return conversations;
-    return conversations.filter((c: any) => c.folder_id === selectedFolderId);
+    let filtered = selectedFolderId 
+      ? conversations.filter((c: any) => c.folder_id === selectedFolderId)
+      : conversations;
+    
+    // Sort: pinned first, then by updated_at
+    return filtered.sort((a: any, b: any) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
   }, [conversations, selectedFolderId]);
 
   const handleMoveToFolder = async (conversationId: string, folderId: string) => {
@@ -310,31 +319,47 @@ const Chat = () => {
                   <div key={c.id} className="group flex items-center gap-2">
                     <Button
                       variant="ghost"
-                      className="flex-1 justify-start"
+                      className="flex-1 justify-start gap-2"
                       onClick={() => {
                         setCurrentConversation(c.id);
                         setHistoryOpen(false);
                       }}
                     >
+                      {c.pinned && <Pin className="h-3 w-3 text-primary fill-primary" />}
                       {c.title}
                     </Button>
-                    {user && folders.length > 0 && (
-                      <Select
-                        value={c.folder_id || 'none'}
-                        onValueChange={(value) => handleMoveToFolder(c.id, value)}
-                      >
-                        <SelectTrigger className="w-[120px] h-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <SelectValue placeholder="Folder" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Folder</SelectItem>
-                          {folders.map((folder) => (
-                            <SelectItem key={folder.id} value={folder.id}>
-                              {folder.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    {user && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePin(c.id, c.pinned);
+                          }}
+                        >
+                          <Pin className={`h-4 w-4 ${c.pinned ? 'fill-primary text-primary' : ''}`} />
+                        </Button>
+                        {folders.length > 0 && (
+                          <Select
+                            value={c.folder_id || 'none'}
+                            onValueChange={(value) => handleMoveToFolder(c.id, value)}
+                          >
+                            <SelectTrigger className="w-[100px] h-8">
+                              <SelectValue placeholder="Folder" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Folder</SelectItem>
+                              {folders.map((folder) => (
+                                <SelectItem key={folder.id} value={folder.id}>
+                                  {folder.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))

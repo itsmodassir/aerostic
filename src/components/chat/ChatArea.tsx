@@ -1,10 +1,12 @@
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Loader2, Bot, User, Copy, Play, Code, Reply, X, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceRecorder } from "./VoiceRecorder";
+import { MessageSearch } from "./MessageSearch";
 
 interface Message {
   id: string;
@@ -56,7 +58,24 @@ const ChatArea = ({
   const touchStartY = useRef(0);
   const scrollTop = useRef(0);
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const PULL_THRESHOLD = 80;
+
+  // Filter messages based on search query
+  const filteredMessages = useMemo(() => {
+    if (!searchQuery.trim()) return messages;
+    
+    const query = searchQuery.toLowerCase();
+    return messages.filter(msg => 
+      msg.content.toLowerCase().includes(query)
+    );
+  }, [messages, searchQuery]);
+
+  const handleSearchClear = () => {
+    setSearchQuery("");
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -381,6 +400,11 @@ const ChatArea = ({
             transform: `translateY(${pullDistance > 0 ? pullDistance : 0}px)`,
           }}
         >
+          {/* Search Bar */}
+          {messages.length > 0 && (
+            <MessageSearch onSearch={setSearchQuery} onClear={handleSearchClear} />
+          )}
+
           {messages.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -417,7 +441,12 @@ const ChatArea = ({
             </div>
           ) : (
             <div className="space-y-8 py-4">
-              {messages.map((message) => (
+              {searchQuery && filteredMessages.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No messages found matching "{searchQuery}"
+                </div>
+              )}
+              {filteredMessages.map((message) => (
                 <div key={message.id} className="group">
                   <div className="flex items-start space-x-4">
                     {/* Avatar */}
@@ -564,23 +593,29 @@ const ChatArea = ({
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={replyingTo ? "Continue your reply..." : "Send a message..."}
-              className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-16 text-base leading-relaxed"
+              className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-24 text-base leading-relaxed"
               disabled={isLoading}
               rows={3}
             />
-            <Button
-              onClick={onSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              size="lg"
-              className="absolute right-3 bottom-3 h-10 w-10 p-0 rounded-xl"
-              aria-label={isLoading ? "Sending message..." : "Send message"}
-            >
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </Button>
+            <div className="absolute right-3 bottom-3 flex items-center gap-2">
+              <VoiceRecorder
+                onTranscription={(text) => onInputChange(inputMessage + (inputMessage ? ' ' : '') + text)}
+                disabled={isLoading}
+              />
+              <Button
+                onClick={onSendMessage}
+                disabled={!inputMessage.trim() || isLoading}
+                size="lg"
+                className="h-10 w-10 p-0 rounded-xl"
+                aria-label={isLoading ? "Sending message..." : "Send message"}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
             <p>Press Enter to send, Shift+Enter for new line</p>

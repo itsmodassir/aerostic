@@ -100,6 +100,29 @@ export const useChat = () => {
     }
   };
 
+  const togglePin = async (conversationId: string, isPinned: boolean) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_conversations')
+        .update({ 
+          pinned: !isPinned,
+          pinned_at: !isPinned ? new Date().toISOString() : null
+        })
+        .eq('id', conversationId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      await fetchConversations();
+      toast.success(isPinned ? "Unpinned conversation" : "Pinned conversation");
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      toast.error("Failed to update pin status");
+    }
+  };
+
   const createNewConversation = async () => {
     try {
       const title = `Enhanced Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
@@ -386,6 +409,7 @@ export const useChat = () => {
     deleteConversation,
     sendMessage,
     handleKeyPress,
-    fetchMessages
+    fetchMessages,
+    togglePin
   };
 };
