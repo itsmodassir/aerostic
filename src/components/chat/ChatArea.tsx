@@ -561,66 +561,93 @@ const ChatArea = ({
         </div>
       </div>
 
-      {/* Input Area - Fixed at bottom with padding for bottom nav */}
-      <div className="flex-none border-t border-border bg-background pb-16">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          {/* Reply Context Bar */}
+      {/* Input Area - Sleek Floating Design */}
+      <div className="flex-none pb-16 relative">
+        {/* Gradient overlay for depth */}
+        <div className="absolute inset-x-0 bottom-16 h-24 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+        
+        <div className="max-w-3xl mx-auto px-4 py-3 relative">
+          {/* Reply Context Chip - Compact */}
           {replyingTo && (
-            <div className="mb-4 p-3 bg-muted rounded-lg border-l-4 border-primary">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="text-xs text-muted-foreground mb-1">Replying to:</div>
-                  <div className="text-sm text-foreground truncate max-w-md">
-                    "{replyingTo.text}"
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearReplyContext}
-                  className="h-6 w-6 p-0 ml-2"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
+            <div className="mb-2 inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 backdrop-blur-sm rounded-full border border-primary/20 animate-scale-in">
+              <Reply className="h-3 w-3 text-primary" />
+              <span className="text-xs text-primary font-medium truncate max-w-[200px]">
+                "{replyingTo.text}"
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearReplyContext}
+                className="h-5 w-5 p-0 hover:bg-primary/20 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           )}
           
-          <div className="relative">
-            <Textarea
-              ref={textareaRef}
-              value={inputMessage}
-              onChange={(e) => onInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={replyingTo ? "Continue your reply..." : "Send a message..."}
-              className="min-h-[64px] max-h-40 resize-none rounded-2xl pr-24 text-base leading-relaxed"
-              disabled={isLoading}
-              rows={3}
-            />
-            <div className="absolute right-3 bottom-3 flex items-center gap-2">
-              <VoiceRecorder
-                onTranscription={(text) => onInputChange(inputMessage + (inputMessage ? ' ' : '') + text)}
+          {/* Main Input Container - Premium Glass Effect */}
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 via-purple-500/30 to-pink-500/30 rounded-3xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="relative bg-background/95 backdrop-blur-xl rounded-3xl border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <Textarea
+                ref={textareaRef}
+                value={inputMessage}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={replyingTo ? "Continue your reply..." : "Type your message..."}
+                className="w-full min-h-[52px] max-h-32 resize-none bg-transparent border-0 px-5 py-3.5 pr-28 text-sm leading-relaxed placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:outline-none"
                 disabled={isLoading}
+                rows={1}
               />
-              <Button
-                onClick={onSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                size="lg"
-                className="h-10 w-10 p-0 rounded-xl"
-                aria-label={isLoading ? "Sending message..." : "Send message"}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </Button>
+              
+              {/* Action Buttons - Sleek Pills */}
+              <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+                <div className="flex items-center bg-muted/50 rounded-2xl p-1 backdrop-blur-sm">
+                  <VoiceRecorder
+                    onTranscription={(text) => onInputChange(inputMessage + (inputMessage ? ' ' : '') + text)}
+                    disabled={isLoading}
+                  />
+                  
+                  <div className="w-px h-5 bg-border/50 mx-1" />
+                  
+                  <Button
+                    onClick={onSendMessage}
+                    disabled={!inputMessage.trim() || isLoading}
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label={isLoading ? "Sending message..." : "Send message"}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-            <p>Press Enter to send, Shift+Enter for new line</p>
+          
+          {/* Helper Text - Ultra Compact */}
+          <div className="flex items-center justify-center gap-3 mt-2 px-4">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+              <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+              <span>Enter to send</span>
+            </div>
+            <div className="w-px h-3 bg-border/30" />
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+              <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+              <span>Shift+Enter for new line</span>
+            </div>
             {replyingTo && (
-              <p className="text-primary">Replying to selected text</p>
+              <>
+                <div className="w-px h-3 bg-border/30" />
+                <div className="flex items-center gap-1.5 text-[10px] text-primary/80 font-medium">
+                  <div className="w-1 h-1 rounded-full bg-primary/60 animate-pulse" />
+                  <span>Replying</span>
+                </div>
+              </>
             )}
           </div>
         </div>

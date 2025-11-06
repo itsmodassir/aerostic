@@ -101,14 +101,17 @@ export const VoiceRecorder = ({ onTranscription, disabled }: VoiceRecorderProps)
       size="icon"
       onClick={isRecording ? stopRecording : startRecording}
       disabled={disabled || isProcessing}
-      className={`transition-all ${isRecording ? 'animate-pulse' : ''}`}
+      className={`h-8 w-8 rounded-xl transition-all hover:scale-105 ${
+        isRecording ? 'animate-pulse bg-red-500 hover:bg-red-600' : 'hover:bg-muted'
+      }`}
+      title={isRecording ? "Stop recording" : "Record voice message"}
     >
       {isProcessing ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : isRecording ? (
-        <Square className="h-5 w-5" />
+        <Square className="h-4 w-4" />
       ) : (
-        <Mic className="h-5 w-5" />
+        <Mic className="h-4 w-4" />
       )}
     </Button>
   );
