@@ -395,127 +395,227 @@ const ChatArea = ({
         </div>
         
         <div 
-          className="max-w-4xl mx-auto px-4 py-6 transition-transform duration-200"
+          className="max-w-5xl mx-auto px-4 py-8 transition-transform duration-200 relative"
           style={{ 
             transform: `translateY(${pullDistance > 0 ? pullDistance : 0}px)`,
           }}
         >
-          {/* Search Bar */}
+          {/* Ambient background orbs */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-20 -left-20 w-72 h-72 bg-gradient-to-br from-primary/20 via-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-40 -right-20 w-96 h-96 bg-gradient-to-tl from-pink-500/20 via-primary/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          </div>
+
+          {/* Search Bar with Glass Effect */}
           {messages.length > 0 && (
-            <MessageSearch onSearch={setSearchQuery} onClear={handleSearchClear} />
+            <div className="relative mb-6 animate-fade-in">
+              <MessageSearch onSearch={setSearchQuery} onClear={handleSearchClear} />
+            </div>
           )}
 
           {messages.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
-                <Bot className="h-10 w-10 text-white" />
+            <div className="text-center py-16 relative">
+              {/* Hero Bot Icon with Glow */}
+              <div className="relative inline-block mb-8 animate-scale-in">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-full blur-2xl opacity-50 animate-pulse" />
+                <div className="relative w-24 h-24 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto shadow-2xl backdrop-blur-xl border border-white/20">
+                  <Bot className="h-12 w-12 text-white drop-shadow-lg" />
+                </div>
               </div>
-              <h2 className="text-3xl font-bold mb-6">
-                Chat Assistant
+              
+              {/* Title with Gradient */}
+              <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent animate-fade-in">
+                AI Chat Assistant
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-                I'm your intelligent coding companion! I learn from our conversations and provide contextual, 
-                detailed answers with live code examples and step-by-step explanations.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto mt-8">
+              
+              {/* Description with Glass Card */}
+              <div className="max-w-2xl mx-auto mb-10 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-purple-500/30 to-pink-500/30 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-500" />
+                  <div className="relative bg-background/60 backdrop-blur-xl border border-border/50 rounded-2xl p-6 shadow-lg">
+                    <p className="text-muted-foreground leading-relaxed">
+                      I'm your intelligent coding companion! I learn from our conversations and provide contextual, 
+                      detailed answers with <span className="text-primary font-semibold">live code examples</span> and step-by-step explanations.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Premium Suggestion Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
                 {[
-                  { icon: "🌐", title: "Build a React website", desc: "Get complete code with explanations" },
-                  { icon: "🎨", title: "Design system help", desc: "UI/UX principles and best practices" },
-                  { icon: "🔧", title: "Debug my code", desc: "Step-by-step problem solving" },
-                  { icon: "📚", title: "Learn new concepts", desc: "Clear explanations with examples" }
+                  { 
+                    icon: "🌐", 
+                    title: "Build a React website", 
+                    desc: "Get complete code with explanations",
+                    gradient: "from-blue-500/10 to-cyan-500/10",
+                    border: "border-blue-500/30",
+                    glow: "group-hover:shadow-blue-500/25"
+                  },
+                  { 
+                    icon: "🎨", 
+                    title: "Design system help", 
+                    desc: "UI/UX principles and best practices",
+                    gradient: "from-purple-500/10 to-pink-500/10",
+                    border: "border-purple-500/30",
+                    glow: "group-hover:shadow-purple-500/25"
+                  },
+                  { 
+                    icon: "🔧", 
+                    title: "Debug my code", 
+                    desc: "Step-by-step problem solving",
+                    gradient: "from-orange-500/10 to-red-500/10",
+                    border: "border-orange-500/30",
+                    glow: "group-hover:shadow-orange-500/25"
+                  },
+                  { 
+                    icon: "📚", 
+                    title: "Learn new concepts", 
+                    desc: "Clear explanations with examples",
+                    gradient: "from-green-500/10 to-emerald-500/10",
+                    border: "border-green-500/30",
+                    glow: "group-hover:shadow-green-500/25"
+                  }
                 ].map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => onInputChange(suggestion.title)}
-                    className="p-6 text-left border border-gray-200 dark:border-gray-700 rounded-xl hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 group"
+                    className={`group relative text-left transition-all duration-300 hover:scale-105 animate-fade-in`}
+                    style={{ animationDelay: `${0.2 + index * 0.1}s` }}
                     aria-label={`Use suggestion: ${suggestion.title} - ${suggestion.desc}`}
                   >
-                    <div className="text-2xl mb-2">{suggestion.icon}</div>
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                      {suggestion.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{suggestion.desc}</p>
+                    {/* Glow effect */}
+                    <div className={`absolute -inset-0.5 bg-gradient-to-r ${suggestion.gradient} rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-300 ${suggestion.glow}`} />
+                    
+                    {/* Glass card */}
+                    <div className={`relative bg-background/80 backdrop-blur-xl border ${suggestion.border} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300`}>
+                      <div className="flex items-start gap-4">
+                        {/* Icon with glass background */}
+                        <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-br ${suggestion.gradient} backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform duration-300`}>
+                          {suggestion.icon}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                            {suggestion.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {suggestion.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="space-y-8 py-4">
+            <div className="space-y-6 py-4">
               {searchQuery && filteredMessages.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No messages found matching "{searchQuery}"
+                <div className="text-center py-12 animate-fade-in">
+                  <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted/50 backdrop-blur-sm rounded-full border border-border/50">
+                    <span className="text-sm text-muted-foreground">No messages found matching</span>
+                    <span className="text-sm font-semibold text-primary">"{searchQuery}"</span>
+                  </div>
                 </div>
               )}
               {filteredMessages.map((message) => (
-                <div key={message.id} className="group">
+                <div key={message.id} className="group animate-fade-in">
                   <div className="flex items-start space-x-4">
-                    {/* Avatar */}
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      message.role === 'user' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gradient-to-br from-purple-500 to-pink-500 text-white'
-                    }`}>
-                      {message.role === 'user' ? (
-                        <User className="h-5 w-5" />
-                      ) : (
-                        <Bot className="h-5 w-5" />
-                      )}
+                    {/* Premium Avatar with Glow */}
+                    <div className="relative flex-shrink-0">
+                      <div className={`absolute inset-0 rounded-full blur-md ${
+                        message.role === 'user' 
+                          ? 'bg-blue-500/50' 
+                          : 'bg-gradient-to-br from-purple-500/50 to-pink-500/50'
+                      } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                      <div className={`relative w-11 h-11 rounded-full flex items-center justify-center shadow-lg ${
+                        message.role === 'user' 
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' 
+                          : 'bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 text-white'
+                      }`}>
+                        {message.role === 'user' ? (
+                          <User className="h-5 w-5" />
+                        ) : (
+                          <Bot className="h-5 w-5" />
+                        )}
+                      </div>
                     </div>
                     
-                    {/* Message Content */}
+                    {/* Glass Message Bubble */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center justify-between">
-                        <div className="flex items-center">
-                          {message.role === 'user' ? 'You' : 'AI Assistant'}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">
+                            {message.role === 'user' ? 'You' : 'AI Assistant'}
+                          </span>
                           {message.role === 'assistant' && (
-                            <span className="ml-2 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full border border-green-500/20">
+                              <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
                               Enhanced
                             </span>
                           )}
                         </div>
                         
                         {/* Message Actions */}
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => copyToClipboard(message.content)}
-                            className="h-8 w-8 p-0"
+                            className="h-7 w-7 p-0 hover:bg-muted/50 rounded-lg"
                             aria-label="Copy message"
                           >
-                            <Copy className="h-4 w-4" />
+                            <Copy className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
                       
-                      <div 
-                        className="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 select-text"
-                        data-message-id={message.id}
-                        onMouseUp={() => handleTextSelection(message.id)}
-                      >
-                        {message.role === 'assistant' ? (
-                          <div className="space-y-4">{formatAIResponse(message.content)}</div>
-                        ) : (
-                          <p className="whitespace-pre-wrap mb-0 leading-relaxed">{message.content}</p>
-                        )}
+                      {/* Message Content with Glass Background */}
+                      <div className="relative group/message">
+                        <div className={`relative ${
+                          message.role === 'assistant' 
+                            ? 'bg-muted/30 backdrop-blur-sm border border-border/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow' 
+                            : ''
+                        }`}>
+                          <div 
+                            className="prose prose-sm max-w-none dark:prose-invert select-text"
+                            data-message-id={message.id}
+                            onMouseUp={() => handleTextSelection(message.id)}
+                          >
+                            {message.role === 'assistant' ? (
+                              <div className="space-y-3">{formatAIResponse(message.content)}</div>
+                            ) : (
+                              <p className="whitespace-pre-wrap mb-0 leading-relaxed text-foreground">{message.content}</p>
+                            )}
+                          </div>
+                        </div>
                         
-                        {/* Reply to Selection Button */}
+                        {/* Reply to Selection - Premium Chip */}
                         {selectedText && (
-                          <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Selected text:</p>
-                                <p className="text-sm text-blue-800 dark:text-blue-200 truncate">"{selectedText}"</p>
+                          <div className="mt-3 animate-scale-in">
+                            <div className="relative group/reply">
+                              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-xl blur opacity-50 group-hover/reply:opacity-100 transition duration-300" />
+                              <div className="relative bg-blue-500/10 backdrop-blur-sm border border-blue-500/30 rounded-xl p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <Reply className="h-3 w-3 text-blue-500" />
+                                      <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">SELECTED TEXT</span>
+                                    </div>
+                                    <p className="text-sm text-blue-700 dark:text-blue-300 truncate font-medium">"{selectedText}"</p>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => replyToSelection(selectedText, message.id)}
+                                    className="h-8 gap-1.5 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                                  >
+                                    <Reply className="h-3 w-3" />
+                                    Reply
+                                  </Button>
+                                </div>
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => replyToSelection(selectedText, message.id)}
-                                className="ml-3 h-8 text-xs border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-800"
-                              >
-                                <Reply className="h-3 w-3 mr-1" />
-                                Reply
-                              </Button>
                             </div>
                           </div>
                         )}
@@ -527,27 +627,33 @@ const ChatArea = ({
               
               {/* Enhanced typing indicator */}
               {isLoading && (
-                <div className="group">
+                <div className="group animate-fade-in">
                   <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 text-white flex items-center justify-center animate-pulse shadow-lg">
-                      <Bot className="h-5 w-5" />
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 rounded-full blur-xl opacity-75 animate-pulse" />
+                      <div className="relative w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 text-white flex items-center justify-center shadow-xl">
+                        <Bot className="h-5 w-5" />
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-                        AI Assistant
-                        <span className="ml-2 text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full animate-pulse shadow-sm">
-                          Thinking...
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm font-semibold text-foreground">AI Assistant</span>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-medium bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full shadow-lg animate-pulse">
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          Thinking
                         </span>
                       </div>
-                      <div className="bg-muted/50 rounded-2xl p-4 max-w-md">
-                        <div className="flex items-center space-x-3">
-                          <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                          <div className="flex space-x-1.5">
-                            <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce"></div>
-                            <div className="w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-                            <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                      <div className="relative max-w-md">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur" />
+                        <div className="relative bg-muted/50 backdrop-blur-xl border border-border/50 rounded-3xl px-5 py-4 shadow-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="flex gap-1.5">
+                              <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce shadow-lg" />
+                              <div className="w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-bounce shadow-lg" style={{ animationDelay: '0.15s' }} />
+                              <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce shadow-lg" style={{ animationDelay: '0.3s' }} />
+                            </div>
+                            <span className="text-xs text-muted-foreground font-medium">Generating response...</span>
                           </div>
-                          <span className="text-xs text-muted-foreground animate-pulse">Generating response</span>
                         </div>
                       </div>
                     </div>
