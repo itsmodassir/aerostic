@@ -99,70 +99,12 @@ const Chat = () => {
     <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
       {/* Top Header - Fixed */}
       <header className="flex-none w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
-        <div className="h-14 flex items-center justify-center px-4">
-          <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" 
-              alt="Aerostic AI" 
-              className="h-7 w-auto"
-            />
-            <span className="text-base font-semibold">AI Chat</span>
-          </div>
-        </div>
-      </header>
-      
-      {/* Chat Area - Flexible */}
-      <div className="flex-1 overflow-hidden">
-        <ChatArea
-          currentConversation={currentConversation}
-          messages={messages}
-          inputMessage={inputMessage}
-          isLoading={isLoading}
-          onInputChange={setInputMessage}
-          onSendMessage={sendMessage}
-          onKeyPress={handleKeyPress}
-          onRefresh={handleRefresh}
-        />
-      </div>
-
-      {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t pb-safe">
-        <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto px-4">
-          {/* Home */}
-          <Link to="/landing">
-            <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
-              <Home className="h-5 w-5" />
-              <span className="text-[10px]">Home</span>
-            </Button>
-          </Link>
-
-          {/* History */}
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-3"
-            onClick={() => setHistoryOpen(true)}
-          >
-            <History className="h-5 w-5" />
-            <span className="text-[10px]">History</span>
-          </Button>
-
-          {/* Chat (Active) */}
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-3 text-primary"
-          >
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Chat</span>
-          </Button>
-
-          {/* More Menu */}
+        <div className="h-14 flex items-center justify-between px-4">
+          {/* Menu Toggle Button */}
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>
-              <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Menu className="h-5 w-5" />
-                <span className="text-[10px]">Menu</span>
               </Button>
             </DrawerTrigger>
             <DrawerContent className="h-[85vh]">
@@ -202,6 +144,24 @@ const Chat = () => {
                     </div>
                   </div>
                 )}
+
+                <Separator />
+
+                {/* Chat History */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground px-2">Chat History</h3>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      setHistoryOpen(true);
+                    }}
+                  >
+                    <History className="h-5 w-5 mr-3" />
+                    View History
+                  </Button>
+                </div>
 
                 <Separator />
 
@@ -265,25 +225,46 @@ const Chat = () => {
             </DrawerContent>
           </Drawer>
 
-          {/* Profile */}
+          {/* Center Logo */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <img 
+              src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" 
+              alt="Aerostic AI" 
+              className="h-7 w-auto"
+            />
+            <span className="text-base font-semibold">AI Chat</span>
+          </div>
+
+          {/* Right Side - Profile/Sign In */}
           {user ? (
             <Link to="/dashboard">
-              <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
                 <User className="h-5 w-5" />
-                <span className="text-[10px]">Profile</span>
               </Button>
             </Link>
           ) : (
             <Link to="/auth">
-              <Button variant="ghost" size="lg" className="flex flex-col items-center gap-1 h-auto py-2 px-3">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
                 <User className="h-5 w-5" />
-                <span className="text-[10px]">Sign In</span>
               </Button>
             </Link>
           )}
         </div>
+      </header>
+      
+      {/* Chat Area - Flexible */}
+      <div className="flex-1 overflow-hidden">
+        <ChatArea
+          currentConversation={currentConversation}
+          messages={messages}
+          inputMessage={inputMessage}
+          isLoading={isLoading}
+          onInputChange={setInputMessage}
+          onSendMessage={sendMessage}
+          onKeyPress={handleKeyPress}
+          onRefresh={handleRefresh}
+        />
       </div>
-
 
       {/* History Dialog with Folders */}
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
