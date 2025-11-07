@@ -668,9 +668,9 @@ const ChatArea = ({
       </div>
 
       {/* Input Area - Sleek Floating Design */}
-      <div className="flex-none pb-16 relative">
+      <div className="flex-none pb-4 relative">
         {/* Gradient overlay for depth */}
-        <div className="absolute inset-x-0 bottom-16 h-24 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-4 h-24 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
         
         <div className="max-w-3xl mx-auto px-4 py-3 relative">
           {/* Reply Context Chip - Compact */}
