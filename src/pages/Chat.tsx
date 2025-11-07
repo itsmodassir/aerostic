@@ -97,8 +97,8 @@ const Chat = () => {
 
   return (
     <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
-      {/* Top Header - Fixed */}
-      <header className="flex-none w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+      {/* Top Header - Sticky */}
+      <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 border-b border-border shadow-sm">
         <div className="h-14 flex items-center justify-between px-4">
           {/* Menu Toggle Button */}
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -224,16 +224,6 @@ const Chat = () => {
               </div>
             </DrawerContent>
           </Drawer>
-
-          {/* Center Logo */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" 
-              alt="Aerostic AI" 
-              className="h-7 w-auto"
-            />
-            <span className="text-base font-semibold">AI Chat</span>
-          </div>
 
           {/* Right Side - Profile/Sign In */}
           {user ? (
