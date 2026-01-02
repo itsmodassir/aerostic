@@ -261,6 +261,63 @@ export type Database = {
           },
         ]
       }
+      blog_articles: {
+        Row: {
+          author_avatar: string | null
+          author_name: string
+          category: string
+          content: string | null
+          created_at: string
+          excerpt: string
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          published_at: string | null
+          read_time: number
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_avatar?: string | null
+          author_name?: string
+          category: string
+          content?: string | null
+          created_at?: string
+          excerpt: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          published_at?: string | null
+          read_time?: number
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_avatar?: string | null
+          author_name?: string
+          category?: string
+          content?: string | null
+          created_at?: string
+          excerpt?: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          published_at?: string | null
+          read_time?: number
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           color: string | null
@@ -432,6 +489,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chat_transfers: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          messages: Json
+          session_id: string
+          status: string
+          updated_at: string
+          user_email: string | null
+          user_name: string | null
+          user_phone: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_email?: string | null
+          user_name?: string | null
+          user_phone?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_email?: string | null
+          user_name?: string | null
+          user_phone?: string | null
+        }
+        Relationships: []
       }
       client_onboarding: {
         Row: {
@@ -824,7 +920,9 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          last_contacted: string | null
           name: string
+          notes: string | null
           phone: string
           requirement: string
           source: string | null
@@ -836,7 +934,9 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          last_contacted?: string | null
           name: string
+          notes?: string | null
           phone: string
           requirement: string
           source?: string | null
@@ -848,7 +948,9 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          last_contacted?: string | null
           name?: string
+          notes?: string | null
           phone?: string
           requirement?: string
           source?: string | null
@@ -1423,6 +1525,114 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_history: {
+        Row: {
+          breakdown: Json | null
+          created_at: string
+          email: string | null
+          features: Json | null
+          id: string
+          project_description: string | null
+          project_type: string
+          team_size: string | null
+          technologies: Json | null
+          timeline_weeks: number
+          total_cost: number
+          urgency: string | null
+          user_id: string | null
+        }
+        Insert: {
+          breakdown?: Json | null
+          created_at?: string
+          email?: string | null
+          features?: Json | null
+          id?: string
+          project_description?: string | null
+          project_type: string
+          team_size?: string | null
+          technologies?: Json | null
+          timeline_weeks: number
+          total_cost: number
+          urgency?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          breakdown?: Json | null
+          created_at?: string
+          email?: string | null
+          features?: Json | null
+          id?: string
+          project_description?: string | null
+          project_type?: string
+          team_size?: string | null
+          technologies?: Json | null
+          timeline_weeks?: number
+          total_cost?: number
+          urgency?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      resources: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          download_count: number | null
+          external_url: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          mime_type: string | null
+          resource_type: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          download_count?: number | null
+          external_url?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          mime_type?: string | null
+          resource_type?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          download_count?: number | null
+          external_url?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          mime_type?: string | null
+          resource_type?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       room_members: {
         Row: {
           joined_at: string | null
@@ -1518,6 +1728,36 @@ export type Database = {
         }
         Relationships: []
       }
+      signal_sessions: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          id: string
+          remote_user_id: string
+          session_data: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          remote_user_id: string
+          session_data: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          remote_user_id?: string
+          session_data?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           created_at: string
@@ -1590,6 +1830,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_identity_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          identity_key_private: string
+          identity_key_public: string
+          registration_id: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          identity_key_private: string
+          identity_key_public: string
+          registration_id: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          identity_key_private?: string
+          identity_key_public?: string
+          registration_id?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_payment_settings: {
         Row: {
           created_at: string | null
@@ -1620,6 +1890,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_prekeys: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_id: number
+          private_key: string
+          public_key: string
+          used: boolean | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_id: number
+          private_key: string
+          public_key: string
+          used?: boolean | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_id?: number
+          private_key?: string
+          public_key?: string
+          used?: boolean | null
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -1637,6 +1940,39 @@ export type Database = {
           assigned_at?: string | null
           id?: string
           role?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_signed_prekeys: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          key_id: number
+          private_key: string
+          public_key: string
+          signature: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          key_id: number
+          private_key: string
+          public_key: string
+          signature: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          key_id?: number
+          private_key?: string
+          public_key?: string
+          signature?: string
           user_id?: string
         }
         Relationships: []
