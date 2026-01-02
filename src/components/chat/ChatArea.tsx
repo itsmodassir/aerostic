@@ -1,7 +1,23 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Bot, User, Reply, X, RefreshCw, Sparkles } from "lucide-react";
+import { 
+  Send, 
+  Loader2, 
+  Bot, 
+  User, 
+  Reply, 
+  X, 
+  RefreshCw, 
+  Sparkles,
+  Zap,
+  Code,
+  Lightbulb,
+  Palette,
+  Bug,
+  Rocket,
+  MessageSquare
+} from "lucide-react";
 import { toast } from "sonner";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { MessageSearch } from "./MessageSearch";
@@ -45,6 +61,7 @@ const ChatArea = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [replyingTo, setReplyingTo] = useState<{text: string, messageId: string} | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
   // Pull-to-refresh state
   const [pullDistance, setPullDistance] = useState(0);
@@ -57,6 +74,62 @@ const ChatArea = ({
   const [searchQuery, setSearchQuery] = useState("");
   
   const PULL_THRESHOLD = 80;
+
+  // Suggestion categories with unique icons and prompts
+  const suggestionCategories = [
+    { 
+      id: 'code', 
+      icon: Code, 
+      label: "Code", 
+      color: "from-blue-500 to-cyan-500",
+      suggestions: [
+        "Build a React component for...",
+        "Write a function that...",
+        "Help me debug this code"
+      ]
+    },
+    { 
+      id: 'design', 
+      icon: Palette, 
+      label: "Design", 
+      color: "from-pink-500 to-rose-500",
+      suggestions: [
+        "Create a modern UI design for...",
+        "Suggest color palette for...",
+        "Design a responsive layout"
+      ]
+    },
+    { 
+      id: 'learn', 
+      icon: Lightbulb, 
+      label: "Learn", 
+      color: "from-amber-500 to-orange-500",
+      suggestions: [
+        "Explain how ... works",
+        "What's the difference between...",
+        "Teach me about..."
+      ]
+    },
+    { 
+      id: 'debug', 
+      icon: Bug, 
+      label: "Debug", 
+      color: "from-red-500 to-pink-500",
+      suggestions: [
+        "Why is my code not working?",
+        "Find the bug in this code",
+        "How to fix this error?"
+      ]
+    },
+  ];
+
+  // Quick prompts that appear as floating chips
+  const quickPrompts = [
+    { text: "Explain like I'm 5", icon: "🧒" },
+    { text: "Give me code examples", icon: "💻" },
+    { text: "Summarize this", icon: "📝" },
+    { text: "Make it simpler", icon: "✨" },
+  ];
 
   // Filter messages based on search query
   const filteredMessages = useMemo(() => {
@@ -145,7 +218,7 @@ const ChatArea = ({
     setPullDistance(0);
   };
 
-  // Gemini-style AI response formatting with expandable code blocks
+  // Enhanced AI response formatting with expandable code blocks
   const formatAIResponse = (content: string) => {
     return (
       <div className="gemini-response text-[15px] leading-[1.75] text-foreground/90">
@@ -167,22 +240,22 @@ const ChatArea = ({
               );
             },
             h1: ({ children }) => (
-              <h1 className="text-xl md:text-2xl font-semibold text-foreground mt-5 mb-3 first:mt-0 animate-fade-in">
+              <h1 className="text-xl md:text-2xl font-semibold text-foreground mt-5 mb-3 first:mt-0">
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-lg md:text-xl font-semibold text-foreground mt-4 mb-2 animate-fade-in">
+              <h2 className="text-lg md:text-xl font-semibold text-foreground mt-4 mb-2">
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-base md:text-lg font-medium text-foreground mt-3 mb-2 animate-fade-in">
+              <h3 className="text-base md:text-lg font-medium text-foreground mt-3 mb-2">
                 {children}
               </h3>
             ),
             p: ({ children }) => (
-              <p className="mb-3 last:mb-0 text-foreground/85 animate-fade-in">
+              <p className="mb-3 last:mb-0 text-foreground/85">
                 {children}
               </p>
             ),
@@ -197,13 +270,13 @@ const ChatArea = ({
               </ol>
             ),
             li: ({ children }) => (
-              <li className="flex items-start gap-2 animate-fade-in">
+              <li className="flex items-start gap-2">
                 <span className="text-primary mt-2 flex-shrink-0">•</span>
                 <span className="flex-1">{children}</span>
               </li>
             ),
             blockquote: ({ children }) => (
-              <blockquote className="border-l-3 border-primary/50 pl-4 py-1 my-3 text-foreground/70 italic bg-primary/5 rounded-r-lg animate-fade-in">
+              <blockquote className="border-l-3 border-primary/50 pl-4 py-1 my-3 text-foreground/70 italic bg-primary/5 rounded-r-lg">
                 {children}
               </blockquote>
             ),
@@ -221,7 +294,7 @@ const ChatArea = ({
               <hr className="my-4 border-t border-border/50" />
             ),
             table: ({ children }) => (
-              <div className="overflow-x-auto my-3 rounded-lg border border-border/50 animate-fade-in">
+              <div className="overflow-x-auto my-3 rounded-lg border border-border/50">
                 <table className="min-w-full text-sm">
                   {children}
                 </table>
@@ -273,12 +346,24 @@ const ChatArea = ({
     return date.toLocaleDateString();
   };
 
+  // Get active suggestions based on selected category
+  const activeSuggestions = activeCategory 
+    ? suggestionCategories.find(c => c.id === activeCategory)?.suggestions || []
+    : [];
+
   return (
-    <div className="h-full w-full flex flex-col bg-background relative">
+    <div className="h-full w-full flex flex-col bg-background relative overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="chat-orb chat-orb-1" />
+        <div className="chat-orb chat-orb-2" />
+        <div className="chat-orb chat-orb-3" />
+      </div>
+
       {/* Messages Area - Scrollable */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto relative"
+        className="flex-1 overflow-y-auto relative z-10"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -291,7 +376,7 @@ const ChatArea = ({
             opacity: isPulling ? 1 : 0,
           }}
         >
-          <div className={`flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 transition-transform duration-200 ${
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full glass-bubble transition-transform duration-200 ${
             pullDistance >= PULL_THRESHOLD ? 'scale-110' : 'scale-100'
           }`}>
             <RefreshCw 
@@ -310,55 +395,119 @@ const ChatArea = ({
         >
           {/* Search Bar */}
           {messages.length > 0 && (
-            <div className="relative mb-4 animate-fade-in">
+            <div className="relative mb-4 message-slide-in">
               <MessageSearch onSearch={setSearchQuery} onClear={handleSearchClear} />
             </div>
           )}
 
           {messages.length === 0 ? (
-            <div className="text-center py-8 md:py-16 relative">
-              {/* Hero Bot Icon with gradient glow */}
+            <div className="text-center py-6 md:py-12 relative">
+              {/* Animated Hero Section */}
               <div className="relative inline-block mb-6 md:mb-8">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-primary/10 rounded-full blur-2xl opacity-60 animate-pulse" />
-                <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mx-auto shadow-lg animate-scale-in">
-                  <Sparkles className="h-8 w-8 md:h-10 md:w-10 text-primary-foreground" />
+                {/* Floating particles */}
+                <div className="absolute -inset-8 pointer-events-none">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="particle"
+                      style={{
+                        left: `${20 + i * 12}%`,
+                        top: `${30 + (i % 3) * 20}%`,
+                        animationDelay: `${i * 0.5}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+                
+                {/* Main icon with glow */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-purple-500/30 to-cyan-500/20 rounded-full blur-3xl opacity-60 animate-pulse" />
+                  <div className="relative w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-primary via-purple-500 to-cyan-500 rounded-3xl rotate-3 flex items-center justify-center mx-auto shadow-2xl ai-avatar-glow message-slide-in">
+                    <Sparkles className="h-10 w-10 md:h-12 md:w-12 text-white" />
+                  </div>
                 </div>
               </div>
               
-              <h2 className="text-2xl md:text-3xl font-semibold mb-3 text-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                Hi, how can I help you today?
+              {/* Gradient heading */}
+              <h2 className="text-3xl md:text-4xl font-bold mb-3 message-slide-in" style={{ animationDelay: '0.1s' }}>
+                <span className="gradient-text">Hello, I'm Aerostic</span>
               </h2>
               
-              <p className="text-muted-foreground text-sm md:text-base mb-8 max-w-md mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                I can help you with coding, design, explanations, and more.
+              <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-md mx-auto message-slide-in" style={{ animationDelay: '0.2s' }}>
+                Your AI assistant for coding, design, learning, and more.
               </p>
-              
-              {/* Suggestion Cards - Gemini style with staggered animation */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-xl mx-auto">
-                {[
-                  { icon: "💻", title: "Write code for me", desc: "Any language or framework" },
-                  { icon: "🎨", title: "Help with design", desc: "UI/UX best practices" },
-                  { icon: "🔍", title: "Explain a concept", desc: "Simple explanations" },
-                  { icon: "🐛", title: "Debug my code", desc: "Find and fix issues" }
-                ].map((suggestion, index) => (
+
+              {/* Category Pills */}
+              <div className="flex flex-wrap justify-center gap-2 mb-6 message-slide-in" style={{ animationDelay: '0.3s' }}>
+                {suggestionCategories.map((category) => (
                   <button
-                    key={index}
-                    onClick={() => onInputChange(suggestion.title)}
-                    className="group flex items-center gap-3 p-3 md:p-4 rounded-xl border border-border/60 bg-card/50 hover:bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300 text-left animate-fade-in"
-                    style={{ animationDelay: `${0.2 + index * 0.1}s` }}
+                    key={category.id}
+                    onClick={() => setActiveCategory(activeCategory === category.id ? null : category.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                      activeCategory === category.id
+                        ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+                        : 'glass-bubble hover:scale-105'
+                    }`}
                   >
-                    <span className="text-xl md:text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">{suggestion.icon}</span>
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                        {suggestion.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {suggestion.desc}
-                      </p>
-                    </div>
+                    <category.icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{category.label}</span>
                   </button>
                 ))}
               </div>
+
+              {/* Dynamic Suggestions based on category */}
+              {activeCategory && (
+                <div className="space-y-2 max-w-md mx-auto mb-6 message-slide-in">
+                  {activeSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => onInputChange(suggestion)}
+                      className="w-full text-left p-3 rounded-xl glass-bubble suggestion-card group"
+                      style={{ animationDelay: `${0.1 * index}s` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${
+                          suggestionCategories.find(c => c.id === activeCategory)?.color
+                        } flex items-center justify-center`}>
+                          <MessageSquare className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
+                          {suggestion}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Default suggestion cards when no category selected */}
+              {!activeCategory && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
+                  {[
+                    { icon: "🚀", title: "Build something", desc: "Create apps, websites, tools", gradient: "from-blue-500/10 to-cyan-500/10" },
+                    { icon: "🎨", title: "Design it", desc: "UI, colors, layouts", gradient: "from-pink-500/10 to-rose-500/10" },
+                    { icon: "🧠", title: "Learn anything", desc: "Concepts explained simply", gradient: "from-amber-500/10 to-orange-500/10" },
+                    { icon: "⚡", title: "Solve problems", desc: "Debug, optimize, improve", gradient: "from-purple-500/10 to-violet-500/10" }
+                  ].map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => onInputChange(suggestion.title + ": ")}
+                      className={`group flex items-center gap-4 p-4 rounded-2xl border border-border/40 bg-gradient-to-br ${suggestion.gradient} hover:border-primary/30 suggestion-card text-left message-slide-in`}
+                      style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+                    >
+                      <span className="text-3xl group-hover:scale-110 transition-transform">{suggestion.icon}</span>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {suggestion.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {suggestion.desc}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4 md:space-y-5">
@@ -366,35 +515,35 @@ const ChatArea = ({
                 <div
                   key={message.id}
                   data-message-id={message.id}
-                  className={`flex gap-2.5 md:gap-3 group animate-fade-in ${
+                  className={`flex gap-3 md:gap-4 group message-slide-in ${
                     message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'
                   }`}
                   style={{ animationDelay: `${Math.min(index * 0.05, 0.3)}s` }}
                 >
-                  {/* Avatar - Gemini style */}
-                  <div className={`flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-105 ${
+                  {/* Avatar with glow effect for AI */}
+                  <div className={`flex-shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 ${
                     message.role === 'assistant' 
-                      ? 'bg-gradient-to-br from-primary/20 to-primary/10' 
+                      ? 'bg-gradient-to-br from-primary via-purple-500 to-cyan-500 shadow-lg ai-avatar-glow' 
                       : 'bg-muted'
                   }`}>
                     {message.role === 'assistant' ? (
-                      <Bot className="h-4 w-4 md:h-4.5 md:w-4.5 text-primary" />
+                      <Sparkles className="h-5 w-5 text-white" />
                     ) : (
-                      <User className="h-4 w-4 md:h-4.5 md:w-4.5 text-muted-foreground" />
+                      <User className="h-5 w-5 text-muted-foreground" />
                     )}
                   </div>
 
-                  {/* Message Content - Clean Gemini style */}
+                  {/* Message Content */}
                   <div className={`flex-1 min-w-0 ${message.role === 'user' ? 'flex flex-col items-end' : ''}`}>
                     {/* Timestamp */}
-                    <span className="text-[10px] text-muted-foreground/60 mb-1 block">
-                      {formatTime(message.created_at)}
+                    <span className="text-[10px] text-muted-foreground/50 mb-1 block font-medium">
+                      {message.role === 'assistant' ? 'Aerostic AI' : 'You'} · {formatTime(message.created_at)}
                     </span>
                     
                     <div className={`inline-block max-w-[90%] md:max-w-[85%] rounded-2xl ${
                       message.role === 'assistant'
-                        ? 'bg-transparent'
-                        : 'bg-muted/80 px-4 py-2.5'
+                        ? 'glass-bubble p-4'
+                        : 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground px-4 py-3 shadow-md'
                     }`}>
                       {message.role === 'assistant' ? (
                         <>
@@ -407,7 +556,7 @@ const ChatArea = ({
                           />
                         </>
                       ) : (
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words text-foreground">
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
                           {message.content}
                         </p>
                       )}
@@ -418,18 +567,23 @@ const ChatArea = ({
 
               {/* Enhanced Loading Indicator */}
               {isLoading && (
-                <div className="flex gap-2.5 md:gap-3 animate-fade-in">
-                  <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10">
-                    <Bot className="h-4 w-4 md:h-4.5 md:w-4.5 text-primary animate-pulse" />
+                <div className="flex gap-3 md:gap-4 message-slide-in">
+                  <div className="flex-shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary via-purple-500 to-cyan-500 shadow-lg ai-avatar-glow">
+                    <Sparkles className="h-5 w-5 text-white animate-pulse" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 text-muted-foreground py-2">
-                      <div className="flex gap-1.5">
-                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    <span className="text-[10px] text-muted-foreground/50 mb-1 block font-medium">
+                      Aerostic AI
+                    </span>
+                    <div className="glass-bubble p-4 inline-block">
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1.5">
+                          <span className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                          <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                          <span className="w-2.5 h-2.5 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">Thinking...</span>
                       </div>
-                      <span className="text-xs text-muted-foreground/60">Thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -441,14 +595,32 @@ const ChatArea = ({
         </div>
       </div>
 
+      {/* Quick prompt chips - appears when typing */}
+      {messages.length > 0 && !isLoading && (
+        <div className="flex-none py-2 px-4 overflow-x-auto">
+          <div className="flex gap-2 justify-center max-w-3xl mx-auto">
+            {quickPrompts.map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => onInputChange(prompt.text)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-bubble text-sm whitespace-nowrap hover:scale-105 transition-transform"
+              >
+                <span>{prompt.icon}</span>
+                <span className="text-muted-foreground">{prompt.text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tools Menu - Floating button */}
       <ToolsMenu />
 
-      {/* Input Area - Fixed at bottom - Gemini style */}
-      <div className="flex-none pb-3 md:pb-4 pt-2 relative bg-background">
+      {/* Input Area - Fixed at bottom with glow effect */}
+      <div className="flex-none pb-3 md:pb-4 pt-2 relative z-20 bg-gradient-to-t from-background via-background to-transparent">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 md:px-6 relative">
           {replyingTo && (
-            <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-t-xl border border-border border-b-0 animate-fade-in">
+            <div className="mb-2 flex items-center gap-2 px-3 py-2 glass-bubble rounded-t-xl border-b-0 message-slide-in">
               <Reply className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground flex-1 truncate">
                 Replying to: "{replyingTo.text}"
@@ -464,40 +636,42 @@ const ChatArea = ({
             </div>
           )}
 
-          <div className="relative bg-muted/50 rounded-full border border-border/60 shadow-sm hover:shadow-md focus-within:shadow-md focus-within:border-primary/30 transition-all duration-200">
-            <Textarea
-              ref={textareaRef}
-              value={inputMessage}
-              onChange={(e) => onInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
-              className="min-h-[48px] max-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pr-20 pl-4 py-3 text-[15px] rounded-full"
-              disabled={isLoading}
-              rows={1}
-            />
-            
-            <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1.5">
-              <VoiceRecorder
-                onTranscription={(text) => onInputChange(inputMessage + " " + text)}
+          <div className="relative input-glow rounded-2xl">
+            <div className="relative glass-bubble rounded-2xl overflow-hidden">
+              <Textarea
+                ref={textareaRef}
+                value={inputMessage}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me anything..."
+                className="min-h-[56px] max-h-[150px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pr-24 pl-5 py-4 text-[15px] rounded-2xl"
                 disabled={isLoading}
+                rows={1}
               />
               
-              <Button
-                onClick={onSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                size="sm"
-                className="rounded-full h-9 w-9 p-0 bg-primary hover:bg-primary/90 transition-all disabled:opacity-30"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                <VoiceRecorder
+                  onTranscription={(text) => onInputChange(inputMessage + " " + text)}
+                  disabled={isLoading}
+                />
+                
+                <Button
+                  onClick={onSendMessage}
+                  disabled={!inputMessage.trim() || isLoading}
+                  size="sm"
+                  className="rounded-xl h-10 w-10 p-0 bg-gradient-to-r from-primary via-purple-500 to-cyan-500 hover:opacity-90 transition-all disabled:opacity-30 shadow-lg fab-pulse"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  ) : (
+                    <Send className="h-5 w-5 text-white" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
-          <p className="text-[11px] text-muted-foreground/60 text-center mt-2 hidden md:block">
+          <p className="text-[11px] text-muted-foreground/50 text-center mt-3 hidden md:block">
             Aerostic AI can make mistakes. Consider checking important information.
           </p>
         </div>

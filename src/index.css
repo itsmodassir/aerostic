@@ -340,3 +340,293 @@
 .animation-delay-1000 {
   animation-delay: 1s;
 }
+
+/* ========== UNIQUE AI CHAT STYLES ========== */
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(260 91% 60%), hsl(var(--primary)));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+
+/* Orb animations for chat background */
+.chat-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: orb-float 8s ease-in-out infinite;
+}
+
+.chat-orb-1 {
+  width: 300px;
+  height: 300px;
+  background: hsl(var(--primary) / 0.3);
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.chat-orb-2 {
+  width: 250px;
+  height: 250px;
+  background: hsl(260 91% 60% / 0.2);
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.chat-orb-3 {
+  width: 200px;
+  height: 200px;
+  background: hsl(180 91% 50% / 0.15);
+  bottom: 20%;
+  left: 30%;
+  animation-delay: 4s;
+}
+
+@keyframes orb-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  50% {
+    transform: translate(-20px, 30px) scale(0.95);
+  }
+  75% {
+    transform: translate(-30px, -10px) scale(1.02);
+  }
+}
+
+/* Message entrance animations */
+.message-slide-in {
+  animation: message-slide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes message-slide {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* AI typing effect */
+.ai-typing-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1.2em;
+  background: hsl(var(--primary));
+  margin-left: 2px;
+  animation: cursor-blink 1s step-end infinite;
+  border-radius: 1px;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Input glow effect */
+.input-glow {
+  position: relative;
+}
+
+.input-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, 
+    hsl(var(--primary) / 0.5), 
+    hsl(260 91% 60% / 0.5), 
+    hsl(var(--primary) / 0.5)
+  );
+  background-size: 200% auto;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+  animation: glow-rotate 3s linear infinite;
+}
+
+.input-glow:focus-within::before {
+  opacity: 1;
+}
+
+@keyframes glow-rotate {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Suggestion card hover effect */
+.suggestion-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.suggestion-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    hsl(var(--primary) / 0.1) 0%, 
+    transparent 50%,
+    hsl(260 91% 60% / 0.1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.suggestion-card:hover::before {
+  opacity: 1;
+}
+
+.suggestion-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px hsl(var(--primary) / 0.15);
+}
+
+/* Floating action button pulse */
+.fab-pulse {
+  animation: fab-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fab-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px hsl(var(--primary) / 0);
+  }
+}
+
+/* AI avatar glow */
+.ai-avatar-glow {
+  position: relative;
+}
+
+.ai-avatar-glow::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(260 91% 60%));
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0.6;
+  animation: avatar-pulse 2s ease-in-out infinite;
+}
+
+@keyframes avatar-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* Sparkle animation */
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: hsl(var(--primary));
+  border-radius: 50%;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* Wavy text animation */
+.wavy-text span {
+  display: inline-block;
+  animation: wave 1.5s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Glass morphism chat bubble */
+.glass-bubble {
+  background: hsl(var(--background) / 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--border) / 0.3);
+  box-shadow: 
+    0 4px 24px hsl(var(--foreground) / 0.05),
+    inset 0 1px 0 hsl(0 0% 100% / 0.1);
+}
+
+.dark .glass-bubble {
+  background: hsl(var(--background) / 0.5);
+  box-shadow: 
+    0 4px 24px hsl(0 0% 0% / 0.3),
+    inset 0 1px 0 hsl(0 0% 100% / 0.05);
+}
+
+/* Neon border effect */
+.neon-border {
+  position: relative;
+}
+
+.neon-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, 
+    hsl(var(--primary)), 
+    hsl(260 91% 60%), 
+    hsl(180 91% 50%),
+    hsl(var(--primary))
+  );
+  background-size: 300% auto;
+  border-radius: inherit;
+  z-index: -1;
+  animation: neon-flow 3s linear infinite;
+}
+
+@keyframes neon-flow {
+  0% { background-position: 0% center; }
+  100% { background-position: 300% center; }
+}
+
+/* Floating particles */
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: hsl(var(--primary) / 0.6);
+  border-radius: 50%;
+  animation: particle-rise 4s ease-in-out infinite;
+}
+
+@keyframes particle-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(100px) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100px) scale(0);
+  }
+}
