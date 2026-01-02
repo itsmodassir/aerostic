@@ -38,7 +38,8 @@ const Chat = () => {
     sendMessage,
     handleKeyPress,
     fetchMessages,
-    togglePin
+    togglePin,
+    regenerateLastResponse
   } = useChat();
 
   const handleRefresh = async () => {
@@ -253,6 +254,7 @@ const Chat = () => {
           onSendMessage={sendMessage}
           onKeyPress={handleKeyPress}
           onRefresh={handleRefresh}
+          onRegenerate={regenerateLastResponse}
         />
       </div>
 

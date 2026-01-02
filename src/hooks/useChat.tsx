@@ -396,6 +396,24 @@ export const useChat = () => {
     }
   };
 
+  // Regenerate last response
+  const regenerateLastResponse = async () => {
+    if (!currentConversation || messages.length < 2) return;
+    
+    // Find the last user message
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    if (!lastUserMessage) return;
+    
+    // Remove the last assistant message
+    const newMessages = messages.filter((_, i) => i !== messages.length - 1);
+    setMessages(newMessages);
+    
+    // Resend the message
+    setInputMessage(lastUserMessage.content);
+    
+    toast.info("Regenerating response...");
+  };
+
   return {
     conversations,
     currentConversation,
@@ -410,6 +428,7 @@ export const useChat = () => {
     sendMessage,
     handleKeyPress,
     fetchMessages,
-    togglePin
+    togglePin,
+    regenerateLastResponse
   };
 };
