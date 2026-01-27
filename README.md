@@ -36,7 +36,7 @@ We provide a helper script to automate the entire setup:
 2.  **Configure Security Group**: Allow Inbound on Ports `80` (HTTP), `443` (HTTPS), and `22` (SSH).
 3.  **Run the Auto-Deploy Script**:
     ```bash
-    curl -o deploy_aws.sh https://raw.githubusercontent.com/itsmodassir/aersotic/main/deploy_aws.sh
+    curl -o deploy_aws.sh https://raw.githubusercontent.com/itsmodassir/aerostic-whatsapp-automation/main/deploy_aws.sh
     chmod +x deploy_aws.sh
     ./deploy_aws.sh
     ```
@@ -60,7 +60,7 @@ For deep technical details, please refer to the `docs/` folder:
 
 1.  **Clone the Repo**:
     ```bash
-    git clone https://github.com/itsmodassir/aersotic.git
+    git clone https://github.com/itsmodassir/aerostic-whatsapp-automation.git
     cd aerostic
     ```
 

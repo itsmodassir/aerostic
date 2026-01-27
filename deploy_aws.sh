@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-REPO_URL="https://github.com/itsmodassir/aersotic.git"
+REPO_URL="https://github.com/itsmodassir/aerostic-whatsapp-automation.git"
 APP_DIR="aerostic"
 
 echo "🚀 Starting Aerostic AWS Deployment..."
