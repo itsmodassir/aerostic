@@ -1,0 +1,19 @@
+name: Aerostic CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Backend Docker Image
+      run: docker build . -f apps/backend/Dockerfile -t aerostic-backend
+
+    - name: Build Frontend Docker Image
+      run: docker build . -f apps/frontend/Dockerfile -t aerostic-frontend

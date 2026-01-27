@@ -1,0 +1,136 @@
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
+import { Message } from './entities/message.entity';
+import { Contact } from '../contacts/entities/contact.entity';
+import { Conversation } from './entities/conversation.entity';
+import { MetaToken } from '../meta/entities/meta-token.entity'; // Need to decrypt
+import { SendMessageDto } from './dto/send-message.dto';
+import axios from 'axios';
+
+@Injectable()
+export class MessagesService {
+    constructor(
+        @InjectRepository(WhatsappAccount)
+        private whatsappAccountRepo: Repository<WhatsappAccount>,
+        @InjectRepository(Message)
+        private messageRepo: Repository<Message>,
+        @InjectRepository(MetaToken)
+        private metaTokenRepo: Repository<MetaToken>,
+        @InjectRepository(Contact)
+        private contactRepo: Repository<Contact>,
+        @InjectRepository(Conversation)
+        private conversationRepo: Repository<Conversation>,
+    ) { }
+
+    async send(dto: SendMessageDto) {
+        // 1. Resolve Tenant's WhatsApp Account
+        const account = await this.whatsappAccountRepo.findOneBy({ tenantId: dto.tenantId });
+        if (!account) {
+            throw new NotFoundException('WhatsApp account not found for this tenant');
+        }
+
+        // 2. Resolve Contact & Conversation (Prerequisite for storage)
+        let contact = await this.contactRepo.findOneBy({ tenantId: dto.tenantId, phoneNumber: dto.to });
+        if (!contact) {
+            contact = this.contactRepo.create({
+                tenantId: dto.tenantId,
+                phoneNumber: dto.to,
+                name: dto.to, // Default name
+            });
+            await this.contactRepo.save(contact);
+        }
+
+        let conversation = await this.conversationRepo.findOne({
+            where: { tenantId: dto.tenantId, contactId: contact.id, status: 'open' }
+        });
+
+        if (!conversation) {
+            conversation = this.conversationRepo.create({
+                tenantId: dto.tenantId,
+                contactId: contact.id,
+                phoneNumberId: account.phoneNumberId,
+                status: 'open',
+                lastMessageAt: new Date()
+            });
+            await this.conversationRepo.save(conversation);
+        } else {
+            conversation.lastMessageAt = new Date();
+            await this.conversationRepo.save(conversation);
+        }
+
+
+        // 3. Get System Token
+        const tokenRecord = await this.metaTokenRepo.findOne({
+            where: { tokenType: 'system' },
+            order: { createdAt: 'DESC' }
+        });
+
+        if (!tokenRecord) {
+            throw new InternalServerErrorException('System token configuration missing');
+        }
+
+        const token = tokenRecord.encryptedToken; // TODO: Decrypt here
+
+        // 4. Construct Meta Graph API Payload
+        const url = `https://graph.facebook.com/v18.0/${account.phoneNumberId}/messages`;
+
+        let body: any = {
+            messaging_product: 'whatsapp',
+            to: dto.to,
+            type: dto.type,
+        };
+
+        if (dto.type === 'text') {
+            body.text = { body: dto.payload.text };
+        } else if (dto.type === 'template') {
+            body.template = dto.payload;
+        }
+
+        // 5. Send Request
+        try {
+            const response = await axios.post(url, body, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const metaId = response.data.messages?.[0]?.id;
+
+            // 6. Save Outbound Message to DB
+            const message = this.messageRepo.create({
+                tenantId: dto.tenantId,
+                conversationId: conversation.id,
+                direction: 'out',
+                type: dto.type,
+                content: dto.type === 'text' ? { body: dto.payload.text } : dto.payload,
+                metaMessageId: metaId,
+                status: 'sent',
+            });
+            await this.messageRepo.save(message);
+
+            return { sent: true, metaId, messageId: message.id };
+
+        } catch (error) {
+            console.error('Meta API Error:', error.response?.data || error.message);
+            throw new InternalServerErrorException('Failed to send WhatsApp message');
+        }
+    }
+
+    async getConversations(tenantId: string) {
+        return this.conversationRepo.find({
+            where: { tenantId, status: 'open' },
+            relations: ['contact'],
+            order: { lastMessageAt: 'DESC' }
+        });
+    }
+
+    async getMessages(tenantId: string, conversationId: string) {
+        return this.messageRepo.find({
+            where: { tenantId, conversationId },
+            order: { createdAt: 'ASC' }
+        });
+    }
+}
