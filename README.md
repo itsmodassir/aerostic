@@ -1,74 +1,75 @@
+# 🚀 Aerostic - WhatsApp Marketing SaaS
 
-# Welcome to your Aerostic project
+**Aerostic** is a production-ready, multi-tenant SaaS platform for WhatsApp Marketing & Automation. It is built to scale, featuring Meta Embedded Signup, AI-powered responses, and a complete CRM dashboard.
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/5bc39ac6-5590-410c-b362-0ca33f965cad
+## 🌟 Key Features
 
-## How can I edit this code?
+*   **Multi-tenant Architecture**: Isolated workspaces for every user.
+*   **Official Meta Integration**: Supports both **Cloud API** (New Numbers) and **Embedded Signup** (Existing Business Numbers).
+*   **Smart AI Agents**: Google Gemini-powered chatbots with automated handoff to human agents.
+*   **Campaign Manager**: Bulk broadcasting with template message support.
+*   **Team Inbox**: Real-time shared inbox for support agents.
+*   **Role-Based Access**: Super Admin, Workspace Admin, and Agent roles.
 
-There are several ways of editing your application.
+---
 
-**Use BlogCraft**
+## 🛠️ Technology Stack
 
-Simply visit the [BlogCraft Project](https://lovable.dev/projects/5bc39ac6-5590-410c-b362-0ca33f965cad) and start prompting.
+*   **Frontend**: Next.js 14, Tailwind CSS, ShadCN UI
+*   **Backend**: NestJS (Node.js), TypeORM
+*   **Database**: PostgreSQL
+*   **Queue/Cache**: Redis
+*   **Infrastructure**: Docker, Docker Compose, Nginx
 
-Changes made via BlogCraft will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## ☁️ Deployment Guide (AWS)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in BlogCraft.
+This project is optimized for deployment on **AWS EC2** (Amazon Linux 2023 or Ubuntu).
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 1-Click Deployment
+We provide a helper script to automate the entire setup:
 
-Follow these steps:
+1.  **Launch an EC2 Instance** (t3.small or larger recommended).
+2.  **Configure Security Group**: Allow Inbound on Ports `80` (HTTP), `443` (HTTPS), and `22` (SSH).
+3.  **Run the Auto-Deploy Script**:
+    ```bash
+    curl -o deploy_aws.sh https://raw.githubusercontent.com/itsmodassir/aersotic/main/deploy_aws.sh
+    chmod +x deploy_aws.sh
+    ./deploy_aws.sh
+    ```
+4.  **Access Your App**: Open your server's Public IP.
+    *   **Frontend**: `http://<your-ip>/`
+    *   **Backend API**: `http://<your-ip>/api/`
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 📂 Documentation
 
-# Step 3: Install the necessary dependencies.
-npm i
+For deep technical details, please refer to the `docs/` folder:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+*   **[📘 System Blueprint](docs/BLUEPRINT.md)**: Full architecture, API design, and data flows.
+*   **[📋 Implementation Plan](docs/implementation_plan.md)**: Development roadmap and status.
+*   **[✅ Production Checklist](docs/production_checklist.md)**: Security and launch verification steps.
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 💻 Local Development
 
-**Use GitHub Codespaces**
+1.  **Clone the Repo**:
+    ```bash
+    git clone https://github.com/itsmodassir/aersotic.git
+    cd aerostic
+    ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2.  **Start Services**:
+    ```bash
+    ./start.sh
+    ```
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [BlogCraft](https://lovable.dev/projects/5bc39ac6-5590-410c-b362-0ca33f965cad) and click on Share -> Publish.
-
-## Can I connect a custom domain to my BlogCraft project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+3.  **Access Locally**:
+    *   Frontend: `http://localhost:3000`
+    *   Backend: `http://localhost:3001`
+    *   Admin: `http://localhost:3000/admin`
