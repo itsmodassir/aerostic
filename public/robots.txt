@@ -1,0 +1,45 @@
+# Robots.txt for Aerostic AI
+# Updated to follow proper syntax and SEO best practices
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /src/
+Disallow: /node_modules/
+Disallow: /*.json$
+Disallow: /*?utm_*
+Disallow: /*?ref=*
+Disallow: /*?fbclid=*
+
+# Allow specific social media crawlers full access
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Crawl-delay for general bots to prevent server overload
+User-agent: *
+Crawl-delay: 1
+
+# Important pages for AI chatbot and chat assistant
+Allow: /chat
+Allow: /blog
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /prompt-generator
+Allow: /image-generator
+
+# Block private pages from crawling
+Disallow: /dashboard
+Disallow: /auth
+
+# Sitemap location
+Sitemap: https://aerostic.lovable.app/sitemap.xml
