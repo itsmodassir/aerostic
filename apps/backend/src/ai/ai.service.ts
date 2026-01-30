@@ -38,7 +38,7 @@ export class AiService {
 
             // Default System Prompt if not configured
             const systemPrompt = agent?.systemPrompt || "You are a helpful and friendly customer support agent for Aerostic, a SaaS platform. Answer concisely.";
-            const isActive = agent ? agent.active : true; // Default active
+            const isActive = agent ? agent.isActive : true; // Default active
 
             if (!isActive) {
                 console.log('AI Agent disabled for tenant');

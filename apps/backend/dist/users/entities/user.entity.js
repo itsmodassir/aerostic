@@ -26,7 +26,14 @@ let User = class User {
     email;
     passwordHash;
     role;
+    phone;
+    avatar;
+    apiAccessEnabled;
+    isActive;
+    emailVerified;
+    lastLoginAt;
     createdAt;
+    updatedAt;
 };
 exports.User = User;
 __decorate([
@@ -61,9 +68,37 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "phone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "avatar", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'api_access_enabled', default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "apiAccessEnabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'is_active', default: true }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isActive", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'email_verified', default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "emailVerified", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'last_login_at', nullable: true }),
+    __metadata("design:type", Date)
+], User.prototype, "lastLoginAt", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], User.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
+    __metadata("design:type", Date)
+], User.prototype, "updatedAt", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)('users')
 ], User);

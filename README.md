@@ -73,3 +73,39 @@ For deep technical details, please refer to the `docs/` folder:
     *   Frontend: `http://localhost:3000`
     *   Backend: `http://localhost:3001`
     *   Admin: `http://localhost:3000/admin`
+
+---
+
+## 🌍 Going Public & Community
+
+If you plan to make this repository **Public** on GitHub, please follow this checklist to ensure security and community readiness:
+
+### 🔒 Security Checklist (Before Public Release)
+1.  **Audit Secrets**: Ensure no real API keys, passwords, or `.env` files are committed.
+    *   Check `git log` history for accidental commits of secrets.
+    *   Use `bfg-repo-cleaner` if you need to scrub history.
+2.  **Environment Variables**:
+    *   Keep `.env` in `.gitignore` (Already configured).
+    *   Provide a `.env.example` with dummy values for users to copy.
+3.  **ConfigFile Audit**: Check `config/` or `src/` for any hardcoded tokens.
+
+### 📢 How to Make It Public
+1.  Go to **Settings** > **General**.
+2.  Scroll to the **Danger Zone** at the bottom.
+3.  Click **Change repository visibility**.
+4.  Select **Make public** and confirm.
+
+### 💬 Enabling GitHub Discussions
+To build a community around Aerostic:
+1.  Go to **Settings** > **General**.
+2.  Under **Features**, check the box for **Discussions**.
+3.  Click **Set up discussions** to create initial categories (General, Ideas, Q&A).
+
+### 🤝 Contributing
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon) for details on how to submit Pull Requests, report bugs, and suggest features.
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

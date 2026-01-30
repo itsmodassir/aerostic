@@ -79,10 +79,18 @@ Meta WhatsApp Cloud API
 - `POST /auth/login`: User login
 - `POST /auth/register`: New tenant signup
 
+### Admin & Billing (New)
+- `GET /admin/config`: Fetch system-wide configurations
+- `POST /admin/config`: Update system settings
+- `PATCH /admin/users/:id/plan`: Manage tenant plans
+- `GET /billing/api-keys`: Manage Developer API keys
+- `GET /billing/webhooks`: Manage User Webhooks
+
 ### WhatsApp
 - `GET /whatsapp/embedded/start`: Initiate Embedded Signup (OAuth)
 - `GET /meta/callback`: Handle Meta OAuth callback & token exchange
 - `POST /whatsapp/cloud/init`: Register new Cloud API number
+- `GET /whatsapp/me`: Fetch configured WhatsApp account details
 
 ### Messaging (The Dispatcher)
 - `POST /messages/send`: **Sole entry point** for sending messages (Text/Template/Media).

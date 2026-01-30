@@ -13,16 +13,18 @@ const admin_controller_1 = require("./admin.controller");
 const admin_service_1 = require("./admin.service");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const whatsapp_account_entity_1 = require("../whatsapp/entities/whatsapp-account.entity");
+const system_config_entity_1 = require("./entities/system-config.entity");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, whatsapp_account_entity_1.WhatsappAccount]),
+            typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, whatsapp_account_entity_1.WhatsappAccount, system_config_entity_1.SystemConfig]),
         ],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],
+        exports: [admin_service_1.AdminService],
     })
 ], AdminModule);
 //# sourceMappingURL=admin.module.js.map

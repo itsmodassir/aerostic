@@ -38,7 +38,7 @@ let AiController = class AiController {
             agent = this.aiAgentRepo.create({ tenantId: body.tenantId });
         }
         agent.systemPrompt = body.systemPrompt;
-        agent.active = body.active;
+        agent.isActive = body.active;
         return this.aiAgentRepo.save(agent);
     }
     async respond(body) {

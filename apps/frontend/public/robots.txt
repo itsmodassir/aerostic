@@ -1,0 +1,35 @@
+# Aerostic Robots.txt
+# https://aerostic.com
+
+User-agent: *
+Allow: /
+Allow: /docs/
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /support
+Allow: /careers
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /auth/
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://aerostic.com/sitemap.xml
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bingbot
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1

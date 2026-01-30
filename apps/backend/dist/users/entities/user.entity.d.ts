@@ -12,5 +12,12 @@ export declare class User {
     email: string;
     passwordHash: string;
     role: UserRole;
+    phone: string;
+    avatar: string;
+    apiAccessEnabled: boolean;
+    isActive: boolean;
+    emailVerified: boolean;
+    lastLoginAt: Date;
     createdAt: Date;
+    updatedAt: Date;
 }

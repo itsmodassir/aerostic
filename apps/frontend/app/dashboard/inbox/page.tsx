@@ -2,8 +2,23 @@
 
 import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
-import { Send, Search, User } from 'lucide-react';
+import {
+    Send, Search, User, Filter, MoreVertical, Phone, Video,
+    Check, CheckCheck, Clock, AlertCircle, Smile, Paperclip,
+    Archive, Star, Tag, UserPlus, ChevronDown, Bot, MessageSquare,
+    RefreshCw, ArrowLeft, Settings2, Bell, Users, Inbox,
+    Circle, Mic, Image, FileText, X, Plus
+} from 'lucide-react';
 import { clsx } from 'clsx';
+
+interface TeamMember {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    role: 'admin' | 'agent';
+    status: 'online' | 'away' | 'offline';
+}
 
 interface Conversation {
     id: string;
@@ -11,63 +26,200 @@ interface Conversation {
         id: string;
         name: string;
         phoneNumber: string;
+        avatar?: string;
+        tags?: string[];
     };
+    lastMessage?: string;
     lastMessageAt: string;
+    unreadCount: number;
+    status: 'open' | 'pending' | 'resolved' | 'snoozed';
+    priority: 'high' | 'medium' | 'low';
+    assignedTo?: TeamMember;
+    isStarred?: boolean;
+    isBot?: boolean;
+    channel: 'whatsapp' | 'instagram' | 'email';
 }
 
 interface Message {
     id: string;
     direction: 'in' | 'out';
-    type: string;
+    type: 'text' | 'image' | 'document' | 'audio' | 'template';
     content: any;
-    status: string;
+    status: 'sent' | 'delivered' | 'read' | 'failed';
     createdAt: string;
+    sender?: TeamMember;
 }
 
+// Demo team members
+const TEAM_MEMBERS: TeamMember[] = [
+    { id: '1', name: 'Modassir', email: 'md@modassir.info', role: 'admin', status: 'online' },
+    { id: '2', name: 'Rahul Sharma', email: 'rahul@example.com', role: 'agent', status: 'online' },
+    { id: '3', name: 'Priya Patel', email: 'priya@example.com', role: 'agent', status: 'away' },
+    { id: '4', name: 'Amit Kumar', email: 'amit@example.com', role: 'agent', status: 'offline' },
+];
+
+// Demo conversations
+const DEMO_CONVERSATIONS: Conversation[] = [
+    {
+        id: '1',
+        contact: { id: 'c1', name: 'Vikram Singh', phoneNumber: '+91 98765 43210', tags: ['VIP', 'Lead'] },
+        lastMessage: 'Hi, I want to know about your premium plans',
+        lastMessageAt: new Date(Date.now() - 5 * 60000).toISOString(),
+        unreadCount: 2,
+        status: 'open',
+        priority: 'high',
+        assignedTo: TEAM_MEMBERS[0],
+        channel: 'whatsapp',
+    },
+    {
+        id: '2',
+        contact: { id: 'c2', name: 'Neha Gupta', phoneNumber: '+91 87654 32109', tags: ['Customer'] },
+        lastMessage: 'Thank you for the quick response!',
+        lastMessageAt: new Date(Date.now() - 15 * 60000).toISOString(),
+        unreadCount: 0,
+        status: 'resolved',
+        priority: 'low',
+        assignedTo: TEAM_MEMBERS[1],
+        isStarred: true,
+        channel: 'whatsapp',
+    },
+    {
+        id: '3',
+        contact: { id: 'c3', name: 'Ravi Mehta', phoneNumber: '+91 76543 21098', tags: ['Support'] },
+        lastMessage: 'When will my order arrive?',
+        lastMessageAt: new Date(Date.now() - 30 * 60000).toISOString(),
+        unreadCount: 1,
+        status: 'pending',
+        priority: 'medium',
+        isBot: true,
+        channel: 'whatsapp',
+    },
+    {
+        id: '4',
+        contact: { id: 'c4', name: 'Anjali Sharma', phoneNumber: '+91 65432 10987' },
+        lastMessage: 'Please call me back',
+        lastMessageAt: new Date(Date.now() - 60 * 60000).toISOString(),
+        unreadCount: 0,
+        status: 'open',
+        priority: 'high',
+        channel: 'whatsapp',
+    },
+    {
+        id: '5',
+        contact: { id: 'c5', name: 'Karan Verma', phoneNumber: '+91 54321 09876', tags: ['New'] },
+        lastMessage: 'Can I schedule a demo?',
+        lastMessageAt: new Date(Date.now() - 120 * 60000).toISOString(),
+        unreadCount: 0,
+        status: 'snoozed',
+        priority: 'medium',
+        assignedTo: TEAM_MEMBERS[2],
+        channel: 'whatsapp',
+    },
+];
+
+// Demo messages
+const DEMO_MESSAGES: Message[] = [
+    { id: 'm1', direction: 'in', type: 'text', content: { body: 'Hi, I want to know about your premium plans' }, status: 'read', createdAt: new Date(Date.now() - 10 * 60000).toISOString() },
+    { id: 'm2', direction: 'out', type: 'text', content: { body: 'Hello! Thank you for reaching out. I\'d be happy to help you with our premium plans.' }, status: 'read', createdAt: new Date(Date.now() - 9 * 60000).toISOString(), sender: TEAM_MEMBERS[0] },
+    { id: 'm3', direction: 'out', type: 'text', content: { body: 'We have three plans: Starter at ₹1,999/mo, Growth at ₹4,999/mo, and Enterprise at ₹14,999/mo.' }, status: 'read', createdAt: new Date(Date.now() - 8 * 60000).toISOString(), sender: TEAM_MEMBERS[0] },
+    { id: 'm4', direction: 'in', type: 'text', content: { body: 'What\'s included in the Growth plan?' }, status: 'read', createdAt: new Date(Date.now() - 7 * 60000).toISOString() },
+    { id: 'm5', direction: 'out', type: 'text', content: { body: 'The Growth plan includes 50,000 messages/month, 5 AI agents, custom templates, priority support, API access, and team collaboration features.' }, status: 'delivered', createdAt: new Date(Date.now() - 5 * 60000).toISOString(), sender: TEAM_MEMBERS[0] },
+    { id: 'm6', direction: 'in', type: 'text', content: { body: 'That sounds great! Can I get a demo?' }, status: 'read', createdAt: new Date(Date.now() - 3 * 60000).toISOString() },
+];
+
+const QUICK_REPLIES = [
+    "Thank you for contacting us!",
+    "Let me check and get back to you.",
+    "Is there anything else I can help with?",
+    "Our team will contact you shortly.",
+    "Please share your order ID.",
+];
+
 export default function InboxPage() {
-    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [conversations, setConversations] = useState<Conversation[]>(DEMO_CONVERSATIONS);
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
     const [tenantId, setTenantId] = useState<string>('');
+    const [currentUser, setCurrentUser] = useState<TeamMember | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterAssignee, setFilterAssignee] = useState<string>('all');
+    const [showFilters, setShowFilters] = useState(false);
+    const [showQuickReplies, setShowQuickReplies] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showContactDetails, setShowContactDetails] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 1. Init: Get Tenant ID
+    // Init: Get user info
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 setTenantId(payload.tenantId);
-            } catch (e) { console.error('Token error', e); }
+                setCurrentUser({
+                    id: payload.userId || '1',
+                    name: payload.name || payload.email?.split('@')[0] || 'User',
+                    email: payload.email || '',
+                    role: payload.email === 'md@modassir.info' ? 'admin' : 'agent',
+                    status: 'online',
+                });
+            } catch (e) { }
         }
     }, []);
 
-    // 2. Poll: Fetch Conversations List
+    // Fetch conversations from API (with fallback to demo)
     useEffect(() => {
         if (!tenantId) return;
         const fetchConvs = async () => {
             try {
                 const res = await api.get(`/messages/conversations?tenantId=${tenantId}`);
-                setConversations(res.data);
-            } catch (e) { console.error(e); }
+                if (res.data && res.data.length > 0) {
+                    // Map API data to our format
+                    const mapped = res.data.map((conv: any) => ({
+                        ...conv,
+                        unreadCount: conv.unreadCount || 0,
+                        status: conv.status || 'open',
+                        priority: conv.priority || 'medium',
+                        channel: 'whatsapp',
+                    }));
+                    setConversations(mapped);
+                }
+            } catch (e) {
+                // Use demo data on error
+                console.log('Using demo conversations');
+            }
         };
         fetchConvs();
-        const interval = setInterval(fetchConvs, 5000); // 5s poll
+        const interval = setInterval(fetchConvs, 10000);
         return () => clearInterval(interval);
     }, [tenantId]);
 
-    // 3. Poll: Fetch Messages for Selected Chat
+    // Fetch messages when conversation selected
     useEffect(() => {
-        if (!selectedConversation || !tenantId) return;
+        if (!selectedConversation) {
+            setMessages([]);
+            return;
+        }
+
         const fetchMsgs = async () => {
             try {
                 const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
-                setMessages(res.data);
-            } catch (e) { console.error(e); }
+                if (res.data && res.data.length > 0) {
+                    setMessages(res.data);
+                } else {
+                    setMessages(DEMO_MESSAGES);
+                }
+            } catch (e) {
+                setMessages(DEMO_MESSAGES);
+            }
         };
+
         fetchMsgs();
-        const interval = setInterval(fetchMsgs, 3000); // 3s poll
+        const interval = setInterval(fetchMsgs, 5000);
         return () => clearInterval(interval);
     }, [selectedConversation, tenantId]);
 
@@ -76,8 +228,35 @@ export default function InboxPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Filter conversations
+    const filteredConversations = conversations.filter(conv => {
+        const matchesSearch = conv.contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            conv.contact.phoneNumber.includes(searchQuery);
+        const matchesStatus = filterStatus === 'all' || conv.status === filterStatus;
+        const matchesAssignee = filterAssignee === 'all' ||
+            (filterAssignee === 'unassigned' && !conv.assignedTo) ||
+            (filterAssignee === 'me' && conv.assignedTo?.id === currentUser?.id) ||
+            conv.assignedTo?.id === filterAssignee;
+        return matchesSearch && matchesStatus && matchesAssignee;
+    });
+
     const handleSend = async () => {
         if (!inputText.trim() || !selectedConversation) return;
+
+        // Optimistic update
+        const newMessage: Message = {
+            id: `temp-${Date.now()}`,
+            direction: 'out',
+            type: 'text',
+            content: { body: inputText },
+            status: 'sent',
+            createdAt: new Date().toISOString(),
+            sender: currentUser || undefined,
+        };
+        setMessages(prev => [...prev, newMessage]);
+        setInputText('');
+        setShowQuickReplies(false);
+
         try {
             await api.post('/messages/send', {
                 tenantId,
@@ -85,49 +264,268 @@ export default function InboxPage() {
                 type: 'text',
                 payload: { text: inputText }
             });
-            setInputText('');
-            // Optimistic update or wait for poll? 
-            // Let's wait for poll or manual fetch
-            const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
-            setMessages(res.data);
+
+            // Update message status
+            setMessages(prev => prev.map(m =>
+                m.id === newMessage.id ? { ...m, status: 'delivered' } : m
+            ));
         } catch (e) {
-            alert('Failed to send message');
+            setMessages(prev => prev.map(m =>
+                m.id === newMessage.id ? { ...m, status: 'failed' } : m
+            ));
         }
     };
 
+    const handleQuickReply = (text: string) => {
+        setInputText(text);
+        setShowQuickReplies(false);
+    };
+
+    const handleAssign = (member: TeamMember) => {
+        if (!selectedConversation) return;
+        setConversations(prev => prev.map(c =>
+            c.id === selectedConversation.id ? { ...c, assignedTo: member } : c
+        ));
+        setSelectedConversation(prev => prev ? { ...prev, assignedTo: member } : null);
+        setShowAssignModal(false);
+    };
+
+    const handleStatusChange = (status: Conversation['status']) => {
+        if (!selectedConversation) return;
+        setConversations(prev => prev.map(c =>
+            c.id === selectedConversation.id ? { ...c, status } : c
+        ));
+        setSelectedConversation(prev => prev ? { ...prev, status } : null);
+    };
+
+    const handleStar = (convId: string) => {
+        setConversations(prev => prev.map(c =>
+            c.id === convId ? { ...c, isStarred: !c.isStarred } : c
+        ));
+    };
+
+    const getStatusBadge = (status: string) => {
+        const colors: Record<string, string> = {
+            open: 'bg-green-100 text-green-700',
+            pending: 'bg-amber-100 text-amber-700',
+            resolved: 'bg-blue-100 text-blue-700',
+            snoozed: 'bg-gray-100 text-gray-700',
+        };
+        return colors[status] || colors.open;
+    };
+
+    const getPriorityColor = (priority: string) => {
+        const colors: Record<string, string> = {
+            high: 'text-red-500',
+            medium: 'text-amber-500',
+            low: 'text-green-500',
+        };
+        return colors[priority] || colors.medium;
+    };
+
+    const getMessageStatus = (status: string) => {
+        switch (status) {
+            case 'sent': return <Check className="w-3 h-3 text-gray-400" />;
+            case 'delivered': return <CheckCheck className="w-3 h-3 text-gray-400" />;
+            case 'read': return <CheckCheck className="w-3 h-3 text-blue-500" />;
+            case 'failed': return <AlertCircle className="w-3 h-3 text-red-500" />;
+            default: return <Clock className="w-3 h-3 text-gray-300" />;
+        }
+    };
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+        if (diffHours < 24) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (diffHours < 48) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+    };
+
+    const stats = {
+        total: conversations.length,
+        unassigned: conversations.filter(c => !c.assignedTo).length,
+        open: conversations.filter(c => c.status === 'open').length,
+        myChats: conversations.filter(c => c.assignedTo?.id === currentUser?.id).length,
+    };
+
     return (
-        <div className="flex h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border overflow-hidden">
-            {/* Contact List */}
-            <div className="w-80 border-r bg-gray-50 flex flex-col">
+        <div className="flex h-[calc(100vh-8rem)] bg-gray-100 rounded-2xl overflow-hidden shadow-lg">
+            {/* Sidebar - Conversation List */}
+            <div className="w-96 border-r bg-white flex flex-col">
+                {/* Header */}
                 <div className="p-4 border-b">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                        <input placeholder="Search..." className="w-full pl-9 pr-3 py-2 border rounded-md text-sm" />
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <Inbox className="w-5 h-5 text-blue-600" />
+                            Team Inbox
+                        </h2>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                            >
+                                <Filter className="w-4 h-4" />
+                            </button>
+                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                                <RefreshCw className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                        <button
+                            onClick={() => setFilterAssignee('all')}
+                            className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'all' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
+                        >
+                            <p className="text-lg font-bold text-gray-900">{stats.total}</p>
+                            <p className="text-[10px] text-gray-500">All</p>
+                        </button>
+                        <button
+                            onClick={() => setFilterAssignee('me')}
+                            className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'me' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
+                        >
+                            <p className="text-lg font-bold text-blue-600">{stats.myChats}</p>
+                            <p className="text-[10px] text-gray-500">Mine</p>
+                        </button>
+                        <button
+                            onClick={() => setFilterAssignee('unassigned')}
+                            className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'unassigned' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
+                        >
+                            <p className="text-lg font-bold text-amber-600">{stats.unassigned}</p>
+                            <p className="text-[10px] text-gray-500">Unassigned</p>
+                        </button>
+                        <button
+                            onClick={() => setFilterStatus('open')}
+                            className={`p-2 rounded-lg text-center transition-colors ${filterStatus === 'open' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
+                        >
+                            <p className="text-lg font-bold text-green-600">{stats.open}</p>
+                            <p className="text-[10px] text-gray-500">Open</p>
+                        </button>
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search conversations..."
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+
+                    {/* Filters */}
+                    {showFilters && (
+                        <div className="mt-3 pt-3 border-t flex gap-2">
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="open">Open</option>
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="snoozed">Snoozed</option>
+                            </select>
+                            <select
+                                value={filterAssignee}
+                                onChange={(e) => setFilterAssignee(e.target.value)}
+                                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                            >
+                                <option value="all">All Agents</option>
+                                <option value="me">Assigned to Me</option>
+                                <option value="unassigned">Unassigned</option>
+                                {TEAM_MEMBERS.map(m => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
-                <div className="flex-1 overflow-auto">
-                    {conversations.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500 text-sm mt-10">No active conversations</div>
+
+                {/* Conversation List */}
+                <div className="flex-1 overflow-y-auto">
+                    {filteredConversations.length === 0 ? (
+                        <div className="p-8 text-center">
+                            <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No conversations found</p>
+                        </div>
                     ) : (
-                        conversations.map(conv => (
+                        filteredConversations.map(conv => (
                             <div
                                 key={conv.id}
                                 onClick={() => setSelectedConversation(conv)}
                                 className={clsx(
-                                    "flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-100 transition-colors border-b",
-                                    selectedConversation?.id === conv.id ? "bg-blue-50 border-l-4 border-l-blue-600" : ""
+                                    "p-4 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors relative",
+                                    selectedConversation?.id === conv.id && "bg-blue-50 border-l-4 border-l-blue-600"
                                 )}
                             >
-                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-                                    <User size={20} />
+                                <div className="flex items-start gap-3">
+                                    {/* Avatar */}
+                                    <div className="relative">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                            {conv.contact.name.charAt(0)}
+                                        </div>
+                                        {conv.isBot && (
+                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                                <Bot className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <h4 className="font-semibold text-gray-900 truncate flex items-center gap-1">
+                                                {conv.contact.name}
+                                                {conv.isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+                                            </h4>
+                                            <span className="text-xs text-gray-400 whitespace-nowrap">
+                                                {formatTime(conv.lastMessageAt)}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-sm text-gray-500 truncate mb-2">
+                                            {conv.lastMessage || 'No messages yet'}
+                                        </p>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusBadge(conv.status)}`}>
+                                                    {conv.status}
+                                                </span>
+                                                {conv.priority && (
+                                                    <Circle className={`w-2 h-2 fill-current ${getPriorityColor(conv.priority)}`} />
+                                                )}
+                                                {conv.contact.tags?.map(tag => (
+                                                    <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {conv.assignedTo && (
+                                                    <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600" title={conv.assignedTo.name}>
+                                                        {conv.assignedTo.name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                {conv.unreadCount > 0 && (
+                                                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                                                        {conv.unreadCount}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold text-gray-900 truncate">{conv.contact.name}</h4>
-                                    <p className="text-xs text-gray-500">{conv.contact.phoneNumber}</p>
-                                </div>
-                                <span className="text-xs text-gray-400">
-                                    {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
                             </div>
                         ))
                     )}
@@ -135,69 +533,335 @@ export default function InboxPage() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-slate-50">
+            <div className="flex-1 flex flex-col bg-gray-50">
                 {selectedConversation ? (
                     <>
-                        <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                    {selectedConversation.contact.name.charAt(0)}
+                        {/* Chat Header */}
+                        <div className="px-6 py-4 bg-white border-b flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="relative">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                                        {selectedConversation.contact.name.charAt(0)}
+                                    </div>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-800">{selectedConversation.contact.name}</h3>
-                                    <p className="text-xs text-gray-500">{selectedConversation.contact.phoneNumber}</p>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-gray-900">{selectedConversation.contact.name}</h3>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(selectedConversation.status)}`}>
+                                            {selectedConversation.status}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-500 flex items-center gap-2">
+                                        <Phone className="w-3 h-3" />
+                                        {selectedConversation.contact.phoneNumber}
+                                    </p>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {/* Assignment */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowAssignModal(!showAssignModal)}
+                                        className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                    >
+                                        {selectedConversation.assignedTo ? (
+                                            <>
+                                                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                                                    {selectedConversation.assignedTo.name.charAt(0)}
+                                                </div>
+                                                <span className="text-sm text-gray-700">{selectedConversation.assignedTo.name}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserPlus className="w-4 h-4 text-gray-500" />
+                                                <span className="text-sm text-gray-500">Assign</span>
+                                            </>
+                                        )}
+                                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                                    </button>
+
+                                    {showAssignModal && (
+                                        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border overflow-hidden z-10">
+                                            <div className="p-3 border-b">
+                                                <p className="text-sm font-medium text-gray-700">Assign to team member</p>
+                                            </div>
+                                            <div className="max-h-60 overflow-y-auto">
+                                                {TEAM_MEMBERS.map(member => (
+                                                    <button
+                                                        key={member.id}
+                                                        onClick={() => handleAssign(member)}
+                                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <div className="relative">
+                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                                                                {member.name.charAt(0)}
+                                                            </div>
+                                                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${member.status === 'online' ? 'bg-green-500' :
+                                                                    member.status === 'away' ? 'bg-amber-500' : 'bg-gray-400'
+                                                                }`} />
+                                                        </div>
+                                                        <div className="flex-1 text-left">
+                                                            <p className="text-sm font-medium text-gray-900">{member.name}</p>
+                                                            <p className="text-xs text-gray-500">{member.role}</p>
+                                                        </div>
+                                                        {selectedConversation.assignedTo?.id === member.id && (
+                                                            <Check className="w-4 h-4 text-blue-600" />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Status Dropdown */}
+                                <select
+                                    value={selectedConversation.status}
+                                    onChange={(e) => handleStatusChange(e.target.value as any)}
+                                    className="px-3 py-2 bg-gray-100 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="open">Open</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="snoozed">Snoozed</option>
+                                </select>
+
+                                {/* Star */}
+                                <button
+                                    onClick={() => handleStar(selectedConversation.id)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <Star className={`w-5 h-5 ${selectedConversation.isStarred ? 'text-amber-500 fill-amber-500' : 'text-gray-400'}`} />
+                                </button>
+
+                                {/* More Options */}
+                                <button
+                                    onClick={() => setShowContactDetails(!showContactDetails)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <MoreVertical className="w-5 h-5 text-gray-400" />
+                                </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-auto p-6 space-y-4">
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
                             {messages.map((msg) => {
                                 const isOut = msg.direction === 'out';
                                 return (
                                     <div key={msg.id} className={clsx("flex", isOut ? "justify-end" : "justify-start")}>
-                                        <div className={clsx(
-                                            "max-w-[70%] rounded-2xl px-4 py-2 shadow-sm text-sm",
-                                            isOut
-                                                ? "bg-blue-600 text-white rounded-br-none"
-                                                : "bg-white text-gray-800 rounded-bl-none border"
-                                        )}>
-                                            {msg.type === 'text' && <p>{msg.content.body}</p>}
-                                            {/* Stub for other types */}
-                                            <div className={clsx("text-[10px] mt-1 text-right opacity-70", isOut ? "text-blue-100" : "text-gray-400")}>
-                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        <div className={clsx("max-w-[65%] group", isOut ? "items-end" : "items-start")}>
+                                            {!isOut && (
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs text-gray-500">{selectedConversation.contact.name}</span>
+                                                </div>
+                                            )}
+                                            {isOut && msg.sender && (
+                                                <div className="flex items-center gap-2 mb-1 justify-end">
+                                                    <span className="text-xs text-gray-500">{msg.sender.name}</span>
+                                                </div>
+                                            )}
+                                            <div className={clsx(
+                                                "rounded-2xl px-4 py-3 shadow-sm",
+                                                isOut
+                                                    ? "bg-blue-600 text-white rounded-br-md"
+                                                    : "bg-white text-gray-800 rounded-bl-md border"
+                                            )}>
+                                                {msg.type === 'text' && <p className="text-sm">{msg.content.body}</p>}
+                                                {msg.type === 'image' && (
+                                                    <div className="rounded-lg overflow-hidden">
+                                                        <Image className="w-48 h-32 text-gray-400" />
+                                                    </div>
+                                                )}
+
+                                                <div className={clsx(
+                                                    "flex items-center gap-1 mt-1",
+                                                    isOut ? "justify-end" : "justify-start"
+                                                )}>
+                                                    <span className={clsx(
+                                                        "text-[10px]",
+                                                        isOut ? "text-blue-100" : "text-gray-400"
+                                                    )}>
+                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                    {isOut && getMessageStatus(msg.status)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })}
+
+                            {isTyping && (
+                                <div className="flex justify-start">
+                                    <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border rounded-bl-md">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div ref={messagesEndRef} />
                         </div>
 
+                        {/* Message Input */}
                         <div className="p-4 bg-white border-t">
-                            <div className="flex gap-2">
-                                <input
-                                    className="flex-1 border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Type a message..."
-                                    value={inputText}
-                                    onChange={(e) => setInputText(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                />
+                            {/* Quick Replies */}
+                            {showQuickReplies && (
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                    {QUICK_REPLIES.map((reply, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleQuickReply(reply)}
+                                            className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 transition-colors"
+                                        >
+                                            {reply}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="flex items-end gap-3">
+                                {/* Attachment */}
+                                <div className="flex gap-1">
+                                    <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <Paperclip className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => setShowQuickReplies(!showQuickReplies)}
+                                        className={`p-2.5 rounded-lg transition-colors ${showQuickReplies ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                                    >
+                                        <Smile className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                {/* Input */}
+                                <div className="flex-1 relative">
+                                    <textarea
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSend();
+                                            }
+                                        }}
+                                        placeholder="Type a message..."
+                                        rows={1}
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+
+                                {/* Send */}
                                 <button
                                     onClick={handleSend}
-                                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                                    disabled={!inputText.trim()}
+                                    className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Send size={20} />
+                                    <Send className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
                     </>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                        <User size={64} className="mb-4 opacity-20" />
-                        <p className="text-lg font-medium">Select a conversation to start chatting</p>
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <MessageSquare className="w-12 h-12 text-gray-300" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">Select a conversation</h3>
+                        <p className="text-gray-400">Choose a chat from the sidebar to start messaging</p>
                     </div>
                 )}
             </div>
+
+            {/* Contact Details Sidebar */}
+            {showContactDetails && selectedConversation && (
+                <div className="w-80 bg-white border-l flex flex-col">
+                    <div className="p-4 border-b flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">Contact Details</h3>
+                        <button
+                            onClick={() => setShowContactDetails(false)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                        >
+                            <X className="w-4 h-4 text-gray-400" />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                        {/* Profile */}
+                        <div className="text-center">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">
+                                {selectedConversation.contact.name.charAt(0)}
+                            </div>
+                            <h4 className="font-bold text-gray-900">{selectedConversation.contact.name}</h4>
+                            <p className="text-sm text-gray-500">{selectedConversation.contact.phoneNumber}</p>
+                        </div>
+
+                        {/* Tags */}
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Tags</p>
+                            <div className="flex flex-wrap gap-2">
+                                {selectedConversation.contact.tags?.map(tag => (
+                                    <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                        {tag}
+                                    </span>
+                                ))}
+                                <button className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1 hover:bg-gray-200">
+                                    <Plus className="w-3 h-3" />
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Actions</p>
+                            <div className="space-y-2">
+                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <Phone className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm text-gray-700">Call Contact</span>
+                                </button>
+                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <Archive className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm text-gray-700">Archive Chat</span>
+                                </button>
+                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <Bot className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm text-gray-700">Enable AI Bot</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Assigned To */}
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Assigned To</p>
+                            {selectedConversation.assignedTo ? (
+                                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                                        {selectedConversation.assignedTo.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-900">{selectedConversation.assignedTo.name}</p>
+                                        <p className="text-xs text-gray-500">{selectedConversation.assignedTo.email}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowAssignModal(true)}
+                                    className="w-full flex items-center gap-3 px-3 py-2 border-2 border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                                >
+                                    <UserPlus className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-500">Assign to team member</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

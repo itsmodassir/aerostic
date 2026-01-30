@@ -2,14 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import {
+    Facebook, Settings, CheckCircle, XCircle, AlertCircle,
+    Key, Globe, Shield, ArrowRight, Copy, Eye, EyeOff,
+    Clock, Mail, Phone, Building2, Send, RefreshCw
+} from 'lucide-react';
 
 export default function WhatsappSettingsPage() {
     const [loading, setLoading] = useState(false);
     const [tenantId, setTenantId] = useState<string | null>(null);
+    const [connectionMethod, setConnectionMethod] = useState<'facebook' | 'manual' | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState<'connected' | 'pending' | 'disconnected'>('disconnected');
+
+    // Manual config fields
+    const [phoneNumberId, setPhoneNumberId] = useState('');
+    const [wabaId, setWabaId] = useState('');
+    const [accessToken, setAccessToken] = useState('');
+    const [showToken, setShowToken] = useState(false);
+    const [requestSent, setRequestSent] = useState(false);
+    const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
 
     useEffect(() => {
-        // Decode token to get tenantId (In logic app, use Context)
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -26,52 +39,364 @@ export default function WhatsappSettingsPage() {
         }
     }, []);
 
-    const handleConnect = async () => {
+    const handleFacebookConnect = async () => {
         if (!tenantId) return;
         setLoading(true);
         try {
-            // 1. Get the Facebook Redirect URL from backend
-            // Note: The backend returns a 302, but axios follows it. 
-            // Better to get the URL string or just navigate window.location
-
-            // Actually, our backend controller does `res.redirect`. 
-            // So we should just window.location.href to the backend endpoint.
             window.location.href = `http://localhost:3001/whatsapp/embedded/start?tenantId=${tenantId}`;
-
         } catch (e) {
             console.error(e);
             setLoading(false);
         }
     };
 
+    const handleManualSubmit = async () => {
+        if (!phoneNumberId || !wabaId || !accessToken) {
+            alert('Please fill in all fields');
+            return;
+        }
+        setLoading(true);
+        try {
+            // Send request to admin for approval
+            await api.post('/whatsapp/config/request', {
+                tenantId,
+                phoneNumberId,
+                wabaId,
+                accessToken,
+            });
+            setRequestSent(true);
+            setRequestStatus('pending');
+        } catch (e) {
+            console.error(e);
+            alert('Failed to submit request. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+    };
+
     return (
-        <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold mb-6">WhatsApp Configuration</h2>
+        <div className="max-w-4xl space-y-8">
+            {/* Header */}
+            <div>
+                <h2 className="text-2xl font-bold text-gray-900">WhatsApp Configuration</h2>
+                <p className="text-gray-500 mt-1">Connect your WhatsApp Business Account to start messaging</p>
+            </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-medium mb-4">Connection Status</h3>
-
-                <div className="flex items-center space-x-4 mb-6">
-                    <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                    <span className="text-gray-600">Not Connected</span>
+            {/* Connection Status Card */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${connectionStatus === 'connected' ? 'bg-green-100' :
+                                connectionStatus === 'pending' ? 'bg-amber-100' : 'bg-red-100'
+                            }`}>
+                            {connectionStatus === 'connected' ? (
+                                <CheckCircle className="w-6 h-6 text-green-600" />
+                            ) : connectionStatus === 'pending' ? (
+                                <Clock className="w-6 h-6 text-amber-600" />
+                            ) : (
+                                <XCircle className="w-6 h-6 text-red-600" />
+                            )}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900">Connection Status</h3>
+                            <p className={`text-sm font-medium ${connectionStatus === 'connected' ? 'text-green-600' :
+                                    connectionStatus === 'pending' ? 'text-amber-600' : 'text-red-600'
+                                }`}>
+                                {connectionStatus === 'connected' ? '✓ Connected & Active' :
+                                    connectionStatus === 'pending' ? '⏳ Pending Approval' : '✗ Not Connected'}
+                            </p>
+                        </div>
+                    </div>
+                    {connectionStatus === 'connected' && (
+                        <button className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm">
+                            Disconnect
+                        </button>
+                    )}
                 </div>
 
-                <div className="p-4 bg-blue-50 text-blue-800 rounded-md mb-6 text-sm">
-                    Connect your Facebook Business Account to enable WhatsApp Messaging.
-                    You will be redirected to Facebook to approve permissions.
-                </div>
+                {connectionStatus === 'pending' && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                        <div>
+                            <p className="font-medium text-amber-800">Awaiting Admin Approval</p>
+                            <p className="text-sm text-amber-700 mt-1">
+                                Your WhatsApp configuration request has been submitted and is pending review.
+                                You'll be notified once approved.
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
 
-                <button
-                    onClick={handleConnect}
-                    disabled={!tenantId || loading}
-                    className="flex items-center justify-center space-x-2 w-full py-3 bg-[#1877F2] hover:bg-[#166fe5] text-white font-semibold rounded-lg transition-all"
-                >
-                    {/* Facebook Icon */}
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                    <span>Login with Facebook</span>
-                </button>
+            {/* Connection Methods */}
+            {connectionStatus === 'disconnected' && !requestSent && (
+                <>
+                    <h3 className="text-lg font-semibold text-gray-900">Choose Connection Method</h3>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        {/* Method 1: Facebook Embedded SDK */}
+                        <div
+                            className={`bg-white rounded-2xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg ${connectionMethod === 'facebook' ? 'border-blue-500 ring-4 ring-blue-100' : 'border-gray-200'
+                                }`}
+                            onClick={() => setConnectionMethod('facebook')}
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-[#1877F2] rounded-xl flex items-center justify-center">
+                                    <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Facebook Embedded SDK</h4>
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Recommended</span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Connect directly through Facebook's official embedded signup flow. Quick, secure, and automatic.
+                            </p>
+                            <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2 text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    Instant connection
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    No manual configuration
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    Automatic token refresh
+                                </li>
+                            </ul>
+                            {connectionMethod === 'facebook' && (
+                                <div className="mt-4 pt-4 border-t">
+                                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center absolute -top-2 -right-2">
+                                        <CheckCircle className="w-3 h-3 text-white" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Method 2: Manual Configuration */}
+                        <div
+                            className={`bg-white rounded-2xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg ${connectionMethod === 'manual' ? 'border-purple-500 ring-4 ring-purple-100' : 'border-gray-200'
+                                }`}
+                            onClick={() => setConnectionMethod('manual')}
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                                    <Key className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Manual Configuration</h4>
+                                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Advanced</span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Enter your WhatsApp Business API credentials manually. Requires admin approval.
+                            </p>
+                            <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2 text-gray-600">
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    Full control over credentials
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-600">
+                                    <Clock className="w-4 h-4 text-amber-500" />
+                                    Requires admin approval
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-600">
+                                    <Shield className="w-4 h-4 text-blue-500" />
+                                    Enterprise-grade security
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Facebook Connect Section */}
+            {connectionMethod === 'facebook' && connectionStatus === 'disconnected' && (
+                <div className="bg-gradient-to-r from-[#1877F2] to-[#166fe5] rounded-2xl p-8 text-white">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-xl font-bold mb-2">Connect with Facebook</h3>
+                            <p className="text-blue-100 max-w-lg">
+                                You'll be redirected to Facebook to authorize Aerostic to access your WhatsApp Business Account.
+                                This is the fastest way to get started.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleFacebookConnect}
+                            disabled={!tenantId || loading}
+                            className="flex items-center gap-3 px-8 py-4 bg-white text-[#1877F2] font-bold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
+                        >
+                            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                            </svg>
+                            {loading ? 'Connecting...' : 'Login with Facebook'}
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-blue-400/30 grid grid-cols-3 gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            <span>Secure OAuth 2.0</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <RefreshCw className="w-4 h-4" />
+                            <span>Auto token refresh</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Official Meta API</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Manual Configuration Form */}
+            {connectionMethod === 'manual' && connectionStatus === 'disconnected' && !requestSent && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <Settings className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900">Manual API Configuration</h3>
+                            <p className="text-sm text-gray-500">Enter your WhatsApp Business API credentials</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-5">
+                        {/* Phone Number ID */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Phone Number ID <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={phoneNumberId}
+                                    onChange={(e) => setPhoneNumberId(e.target.value)}
+                                    placeholder="e.g., 100000000000000"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Found in Meta Business Suite → WhatsApp → Phone Numbers</p>
+                        </div>
+
+                        {/* WABA ID */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                WhatsApp Business Account ID <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={wabaId}
+                                    onChange={(e) => setWabaId(e.target.value)}
+                                    placeholder="e.g., 100000000000000"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Your WABA ID from Meta Business Suite</p>
+                        </div>
+
+                        {/* Access Token */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Permanent Access Token <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type={showToken ? 'text' : 'password'}
+                                    value={accessToken}
+                                    onChange={(e) => setAccessToken(e.target.value)}
+                                    placeholder="EAAxxxxxxxx..."
+                                    className="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowToken(!showToken)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                                >
+                                    {showToken ? <EyeOff className="w-5 h-5 text-gray-400" /> : <Eye className="w-5 h-5 text-gray-400" />}
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Generate a permanent token in Meta Business Suite → System Users</p>
+                        </div>
+
+                        {/* Info Banner */}
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <div className="text-sm">
+                                <p className="font-medium text-blue-800">Admin Approval Required</p>
+                                <p className="text-blue-700 mt-1">
+                                    Your configuration will be reviewed by our team to ensure everything is set up correctly.
+                                    This usually takes 1-2 business hours.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            onClick={handleManualSubmit}
+                            disabled={loading || !phoneNumberId || !wabaId || !accessToken}
+                            className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            <Send className="w-5 h-5" />
+                            {loading ? 'Submitting...' : 'Submit for Admin Approval'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Request Submitted Confirmation */}
+            {requestSent && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-8 text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Request Submitted!</h3>
+                    <p className="text-gray-600 max-w-md mx-auto mb-6">
+                        Your WhatsApp configuration request has been submitted successfully.
+                        Our team will review and approve it within 1-2 business hours.
+                    </p>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full font-medium">
+                        <Clock className="w-4 h-4" />
+                        Pending Admin Approval
+                    </div>
+                </div>
+            )}
+
+            {/* Help Section */}
+            <div className="bg-gray-50 rounded-2xl p-6">
+                <h3 className="font-bold text-gray-900 mb-4">Need Help?</h3>
+                <div className="grid grid-cols-3 gap-4">
+                    <a href="/docs/getting-started" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">
+                        <Globe className="w-6 h-6 text-blue-600 mb-2" />
+                        <h4 className="font-medium text-gray-900 group-hover:text-blue-600">Setup Guide</h4>
+                        <p className="text-sm text-gray-500">Step-by-step instructions</p>
+                    </a>
+                    <a href="/docs/api-reference" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">
+                        <Key className="w-6 h-6 text-purple-600 mb-2" />
+                        <h4 className="font-medium text-gray-900 group-hover:text-purple-600">API Credentials</h4>
+                        <p className="text-sm text-gray-500">How to get your keys</p>
+                    </a>
+                    <a href="mailto:support@aerostic.com" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">
+                        <Mail className="w-6 h-6 text-green-600 mb-2" />
+                        <h4 className="font-medium text-gray-900 group-hover:text-green-600">Contact Support</h4>
+                        <p className="text-sm text-gray-500">Get personalized help</p>
+                    </a>
+                </div>
             </div>
         </div>
     );

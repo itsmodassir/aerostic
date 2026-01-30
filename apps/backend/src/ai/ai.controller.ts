@@ -31,7 +31,7 @@ export class AiController {
         }
 
         agent.systemPrompt = body.systemPrompt;
-        agent.active = body.active;
+        agent.isActive = body.active;
 
         return this.aiAgentRepo.save(agent);
     }

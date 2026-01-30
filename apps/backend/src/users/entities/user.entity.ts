@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum UserRole {
@@ -33,6 +33,31 @@ export class User {
     @Index()
     role: UserRole;
 
+    // Profile
+    @Column({ nullable: true })
+    phone: string;
+
+    @Column({ nullable: true })
+    avatar: string;
+
+    // API Access
+    @Column({ name: 'api_access_enabled', default: false })
+    apiAccessEnabled: boolean;
+
+    // Status
+    @Column({ name: 'is_active', default: true })
+    isActive: boolean;
+
+    @Column({ name: 'email_verified', default: false })
+    emailVerified: boolean;
+
+    @Column({ name: 'last_login_at', nullable: true })
+    lastLoginAt: Date;
+
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updated_at' })
+    updatedAt: Date;
 }
+
