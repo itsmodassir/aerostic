@@ -1,7 +1,8 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -10,6 +11,8 @@ export class UsersService {
     constructor(
         @InjectRepository(User)
         private usersRepository: Repository<User>,
+        @InjectRepository(Tenant)
+        private tenantsRepository: Repository<Tenant>,
     ) { }
 
     async create(createUserDto: CreateUserDto): Promise<User> {
@@ -63,5 +66,37 @@ export class UsersService {
             .execute();
 
         return { deleted: result.affected || 0 };
+    }
+
+    async onModuleInit() {
+        // Seed Admin User
+        const adminEmail = 'admin@aerostic.in';
+        const adminExists = await this.findOneByEmail(adminEmail);
+
+        if (!adminExists) {
+            console.log('Seeding Admin User...');
+            // Check for System Tenant
+            let tenant = await this.tenantsRepository.manager.getRepository(Tenant).findOneBy({ name: 'System' });
+
+            if (!tenant) {
+                console.log('Creating System Tenant...');
+                tenant = this.tenantsRepository.manager.getRepository(Tenant).create({
+                    name: 'System',
+                    website: 'system.aerostic.in', // detailed below
+                    plan: 'enterprise'
+                });
+                tenant = await this.tenantsRepository.manager.getRepository(Tenant).save(tenant);
+            }
+
+            // Create Admin User
+            await this.create({
+                email: adminEmail,
+                password: 'admin123',
+                name: 'System Admin',
+                tenantId: tenant.id,
+                role: UserRole.ADMIN
+            });
+            console.log('Admin User Seeded Successfully.');
+        }
     }
 }

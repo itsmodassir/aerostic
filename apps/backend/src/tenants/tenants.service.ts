@@ -24,6 +24,10 @@ export class TenantsService {
         return tenant;
     }
 
+    async findByName(name: string): Promise<Tenant | null> {
+        return this.tenantsRepository.findOneBy({ name });
+    }
+
     async findAll(): Promise<Tenant[]> {
         return this.tenantsRepository.find();
     }

@@ -25,6 +25,16 @@ export default function LoginPage() {
         try {
             const res = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', res.data.access_token);
+
+            if (res.data.user) {
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+
+                if (res.data.user.role === 'admin') {
+                    router.push('/admin');
+                    return;
+                }
+            }
+
             router.push('/dashboard');
         } catch (err: any) {
             setError('Invalid email or password');

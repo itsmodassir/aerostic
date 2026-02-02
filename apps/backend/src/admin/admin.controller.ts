@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { AdminGuard } from '../common/guards/admin.guard';
 
 // DTO for config updates
 interface UpdateConfigDto {
@@ -11,6 +12,7 @@ interface UpdateUserPlanDto {
 }
 
 @Controller('admin')
+@UseGuards(AdminGuard)
 export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
@@ -91,5 +93,24 @@ export class AdminController {
     @Get('api-keys')
     async getApiKeys() {
         return this.adminService.getAllApiKeys();
+    }
+
+    @Get('messages')
+    async getMessages(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+        @Query('search') search?: string
+    ) {
+        return this.adminService.getAllMessages(page, limit, search);
+    }
+
+    @Get('webhooks')
+    async getWebhooks() {
+        return this.adminService.getAllWebhooks();
+    }
+
+    @Get('alerts')
+    async getAlerts() {
+        return this.adminService.getSystemAlerts();
     }
 }

@@ -7,9 +7,40 @@ import {
     FileText, Activity, Bell, Database, Globe, Key, Webhook,
     MessageSquare, AlertTriangle, Server, LogOut
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const [authorized, setAuthorized] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+
+        if (!token || !userStr) {
+            router.push('/admin/login');
+            return;
+        }
+
+        try {
+            const user = JSON.parse(userStr);
+            if (user.role !== 'admin') {
+                router.push('/dashboard'); // Not an admin
+                return;
+            }
+            setAuthorized(true);
+        } catch (e) {
+            router.push('/admin/login');
+        }
+    }, [router]);
+
+    if (!authorized) {
+        return <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>;
+    }
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -51,8 +82,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={item.name}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
-                                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
                                     }`}
                             >
                                 <item.icon className="w-5 h-5" />

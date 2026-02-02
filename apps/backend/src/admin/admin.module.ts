@@ -9,10 +9,14 @@ import { Message } from '../messages/entities/message.entity';
 import { ApiKey } from '../billing/entities/api-key.entity';
 import { Subscription } from '../billing/entities/subscription.entity';
 import { AuditModule } from '../audit/audit.module';
+import { WebhookEndpoint } from '../billing/entities/webhook-endpoint.entity';
+
+import { Conversation } from '../messages/entities/conversation.entity';
+import { Contact } from '../contacts/entities/contact.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Tenant, WhatsappAccount, SystemConfig, Message, ApiKey, Subscription]),
+        TypeOrmModule.forFeature([Tenant, WhatsappAccount, SystemConfig, Message, ApiKey, Subscription, WebhookEndpoint, Conversation, Contact]),
         AuditModule
     ],
     controllers: [AdminController],

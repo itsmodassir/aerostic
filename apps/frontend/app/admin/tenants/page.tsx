@@ -39,13 +39,14 @@ export default function TenantsPage() {
             if (!res.ok) throw new Error('Failed to fetch tenants');
             const data = await res.json();
 
-            // Transform data to match UI expectations
+            // Use real data from backend
             const mapped = data.map((t: any) => ({
                 ...t,
-                users: Math.floor(Math.random() * 10) + 1, // Mock count for now
-                monthlyMessages: t.currentPlan === 'enterprise' ? 1000000 : t.currentPlan === 'growth' ? 50000 : 10000,
-                messagesSent: Math.floor(Math.random() * 5000), // Mock usage for now
-                plan: t.currentPlan
+                // Fallbacks if data is missing, but prefer real values
+                users: t.usersCount || 1,
+                monthlyMessages: t.monthlyMessageLimit || 1000,
+                messagesSent: t.messagesSentThisMonth || 0,
+                plan: t.currentPlan || t.plan || 'starter'
             }));
             setTenants(mapped);
         } catch (e) {
