@@ -16,13 +16,16 @@ const whatsapp_account_entity_1 = require("../whatsapp/entities/whatsapp-account
 const system_config_entity_1 = require("./entities/system-config.entity");
 const message_entity_1 = require("../messages/entities/message.entity");
 const api_key_entity_1 = require("../billing/entities/api-key.entity");
+const subscription_entity_1 = require("../billing/entities/subscription.entity");
+const audit_module_1 = require("../audit/audit.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, whatsapp_account_entity_1.WhatsappAccount, system_config_entity_1.SystemConfig, message_entity_1.Message, api_key_entity_1.ApiKey]),
+            typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, whatsapp_account_entity_1.WhatsappAccount, system_config_entity_1.SystemConfig, message_entity_1.Message, api_key_entity_1.ApiKey, subscription_entity_1.Subscription]),
+            audit_module_1.AuditModule
         ],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],

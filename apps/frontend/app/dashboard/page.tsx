@@ -748,12 +748,26 @@ function TeamTab({ planFeatures }: any) {
             const token = localStorage.getItem('token');
             const headers = { 'Authorization': `Bearer ${token}` };
             let tenantId = 'demo-tenant';
+            let currentUser = {
+                name: 'You',
+                email: 'user@example.com',
+                role: 'Admin',
+                avatar: 'Y',
+                status: 'online'
+            };
 
-            // Extract tenantId from token if available
+            // Extract tenantId and user details from token if available
             if (token) {
                 try {
                     const payload = JSON.parse(atob(token.split('.')[1]));
                     tenantId = payload.tenantId || 'demo-tenant';
+                    currentUser = {
+                        name: payload.name || 'You',
+                        email: payload.email || 'user@example.com',
+                        role: payload.role === 'admin' ? 'Admin' : 'Agent',
+                        avatar: (payload.name || 'Y')[0].toUpperCase(),
+                        status: 'online'
+                    };
                 } catch (e) { }
             }
 

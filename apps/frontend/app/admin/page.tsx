@@ -5,10 +5,12 @@ import {
     Users, CreditCard, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight,
     BarChart3, Activity, AlertTriangle, CheckCircle, Clock, Zap, Loader2
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
     const [timeRange, setTimeRange] = useState('7d');
     const [stats, setStats] = useState<any[]>([]);
+    const [trends, setTrends] = useState<any>(null);
     const [systemHealth, setSystemHealth] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -17,7 +19,7 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchDashboardData();
-    }, []);
+    }, [timeRange]);
 
     const fetchDashboardData = async () => {
         try {
@@ -25,8 +27,13 @@ export default function AdminDashboard() {
             const res = await fetch(`${API_URL}/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            const trendsRes = await fetch(`${API_URL}/admin/stats/trends?range=${timeRange}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
             if (!res.ok) throw new Error('Failed to fetch dashboard stats');
             const data = await res.json();
+            const trendsData = await trendsRes.json();
 
             // Map icons mapping based on label
             const mappedStats = data.stats.map((s: any) => ({
@@ -43,6 +50,7 @@ export default function AdminDashboard() {
 
             setStats(mappedStats);
             setSystemHealth(data.systemHealth);
+            setTrends(trendsData);
         } catch (err: any) {
             console.error(err);
             setError('Failed to load dashboard data');
@@ -115,18 +123,46 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-3 gap-6">
-                {/* Revenue Chart Placeholder */}
+                {/* Revenue & Messages Trend */}
                 <div className="col-span-2 bg-white rounded-2xl p-6 border border-gray-100">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-bold text-gray-900">Revenue Trend</h2>
-                        <BarChart3 className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
-                        <div className="text-center">
-                            <BarChart3 className="w-12 h-12 text-blue-300 mx-auto mb-2" />
-                            <p className="text-gray-500">Revenue chart visualization</p>
-                            <p className="text-sm text-gray-400">₹48.5L MRR (+23.1% MoM)</p>
+                        <h2 className="text-lg font-bold text-gray-900">Platform Growth</h2>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                                <span className="text-xs text-gray-500">Messages</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-green-500" />
+                                <span className="text-xs text-gray-500">Revenue</span>
+                            </div>
                         </div>
+                    </div>
+                    <div className="h-72 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={trends?.revenue || []}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} tickFormatter={(v) => v.slice(8)} />
+                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#FFF', borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    itemStyle={{ fontSize: '12px', fontWeight: 600 }}
+                                />
+                                <Area yAxisId="left" type="monotone" dataKey="value" name="Revenue" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                                <Area yAxisId="right" data={trends?.messages || []} type="monotone" dataKey="value" name="Messages" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorMessages)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 

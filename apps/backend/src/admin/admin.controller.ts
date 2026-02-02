@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 // DTO for config updates
@@ -81,6 +81,11 @@ export class AdminController {
     @Get('stats')
     async getStats() {
         return this.adminService.getDashboardStats();
+    }
+
+    @Get('stats/trends')
+    async getTrends(@Query('range') range: string) {
+        return this.adminService.getAnalyticsTrends(range);
     }
 
     @Get('api-keys')

@@ -28,6 +28,7 @@ const auth_module_1 = require("./auth/auth.module");
 const analytics_module_1 = require("./analytics/analytics.module");
 const admin_module_1 = require("./admin/admin.module");
 const billing_module_1 = require("./billing/billing.module");
+const audit_module_1 = require("./audit/audit.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -70,6 +71,7 @@ exports.AppModule = AppModule = __decorate([
             contacts_module_1.ContactsModule,
             auth_module_1.AuthModule,
             analytics_module_1.AnalyticsModule,
+            audit_module_1.AuditModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

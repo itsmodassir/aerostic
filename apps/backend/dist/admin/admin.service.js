@@ -36,18 +36,24 @@ const DEFAULT_CONFIG = {
     'platform.message_rate_limit': { value: '100', description: 'Message Rate Limit (per minute)', category: 'platform', isSecret: false },
     'platform.max_tenants': { value: '1000', description: 'Max Tenants Per Server', category: 'platform', isSecret: false },
 };
+const audit_service_1 = require("../audit/audit.service");
+const subscription_entity_1 = require("../billing/entities/subscription.entity");
 let AdminService = class AdminService {
     tenantRepo;
     whatsappAccountRepo;
     configRepo;
     messageRepo;
     apiKeyRepo;
-    constructor(tenantRepo, whatsappAccountRepo, configRepo, messageRepo, apiKeyRepo) {
+    subscriptionRepo;
+    auditService;
+    constructor(tenantRepo, whatsappAccountRepo, configRepo, messageRepo, apiKeyRepo, subscriptionRepo, auditService) {
         this.tenantRepo = tenantRepo;
         this.whatsappAccountRepo = whatsappAccountRepo;
         this.configRepo = configRepo;
         this.messageRepo = messageRepo;
         this.apiKeyRepo = apiKeyRepo;
+        this.subscriptionRepo = subscriptionRepo;
+        this.auditService = auditService;
     }
     async getAllTenants() {
         return this.tenantRepo.find({
@@ -123,12 +129,14 @@ let AdminService = class AdminService {
             }
             updated.push(key);
         }
+        await this.auditService.logAction('admin', 'Administrator', 'UPDATE_CONFIG', 'System Configuration', { updatedKeys: updated });
         return { success: true, updated };
     }
     async deleteConfig(key) {
         const config = await this.configRepo.findOne({ where: { key } });
         if (config) {
             await this.configRepo.remove(config);
+            await this.auditService.logAction('admin', 'Administrator', 'DELETE_CONFIG', key);
         }
     }
     async updateUserPlan(userId, plan) {
@@ -136,8 +144,11 @@ let AdminService = class AdminService {
         if (!tenant) {
             throw new common_1.NotFoundException(`Tenant with ID ${userId} not found`);
         }
+        const oldPlan = tenant.plan;
         tenant.plan = plan;
-        return this.tenantRepo.save(tenant);
+        const saved = await this.tenantRepo.save(tenant);
+        await this.auditService.logAction('admin', 'Administrator', 'UPDATE_TENANT_PLAN', `Tenant: ${tenant.name}`, { oldPlan, newPlan: plan });
+        return saved;
     }
     async getTenantById(tenantId) {
         const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
@@ -170,7 +181,16 @@ let AdminService = class AdminService {
             }
         });
         const aiConversations = Math.floor(messagesToday * 0.15);
-        const monthlyRevenue = 4850000;
+        const activeSubscriptions = await this.subscriptionRepo.find({
+            where: { status: subscription_entity_1.SubscriptionStatus.ACTIVE }
+        });
+        const monthlyRevenue = activeSubscriptions.reduce((sum, sub) => {
+            if (sub.billingCycle === 'yearly') {
+                return sum + (sub.priceInr / 12);
+            }
+            return sum + sub.priceInr;
+        }, 0);
+        const revenueLakhs = (monthlyRevenue / 100000).toFixed(1);
         const systemHealth = [
             { service: 'API Gateway', status: 'operational', uptime: '99.99%' },
             { service: 'Database (Primary)', status: 'operational', uptime: '99.97%' },
@@ -188,7 +208,7 @@ let AdminService = class AdminService {
                 },
                 {
                     label: 'Monthly Revenue',
-                    value: '₹48.5L',
+                    value: `₹${revenueLakhs}L`,
                     change: '+23.1%',
                     up: true
                 },
@@ -207,6 +227,26 @@ let AdminService = class AdminService {
             ],
             systemHealth
         };
+    }
+    async getAnalyticsTrends(period = '7d') {
+        const days = period === '30d' ? 30 : period === '90d' ? 90 : 7;
+        const revenueData = [];
+        const messagesData = [];
+        const now = new Date();
+        for (let i = days; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            revenueData.push({
+                date: dateStr,
+                value: Math.floor(150000 + Math.random() * 50000)
+            });
+            messagesData.push({
+                date: dateStr,
+                value: Math.floor(1200 + Math.random() * 800)
+            });
+        }
+        return { revenue: revenueData, messages: messagesData };
     }
     async getAllApiKeys() {
         const keys = await this.apiKeyRepo.find({
@@ -247,10 +287,13 @@ exports.AdminService = AdminService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(system_config_entity_1.SystemConfig)),
     __param(3, (0, typeorm_1.InjectRepository)(message_entity_1.Message)),
     __param(4, (0, typeorm_1.InjectRepository)(api_key_entity_1.ApiKey)),
+    __param(5, (0, typeorm_1.InjectRepository)(subscription_entity_1.Subscription)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        audit_service_1.AuditService])
 ], AdminService);
 //# sourceMappingURL=admin.service.js.map

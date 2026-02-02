@@ -60,6 +60,9 @@ let AdminController = class AdminController {
     async getStats() {
         return this.adminService.getDashboardStats();
     }
+    async getTrends(range) {
+        return this.adminService.getAnalyticsTrends(range);
+    }
     async getApiKeys() {
         return this.adminService.getAllApiKeys();
     }
@@ -135,6 +138,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getStats", null);
+__decorate([
+    (0, common_1.Get)('stats/trends'),
+    __param(0, (0, common_1.Query)('range')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getTrends", null);
 __decorate([
     (0, common_1.Get)('api-keys'),
     __metadata("design:type", Function),

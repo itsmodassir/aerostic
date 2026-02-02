@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
 import { BillingModule } from './billing/billing.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { BillingModule } from './billing/billing.module';
     ContactsModule,
     AuthModule,
     AnalyticsModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

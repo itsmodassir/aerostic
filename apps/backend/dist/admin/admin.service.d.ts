@@ -4,13 +4,17 @@ import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
 import { SystemConfig } from './entities/system-config.entity';
 import { Message } from '../messages/entities/message.entity';
 import { ApiKey } from '../billing/entities/api-key.entity';
+import { AuditService } from '../audit/audit.service';
+import { Subscription } from '../billing/entities/subscription.entity';
 export declare class AdminService {
     private tenantRepo;
     private whatsappAccountRepo;
     private configRepo;
     private messageRepo;
     private apiKeyRepo;
-    constructor(tenantRepo: Repository<Tenant>, whatsappAccountRepo: Repository<WhatsappAccount>, configRepo: Repository<SystemConfig>, messageRepo: Repository<Message>, apiKeyRepo: Repository<ApiKey>);
+    private subscriptionRepo;
+    private auditService;
+    constructor(tenantRepo: Repository<Tenant>, whatsappAccountRepo: Repository<WhatsappAccount>, configRepo: Repository<SystemConfig>, messageRepo: Repository<Message>, apiKeyRepo: Repository<ApiKey>, subscriptionRepo: Repository<Subscription>, auditService: AuditService);
     getAllTenants(): Promise<Tenant[]>;
     getAllAccounts(): Promise<WhatsappAccount[]>;
     rotateSystemTokens(): Promise<{
@@ -43,6 +47,16 @@ export declare class AdminService {
             service: string;
             status: string;
             uptime: string;
+        }[];
+    }>;
+    getAnalyticsTrends(period?: string): Promise<{
+        revenue: {
+            date: string;
+            value: number;
+        }[];
+        messages: {
+            date: string;
+            value: number;
         }[];
     }>;
     getAllApiKeys(): Promise<{

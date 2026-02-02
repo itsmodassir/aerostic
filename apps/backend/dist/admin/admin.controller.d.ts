@@ -49,6 +49,16 @@ export declare class AdminController {
             uptime: string;
         }[];
     }>;
+    getTrends(range: string): Promise<{
+        revenue: {
+            date: string;
+            value: number;
+        }[];
+        messages: {
+            date: string;
+            value: number;
+        }[];
+    }>;
     getApiKeys(): Promise<{
         id: string;
         name: string;
