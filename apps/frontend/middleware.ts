@@ -37,6 +37,8 @@ export function middleware(request: NextRequest) {
 
         const url = new URL(request.url);
         url.hostname = 'admin.aerostic.com'; // Enforce production admin domain
+        url.protocol = 'https'; // Enforce HTTPS
+        url.port = ''; // Remove internal port (e.g. 3000)
         url.pathname = pathname; // Keep the path
         return NextResponse.redirect(url);
     }
