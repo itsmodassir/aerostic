@@ -287,27 +287,51 @@ export class AdminService {
     }
 
     async getAnalyticsTrends(period: string = '7d') {
-        // Generate mock trend data for now
-        // In real implementation, performing aggregate queries on Message/Subscription tables
         const days = period === '30d' ? 30 : period === '90d' ? 90 : 7;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        startDate.setHours(0, 0, 0, 0);
+
+        // Revenue Trend (Group by createdAt date) - Sum of new subscriptions value
+        const revenueRaw = await this.subscriptionRepo
+            .createQueryBuilder('subscription')
+            .select("to_char(subscription.createdAt, 'YYYY-MM-DD')", 'date')
+            .addSelect('SUM(subscription.priceInr)', 'value')
+            .where('subscription.createdAt >= :startDate', { startDate })
+            .andWhere('subscription.status != :status', { status: 'cancelled' }) // Count everything except cancelled? Or just active? Let's take all created valid subs.
+            .groupBy("to_char(subscription.createdAt, 'YYYY-MM-DD')")
+            .getRawMany();
+
+        // Message Volume Trend
+        const messagesRaw = await this.messageRepo
+            .createQueryBuilder('message')
+            .select("to_char(message.createdAt, 'YYYY-MM-DD')", 'date')
+            .addSelect('COUNT(message.id)', 'value')
+            .where('message.createdAt >= :startDate', { startDate })
+            .groupBy("to_char(message.createdAt, 'YYYY-MM-DD')")
+            .getRawMany();
+
+        // Fill missing dates
         const revenueData = [];
         const messagesData = [];
-
         const now = new Date();
-        for (let i = days; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
 
-            // Random fluctuations
+        for (let i = days; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+
+            const revEntry = revenueRaw.find(r => r.date === dateStr);
+            const msgEntry = messagesRaw.find(r => r.date === dateStr);
+
             revenueData.push({
                 date: dateStr,
-                value: Math.floor(150000 + Math.random() * 50000)
+                value: revEntry ? parseFloat(revEntry.value) : 0
             });
 
             messagesData.push({
                 date: dateStr,
-                value: Math.floor(1200 + Math.random() * 800)
+                value: msgEntry ? parseInt(msgEntry.value) : 0
             });
         }
 
