@@ -8,13 +8,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WhatsappModule = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
 const whatsapp_service_1 = require("./whatsapp.service");
 const whatsapp_controller_1 = require("./whatsapp.controller");
+const system_config_entity_1 = require("../admin/entities/system-config.entity");
+const whatsapp_account_entity_1 = require("./entities/whatsapp-account.entity");
+const meta_token_entity_1 = require("../meta/entities/meta-token.entity");
 let WhatsappModule = class WhatsappModule {
 };
 exports.WhatsappModule = WhatsappModule;
 exports.WhatsappModule = WhatsappModule = __decorate([
     (0, common_1.Module)({
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([system_config_entity_1.SystemConfig, whatsapp_account_entity_1.WhatsappAccount, meta_token_entity_1.MetaToken]),
+        ],
         controllers: [whatsapp_controller_1.WhatsappController],
         providers: [whatsapp_service_1.WhatsappService],
         exports: [whatsapp_service_1.WhatsappService],

@@ -21,16 +21,17 @@ let WhatsappController = class WhatsappController {
         this.whatsappService = whatsappService;
     }
     async startEmbeddedSignup(tenantId, res) {
-        const url = this.whatsappService.getEmbeddedSignupUrl(tenantId);
+        const url = await this.whatsappService.getEmbeddedSignupUrl(tenantId);
         return res.redirect(url);
     }
     async getStatus(tenantId) {
-        return {
-            connected: true,
-            mode: 'coexistence',
-            phoneNumber: '+15550223',
-            wabaId: '122342'
-        };
+        return this.whatsappService.getStatus(tenantId);
+    }
+    async disconnect(tenantId) {
+        return this.whatsappService.disconnect(tenantId);
+    }
+    async sendTest(tenantId, to) {
+        return this.whatsappService.sendTestMessage(tenantId, to);
     }
     async initCloudSignup(body) {
         return { status: 'otp_sent', phoneNumber: body.phoneNumber };
@@ -55,6 +56,21 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "getStatus", null);
+__decorate([
+    (0, common_1.Delete)(),
+    __param(0, (0, common_1.Query)('tenantId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], WhatsappController.prototype, "disconnect", null);
+__decorate([
+    (0, common_1.Post)('send-test'),
+    __param(0, (0, common_1.Query)('tenantId')),
+    __param(1, (0, common_1.Body)('to')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], WhatsappController.prototype, "sendTest", null);
 __decorate([
     (0, common_1.Post)('cloud/init'),
     __param(0, (0, common_1.Body)()),

@@ -6,33 +6,57 @@ APP_DIR="aerostic"
 
 echo "🚀 Starting Aerostic AWS Deployment..."
 
-# 1. Update System
-echo "🔄 Updating system packages..."
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    if [[ "$ID" == "ubuntu" ]]; then
-        sudo apt-get update -y && sudo apt-get upgrade -y
-        sudo apt-get install -y docker.io docker-compose git
-    elif [[ "$ID" == "amzn" ]]; then
-        sudo yum update -y
-        sudo yum install -y docker git
-        # Install Docker Compose on Amazon Linux 2023
-        sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-    fi
-else
-    echo "⚠️ Unsupported OS. Assuming Docker is installed."
+# 0. Check for Environment File
+if [ ! -f ".env" ]; then
+    echo "❌ Error: .env file missing!"
+    echo "   Please create a .env file with your secrets."
+    echo "   You can use .env.production.example as a template."
+    exit 1
 fi
 
-# 2. Enable Docker
-echo "🐳 Starting Docker..."
+# 1. Update System
+echo "🔄 Updating system packages..."
+
+install_docker() {
+    echo "🐳 Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    sudo usermod -aG docker $USER
+    # Install Docker Compose Plugin
+    sudo apt-get install -y docker-compose-plugin || sudo yum install -y docker-compose-plugin
+}
+
+create_swap() {
+    if [ $(swapon --show | wc -l) -eq 0 ]; then
+        echo "💾 Creating 4GB Swap file (crucial for small EC2)..."
+        sudo fallocate -l 4G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+        echo "✅ Swap created."
+    else
+        echo "✅ Swap already exists."
+    fi
+}
+
+if ! command -v docker &> /dev/null; then
+    install_docker
+else
+    echo "✅ Docker is already installed."
+fi
+
+# 1.5 Create Swap (Prevent OOM kills on build)
+create_swap
+
+# 2. Enable Docker Service
+echo "🔌 Enabling Docker service..."
 sudo systemctl enable docker
 sudo systemctl start docker
-sudo usermod -aG docker $USER
 
 # 3. Clone/Update Repo
 if [ -d "$APP_DIR" ]; then
-    echo "📂 Directory exists. Pulling latest code..."
+    echo "📂 Directory exists. pulling latest code..."
     cd $APP_DIR
     git pull
 else
@@ -41,16 +65,30 @@ else
     cd $APP_DIR
 fi
 
-# 4. Start Application
+# 4. Copy Environment File
+# Assuming the user uploads .env to the home dir, we copy it into the app dir
+if [ -f "../.env" ]; then
+    echo "🔐 Copying .env file into application directory..."
+    cp ../.env .
+fi
+
+# 5. Start Application
 echo "🚀 Building and starting containers..."
-# Note: First time build might take a while
-if command -v docker-compose &> /dev/null; then
-    sudo docker-compose down
-    sudo docker-compose up --build -d
+echo "Naming project: aerostic"
+
+# Using 'docker compose' (plugin) preferred over 'docker-compose' (standalone)
+if docker compose version &> /dev/null; then
+    docker compose down
+    docker compose up --build -d
+elif command -v docker-compose &> /dev/null; then
+    docker-compose down
+    docker-compose up --build -d
 else
-    sudo docker compose down
-    sudo docker compose up --build -d
+    echo "❌ Error: Docker Compose not found. Please verify installation."
+    exit 1
 fi
 
 echo "✅ Deployment Complete!"
-echo "➡️  Access your app at http://$(curl -s http://checkip.amazonaws.com)"
+echo "➡️  App Frontend: http://$(curl -s http://checkip.amazonaws.com):3000"
+echo "➡️  App Backend:  http://$(curl -s http://checkip.amazonaws.com):3001"
+

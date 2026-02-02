@@ -1061,15 +1061,26 @@ function SettingsTab({ planFeatures, userPlan }: any) {
             const token = localStorage.getItem('token');
             const headers = { 'Authorization': `Bearer ${token}` };
 
+            let tenantId = '';
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    tenantId = payload.tenantId;
+                } catch (e) { }
+            }
+
             // Fetch WhatsApp account config
-            const waRes = await fetch(`${API_URL}/whatsapp/me`, { headers });
+            // Use status endpoint as it returns the actual connected account details
+            const waRes = await fetch(`${API_URL}/whatsapp/status?tenantId=${tenantId}`, { headers });
             if (waRes.ok) {
                 const waData = await waRes.json();
-                setWhatsappConfig({
-                    phoneNumberId: waData.phoneNumberId || '',
-                    wabaId: waData.wabaId || '',
-                    accessToken: waData.accessToken ? '••••••••••••••••' : ''
-                });
+                if (waData.connected) {
+                    setWhatsappConfig({
+                        phoneNumberId: waData.phoneNumber || '',
+                        wabaId: waData.wabaId || '',
+                        accessToken: 'Connected via Embedded OAuth' // Placeholder as we don't expose full token
+                    });
+                }
             }
 
             // Fetch AI config from system config

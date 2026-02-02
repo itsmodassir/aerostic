@@ -280,8 +280,17 @@ export default function AdminPage() {
             growth: 'bg-blue-100 text-blue-700',
             enterprise: 'bg-purple-100 text-purple-700',
         };
+
+        if (!planInfo) {
+            return (
+                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                    Unknown ({plan})
+                </span>
+            );
+        }
+
         return (
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colors[plan as keyof typeof colors]}`}>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colors[plan as keyof typeof colors] || 'bg-gray-100 text-gray-700'}`}>
                 {planInfo.name}
             </span>
         );

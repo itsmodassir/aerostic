@@ -22,6 +22,10 @@ export default function WhatsappSettingsPage() {
     const [requestSent, setRequestSent] = useState(false);
     const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
 
+    // Test Message State
+    const [testNumber, setTestNumber] = useState('');
+    const [sendingTest, setSendingTest] = useState(false);
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -32,7 +36,18 @@ export default function WhatsappSettingsPage() {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
                 const payload = JSON.parse(jsonPayload);
-                setTenantId(payload.tenantId);
+                const tId = payload.tenantId;
+                setTenantId(tId);
+
+                // Fetch connection status
+                api.get(`/whatsapp/status?tenantId=${tId}`).then((res) => {
+                    if (res.data.connected) {
+                        setConnectionStatus('connected');
+                    } else if (res.data.mode === 'manual' && res.data.status === 'pending') {
+                        setConnectionStatus('pending');
+                    }
+                }).catch(console.error);
+
             } catch (e) {
                 console.error('Invalid token');
             }
@@ -74,8 +89,38 @@ export default function WhatsappSettingsPage() {
         }
     };
 
+    const handleDisconnect = async () => {
+        if (!confirm('Are you sure you want to disconnect? Sending functionality will stop immediately.')) return;
+        setLoading(true);
+        try {
+            await api.delete(`/whatsapp?tenantId=${tenantId}`);
+            setConnectionStatus('disconnected');
+            setTenantId(null); // Optional: clear if needed, or just status
+            window.location.reload(); // Clean state
+        } catch (e) {
+            console.error(e);
+            alert('Failed to disconnect');
+            setLoading(false);
+        }
+    };
+
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
+    };
+
+    const handleSendTest = async () => {
+        if (!testNumber) return;
+        setSendingTest(true);
+        try {
+            await api.post(`/whatsapp/send-test?tenantId=${tenantId}`, { to: testNumber });
+            alert('Test message sent successfully!');
+            setTestNumber('');
+        } catch (e: any) {
+            console.error(e);
+            alert('Failed to send test message: ' + (e.response?.data?.message || e.message));
+        } finally {
+            setSendingTest(false);
+        }
     };
 
     return (
@@ -91,7 +136,7 @@ export default function WhatsappSettingsPage() {
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${connectionStatus === 'connected' ? 'bg-green-100' :
-                                connectionStatus === 'pending' ? 'bg-amber-100' : 'bg-red-100'
+                            connectionStatus === 'pending' ? 'bg-amber-100' : 'bg-red-100'
                             }`}>
                             {connectionStatus === 'connected' ? (
                                 <CheckCircle className="w-6 h-6 text-green-600" />
@@ -104,7 +149,7 @@ export default function WhatsappSettingsPage() {
                         <div>
                             <h3 className="font-bold text-gray-900">Connection Status</h3>
                             <p className={`text-sm font-medium ${connectionStatus === 'connected' ? 'text-green-600' :
-                                    connectionStatus === 'pending' ? 'text-amber-600' : 'text-red-600'
+                                connectionStatus === 'pending' ? 'text-amber-600' : 'text-red-600'
                                 }`}>
                                 {connectionStatus === 'connected' ? '✓ Connected & Active' :
                                     connectionStatus === 'pending' ? '⏳ Pending Approval' : '✗ Not Connected'}
@@ -112,11 +157,41 @@ export default function WhatsappSettingsPage() {
                         </div>
                     </div>
                     {connectionStatus === 'connected' && (
-                        <button className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm">
-                            Disconnect
+                        <button
+                            onClick={handleDisconnect}
+                            disabled={loading}
+                            className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm disabled:opacity-50"
+                        >
+                            {loading ? 'Disconnecting...' : 'Disconnect'}
                         </button>
                     )}
                 </div>
+
+                {connectionStatus === 'connected' && (
+                    <div className="mt-6 pt-6 border-t border-gray-100">
+                        <h4 className="font-semibold text-gray-900 mb-3">Test Connection</h4>
+                        <div className="flex gap-3">
+                            <input
+                                type="tel"
+                                placeholder="Recipient Phone (e.g. 919999999999)"
+                                value={testNumber}
+                                onChange={(e) => setTestNumber(e.target.value)}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button
+                                onClick={handleSendTest}
+                                disabled={sendingTest || !testNumber}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                <Send className="w-4 h-4" />
+                                {sendingTest ? 'Sending...' : 'Send Test'}
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Sends a "Hello World" template message to verify the API connection.
+                        </p>
+                    </div>
+                )}
 
                 {connectionStatus === 'pending' && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
