@@ -127,9 +127,7 @@ export default function LandingPage() {
             <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                            <MessageSquare className="w-5 h-5 text-white" />
-                        </div>
+                        <img src="/logo.png" alt="Aerostic" className="w-10 h-10 object-contain" />
                         <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                             Aerostic
                         </span>
@@ -141,11 +139,11 @@ export default function LandingPage() {
                         <Link href="/docs" className="text-gray-600 hover:text-gray-900 transition-colors">Docs</Link>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Link href="/login" className="hidden sm:block text-gray-600 hover:text-gray-900 font-medium">
+                        <Link href="https://app.aerostic.com/login" className="hidden sm:block text-gray-600 hover:text-gray-900 font-medium">
                             Login
                         </Link>
                         <Link
-                            href="/register"
+                            href="https://app.aerostic.com/register"
                             className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 transform hover:-translate-y-0.5"
                         >
                             Start Free
@@ -182,7 +180,7 @@ export default function LandingPage() {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
                             <Link
-                                href="/register"
+                                href="https://app.aerostic.com/register"
                                 className="group w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2"
                             >
                                 Start 14-Day Free Trial
@@ -453,7 +451,7 @@ export default function LandingPage() {
                                 </div>
                                 <p className="text-gray-600 mb-6">{plan.messages} messages/mo</p>
                                 <Link
-                                    href="/pricing"
+                                    href="https://app.aerostic.com/register"
                                     className={`block text-center py-4 rounded-2xl font-bold transition-all ${plan.popular
                                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -487,7 +485,7 @@ export default function LandingPage() {
                         Join 2,500+ businesses that are already growing with Aerostic. Start your free trial today.
                     </p>
                     <Link
-                        href="/register"
+                        href="https://app.aerostic.com/register"
                         className="inline-flex items-center gap-2 px-10 py-5 bg-white text-gray-900 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-white/20 transition-all transform hover:-translate-y-1"
                     >
                         Start Your Free Trial
@@ -502,9 +500,7 @@ export default function LandingPage() {
                     <div className="grid md:grid-cols-5 gap-8 mb-12">
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-2 mb-4">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                                    <MessageSquare className="w-5 h-5 text-white" />
-                                </div>
+                                <img src="/logo.png" alt="Aerostic" className="w-10 h-10 object-contain" />
                                 <span className="text-2xl font-bold">Aerostic</span>
                             </div>
                             <p className="text-gray-400 mb-6 max-w-xs">

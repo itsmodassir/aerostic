@@ -27,6 +27,7 @@ export class WebhooksService {
 
     verifyWebhook(mode: string, token: string, challenge: string): string {
         const verifyToken = this.configService.get('META_WEBHOOK_VERIFY_TOKEN');
+
         if (mode === 'subscribe' && token === verifyToken) {
             return challenge;
         }

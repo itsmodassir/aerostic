@@ -19,7 +19,8 @@ const navigation = [
     { name: 'Automation', href: '/dashboard/automation', icon: Zap },
     { name: 'AI Agent', href: '/dashboard/agents', icon: Bot },
     { name: 'Settings', href: '/dashboard/settings/whatsapp', icon: Settings },
-    { name: 'Admin Panel', href: '/dashboard/admin', icon: Shield, adminOnly: true },
+    // Platform Admin - only for super_admin or specific platform admins
+    { name: 'Platform Admin', href: '/dashboard/admin', icon: Shield, adminOnly: true },
 ];
 
 const PLAN_COLORS = {
@@ -55,8 +56,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 setEmail(payload.email || 'Admin');
                 setUserName(payload.name || payload.email?.split('@')[0] || 'User');
-                // Check if user is admin - md@modassir.info is admin
-                setIsAdmin(payload.email === 'md@modassir.info' || payload.role === 'admin');
+                // Check if user is platform admin - only allow super_admin or specific email
+                setIsAdmin(payload.role === 'super_admin' || payload.email === 'md@modassir.info');
                 // Set plan based on email
                 if (payload.email === 'md@modassir.info') {
                     setUserPlan('growth');
@@ -100,8 +101,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
                 <div className="flex h-16 items-center px-6 border-b">
                     {/* Logo */}
-                    <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary">
-                        <MessageSquare className="fill-current" />
+                    <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+                        <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain" />
                         <span>Aerostic</span>
                     </Link>
                 </div>

@@ -75,6 +75,20 @@ export class WhatsappService {
         };
     }
 
+    async getPublicConfig() {
+        const dbConfigs = await this.configRepo.find({
+            where: [
+                { key: 'meta.app_id' },
+                { key: 'meta.config_id' }
+            ]
+        });
+
+        return {
+            appId: dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID'),
+            configId: dbConfigs.find(c => c.key === 'meta.config_id')?.value || this.configService.get('META_CONFIG_ID'),
+        };
+    }
+
     async disconnect(tenantId: string) {
         return this.whatsappAccountRepo.delete({ tenantId });
     }

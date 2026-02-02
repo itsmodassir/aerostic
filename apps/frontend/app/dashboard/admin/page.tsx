@@ -44,7 +44,7 @@ export default function AdminPage() {
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                setIsAdmin(payload.email === 'md@modassir.info' || payload.role === 'admin');
+                setIsAdmin(payload.role === 'super_admin' || payload.email === 'md@modassir.info');
             } catch (e) { }
         }
         setLoading(false);
@@ -91,8 +91,8 @@ export default function AdminPage() {
                 <button
                     onClick={() => setActiveTab('tenants')}
                     className={`px-6 py-3 font-medium text-sm flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'tenants'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     <Users className="w-4 h-4" />
@@ -101,8 +101,8 @@ export default function AdminPage() {
                 <button
                     onClick={() => setActiveTab('configuration')}
                     className={`px-6 py-3 font-medium text-sm flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'configuration'
-                            ? 'border-purple-600 text-purple-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-purple-600 text-purple-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     <Settings className="w-4 h-4" />

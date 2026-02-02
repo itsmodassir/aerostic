@@ -40,9 +40,11 @@ We provide a helper script to automate the entire setup:
     chmod +x deploy_aws.sh
     ./deploy_aws.sh
     ```
-4.  **Access Your App**: Open your server's Public IP.
-    *   **Frontend**: `http://<your-ip>/`
-    *   **Backend API**: `http://<your-ip>/api/`
+4.  **Access Your App**:
+    *   **Landing Page**: `https://aerostic.com`
+    *   **User Dashboard**: `https://app.aerostic.com`
+    *   **Platform Admin**: `https://admin.aerostic.com`
+    *   **Backend API**: `https://api.aerostic.com/api/` (Internal path: `/api/`)
 
 ---
 
@@ -70,9 +72,13 @@ For deep technical details, please refer to the `docs/` folder:
     ```
 
 3.  **Access Locally**:
-    *   Frontend: `http://localhost:3000`
+    *   Frontend (Landing): `http://localhost:3000`
+    *   App Dashboard: `http://localhost:3000/dashboard`
+    *   Platform Admin: `http://localhost:3000/admin`
     *   Backend: `http://localhost:3001`
-    *   Admin: `http://localhost:3000/admin`
+
+    > [!NOTE]
+    > In production, these are served via strict subdomains (`app.`, `admin.`, and the root domain).
 
 ---
 

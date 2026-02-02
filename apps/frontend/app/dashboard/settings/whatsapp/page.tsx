@@ -7,6 +7,7 @@ import {
     Key, Globe, Shield, ArrowRight, Copy, Eye, EyeOff,
     Clock, Mail, Phone, Building2, Send, RefreshCw
 } from 'lucide-react';
+import FacebookSDKLoader, { launchWhatsAppSignup } from '@/components/FacebookSDKLoader';
 
 export default function WhatsappSettingsPage() {
     const [loading, setLoading] = useState(false);
@@ -25,6 +26,10 @@ export default function WhatsappSettingsPage() {
     // Test Message State
     const [testNumber, setTestNumber] = useState('');
     const [sendingTest, setSendingTest] = useState(false);
+
+    // Meta Config
+    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string } | null>(null);
+    const [embeddedIds, setEmbeddedIds] = useState<{ phoneNumberId: string, wabaId: string } | null>(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -48,21 +53,74 @@ export default function WhatsappSettingsPage() {
                     }
                 }).catch(console.error);
 
+                // Fetch Meta Public Config
+                api.get('/whatsapp/public-config').then((res) => {
+                    setMetaConfig(res.data);
+                }).catch(console.error);
+
             } catch (e) {
                 console.error('Invalid token');
             }
         }
     }, []);
 
-    const handleFacebookConnect = async () => {
-        if (!tenantId) return;
-        setLoading(true);
-        try {
-            window.location.href = `http://localhost:3001/whatsapp/embedded/start?tenantId=${tenantId}`;
-        } catch (e) {
-            console.error(e);
-            setLoading(false);
+    // Embedded Signup Event Listener
+    useEffect(() => {
+        const handler = (event: MessageEvent) => {
+            if (event.origin !== "https://www.facebook.com" && event.origin !== "https://web.facebook.com") {
+                return;
+            }
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'WA_EMBEDDED_SIGNUP') {
+                    if (data.event === 'FINISH') {
+                        const { phone_number_id, waba_id } = data.data;
+                        console.log("Embedded Signup Finished:", phone_number_id, waba_id);
+                        setEmbeddedIds({ phoneNumberId: phone_number_id, wabaId: waba_id });
+                    } else if (data.event === 'CANCEL') {
+                        console.warn("Embedded Signup Cancelled");
+                    } else if (data.event === 'ERROR') {
+                        console.error("Embedded Signup Error:", data.data.error_message);
+                    }
+                }
+            } catch (e) {
+                // Ignore non-JSON
+            }
+        };
+        window.addEventListener('message', handler);
+        return () => window.removeEventListener('message', handler);
+    }, []);
+
+    const handleFacebookConnect = () => {
+        if (!tenantId || !metaConfig || !metaConfig.configId) {
+            alert('WhatsApp configuration is not complete. Please contact admin.');
+            return;
         }
+
+        launchWhatsAppSignup(metaConfig.configId, async (code) => {
+            setLoading(true);
+            try {
+                // Determine the state (tenantId)
+                const state = tenantId;
+
+                // Construct URL with optional explicit IDs
+                let callbackUrl = `/meta/callback?code=${code}&state=${state}`;
+                if (embeddedIds?.wabaId) callbackUrl += `&wabaId=${embeddedIds.wabaId}`;
+                if (embeddedIds?.phoneNumberId) callbackUrl += `&phoneNumberId=${embeddedIds.phoneNumberId}`;
+
+                // Call the backend callback directly
+                await api.get(callbackUrl);
+
+                setConnectionStatus('connected');
+                alert('WhatsApp successfully connected!');
+                window.location.reload();
+            } catch (e: any) {
+                console.error('Failed to exchange code:', e);
+                alert('Connection failed: ' + (e.response?.data?.message || e.message));
+            } finally {
+                setLoading(false);
+            }
+        });
     };
 
     const handleManualSubmit = async () => {
@@ -125,6 +183,7 @@ export default function WhatsappSettingsPage() {
 
     return (
         <div className="max-w-4xl space-y-8">
+            {metaConfig && <FacebookSDKLoader appId={metaConfig.appId} />}
             {/* Header */}
             <div>
                 <h2 className="text-2xl font-bold text-gray-900">WhatsApp Configuration</h2>

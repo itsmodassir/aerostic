@@ -28,14 +28,10 @@ export default function LoginPage() {
 
             if (res.data.user) {
                 localStorage.setItem('user', JSON.stringify(res.data.user));
-
-                if (res.data.user.role === 'admin') {
-                    router.push('/admin');
-                    return;
-                }
             }
 
-            router.push('/dashboard');
+            // Redirect to root (app.aerostic.com index) which is rewritten to dashboard
+            router.push('/');
         } catch (err: any) {
             setError('Invalid email or password');
         } finally {
@@ -82,9 +78,7 @@ export default function LoginPage() {
                 <div className="relative z-10 flex flex-col justify-center p-16">
                     {/* Logo */}
                     <div className="flex items-center gap-3 mb-12">
-                        <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
-                            <MessageSquare className="w-7 h-7 text-white" />
-                        </div>
+                        <img src="/logo.png" alt="Aerostic" className="w-14 h-14 object-contain" />
                         <span className="text-3xl font-bold text-white">Aerostic</span>
                     </div>
 
@@ -140,9 +134,7 @@ export default function LoginPage() {
                 <div className="w-full max-w-md">
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                            <MessageSquare className="w-6 h-6 text-white" />
-                        </div>
+                        <img src="/logo.png" alt="Aerostic" className="w-12 h-12 object-contain" />
                         <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                             Aerostic
                         </span>
@@ -151,6 +143,10 @@ export default function LoginPage() {
                     {/* Form Card */}
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
                         <div className="text-center mb-8">
+                            <Link href="https://aerostic.com" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mb-4 lg:hidden">
+                                <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
+                                Back to home
+                            </Link>
                             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
                             <p className="text-gray-500">Sign in to continue to your dashboard</p>
                         </div>

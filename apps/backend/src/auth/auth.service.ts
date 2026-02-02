@@ -19,21 +19,43 @@ export class AuthService {
             return null;
         }
 
-        console.log(`[AuthDebug] User found: ${user.id}, Role: ${user.role}`);
+        console.log(`[AuthDebug] User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`);
         const isMatch = await bcrypt.compare(pass, user.passwordHash);
         console.log(`[AuthDebug] Password match: ${isMatch}`);
 
         if (isMatch) {
-            const { passwordHash, ...result } = user;
-            return result;
+            // Explicitly map properties to a plain object to avoid TypeORM proxies/spread issues
+            const plainUser = {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                tenantId: user.tenantId
+            };
+            console.log('[AuthDebug] Returning plain user object:', JSON.stringify(plainUser));
+            return plainUser;
         }
         return null;
     }
 
     async login(user: any) {
+        console.log('[AuthDebug] Login method called with user:', JSON.stringify(user, null, 2));
+
+        if (!user || !user.email) {
+            console.error('[AuthDebug] User object is invalid:', user);
+            throw new Error('Invalid user object');
+        }
+
         const payload = { email: user.email, sub: user.id, tenantId: user.tenantId, role: user.role };
         return {
             access_token: this.jwtService.sign(payload),
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                tenantId: user.tenantId,
+            },
         };
     }
 }

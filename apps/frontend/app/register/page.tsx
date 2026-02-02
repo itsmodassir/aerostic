@@ -88,9 +88,7 @@ export default function RegisterPage() {
                 <div className="relative z-10 flex flex-col justify-center p-16">
                     {/* Logo */}
                     <div className="flex items-center gap-3 mb-12">
-                        <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
-                            <MessageSquare className="w-7 h-7 text-white" />
-                        </div>
+                        <img src="/logo.png" alt="Aerostic" className="w-14 h-14 object-contain" />
                         <span className="text-3xl font-bold text-white">Aerostic</span>
                     </div>
 
@@ -145,12 +143,12 @@ export default function RegisterPage() {
                 <div className="w-full max-w-lg">
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-                            <MessageSquare className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                            Aerostic
-                        </span>
+                        <a href="https://aerostic.com" className="flex items-center justify-center gap-2">
+                            <img src="/logo.png" alt="Aerostic" className="w-12 h-12 object-contain" />
+                            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                                Aerostic
+                            </span>
+                        </a>
                     </div>
 
                     {/* Form Card */}

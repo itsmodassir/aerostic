@@ -19,6 +19,11 @@ export class WhatsappController {
         return this.whatsappService.getStatus(tenantId);
     }
 
+    @Get('public-config')
+    async getPublicConfig() {
+        return this.whatsappService.getPublicConfig();
+    }
+
     @Delete()
     async disconnect(@Query('tenantId') tenantId: string) {
         return this.whatsappService.disconnect(tenantId);

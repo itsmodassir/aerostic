@@ -24,6 +24,7 @@ export default function SystemPage() {
         'meta.app_id': '',
         'meta.app_secret': '',
         'meta.webhook_verify_token': '',
+        'meta.config_id': '',
 
         // Razorpay
         'razorpay.key_id': '',
@@ -207,7 +208,7 @@ export default function SystemPage() {
                                 </button>
                             </div>
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Webhook Verify Token</label>
                             <input
                                 type="text"
@@ -215,6 +216,16 @@ export default function SystemPage() {
                                 onChange={(e) => updateConfig('meta.webhook_verify_token', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 placeholder="your_verify_token"
+                            />
+                        </div>
+                        <div className="">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Configuration ID</label>
+                            <input
+                                type="text"
+                                value={config['meta.config_id']}
+                                onChange={(e) => updateConfig('meta.config_id', e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="865816612932742"
                             />
                         </div>
                     </div>

@@ -103,8 +103,7 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-semibold">Address</h3>
                                         <p className="text-gray-600">
-                                            123, Tech Park, Sector 62<br />
-                                            Noida, UP - 201301, India
+                                            Chembur, Mumbai, India 400071
                                         </p>
                                     </div>
                                 </div>

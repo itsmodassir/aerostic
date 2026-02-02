@@ -19,7 +19,7 @@ export class MetaService {
         private configRepo: Repository<SystemConfig>,
     ) { }
 
-    async handleOAuthCallback(code: string, tenantId: string) {
+    async handleOAuthCallback(code: string, tenantId: string, providedWabaId?: string, providedPhoneNumberId?: string) {
         // Fetch config from DB first
         const dbConfigs = await this.configRepo.find({
             where: [
@@ -31,7 +31,16 @@ export class MetaService {
 
         const appId = dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID');
         const appSecret = dbConfigs.find(c => c.key === 'meta.app_secret')?.value || this.configService.get('META_APP_SECRET');
-        const redirectUri = 'http://localhost:3000/meta/callback'; // Always enforce backend redirect
+
+        // Use the configured redirect URI or fallback to production
+        let redirectUri = dbConfigs.find(c => c.key === 'meta.redirect_uri')?.value
+            || this.configService.get('META_REDIRECT_URI')
+            || 'https://app.aerostic.com/meta/callback';
+
+        // Ensure we don't accidentally use localhost in production if not explicitly intended
+        if (redirectUri.includes('localhost') && process.env.NODE_ENV === 'production') {
+            redirectUri = 'https://app.aerostic.com/meta/callback';
+        }
 
         // 1. Exchange auth code for access token
         const tokenRes = await axios.get(
@@ -98,11 +107,11 @@ export class MetaService {
             });
         }
 
-        let wabaId = wabas.data.data?.[0]?.id;
+        let wabaId = providedWabaId || wabas.data.data?.[0]?.id;
 
         // Note: The previous catch block already attempts client WABAs if owned fails.
         // But if owned succeeded but returned empty list, we enter here.
-        if (!wabaId) {
+        if (!wabaId && !providedWabaId) {
             console.log('No owned WABA found in primary attempt, checking client WABAs explicitly...');
             try {
                 const endpoint = businessId
@@ -131,8 +140,8 @@ export class MetaService {
             },
         );
 
-        const phoneNumberId = numbers.data.data?.[0]?.id;
-        const displayPhoneNumber = numbers.data.data?.[0]?.display_phone_number;
+        const phoneNumberId = providedPhoneNumberId || numbers.data.data?.[0]?.id;
+        const displayPhoneNumber = numbers.data.data?.find((n: any) => n.id === phoneNumberId)?.display_phone_number || numbers.data.data?.[0]?.display_phone_number;
 
         // 5. Save Mapping (Upsert)
         const existing = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });

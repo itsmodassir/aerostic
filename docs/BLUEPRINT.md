@@ -6,37 +6,37 @@
 
 ## 1️⃣ HIGH-LEVEL SYSTEM ARCHITECTURE
 
-```
 Browser (User / Agent / Admin)
         ↓
-    Nginx Proxy (Port 80)
-    /      \
-   /        \
-Frontend    Backend API
-(Next.js)   (NestJS)
-   ↓            ↓
-   └────────────┘
-        ↓
-    Core Services
-  (Postgres + Redis)
-        ↓
-Meta WhatsApp Cloud API
+    Nginx Proxy (Port 80/443)
+    /           |           \
+   /            |            \
+aerostic.com  app.aerostic.com  admin.aerostic.com
+(Landing)     (Dashboard)       (Admin Console)
+   \            |            /
+    \           |           /
+          Backend API (api.aerostic.com)
+                ↓
+          Core Services
+        (Postgres + Redis)
+                ↓
+      Meta WhatsApp Cloud API
 ```
 
 ---
 
 ## 2️⃣ CORE FEATURES
 
-### 🌐 Public Website & App
-- **Landing Page**: `/`
-- **Authentication**: `/auth/login`, `/auth/register` (Multi-tenant support)
-- **Dashboard**: `/app/dashboard` (Analytics, Inbox, Campaigns)
-- **Admin Panel**: `/admin` (System-wide control)
+### 🌐 Strict Subdomain Routing
+- **Landing Page**: `aerostic.com`
+- **User Dashboard**: `app.aerostic.com` (Handles `/dashboard`, `/login`, `/register`)
+- **Platform Admin**: `admin.aerostic.com` (Isolated system-wide control)
+- **Middleware**: Next.js middleware enforces strict hostname-based redirection and rewrites.
 
 ### 📲 WhatsApp Integration
 - **Hybrid Support**:
     1.  **Cloud API (New Number)**: Direct integration via Meta API.
-    2.  **Embedded Signup (Existing Number)**: OAuth flow for onboarding.
+    2.  **Embedded Signup (Existing Number)**: Improved OAuth flow with explicit ID capture from Meta `FINISH` event.
 -   **Security**: System User Token ownership (Aerostic owns token, user grants permission).
 
 ### 🤖 AI & Automation

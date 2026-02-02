@@ -15,6 +15,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
 
+    // Bypass layout for login page
+    if (pathname === '/admin/login') {
+        return <>{children}</>;
+    }
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('user');
@@ -27,7 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         try {
             const user = JSON.parse(userStr);
             if (user.role !== 'admin') {
-                router.push('/dashboard'); // Not an admin
+                router.push('/dashboard');
                 return;
             }
             setAuthorized(true);
@@ -61,15 +66,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Sidebar */}
             <aside className="w-72 bg-gray-900 text-white fixed h-full overflow-y-auto">
                 {/* Logo */}
-                <div className="p-6 border-b border-gray-800">
-                    <Link href="/admin" className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <span className="text-xl font-bold">Aerostic</span>
-                            <p className="text-xs text-gray-400">Admin Console</p>
-                        </div>
+                <div className="flex h-16 items-center px-6 border-b border-gray-800">
+                    <Link href="/" className="flex items-center gap-2 font-bold text-xl text-white">
+                        <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain" />
+                        <span>Aerostic</span>
                     </Link>
                 </div>
 
@@ -116,13 +116,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 {/* Back to Main */}
                 <div className="p-4 border-t border-gray-800">
-                    <Link
-                        href="/"
+                    <a
+                        href="https://aerostic.com"
                         className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all"
                     >
                         <LogOut className="w-5 h-5" />
                         <span>Exit Admin</span>
-                    </Link>
+                    </a>
                 </div>
             </aside>
 

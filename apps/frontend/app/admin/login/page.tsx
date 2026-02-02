@@ -30,7 +30,8 @@ export default function AdminLoginPage() {
 
             localStorage.setItem('token', res.data.access_token);
             localStorage.setItem('user', JSON.stringify(user));
-            router.push('/admin');
+            // Redirect to admin root (which is rewritten to admin folder)
+            router.push('/');
         } catch (err: any) {
             setError('Invalid admin credentials');
         } finally {
@@ -49,9 +50,7 @@ export default function AdminLoginPage() {
             <div className="w-full max-w-md p-8 relative z-10">
                 <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
                     <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/20">
-                            <Shield className="w-8 h-8 text-white" />
-                        </div>
+                        <img src="/logo.png" alt="Aerostic Admin" className="w-16 h-16 object-contain mx-auto mb-6" />
                         <h1 className="text-2xl font-bold text-white mb-2">Admin Console</h1>
                         <p className="text-gray-400 text-sm">Restricted Access Area</p>
                     </div>
@@ -124,11 +123,15 @@ export default function AdminLoginPage() {
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-gray-700/50 text-center">
-                        <p className="text-gray-500 text-xs">
+                        <p className="text-gray-500 text-xs mb-4">
                             Unauthorized access is strictly prohibited and logged.
                             <br />
                             IP Address: Recorded
                         </p>
+                        <a href="https://aerostic.com" className="text-gray-400 hover:text-white text-xs transition-colors flex items-center justify-center gap-2">
+                            <ArrowRight className="w-3 h-3 rotate-180" />
+                            Return to marketing site
+                        </a>
                     </div>
                 </div>
             </div>

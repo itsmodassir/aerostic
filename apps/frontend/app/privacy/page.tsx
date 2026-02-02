@@ -94,7 +94,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                     <p className="mt-4">
                         <strong>Email:</strong> privacy@aerostic.com<br />
-                        <strong>Address:</strong> 123, Tech Park, Sector 62, Noida, UP - 201301, India
+                        <strong>Address:</strong> Chembur, Mumbai, India 400071
                     </p>
                 </div>
             </main>
