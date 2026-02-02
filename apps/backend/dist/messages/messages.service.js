@@ -127,6 +127,34 @@ let MessagesService = class MessagesService {
             order: { createdAt: 'ASC' }
         });
     }
+    async cleanupMockData() {
+        const mockNames = [
+            'Vikram Singh',
+            'Neha Gupta',
+            'Ravi Mehta',
+            'Anjali Sharma'
+        ];
+        const contacts = await this.contactRepo
+            .createQueryBuilder('contact')
+            .where("contact.name IN (:...names)", { names: mockNames })
+            .getMany();
+        if (contacts.length === 0)
+            return { deleted: 0 };
+        const contactIds = contacts.map(c => c.id);
+        await this.conversationRepo
+            .createQueryBuilder()
+            .delete()
+            .from(conversation_entity_1.Conversation)
+            .where("contactId IN (:...ids)", { ids: contactIds })
+            .execute();
+        const result = await this.contactRepo
+            .createQueryBuilder()
+            .delete()
+            .from(contact_entity_1.Contact)
+            .where("id IN (:...ids)", { ids: contactIds })
+            .execute();
+        return { deleted: result.affected || 0 };
+    }
 };
 exports.MessagesService = MessagesService;
 exports.MessagesService = MessagesService = __decorate([

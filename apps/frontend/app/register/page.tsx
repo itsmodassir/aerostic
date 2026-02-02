@@ -26,14 +26,11 @@ export default function RegisterPage() {
         setLoading(true);
         setError('');
         try {
-            const tenantRes = await api.post('/tenants', { name: tenantName });
-            const tenantId = tenantRes.data.id;
-            await api.post('/users', {
+            await api.post('/auth/register', {
                 name,
                 email,
                 password,
-                tenantId,
-                role: 'super_admin'
+                workspace: tenantName
             });
             router.push('/login');
         } catch (err: any) {
@@ -113,8 +110,8 @@ export default function RegisterPage() {
                     <div className="grid gap-3 max-w-sm">
                         {plans.map((plan, i) => (
                             <div key={i} className={`p-4 rounded-xl border transition-all ${i === 1
-                                    ? 'bg-white/20 border-white/40 scale-105'
-                                    : 'bg-white/10 border-white/20'
+                                ? 'bg-white/20 border-white/40 scale-105'
+                                : 'bg-white/10 border-white/20'
                                 }`}>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -287,7 +284,7 @@ export default function RegisterPage() {
                                             ))}
                                         </div>
                                         <span className={`text-xs font-medium ${strength.level === 1 ? 'text-red-500' :
-                                                strength.level === 2 ? 'text-amber-500' : 'text-green-500'
+                                            strength.level === 2 ? 'text-amber-500' : 'text-green-500'
                                             }`}>
                                             {strength.text}
                                         </span>

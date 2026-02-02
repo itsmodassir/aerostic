@@ -19,4 +19,7 @@ export declare class MessagesService {
     }>;
     getConversations(tenantId: string): Promise<Conversation[]>;
     getMessages(tenantId: string, conversationId: string): Promise<Message[]>;
+    cleanupMockData(): Promise<{
+        deleted: number;
+    }>;
 }

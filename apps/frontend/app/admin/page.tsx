@@ -1,49 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Users, CreditCard, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight,
-    BarChart3, Activity, AlertTriangle, CheckCircle, Clock, Zap
+    BarChart3, Activity, AlertTriangle, CheckCircle, Clock, Zap, Loader2
 } from 'lucide-react';
 
 export default function AdminDashboard() {
     const [timeRange, setTimeRange] = useState('7d');
+    const [stats, setStats] = useState<any[]>([]);
+    const [systemHealth, setSystemHealth] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    const stats = [
-        {
-            label: 'Total Tenants',
-            value: '2,547',
-            change: '+12.5%',
-            up: true,
-            icon: Users,
-            color: 'blue'
-        },
-        {
-            label: 'Monthly Revenue',
-            value: '₹48.5L',
-            change: '+23.1%',
-            up: true,
-            icon: CreditCard,
-            color: 'green'
-        },
-        {
-            label: 'Messages Today',
-            value: '1.24M',
-            change: '+8.2%',
-            up: true,
-            icon: MessageSquare,
-            color: 'purple'
-        },
-        {
-            label: 'AI Conversations',
-            value: '156K',
-            change: '-2.4%',
-            up: false,
-            icon: Zap,
-            color: 'amber'
-        },
-    ];
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch dashboard stats');
+            const data = await res.json();
+
+            // Map icons mapping based on label
+            const mappedStats = data.stats.map((s: any) => ({
+                ...s,
+                icon: s.label.includes('Tenants') ? Users :
+                    s.label.includes('Revenue') ? CreditCard :
+                        s.label.includes('Messages') ? MessageSquare :
+                            Zap,
+                color: s.label.includes('Tenants') ? 'blue' :
+                    s.label.includes('Revenue') ? 'green' :
+                        s.label.includes('Messages') ? 'purple' :
+                            'amber'
+            }));
+
+            setStats(mappedStats);
+            setSystemHealth(data.systemHealth);
+        } catch (err: any) {
+            console.error(err);
+            setError('Failed to load dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Static failover for visual consistency if backend fails
     const recentAlerts = [
         { type: 'warning', message: 'High API latency detected in ap-south-1', time: '5 min ago' },
         { type: 'success', message: 'Database backup completed successfully', time: '1 hour ago' },
@@ -59,27 +67,24 @@ export default function AdminDashboard() {
         { name: 'FoodExpress', plan: 'Starter', messages: '98K', revenue: '₹1,999' },
     ];
 
-    const systemHealth = [
-        { service: 'API Gateway', status: 'operational', uptime: '99.99%' },
-        { service: 'Database (Primary)', status: 'operational', uptime: '99.97%' },
-        { service: 'Redis Cache', status: 'operational', uptime: '100%' },
-        { service: 'Meta API Integration', status: 'degraded', uptime: '98.5%' },
-        { service: 'AI Service (Gemini)', status: 'operational', uptime: '99.9%' },
-    ];
+    if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header with Time Range */}
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+                    {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+                </div>
                 <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
                     {['24h', '7d', '30d', '90d'].map((range) => (
                         <button
                             key={range}
                             onClick={() => setTimeRange(range)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${timeRange === range
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                         >
                             {range}
@@ -90,8 +95,8 @@ export default function AdminDashboard() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                {stats.length > 0 ? stats.map((stat, i) => (
+                    <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
                         <div className="flex items-center justify-between mb-4">
                             <div className={`p-3 rounded-xl bg-${stat.color}-100`}>
                                 <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
@@ -104,7 +109,9 @@ export default function AdminDashboard() {
                         <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                         <p className="text-sm text-gray-500 mt-1">{stat.label}</p>
                     </div>
-                ))}
+                )) : (
+                    <div className="col-span-4 text-center py-8 text-gray-500">No stats available</div>
+                )}
             </div>
 
             <div className="grid grid-cols-3 gap-6">
@@ -134,7 +141,7 @@ export default function AdminDashboard() {
                             <div key={i} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-2 h-2 rounded-full ${service.status === 'operational' ? 'bg-green-500' :
-                                            service.status === 'degraded' ? 'bg-yellow-500' : 'bg-red-500'
+                                        service.status === 'degraded' ? 'bg-yellow-500' : 'bg-red-500'
                                         }`} />
                                     <span className="text-sm text-gray-700">{service.service}</span>
                                 </div>
@@ -156,9 +163,9 @@ export default function AdminDashboard() {
                         {recentAlerts.map((alert, i) => (
                             <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                                 <div className={`p-1 rounded-full ${alert.type === 'error' ? 'bg-red-100 text-red-600' :
-                                        alert.type === 'warning' ? 'bg-amber-100 text-amber-600' :
-                                            alert.type === 'success' ? 'bg-green-100 text-green-600' :
-                                                'bg-blue-100 text-blue-600'
+                                    alert.type === 'warning' ? 'bg-amber-100 text-amber-600' :
+                                        alert.type === 'success' ? 'bg-green-100 text-green-600' :
+                                            'bg-blue-100 text-blue-600'
                                     }`}>
                                     {alert.type === 'error' ? <AlertTriangle className="w-4 h-4" /> :
                                         alert.type === 'success' ? <CheckCircle className="w-4 h-4" /> :
@@ -195,8 +202,8 @@ export default function AdminDashboard() {
                                         <td className="py-3 font-medium text-gray-900">{tenant.name}</td>
                                         <td className="py-3">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${tenant.plan === 'Enterprise' ? 'bg-purple-100 text-purple-700' :
-                                                    tenant.plan === 'Growth' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                tenant.plan === 'Growth' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {tenant.plan}
                                             </span>

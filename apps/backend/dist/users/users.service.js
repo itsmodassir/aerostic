@@ -79,6 +79,26 @@ let UsersService = class UsersService {
         }
         return user;
     }
+    async findAllByTenant(tenantId) {
+        return this.usersRepository.findBy({ tenantId });
+    }
+    async cleanupMockData() {
+        const mockEmails = [
+            'rahul@example.com',
+            'priya@example.com',
+            'vikram@example.com',
+            'neha@example.com',
+            'ravi@example.com',
+            'anjali@example.com'
+        ];
+        const result = await this.usersRepository
+            .createQueryBuilder()
+            .delete()
+            .from(user_entity_1.User)
+            .where("email IN (:...emails)", { emails: mockEmails })
+            .execute();
+        return { deleted: result.affected || 0 };
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

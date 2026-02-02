@@ -7,4 +7,8 @@ export declare class UsersService {
     create(createUserDto: CreateUserDto): Promise<User>;
     findOneByEmail(email: string): Promise<User | null>;
     findOne(id: string): Promise<User>;
+    findAllByTenant(tenantId: string): Promise<User[]>;
+    cleanupMockData(): Promise<{
+        deleted: number;
+    }>;
 }

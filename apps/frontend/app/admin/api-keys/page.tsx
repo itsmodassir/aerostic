@@ -1,56 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Key, Search, Filter, Plus, Copy, Eye, EyeOff, Trash2,
-    MoreVertical, CheckCircle, XCircle, Clock
+    MoreVertical, CheckCircle, XCircle, Clock, Loader2
 } from 'lucide-react';
 
+interface ApiKey {
+    id: string;
+    name: string;
+    tenantName: string;
+    key: string;
+    status: string;
+    createdAt: string;
+    lastUsed: string;
+    requests: string;
+}
+
 export default function AdminApiKeysPage() {
+    const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const [showKey, setShowKey] = useState<string | null>(null);
 
-    const apiKeys = [
-        {
-            id: '1',
-            name: 'Production API Key',
-            tenant: 'TechStart India',
-            key: 'ak_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-            status: 'active',
-            created: '15 Jan 2026',
-            lastUsed: '30 Jan 2026, 20:45',
-            requests: '1.2M'
-        },
-        {
-            id: '2',
-            name: 'Staging Key',
-            tenant: 'RetailPro',
-            key: 'ak_test_yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy',
-            status: 'active',
-            created: '10 Jan 2026',
-            lastUsed: '30 Jan 2026, 18:30',
-            requests: '45K'
-        },
-        {
-            id: '3',
-            name: 'Mobile App Integration',
-            tenant: 'EduLearn',
-            key: 'ak_live_zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz',
-            status: 'revoked',
-            created: '5 Jan 2026',
-            lastUsed: '25 Jan 2026, 12:00',
-            requests: '890K'
-        },
-        {
-            id: '4',
-            name: 'CRM Integration',
-            tenant: 'HealthPlus',
-            key: 'ak_live_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-            status: 'active',
-            created: '20 Dec 2025',
-            lastUsed: '30 Jan 2026, 19:15',
-            requests: '2.3M'
-        },
-    ];
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+    useEffect(() => {
+        fetchApiKeys();
+    }, []);
+
+    const fetchApiKeys = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/admin/api-keys`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setApiKeys(data);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredKeys = apiKeys.filter(k =>
+        k.tenantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        k.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>;
 
     return (
         <div className="space-y-8">
@@ -66,32 +67,11 @@ export default function AdminApiKeysPage() {
                         <input
                             type="text"
                             placeholder="Search by tenant or key..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
                         />
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
-                        <Filter className="w-4 h-4" />
-                        Filter
-                    </button>
-                </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-6">
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                    <p className="text-sm text-gray-500">Total API Keys</p>
-                    <p className="text-3xl font-bold text-gray-900">4,521</p>
-                    <p className="text-sm text-green-600 mt-1">+234 this month</p>
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                    <p className="text-sm text-gray-500">Active Keys</p>
-                    <p className="text-3xl font-bold text-green-600">4,312</p>
-                    <p className="text-sm text-gray-500 mt-1">95.4% of total</p>
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                    <p className="text-sm text-gray-500">API Calls Today</p>
-                    <p className="text-3xl font-bold text-blue-600">12.4M</p>
-                    <p className="text-sm text-green-600 mt-1">+8.2% vs yesterday</p>
                 </div>
             </div>
 
@@ -104,13 +84,12 @@ export default function AdminApiKeysPage() {
                             <th className="px-6 py-4">Tenant</th>
                             <th className="px-6 py-4">API Key</th>
                             <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Requests</th>
+                            <th className="px-6 py-4">Requests Today</th>
                             <th className="px-6 py-4">Last Used</th>
-                            <th className="px-6 py-4"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {apiKeys.map((key) => (
+                        {filteredKeys.length > 0 ? filteredKeys.map((key) => (
                             <tr key={key.id} className="text-sm">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
@@ -120,22 +99,11 @@ export default function AdminApiKeysPage() {
                                         <span className="font-medium text-gray-900">{key.name}</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-gray-600">{key.tenant}</td>
+                                <td className="px-6 py-4 text-gray-600">{key.tenantName}</td>
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                                            {showKey === key.id ? key.key : `${key.key.slice(0, 12)}...`}
-                                        </code>
-                                        <button
-                                            onClick={() => setShowKey(showKey === key.id ? null : key.id)}
-                                            className="p-1 hover:bg-gray-100 rounded"
-                                        >
-                                            {showKey === key.id ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
-                                        </button>
-                                        <button className="p-1 hover:bg-gray-100 rounded">
-                                            <Copy className="w-4 h-4 text-gray-400" />
-                                        </button>
-                                    </div>
+                                    <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                                        {key.key}
+                                    </code>
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${key.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -145,14 +113,15 @@ export default function AdminApiKeysPage() {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-gray-600">{key.requests}</td>
-                                <td className="px-6 py-4 text-xs text-gray-500">{key.lastUsed}</td>
-                                <td className="px-6 py-4">
-                                    <button className="p-2 hover:bg-gray-100 rounded-lg">
-                                        <MoreVertical className="w-4 h-4 text-gray-400" />
-                                    </button>
+                                <td className="px-6 py-4 text-xs text-gray-500">
+                                    {key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never'}
                                 </td>
                             </tr>
-                        ))}
+                        )) : (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No API keys found</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

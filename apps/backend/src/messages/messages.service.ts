@@ -133,4 +133,44 @@ export class MessagesService {
             order: { createdAt: 'ASC' }
         });
     }
+
+    async cleanupMockData() {
+        const mockNames = [
+            'Vikram Singh',
+            'Neha Gupta',
+            'Ravi Mehta',
+            'Anjali Sharma'
+        ];
+
+        // Delete contacts (cascading should handle conversations/messages usually, but we'll check)
+        // If cascade isn't set up, we might need to delete conversations first.
+        // Assuming cascade or manual cleanup:
+
+        const contacts = await this.contactRepo
+            .createQueryBuilder('contact')
+            .where("contact.name IN (:...names)", { names: mockNames })
+            .getMany();
+
+        if (contacts.length === 0) return { deleted: 0 };
+
+        const contactIds = contacts.map(c => c.id);
+
+        // Delete conversations for these contacts
+        await this.conversationRepo
+            .createQueryBuilder()
+            .delete()
+            .from(Conversation)
+            .where("contactId IN (:...ids)", { ids: contactIds })
+            .execute();
+
+        // Delete contacts
+        const result = await this.contactRepo
+            .createQueryBuilder()
+            .delete()
+            .from(Contact)
+            .where("id IN (:...ids)", { ids: contactIds })
+            .execute();
+
+        return { deleted: result.affected || 0 };
+    }
 }

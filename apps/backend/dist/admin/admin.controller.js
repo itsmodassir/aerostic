@@ -57,6 +57,12 @@ let AdminController = class AdminController {
             version: '1.0.0',
         };
     }
+    async getStats() {
+        return this.adminService.getDashboardStats();
+    }
+    async getApiKeys() {
+        return this.adminService.getAllApiKeys();
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -123,6 +129,18 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getHealth", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getStats", null);
+__decorate([
+    (0, common_1.Get)('api-keys'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getApiKeys", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
     __metadata("design:paramtypes", [admin_service_1.AdminService])

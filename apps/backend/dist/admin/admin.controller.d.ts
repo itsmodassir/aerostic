@@ -36,5 +36,28 @@ export declare class AdminController {
         memory: NodeJS.MemoryUsage;
         version: string;
     }>;
+    getStats(): Promise<{
+        stats: {
+            label: string;
+            value: string;
+            change: string;
+            up: boolean;
+        }[];
+        systemHealth: {
+            service: string;
+            status: string;
+            uptime: string;
+        }[];
+    }>;
+    getApiKeys(): Promise<{
+        id: string;
+        name: string;
+        tenantName: any;
+        key: string;
+        status: string;
+        createdAt: Date;
+        lastUsed: Date;
+        requests: string;
+    }[]>;
 }
 export {};

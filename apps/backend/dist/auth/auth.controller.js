@@ -15,6 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const users_service_1 = require("../users/users.service");
+const tenants_service_1 = require("../tenants/tenants.service");
+const user_entity_1 = require("../users/entities/user.entity");
 const class_validator_1 = require("class-validator");
 class LoginDto {
     email;
@@ -28,10 +31,37 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
+class RegisterDto {
+    email;
+    password;
+    name;
+    workspace;
+}
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "workspace", void 0);
 let AuthController = class AuthController {
     authService;
-    constructor(authService) {
+    usersService;
+    tenantsService;
+    constructor(authService, usersService, tenantsService) {
         this.authService = authService;
+        this.usersService = usersService;
+        this.tenantsService = tenantsService;
     }
     async login(loginDto) {
         const user = await this.authService.validateUser(loginDto.email, loginDto.password);
@@ -40,8 +70,27 @@ let AuthController = class AuthController {
         }
         return this.authService.login(user);
     }
-    async register(body) {
-        return { id: 'new_user_id', email: body.email };
+    async register(registerDto) {
+        try {
+            const tenant = await this.tenantsService.create({
+                name: registerDto.workspace,
+            });
+            const user = await this.usersService.create({
+                email: registerDto.email,
+                password: registerDto.password,
+                name: registerDto.name,
+                tenantId: tenant.id,
+                role: user_entity_1.UserRole.ADMIN,
+            });
+            const { passwordHash, ...userWithoutPassword } = user;
+            return userWithoutPassword;
+        }
+        catch (error) {
+            if (error.message?.includes('already exists')) {
+                throw new common_1.BadRequestException('Email already registered');
+            }
+            throw error;
+        }
     }
     async getProfile() {
         return { id: 'current_user', email: 'admin@aerostic.com' };
@@ -59,7 +108,7 @@ __decorate([
     (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
@@ -70,6 +119,8 @@ __decorate([
 ], AuthController.prototype, "getProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [auth_service_1.AuthService])
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        users_service_1.UsersService,
+        tenants_service_1.TenantsService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

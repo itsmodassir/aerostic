@@ -772,29 +772,31 @@ function TeamTab({ planFeatures }: any) {
                 setInboxStats({ unassigned: 24, inProgress: 12, resolved: 156 });
             }
 
-            // For team members, use current user + mock data (until team endpoints are implemented)
-            const currentUser = { name: 'You', email: '', role: 'Admin', avatar: 'Y', status: 'online' };
-            if (token) {
-                try {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    currentUser.name = payload.name || 'You';
-                    currentUser.email = payload.email || '';
-                    currentUser.avatar = currentUser.name[0].toUpperCase();
-                } catch (e) { }
+            // Fetch team members
+            try {
+                const usersRes = await fetch(`${API_URL}/users?tenantId=${tenantId}`, { headers });
+                if (usersRes.ok) {
+                    const usersData = await usersRes.json();
+                    setTeamMembers(usersData.map((u: any) => ({
+                        name: u.name,
+                        email: u.email,
+                        role: u.role === 'admin' ? 'Admin' : 'Agent',
+                        avatar: u.name[0].toUpperCase(),
+                        status: 'online' // You might want to implement real online status later
+                    })));
+                } else {
+                    // Fallback to current user only if fetch fails
+                    setTeamMembers([currentUser]);
+                }
+            } catch (e) {
+                console.error('Failed to fetch team members', e);
+                setTeamMembers([currentUser]);
             }
 
-            setTeamMembers([
-                currentUser,
-                { name: 'Rahul Sharma', email: 'rahul@example.com', role: 'Agent', avatar: 'R', status: 'online' },
-                { name: 'Priya Patel', email: 'priya@example.com', role: 'Agent', avatar: 'P', status: 'away' },
-            ]);
         } catch (e) {
-            console.log('Using fallback team data');
-            setTeamMembers([
-                { name: 'Admin', email: 'admin@example.com', role: 'Admin', avatar: 'A', status: 'online' },
-                { name: 'Agent 1', email: 'agent1@example.com', role: 'Agent', avatar: 'A', status: 'online' },
-            ]);
-            setInboxStats({ unassigned: 24, inProgress: 12, resolved: 156 });
+            console.log('Error fetching team data', e);
+            // Fallback for defaults
+            setInboxStats({ unassigned: 0, inProgress: 0, resolved: 0 });
         } finally {
             setLoading(false);
         }

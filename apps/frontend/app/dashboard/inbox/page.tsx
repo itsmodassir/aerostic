@@ -50,83 +50,6 @@ interface Message {
     sender?: TeamMember;
 }
 
-// Demo team members
-const TEAM_MEMBERS: TeamMember[] = [
-    { id: '1', name: 'Modassir', email: 'md@modassir.info', role: 'admin', status: 'online' },
-    { id: '2', name: 'Rahul Sharma', email: 'rahul@example.com', role: 'agent', status: 'online' },
-    { id: '3', name: 'Priya Patel', email: 'priya@example.com', role: 'agent', status: 'away' },
-    { id: '4', name: 'Amit Kumar', email: 'amit@example.com', role: 'agent', status: 'offline' },
-];
-
-// Demo conversations
-const DEMO_CONVERSATIONS: Conversation[] = [
-    {
-        id: '1',
-        contact: { id: 'c1', name: 'Vikram Singh', phoneNumber: '+91 98765 43210', tags: ['VIP', 'Lead'] },
-        lastMessage: 'Hi, I want to know about your premium plans',
-        lastMessageAt: new Date(Date.now() - 5 * 60000).toISOString(),
-        unreadCount: 2,
-        status: 'open',
-        priority: 'high',
-        assignedTo: TEAM_MEMBERS[0],
-        channel: 'whatsapp',
-    },
-    {
-        id: '2',
-        contact: { id: 'c2', name: 'Neha Gupta', phoneNumber: '+91 87654 32109', tags: ['Customer'] },
-        lastMessage: 'Thank you for the quick response!',
-        lastMessageAt: new Date(Date.now() - 15 * 60000).toISOString(),
-        unreadCount: 0,
-        status: 'resolved',
-        priority: 'low',
-        assignedTo: TEAM_MEMBERS[1],
-        isStarred: true,
-        channel: 'whatsapp',
-    },
-    {
-        id: '3',
-        contact: { id: 'c3', name: 'Ravi Mehta', phoneNumber: '+91 76543 21098', tags: ['Support'] },
-        lastMessage: 'When will my order arrive?',
-        lastMessageAt: new Date(Date.now() - 30 * 60000).toISOString(),
-        unreadCount: 1,
-        status: 'pending',
-        priority: 'medium',
-        isBot: true,
-        channel: 'whatsapp',
-    },
-    {
-        id: '4',
-        contact: { id: 'c4', name: 'Anjali Sharma', phoneNumber: '+91 65432 10987' },
-        lastMessage: 'Please call me back',
-        lastMessageAt: new Date(Date.now() - 60 * 60000).toISOString(),
-        unreadCount: 0,
-        status: 'open',
-        priority: 'high',
-        channel: 'whatsapp',
-    },
-    {
-        id: '5',
-        contact: { id: 'c5', name: 'Karan Verma', phoneNumber: '+91 54321 09876', tags: ['New'] },
-        lastMessage: 'Can I schedule a demo?',
-        lastMessageAt: new Date(Date.now() - 120 * 60000).toISOString(),
-        unreadCount: 0,
-        status: 'snoozed',
-        priority: 'medium',
-        assignedTo: TEAM_MEMBERS[2],
-        channel: 'whatsapp',
-    },
-];
-
-// Demo messages
-const DEMO_MESSAGES: Message[] = [
-    { id: 'm1', direction: 'in', type: 'text', content: { body: 'Hi, I want to know about your premium plans' }, status: 'read', createdAt: new Date(Date.now() - 10 * 60000).toISOString() },
-    { id: 'm2', direction: 'out', type: 'text', content: { body: 'Hello! Thank you for reaching out. I\'d be happy to help you with our premium plans.' }, status: 'read', createdAt: new Date(Date.now() - 9 * 60000).toISOString(), sender: TEAM_MEMBERS[0] },
-    { id: 'm3', direction: 'out', type: 'text', content: { body: 'We have three plans: Starter at ₹1,999/mo, Growth at ₹4,999/mo, and Enterprise at ₹14,999/mo.' }, status: 'read', createdAt: new Date(Date.now() - 8 * 60000).toISOString(), sender: TEAM_MEMBERS[0] },
-    { id: 'm4', direction: 'in', type: 'text', content: { body: 'What\'s included in the Growth plan?' }, status: 'read', createdAt: new Date(Date.now() - 7 * 60000).toISOString() },
-    { id: 'm5', direction: 'out', type: 'text', content: { body: 'The Growth plan includes 50,000 messages/month, 5 AI agents, custom templates, priority support, API access, and team collaboration features.' }, status: 'delivered', createdAt: new Date(Date.now() - 5 * 60000).toISOString(), sender: TEAM_MEMBERS[0] },
-    { id: 'm6', direction: 'in', type: 'text', content: { body: 'That sounds great! Can I get a demo?' }, status: 'read', createdAt: new Date(Date.now() - 3 * 60000).toISOString() },
-];
-
 const QUICK_REPLIES = [
     "Thank you for contacting us!",
     "Let me check and get back to you.",
@@ -136,12 +59,13 @@ const QUICK_REPLIES = [
 ];
 
 export default function InboxPage() {
-    const [conversations, setConversations] = useState<Conversation[]>(DEMO_CONVERSATIONS);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
     const [tenantId, setTenantId] = useState<string>('');
     const [currentUser, setCurrentUser] = useState<TeamMember | null>(null);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterAssignee, setFilterAssignee] = useState<string>('all');
@@ -153,7 +77,7 @@ export default function InboxPage() {
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Init: Get user info
+    // Init: Get user info and team members
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -167,18 +91,36 @@ export default function InboxPage() {
                     role: payload.email === 'md@modassir.info' ? 'admin' : 'agent',
                     status: 'online',
                 });
+
+                // Fetch real team members
+                const fetchTeam = async () => {
+                    try {
+                        const res = await api.get(`/users?tenantId=${payload.tenantId}`);
+                        if (res.data) {
+                            setTeamMembers(res.data.map((u: any) => ({
+                                id: u.id,
+                                name: u.name,
+                                email: u.email,
+                                role: u.role === 'admin' ? 'admin' : 'agent',
+                                status: 'online'
+                            })));
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch team');
+                    }
+                };
+                fetchTeam();
             } catch (e) { }
         }
     }, []);
 
-    // Fetch conversations from API (with fallback to demo)
+    // Fetch conversations from API
     useEffect(() => {
         if (!tenantId) return;
         const fetchConvs = async () => {
             try {
                 const res = await api.get(`/messages/conversations?tenantId=${tenantId}`);
-                if (res.data && res.data.length > 0) {
-                    // Map API data to our format
+                if (res.data) {
                     const mapped = res.data.map((conv: any) => ({
                         ...conv,
                         unreadCount: conv.unreadCount || 0,
@@ -187,10 +129,12 @@ export default function InboxPage() {
                         channel: 'whatsapp',
                     }));
                     setConversations(mapped);
+                } else {
+                    setConversations([]);
                 }
             } catch (e) {
-                // Use demo data on error
-                console.log('Using demo conversations');
+                console.error('Failed to fetch conversations');
+                setConversations([]);
             }
         };
         fetchConvs();
@@ -208,13 +152,13 @@ export default function InboxPage() {
         const fetchMsgs = async () => {
             try {
                 const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
-                if (res.data && res.data.length > 0) {
+                if (res.data) {
                     setMessages(res.data);
                 } else {
-                    setMessages(DEMO_MESSAGES);
+                    setMessages([]);
                 }
             } catch (e) {
-                setMessages(DEMO_MESSAGES);
+                setMessages([]);
             }
         };
 
@@ -443,7 +387,7 @@ export default function InboxPage() {
                                 <option value="all">All Agents</option>
                                 <option value="me">Assigned to Me</option>
                                 <option value="unassigned">Unassigned</option>
-                                {TEAM_MEMBERS.map(m => (
+                                {teamMembers.map(m => (
                                     <option key={m.id} value={m.id}>{m.name}</option>
                                 ))}
                             </select>
@@ -587,7 +531,7 @@ export default function InboxPage() {
                                                 <p className="text-sm font-medium text-gray-700">Assign to team member</p>
                                             </div>
                                             <div className="max-h-60 overflow-y-auto">
-                                                {TEAM_MEMBERS.map(member => (
+                                                {teamMembers.map(member => (
                                                     <button
                                                         key={member.id}
                                                         onClick={() => handleAssign(member)}
@@ -598,7 +542,7 @@ export default function InboxPage() {
                                                                 {member.name.charAt(0)}
                                                             </div>
                                                             <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${member.status === 'online' ? 'bg-green-500' :
-                                                                    member.status === 'away' ? 'bg-amber-500' : 'bg-gray-400'
+                                                                member.status === 'away' ? 'bg-amber-500' : 'bg-gray-400'
                                                                 }`} />
                                                         </div>
                                                         <div className="flex-1 text-left">

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 
@@ -10,5 +10,11 @@ export class UsersController {
     @Post()
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto);
+    }
+
+    @Get()
+    findAll(@Query('tenantId') tenantId: string) {
+        // Fallback to query param if not using subdomains yet
+        return this.usersService.findAllByTenant(tenantId);
     }
 }

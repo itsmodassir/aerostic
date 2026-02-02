@@ -40,4 +40,28 @@ export class UsersService {
         }
         return user;
     }
+
+    async findAllByTenant(tenantId: string): Promise<User[]> {
+        return this.usersRepository.findBy({ tenantId });
+    }
+
+    async cleanupMockData(): Promise<{ deleted: number }> {
+        const mockEmails = [
+            'rahul@example.com',
+            'priya@example.com',
+            'vikram@example.com', // Just in case
+            'neha@example.com',
+            'ravi@example.com',
+            'anjali@example.com'
+        ];
+
+        const result = await this.usersRepository
+            .createQueryBuilder()
+            .delete()
+            .from(User)
+            .where("email IN (:...emails)", { emails: mockEmails })
+            .execute();
+
+        return { deleted: result.affected || 0 };
+    }
 }

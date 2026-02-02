@@ -1,6 +1,9 @@
-import { Controller, Post, Body, UnauthorizedException, Get } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Get, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { IsNotEmpty } from 'class-validator';
+import { UsersService } from '../users/users.service';
+import { TenantsService } from '../tenants/tenants.service';
+import { UserRole } from '../users/entities/user.entity';
+import { IsNotEmpty, IsEmail } from 'class-validator';
 
 class LoginDto {
     @IsNotEmpty()
@@ -10,9 +13,28 @@ class LoginDto {
     password: string;
 }
 
+class RegisterDto {
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
+
+    @IsNotEmpty()
+    password: string;
+
+    @IsNotEmpty()
+    name: string;
+
+    @IsNotEmpty()
+    workspace: string;
+}
+
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(
+        private authService: AuthService,
+        private usersService: UsersService,
+        private tenantsService: TenantsService,
+    ) { }
 
     @Post('login')
     async login(@Body() loginDto: LoginDto) {
@@ -22,10 +44,33 @@ export class AuthController {
         }
         return this.authService.login(user);
     }
+
     @Post('register')
-    async register(@Body() body: any) {
-        // Registration logic
-        return { id: 'new_user_id', email: body.email };
+    async register(@Body() registerDto: RegisterDto) {
+        try {
+            // Create tenant first
+            const tenant = await this.tenantsService.create({
+                name: registerDto.workspace,
+            });
+
+            // Create user with tenant
+            const user = await this.usersService.create({
+                email: registerDto.email,
+                password: registerDto.password,
+                name: registerDto.name,
+                tenantId: tenant.id,
+                role: UserRole.ADMIN, // First user is admin
+            });
+
+            // Return user data without password
+            const { passwordHash, ...userWithoutPassword } = user;
+            return userWithoutPassword;
+        } catch (error) {
+            if (error.message?.includes('already exists')) {
+                throw new BadRequestException('Email already registered');
+            }
+            throw error;
+        }
     }
 
     @Get('me')

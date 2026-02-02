@@ -77,4 +77,14 @@ export class AdminController {
             version: '1.0.0',
         };
     }
+
+    @Get('stats')
+    async getStats() {
+        return this.adminService.getDashboardStats();
+    }
+
+    @Get('api-keys')
+    async getApiKeys() {
+        return this.adminService.getAllApiKeys();
+    }
 }
