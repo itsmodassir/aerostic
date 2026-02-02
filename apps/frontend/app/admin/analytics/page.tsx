@@ -1,65 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     BarChart3, TrendingUp, Users, MessageSquare, Bot, Zap,
-    ArrowUpRight, ArrowDownRight, Calendar, ChevronDown
+    ArrowUpRight, ArrowDownRight, Calendar, ChevronDown, Activity
 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function AdminAnalyticsPage() {
     const [timeRange, setTimeRange] = useState('7d');
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<any>(null);
+    const [trends, setTrends] = useState<{ revenue: any[], messages: any[] }>({ revenue: [], messages: [] });
 
-    const metrics = [
-        {
-            label: 'Total Messages',
-            value: '12.4M',
-            change: '+18.2%',
-            up: true,
-            breakdown: { sent: '10.2M', delivered: '9.8M', read: '7.1M' }
-        },
-        {
-            label: 'Active Tenants',
-            value: '2,147',
-            change: '+5.3%',
-            up: true,
-            breakdown: { daily: '1,456', weekly: '2,089', monthly: '2,147' }
-        },
-        {
-            label: 'AI Conversations',
-            value: '892K',
-            change: '+32.1%',
-            up: true,
-            breakdown: { resolved: '847K', handoff: '45K', pending: '2.3K' }
-        },
-        {
-            label: 'API Calls',
-            value: '45.2M',
-            change: '-2.4%',
-            up: false,
-            breakdown: { messages: '38M', webhooks: '5.2M', other: '2M' }
-        },
-    ];
+    useEffect(() => {
+        fetchData();
+    }, [timeRange]);
 
-    const channelPerformance = [
-        { channel: 'WhatsApp Business', messages: '8.4M', deliveryRate: '98.2%', responseRate: '67%' },
-        { channel: 'WhatsApp Cloud', messages: '4M', deliveryRate: '97.8%', responseRate: '72%' },
-    ];
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [statsRes, trendsRes] = await Promise.all([
+                fetch('/api/admin/stats'),
+                fetch(`/api/admin/stats/trends?range=${timeRange}`)
+            ]);
 
-    const topFeatures = [
-        { feature: 'Bulk Campaigns', usage: 78, trend: '+12%' },
-        { feature: 'AI Chatbots', usage: 65, trend: '+28%' },
-        { feature: 'Template Builder', usage: 54, trend: '+8%' },
-        { feature: 'Automation Rules', usage: 42, trend: '+15%' },
-        { feature: 'Team Inbox', usage: 38, trend: '+5%' },
-    ];
+            if (statsRes.ok && trendsRes.ok) {
+                setStats(await statsRes.json());
+                setTrends(await trendsRes.json());
+            }
+        } catch (error) {
+            console.error('Failed to fetch analytics', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const geoDistribution = [
-        { region: 'Maharashtra', tenants: 456, messages: '3.2M', percentage: 26 },
-        { region: 'Delhi NCR', tenants: 389, messages: '2.8M', percentage: 22 },
-        { region: 'Karnataka', tenants: 312, messages: '2.1M', percentage: 17 },
-        { region: 'Tamil Nadu', tenants: 245, messages: '1.6M', percentage: 13 },
-        { region: 'Gujarat', tenants: 198, messages: '1.2M', percentage: 10 },
-        { region: 'Others', tenants: 547, messages: '1.5M', percentage: 12 },
+    if (loading && !stats) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="text-gray-500">Loading analytics...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Default metrics if stats fail
+    const metricsResult = stats?.stats || [
+        { label: 'Total Tenants', value: '0', change: '0%', up: true },
+        { label: 'Monthly Revenue', value: '₹0L', change: '0%', up: true },
+        { label: 'Messages Today', value: '0', change: '0%', up: true },
+        { label: 'AI Conversations', value: '0', change: '0%', up: false }
     ];
 
     return (
@@ -68,16 +61,16 @@ export default function AdminAnalyticsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Platform Analytics</h1>
-                    <p className="text-gray-500">Monitor platform performance and usage metrics</p>
+                    <p className="text-gray-500">Monitor platform performance and real-time usage metrics</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
-                    {['24h', '7d', '30d', '90d'].map((range) => (
+                    {['7d', '30d', '90d'].map((range) => (
                         <button
                             key={range}
                             onClick={() => setTimeRange(range)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${timeRange === range
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                         >
                             {range}
@@ -87,103 +80,122 @@ export default function AdminAnalyticsPage() {
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-4 gap-6">
-                {metrics.map((metric, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {metricsResult.map((metric: any, i: number) => (
+                    <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm text-gray-500">{metric.label}</p>
-                            <div className={`flex items-center gap-1 text-sm font-medium ${metric.up ? 'text-green-600' : 'text-red-600'}`}>
-                                {metric.up ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                            <p className="text-sm text-gray-500 font-medium">{metric.label}</p>
+                            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${metric.up ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {metric.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                                 {metric.change}
                             </div>
                         </div>
-                        <p className="text-3xl font-bold text-gray-900 mb-4">{metric.value}</p>
-                        <div className="space-y-2 border-t border-gray-100 pt-4">
-                            {Object.entries(metric.breakdown).map(([key, val]) => (
-                                <div key={key} className="flex justify-between text-sm">
-                                    <span className="text-gray-500 capitalize">{key}</span>
-                                    <span className="text-gray-700 font-medium">{val}</span>
-                                </div>
-                            ))}
-                        </div>
+                        <p className="text-3xl font-bold text-gray-900">{metric.value}</p>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-                {/* Feature Usage */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900 mb-6">Feature Usage</h2>
-                    <div className="space-y-4">
-                        {topFeatures.map((feature, i) => (
-                            <div key={i} className="flex items-center gap-4">
-                                <div className="w-36 text-sm font-medium text-gray-700">{feature.feature}</div>
-                                <div className="flex-1">
-                                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                            style={{ width: `${feature.usage}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                <span className="text-sm font-medium text-green-600">{feature.trend}</span>
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Revenue Chart */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                                <TrendingUp className="w-5 h-5 text-green-600" />
                             </div>
-                        ))}
+                            <h2 className="text-lg font-bold text-gray-900">Revenue Trend</h2>
+                        </div>
+                    </div>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={trends.revenue}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis
+                                    dataKey="date"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                                    tickFormatter={(val) => val.slice(5)} // Show MM-DD
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                                    tickFormatter={(val) => `₹${val}`}
+                                />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#10B981"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorRevenue)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Geographic Distribution */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900 mb-6">Geographic Distribution (India)</h2>
-                    <div className="space-y-4">
-                        {geoDistribution.map((region, i) => (
-                            <div key={i} className="flex items-center gap-4">
-                                <div className="w-28 text-sm font-medium text-gray-700">{region.region}</div>
-                                <div className="flex-1">
-                                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
-                                            style={{ width: `${region.percentage}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-medium text-gray-900">{region.tenants}</p>
-                                    <p className="text-xs text-gray-500">{region.messages}</p>
-                                </div>
+                {/* Message Volume Chart */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <MessageSquare className="w-5 h-5 text-blue-600" />
                             </div>
-                        ))}
+                            <h2 className="text-lg font-bold text-gray-900">Message Volume</h2>
+                        </div>
+                    </div>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={trends.messages}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis
+                                    dataKey="date"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                                    tickFormatter={(val) => val.slice(5)}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: '#F3F4F6' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Bar
+                                    dataKey="value"
+                                    fill="#3B82F6"
+                                    radius={[4, 4, 0, 0]}
+                                    maxBarSize={50}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
 
-            {/* Channel Performance */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h2 className="text-lg font-bold text-gray-900 mb-6">Channel Performance</h2>
-                <table className="w-full">
-                    <thead>
-                        <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100">
-                            <th className="pb-4">Channel</th>
-                            <th className="pb-4">Messages</th>
-                            <th className="pb-4">Delivery Rate</th>
-                            <th className="pb-4">Response Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {channelPerformance.map((channel, i) => (
-                            <tr key={i} className="text-sm">
-                                <td className="py-4 font-medium text-gray-900">{channel.channel}</td>
-                                <td className="py-4 text-gray-700">{channel.messages}</td>
-                                <td className="py-4">
-                                    <span className="text-green-600 font-medium">{channel.deliveryRate}</span>
-                                </td>
-                                <td className="py-4">
-                                    <span className="text-blue-600 font-medium">{channel.responseRate}</span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {/* Note about upcoming features */}
+            <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-8 border border-dashed border-gray-300 text-center">
+                <Activity className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900">More Insights Coming Soon</h3>
+                <p className="text-gray-500 max-w-md mx-auto mt-1">
+                    We are currently gathering data for Feature Usage and Geographic Distribution. These charts will appear here automatically once enough data is collected.
+                </p>
             </div>
         </div>
     );
