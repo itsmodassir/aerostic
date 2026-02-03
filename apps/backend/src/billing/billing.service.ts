@@ -56,11 +56,19 @@ export class BillingService {
         }
 
         const plan = this.razorpayService.getPlanById(planId);
-        const planLimits = this.getPlanLimits(planId);
+
+        // Map razorpay plan IDs to PlanType
+        const planMapping: Record<string, PlanType> = {
+            'plan_starter': PlanType.STARTER,
+            'plan_growth': PlanType.GROWTH,
+            'plan_enterprise': PlanType.ENTERPRISE,
+        };
+        const planType = planMapping[planId] || PlanType.STARTER;
+        const planLimits = this.getPlanLimits(planType);
 
         subscription.razorpaySubscriptionId = razorpaySubscriptionId;
         subscription.status = SubscriptionStatus.ACTIVE;
-        subscription.plan = planLimits.plan;
+        subscription.plan = planType;
         subscription.priceInr = plan?.priceInr || 1999;
         subscription.monthlyMessages = planLimits.monthlyMessages;
         subscription.aiCredits = planLimits.aiCredits;
@@ -72,31 +80,57 @@ export class BillingService {
         return this.subscriptionRepo.save(subscription);
     }
 
-    private getPlanLimits(planId: string) {
+    async manualUpdateSubscription(
+        tenantId: string,
+        plan: PlanType,
+        status: SubscriptionStatus = SubscriptionStatus.ACTIVE,
+    ): Promise<Subscription> {
+        let subscription = await this.getSubscription(tenantId);
+
+        if (!subscription) {
+            subscription = this.subscriptionRepo.create({ tenantId });
+        }
+
+        const limits = this.getPlanLimits(plan);
+
+        subscription.plan = plan;
+        subscription.status = status;
+        subscription.monthlyMessages = limits.monthlyMessages;
+        subscription.aiCredits = limits.aiCredits;
+        subscription.maxAgents = limits.maxAgents;
+        subscription.apiAccess = limits.apiAccess;
+
+        // Reset period if it was trial or inactive
+        if (subscription.status !== SubscriptionStatus.ACTIVE) {
+            subscription.currentPeriodStart = new Date();
+            subscription.currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        }
+
+        return this.subscriptionRepo.save(subscription);
+    }
+
+    public getPlanLimits(plan: PlanType) {
         const limits = {
-            plan_starter: {
-                plan: PlanType.STARTER,
+            [PlanType.STARTER]: {
                 monthlyMessages: 10000,
                 aiCredits: 1000,
                 maxAgents: 1,
                 apiAccess: false,
             },
-            plan_growth: {
-                plan: PlanType.GROWTH,
+            [PlanType.GROWTH]: {
                 monthlyMessages: 50000,
                 aiCredits: 5000,
                 maxAgents: 5,
                 apiAccess: true,
             },
-            plan_enterprise: {
-                plan: PlanType.ENTERPRISE,
+            [PlanType.ENTERPRISE]: {
                 monthlyMessages: 999999,
                 aiCredits: 999999,
                 maxAgents: 999,
                 apiAccess: true,
             },
         };
-        return limits[planId as keyof typeof limits] || limits.plan_starter;
+        return limits[plan] || limits[PlanType.STARTER];
     }
 
     // ============ API KEYS ============

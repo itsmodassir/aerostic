@@ -14,10 +14,13 @@ import { WebhookEndpoint } from '../billing/entities/webhook-endpoint.entity';
 import { Conversation } from '../messages/entities/conversation.entity';
 import { Contact } from '../contacts/entities/contact.entity';
 
+import { BillingModule } from '../billing/billing.module';
+
 @Module({
     imports: [
         TypeOrmModule.forFeature([Tenant, WhatsappAccount, SystemConfig, Message, ApiKey, Subscription, WebhookEndpoint, Conversation, Contact]),
-        AuditModule
+        AuditModule,
+        BillingModule
     ],
     controllers: [AdminController],
     providers: [AdminService],

@@ -7,8 +7,11 @@ interface UpdateConfigDto {
     [key: string]: string;
 }
 
+import { PlanType, SubscriptionStatus } from '../billing/entities/subscription.entity';
+
 interface UpdateUserPlanDto {
-    plan: 'starter' | 'growth' | 'enterprise';
+    plan: PlanType;
+    status?: SubscriptionStatus;
 }
 
 @Controller('admin')
@@ -32,7 +35,7 @@ export class AdminController {
         @Param('id') userId: string,
         @Body() dto: UpdateUserPlanDto,
     ) {
-        return this.adminService.updateUserPlan(userId, dto.plan);
+        return this.adminService.updateUserPlan(userId, dto.plan, dto.status as any);
     }
 
     // ============ WhatsApp Account Management ============

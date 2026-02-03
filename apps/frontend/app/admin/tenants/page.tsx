@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building, Search, Plus, MoreHorizontal, Edit, Trash2, Eye, Filter, Loader2 } from 'lucide-react';
+import { Building, Search, Plus, MoreHorizontal, Edit, Trash2, Eye, Filter, Loader2, X, Check } from 'lucide-react';
 import Link from 'next/link';
 
 interface Tenant {
@@ -23,6 +23,12 @@ export default function TenantsPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterPlan, setFilterPlan] = useState('all');
+
+    // Edit Modal State
+    const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+    const [editPlan, setEditPlan] = useState('');
+    const [editStatus, setEditStatus] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -53,6 +59,36 @@ export default function TenantsPage() {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpdatePlan = async () => {
+        if (!selectedTenant) return;
+        setIsUpdating(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/admin/users/${selectedTenant.id}/plan`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    plan: editPlan,
+                    status: editStatus
+                })
+            });
+
+            if (!res.ok) throw new Error('Update failed');
+
+            // Refresh list
+            await fetchTenants();
+            setSelectedTenant(null);
+        } catch (e) {
+            console.error(e);
+            alert('Failed to update tenant plan');
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -175,7 +211,15 @@ export default function TenantsPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <button className="p-2 hover:bg-gray-100 rounded-lg" title="Edit">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedTenant(tenant);
+                                                    setEditPlan(tenant.currentPlan || 'starter');
+                                                    setEditStatus(tenant.status || 'active');
+                                                }}
+                                                className="p-2 hover:bg-gray-100 rounded-lg"
+                                                title="Edit Plan"
+                                            >
                                                 <Edit className="w-4 h-4 text-gray-500" />
                                             </button>
                                         </div>
@@ -192,6 +236,82 @@ export default function TenantsPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Change Plan Modal */}
+            {selectedTenant && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <div>
+                                <h3 className="font-bold text-gray-900">Manage Tenant Plan</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">{selectedTenant.name}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedTenant(null)}
+                                className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors shadow-sm border border-transparent hover:border-gray-200"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 block">Subscription Plan</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {['starter', 'growth', 'enterprise'].map((p) => (
+                                        <button
+                                            key={p}
+                                            onClick={() => setEditPlan(p)}
+                                            className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${editPlan === p
+                                                    ? 'border-blue-600 bg-blue-50/50'
+                                                    : 'border-gray-100 bg-white hover:border-gray-200'
+                                                }`}
+                                        >
+                                            <span className="capitalize font-medium text-gray-700">{p}</span>
+                                            {editPlan === p && <Check className="w-4 h-4 text-blue-600" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 block text-sm">Status</label>
+                                <select
+                                    value={editStatus}
+                                    onChange={(e) => setEditStatus(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-gray-700"
+                                >
+                                    <option value="trial">Trial</option>
+                                    <option value="active">Active</option>
+                                    <option value="past_due">Past Due</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="expired">Expired</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                            <button
+                                onClick={() => setSelectedTenant(null)}
+                                className="flex-1 px-4 py-2.5 text-gray-700 font-semibold hover:bg-gray-100 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUpdatePlan}
+                                disabled={isUpdating}
+                                className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
+                            >
+                                {isUpdating ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    'Save Changes'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

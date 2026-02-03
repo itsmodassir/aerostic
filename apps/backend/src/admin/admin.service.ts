@@ -40,7 +40,8 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
 };
 
 import { AuditService } from '../audit/audit.service';
-import { Subscription, SubscriptionStatus } from '../billing/entities/subscription.entity';
+import { Subscription, SubscriptionStatus, PlanType } from '../billing/entities/subscription.entity';
+import { BillingService } from '../billing/billing.service';
 
 @Injectable()
 export class AdminService {
@@ -60,6 +61,7 @@ export class AdminService {
         @InjectRepository(WebhookEndpoint)
         private webhookEndpointRepo: Repository<WebhookEndpoint>,
         private auditService: AuditService,
+        private billingService: BillingService,
     ) { }
 
     async getAllTenants() {
@@ -173,7 +175,7 @@ export class AdminService {
     }
 
     // User plan management
-    async updateUserPlan(userId: string, plan: 'starter' | 'growth' | 'enterprise'): Promise<Tenant> {
+    async updateUserPlan(userId: string, plan: PlanType, status?: SubscriptionStatus): Promise<Tenant> {
         const tenant = await this.tenantRepo.findOne({ where: { id: userId } });
         if (!tenant) {
             throw new NotFoundException(`Tenant with ID ${userId} not found`);
@@ -183,12 +185,15 @@ export class AdminService {
         tenant.plan = plan;
         const saved = await this.tenantRepo.save(tenant);
 
+        // Sync subscription limits
+        await this.billingService.manualUpdateSubscription(tenant.id, plan, status);
+
         await this.auditService.logAction(
             'admin',
             'Administrator',
             'UPDATE_TENANT_PLAN',
             `Tenant: ${tenant.name}`,
-            { oldPlan, newPlan: plan }
+            { oldPlan, newPlan: plan, status }
         );
 
         return saved;
