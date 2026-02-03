@@ -12,6 +12,8 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState<any[]>([]);
     const [trends, setTrends] = useState<any>(null);
     const [systemHealth, setSystemHealth] = useState<any[]>([]);
+    const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
+    const [topTenants, setTopTenants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -54,7 +56,9 @@ export default function AdminDashboard() {
             }));
 
             setStats(mappedStats);
-            setSystemHealth(data.systemHealth);
+            setSystemHealth(data.systemHealth || []);
+            setRecentAlerts(data.recentAlerts || []);
+            setTopTenants(data.topTenants || []);
             setTrends(trendsData);
         } catch (err: any) {
             console.error('Dashboard fetch error:', err);
@@ -64,21 +68,9 @@ export default function AdminDashboard() {
         }
     };
 
-    // Static failover for visual consistency if backend fails
-    const recentAlerts = [
-        { type: 'warning', message: 'High API latency detected in ap-south-1', time: '5 min ago' },
-        { type: 'success', message: 'Database backup completed successfully', time: '1 hour ago' },
-        { type: 'info', message: 'New tenant signup: RetailPro India', time: '2 hours ago' },
-        { type: 'error', message: 'Meta API rate limit warning for tenant #1234', time: '3 hours ago' },
-    ];
-
-    const topTenants = [
-        { name: 'TechStart India', plan: 'Enterprise', messages: '2.1M', revenue: '₹14,999' },
-        { name: 'RetailPro', plan: 'Growth', messages: '890K', revenue: '₹4,999' },
-        { name: 'EduLearn Academy', plan: 'Enterprise', messages: '1.5M', revenue: '₹14,999' },
-        { name: 'HealthPlus Clinics', plan: 'Growth', messages: '456K', revenue: '₹4,999' },
-        { name: 'FoodExpress', plan: 'Starter', messages: '98K', revenue: '₹1,999' },
-    ];
+    // Fallback if no data
+    const hasAlerts = recentAlerts && recentAlerts.length > 0;
+    const hasTenants = topTenants && topTenants.length > 0;
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>;
 
@@ -201,7 +193,7 @@ export default function AdminDashboard() {
                         <AlertTriangle className="w-5 h-5 text-gray-400" />
                     </div>
                     <div className="space-y-4">
-                        {recentAlerts.map((alert, i) => (
+                        {hasAlerts ? recentAlerts.map((alert, i) => (
                             <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                                 <div className={`p-1 rounded-full ${alert.type === 'error' ? 'bg-red-100 text-red-600' :
                                     alert.type === 'warning' ? 'bg-amber-100 text-amber-600' :
@@ -217,7 +209,11 @@ export default function AdminDashboard() {
                                     <p className="text-xs text-gray-400 mt-1">{alert.time}</p>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="text-center py-8 text-gray-500 text-sm italic">
+                                No recent activity alerts
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -238,7 +234,7 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {topTenants.map((tenant, i) => (
+                                {hasTenants ? topTenants.map((tenant, i) => (
                                     <tr key={i} className="text-sm">
                                         <td className="py-3 font-medium text-gray-900">{tenant.name}</td>
                                         <td className="py-3">
@@ -252,7 +248,13 @@ export default function AdminDashboard() {
                                         <td className="py-3 text-gray-600">{tenant.messages}</td>
                                         <td className="py-3 font-medium text-green-600">{tenant.revenue}</td>
                                     </tr>
-                                ))}
+                                )) : (
+                                    <tr>
+                                        <td colSpan={4} className="py-8 text-center text-gray-500 text-sm italic">
+                                            No billing data available
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

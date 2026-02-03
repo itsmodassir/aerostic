@@ -51,7 +51,7 @@ export default function SystemPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/config`, {
+            const res = await fetch(`/api/admin/config`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -62,11 +62,11 @@ export default function SystemPage() {
             const data: Record<string, ConfigItem> = await res.json();
 
             // Map to flat structure
-            const newConfig: Record<string, string> = {};
+            const newConfig: any = { ...config };
             for (const [key, item] of Object.entries(data)) {
                 newConfig[key] = item.value || '';
             }
-            setConfig(prev => ({ ...prev, ...newConfig }));
+            setConfig(newConfig);
         } catch (e) {
             console.log('Using default config - API unavailable');
             // Keep defaults
@@ -81,7 +81,7 @@ export default function SystemPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/config`, {
+            const res = await fetch(`/api/admin/config`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

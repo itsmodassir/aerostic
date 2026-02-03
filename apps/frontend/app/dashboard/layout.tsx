@@ -35,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [email, setEmail] = useState('Admin');
     const [userName, setUserName] = useState('User');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [authorized, setAuthorized] = useState(false);
     const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -51,6 +52,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     useEffect(() => {
         // Hydrate user info
         const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
@@ -64,7 +70,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 } else if (payload.email?.includes('enterprise')) {
                     setUserPlan('enterprise');
                 }
-            } catch (e) { }
+                setAuthorized(true);
+            } catch (e) {
+                router.push('/login');
+            }
         }
     }, []);
 
@@ -94,6 +103,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const planInfo = PLAN_COLORS[userPlan];
     const unreadCount = notifications.filter(n => n.unread).length;
+
+    if (!authorized) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-muted/40">

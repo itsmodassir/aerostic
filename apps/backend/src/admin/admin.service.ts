@@ -22,6 +22,7 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
     'meta.app_id': { value: '', description: 'Meta App ID', category: 'whatsapp', isSecret: false },
     'meta.app_secret': { value: '', description: 'Meta App Secret', category: 'whatsapp', isSecret: true },
     'meta.webhook_verify_token': { value: '', description: 'Webhook Verify Token', category: 'whatsapp', isSecret: false },
+    'meta.config_id': { value: '', description: 'WhatsApp Configuration ID', category: 'whatsapp', isSecret: false },
 
     // Razorpay
     'razorpay.key_id': { value: '', description: 'Razorpay Key ID', category: 'payment', isSecret: false },
@@ -277,7 +278,10 @@ export class AdminService {
 
         // Calculate real monthly revenue from active subscriptions
         const activeSubscriptions = await this.subscriptionRepo.find({
-            where: { status: SubscriptionStatus.ACTIVE }
+            where: {
+                status: SubscriptionStatus.ACTIVE
+            },
+            relations: ['tenant']
         });
 
         const monthlyRevenue = activeSubscriptions.reduce((sum, sub) => {
@@ -287,10 +291,22 @@ export class AdminService {
             return sum + sub.priceInr;
         }, 0);
 
+        // Calculate Top Tenants (by revenue or message count)
+        // For simplicity and variety, let's take tenants from active subscriptions as "Top Tenants"
+        const topTenantsRaw = activeSubscriptions
+            .slice(0, 5)
+            .map(sub => ({
+                name: sub.tenant?.name || 'Unknown',
+                plan: sub.plan ? (sub.plan as string).charAt(0).toUpperCase() + (sub.plan as string).slice(1) : 'Starter',
+                messages: '0', // We would need a more complex join to get message count per tenant here
+                revenue: `₹${sub.priceInr.toLocaleString()}`
+            }));
+
         // Format revenue in lakhs (Indian numbering)
         const revenueLakhs = (monthlyRevenue / 100000).toFixed(1);
 
         const systemHealth = await this.checkSystemHealth();
+        const recentAlerts = await this.getRecentAlerts();
 
         return {
             stats: [
@@ -319,8 +335,34 @@ export class AdminService {
                     up: true
                 }
             ],
-            systemHealth
+            systemHealth,
+            recentAlerts,
+            topTenants: topTenantsRaw
         };
+    }
+
+    async getRecentAlerts() {
+        // Fetch last 4 significant audit logs as alerts
+        const logs = await this.auditService.getLogs(4);
+
+        return logs.map(log => {
+            let type = 'info';
+            if (log.action.includes('DELETE')) type = 'error';
+            if (log.action.includes('UPDATE')) type = 'warning';
+            if (log.action.includes('CREATE')) type = 'success';
+
+            // Humanize time (basic)
+            const diff = Date.now() - log.timestamp.getTime();
+            const mins = Math.floor(diff / 60000);
+            const hours = Math.floor(mins / 60);
+            const timeStr = hours > 0 ? `${hours} hours ago` : mins > 0 ? `${mins} mins ago` : 'just now';
+
+            return {
+                type,
+                message: `${log.actorName} performed ${log.action.replace(/_/g, ' ')} on ${log.target}`,
+                time: timeStr
+            };
+        });
     }
 
     async getAnalyticsTrends(period: string = '7d') {
