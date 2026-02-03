@@ -199,6 +199,30 @@ export class AdminService {
         return saved;
     }
 
+    async getTenantById(tenantId: string): Promise<Tenant> {
+        const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
+        if (!tenant) {
+            throw new NotFoundException(`Tenant with ID ${tenantId} not found`);
+        }
+        return tenant;
+    }
+
+    async getAllUsers(): Promise<any[]> {
+        const tenants = await this.tenantRepo.find({
+            order: { createdAt: 'DESC' }
+        });
+
+        return tenants.map(t => ({
+            id: t.id,
+            name: t.name,
+            email: (t as any).email || '',
+            tenantName: t.name,
+            currentPlan: t.plan || 'starter',
+            status: 'active',
+            createdAt: t.createdAt,
+        }));
+    }
+
     async checkSystemHealth() {
         const health = [];
 
