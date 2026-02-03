@@ -39,7 +39,7 @@ export default function TenantsPage() {
     const fetchTenants = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/admin/users`, { // Using /users as it returns tenant info
+            const res = await fetch(`/api/admin/users`, { // Using /users as it returns tenant info
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to fetch tenants');
@@ -67,7 +67,7 @@ export default function TenantsPage() {
         setIsUpdating(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/admin/users/${selectedTenant.id}/plan`, {
+            const res = await fetch(`/api/admin/users/${selectedTenant.id}/plan`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -263,8 +263,8 @@ export default function TenantsPage() {
                                             key={p}
                                             onClick={() => setEditPlan(p)}
                                             className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${editPlan === p
-                                                    ? 'border-blue-600 bg-blue-50/50'
-                                                    : 'border-gray-100 bg-white hover:border-gray-200'
+                                                ? 'border-blue-600 bg-blue-50/50'
+                                                : 'border-gray-100 bg-white hover:border-gray-200'
                                                 }`}
                                         >
                                             <span className="capitalize font-medium text-gray-700">{p}</span>

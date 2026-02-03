@@ -20,9 +20,11 @@ export default function AdminAnalyticsPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Authorization': `Bearer ${token}` };
             const [statsRes, trendsRes] = await Promise.all([
-                fetch('/api/admin/stats'),
-                fetch(`/api/admin/stats/trends?range=${timeRange}`)
+                fetch('/api/admin/stats', { headers }),
+                fetch(`/api/admin/stats/trends?range=${timeRange}`, { headers })
             ]);
 
             if (statsRes.ok && trendsRes.ok) {

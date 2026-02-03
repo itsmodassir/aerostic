@@ -24,10 +24,10 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/admin/stats`, {
+            const res = await fetch(`/api/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const trendsRes = await fetch(`${API_URL}/admin/stats/trends?range=${timeRange}`, {
+            const trendsRes = await fetch(`/api/admin/stats/trends?range=${timeRange}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
