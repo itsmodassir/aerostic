@@ -47,6 +47,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>;
     }
 
+    const [stats, setStats] = useState<any>(null);
+
     const navigation = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { name: 'Tenants', href: '/admin/tenants', icon: Users },
@@ -60,6 +62,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle },
         { name: 'Configuration', href: '/admin/system', icon: Settings },
     ];
+
+    useEffect(() => {
+        if (authorized) {
+            fetchStats();
+        }
+    }, [authorized]);
+
+    const fetchStats = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setStats(data.stats);
+        } catch (error) {
+            console.error('Failed to fetch admin stats');
+        }
+    };
+
+    const getStat = (label: string) => {
+        return stats?.find((s: any) => s.label === label)?.value || '...';
+    };
 
     return (
         <div className="min-h-screen bg-gray-100 flex">
@@ -100,15 +125,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className="space-y-3">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Active Tenants</span>
-                                <span className="text-green-400 font-bold">2,547</span>
+                                <span className="text-green-400 font-bold">{getStat('Active Tenants')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Messages Today</span>
-                                <span className="text-blue-400 font-bold">1.2M</span>
+                                <span className="text-blue-400 font-bold">{getStat('Messages Today')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">MRR</span>
-                                <span className="text-purple-400 font-bold">₹48.5L</span>
+                                <span className="text-purple-400 font-bold">{getStat('MRR')}</span>
                             </div>
                         </div>
                     </div>
