@@ -106,7 +106,21 @@ aerostic.com  app.aerostic.com  admin.aerostic.com
 
 ---
 
-## 6️⃣ INFRASTRUCTURE & DEPLOYMENT
+## 7️⃣ ANALYTICS & REPORTING
+
+### Real-time Tracking
+- **Message Usage**: Tracked via `Message` entity counts (directional: 'out').
+- **AI Credits**: Monitored via `UsageMetric` entity (calculates credits burned per AI interaction).
+- **Agent Count**: Dynamic tracking of `AiAgent` entities per workspace.
+
+### Data Flow
+1. **Request**: Frontend calls `/analytics/overview` (JWT Protected).
+2. **Aggregation**: `AnalyticsService` queries DB for counts and recent activity.
+3. **Response**: Live stats (contacts, sent, received, agents) + Recent conversation history.
+
+---
+
+## 8️⃣ INFRASTRUCTURE & DEPLOYMENT
 
 ### Docker Stack
 - **Frontend**: Next.js (Standalone build)

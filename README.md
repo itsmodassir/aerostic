@@ -10,6 +10,7 @@
 *   **Official Meta Integration**: Supports both **Cloud API** (New Numbers) and **Embedded Signup** (Existing Business Numbers).
 *   **Smart AI Agents**: Google Gemini-powered chatbots with automated handoff to human agents.
 *   **Campaign Manager**: Bulk broadcasting with template message support.
+*   **Real-time Usage Dashboard**: Live tracking of messages, AI credits, and agent limits.
 *   **Team Inbox**: Real-time shared inbox for support agents.
 *   **Role-Based Access**: Super Admin, Workspace Admin, and Agent roles.
 
