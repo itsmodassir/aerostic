@@ -17,12 +17,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const [stats, setStats] = useState<any>(null);
 
-    // Bypass layout for login page
-    if (pathname === '/admin/login') {
-        return <>{children}</>;
-    }
-
     useEffect(() => {
+        if (pathname === '/admin/login') return;
+
         const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('user');
 
@@ -41,14 +38,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         } catch (e) {
             router.push('/admin/login');
         }
-    }, [router]);
+    }, [router, pathname]);
+
+    useEffect(() => {
+        if (authorized && pathname !== '/admin/login') {
+            fetchStats();
+        }
+    }, [authorized, pathname]);
+
+    const fetchStats = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setStats(data.stats);
+        } catch (error) {
+            console.error('Failed to fetch admin stats');
+        }
+    };
+
+    // Bypass layout for login page
+    if (pathname === '/admin/login') {
+        return <>{children}</>;
+    }
 
     if (!authorized) {
         return <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>;
     }
-
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -63,25 +83,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle },
         { name: 'Configuration', href: '/admin/system', icon: Settings },
     ];
-
-    useEffect(() => {
-        if (authorized) {
-            fetchStats();
-        }
-    }, [authorized]);
-
-    const fetchStats = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setStats(data.stats);
-        } catch (error) {
-            console.error('Failed to fetch admin stats');
-        }
-    };
 
     const getStat = (label: string) => {
         return stats?.find((s: any) => s.label === label)?.value || '...';
