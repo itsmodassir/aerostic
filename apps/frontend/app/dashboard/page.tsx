@@ -101,16 +101,7 @@ export default function DashboardPage() {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 setUserName(payload.name || 'there');
-
-                // Set plan based on user email
-                const userEmail = payload.email || '';
-                if (userEmail === 'md@modassir.info') {
-                    setUserPlan('growth');
-                } else if (userEmail.includes('@enterprise') || userEmail.includes('enterprise@')) {
-                    setUserPlan('enterprise');
-                }
-
-                fetchAnalytics(payload.tenantId);
+                fetchData(payload.tenantId);
             } catch (e) {
                 // Token parsing failed, use defaults
                 setUserName('there');
@@ -123,20 +114,30 @@ export default function DashboardPage() {
         }
     }, []);
 
-    const fetchAnalytics = async (tenantId: string) => {
+    const fetchData = async (tenantId: string) => {
         try {
-            const res = await api.get(`/analytics/overview?tenantId=${tenantId}`);
-            // Validate response is JSON
-            if (res.data && typeof res.data === 'object') {
-                setStats(res.data.stats || { totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0 });
-                setRecentMsgs(res.data.recentMessages || []);
-                setRecentCampaigns(res.data.recentCampaigns || []);
-                setMessagesUsed(res.data.stats?.totalSent || 0);
+            const [analyticsRes, subscriptionRes] = await Promise.all([
+                api.get('/analytics/overview'),
+                api.get('/billing/subscription')
+            ]);
+
+            // Handle Analytics
+            if (analyticsRes.data && typeof analyticsRes.data === 'object') {
+                const data = analyticsRes.data;
+                setStats(data.stats || { totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0 });
+                setRecentMsgs(data.recentMessages || []);
+                setRecentCampaigns(data.recentCampaigns || []);
+                setMessagesUsed(data.stats?.totalSent || 0);
+                setAiCreditsUsed(data.stats?.aiCreditsUsed || 0);
+            }
+
+            // Handle Subscription
+            if (subscriptionRes.data) {
+                const sub = subscriptionRes.data;
+                setUserPlan(sub.plan?.toLowerCase() || 'starter');
             }
         } catch (error: any) {
-            // Silently handle API errors - dashboard will show with empty/default data
-            console.warn('Analytics API unavailable, using defaults');
-            setStats({ totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0 });
+            console.warn('Live API unavailable, using fallback data');
         } finally {
             setLoading(false);
         }
@@ -349,7 +350,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
                             <Bot className="w-5 h-5 text-purple-600" />
-                            AI Agents ({planFeatures.aiAgents > 0 ? planFeatures.aiAgents === -1 ? '∞' : `${1}/${planFeatures.aiAgents}` : '0'})
+                            AI Agents ({stats?.totalAgents || 0} / {planFeatures.aiAgents === -1 ? '∞' : planFeatures.aiAgents})
                         </h3>
                         <Link href="/dashboard/agents" className="text-blue-600 text-sm hover:underline">Manage</Link>
                     </div>
@@ -374,7 +375,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                 <FeatureCard title="Custom Templates" description="Brand templates" icon={Palette} available={planFeatures.customTemplates} href="/dashboard/templates" />
                 <FeatureCard title="White Label" description="Your brand" icon={Building2} available={planFeatures.whiteLabel} href="/dashboard/settings" />
             </div>
-        </div>
+        </div >
     );
 }
 

@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Delete, Body, Param, Req, UseGuards, HttpCode } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
 import { BillingService } from './billing.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-// Note: Add proper JWT Guard after auth module is ready
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('billing')
 export class BillingController {
     constructor(

@@ -7,6 +7,7 @@ import {
     MessageSquare, Bot, Users, FileText, ArrowRight, Clock,
     TrendingUp, Shield, Sparkles
 } from 'lucide-react';
+import api from '@/lib/api';
 
 const PLANS = [
     {
@@ -77,6 +78,7 @@ const PLANS = [
 
 export default function BillingPage() {
     const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
+    const [subscription, setSubscription] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
@@ -88,27 +90,36 @@ export default function BillingPage() {
     });
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload.email === 'md@modassir.info') {
-                    setUserPlan('growth');
-                } else if (payload.email?.includes('enterprise')) {
-                    setUserPlan('enterprise');
-                }
-            } catch (e) { }
-        }
-
-        // Demo usage data
-        setUsage({
-            messagesUsed: 12500,
-            aiCreditsUsed: 850,
-            agentsCreated: 3,
-        });
-
-        setLoading(false);
+        fetchData();
     }, []);
+
+    const fetchData = async () => {
+        try {
+            const [subscriptionRes, analyticsRes] = await Promise.all([
+                api.get('/billing/subscription'),
+                api.get('/analytics/overview')
+            ]);
+
+            if (subscriptionRes.data) {
+                const sub = subscriptionRes.data;
+                setSubscription(sub);
+                setUserPlan(sub.plan?.toLowerCase() || 'starter');
+            }
+
+            if (analyticsRes.data && analyticsRes.data.stats) {
+                const stats = analyticsRes.data.stats;
+                setUsage({
+                    messagesUsed: stats.totalSent || 0,
+                    aiCreditsUsed: stats.aiCreditsUsed || 0,
+                    agentsCreated: stats.totalAgents || 0,
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch billing data', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const currentPlan = PLANS.find(p => p.id === userPlan) || PLANS[0];
     const annualDiscount = 0.2; // 20% off
@@ -178,7 +189,9 @@ export default function BillingPage() {
                             </span>
                             <span className="text-sm text-blue-100">
                                 <Clock className="w-4 h-4 inline mr-1" />
-                                Renews Feb 28, 2026
+                                {subscription?.currentPeriodEnd
+                                    ? `Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                                    : 'Trial ends soon'}
                             </span>
                         </div>
                     </div>
@@ -277,10 +290,10 @@ export default function BillingPage() {
                         <div
                             key={plan.id}
                             className={`relative rounded-2xl border-2 p-6 transition-all ${isCurrentPlan
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : plan.popular
-                                        ? 'border-purple-300 bg-purple-50/50'
-                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                ? 'border-blue-500 bg-blue-50'
+                                : plan.popular
+                                    ? 'border-purple-300 bg-purple-50/50'
+                                    : 'border-gray-200 bg-white hover:border-gray-300'
                                 }`}
                         >
                             {plan.popular && !isCurrentPlan && (
@@ -297,8 +310,8 @@ export default function BillingPage() {
 
                             <div className="flex items-center gap-3 mb-4">
                                 <div className={`p-2 rounded-xl ${plan.id === 'starter' ? 'bg-gray-100 text-gray-600' :
-                                        plan.id === 'growth' ? 'bg-blue-100 text-blue-600' :
-                                            'bg-purple-100 text-purple-600'
+                                    plan.id === 'growth' ? 'bg-blue-100 text-blue-600' :
+                                        'bg-purple-100 text-purple-600'
                                     }`}>
                                     {getPlanIcon(plan.id)}
                                 </div>
