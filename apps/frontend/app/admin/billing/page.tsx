@@ -1,34 +1,51 @@
-'use client';
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     CreditCard, TrendingUp, ArrowUpRight, Download, Filter, Search,
-    DollarSign, Users, Calendar, ChevronDown, MoreVertical
+    DollarSign, Users, Calendar, ChevronDown, MoreVertical, Loader2
 } from 'lucide-react';
 
 export default function AdminBillingPage() {
     const [dateRange, setDateRange] = useState('This Month');
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<any>(null);
 
-    const revenueStats = [
-        { label: 'Total Revenue', value: '₹48,52,000', change: '+23.1%', period: 'vs last month' },
-        { label: 'Active Subscriptions', value: '2,147', change: '+12.5%', period: 'vs last month' },
-        { label: 'Avg Revenue/User', value: '₹2,260', change: '+8.3%', period: 'vs last month' },
-        { label: 'Churn Rate', value: '2.4%', change: '-0.8%', period: 'vs last month' },
+    useEffect(() => {
+        fetchBillingData();
+    }, []);
+
+    const fetchBillingData = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/admin/billing/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch billing stats');
+            const data = await res.json();
+            setStats(data);
+        } catch (error) {
+            console.error('Failed to fetch billing data', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const revenueStats = stats?.revenueStats || [
+        { label: 'Total Revenue', value: '₹0L', change: '0%', period: 'vs last month' },
+        { label: 'Active Subscriptions', value: '0', change: '0%', period: 'vs last month' },
+        { label: 'Avg Revenue/User', value: '₹0', change: '0%', period: 'vs last month' },
+        { label: 'Churn Rate', value: '0%', change: '0%', period: 'vs last month' },
     ];
 
-    const planDistribution = [
-        { plan: 'Enterprise', count: 89, revenue: '₹13,33,911', percentage: 27.5 },
-        { plan: 'Growth', count: 456, revenue: '₹22,79,544', percentage: 47 },
-        { plan: 'Starter', count: 1602, revenue: '₹12,38,545', percentage: 25.5 },
+    const planDistribution = stats?.planDistribution || [
+        { plan: 'Enterprise', count: 0, revenue: '₹0L', percentage: 0 },
+        { plan: 'Growth', count: 0, revenue: '₹0L', percentage: 0 },
+        { plan: 'Starter', count: 0, revenue: '₹0L', percentage: 0 },
     ];
 
-    const recentTransactions = [
-        { id: 'TXN-001', tenant: 'TechStart India', plan: 'Enterprise', amount: '₹14,999', status: 'success', date: '30 Jan 2026' },
-        { id: 'TXN-002', tenant: 'RetailPro', plan: 'Growth', amount: '₹4,999', status: 'success', date: '30 Jan 2026' },
-        { id: 'TXN-003', tenant: 'EduLearn', plan: 'Starter', amount: '₹1,999', status: 'failed', date: '29 Jan 2026' },
-        { id: 'TXN-004', tenant: 'HealthPlus', plan: 'Growth', amount: '₹4,999', status: 'success', date: '29 Jan 2026' },
-        { id: 'TXN-005', tenant: 'FoodExpress', plan: 'Starter', amount: '₹1,999', status: 'pending', date: '29 Jan 2026' },
-    ];
+    const recentTransactions = stats?.recentTransactions || [];
+
+    if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>;
 
     return (
         <div className="space-y-8">
@@ -78,8 +95,8 @@ export default function AdminBillingPage() {
                                 <div className="h-8 bg-gray-100 rounded-full overflow-hidden">
                                     <div
                                         className={`h-full rounded-full ${plan.plan === 'Enterprise' ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
-                                                plan.plan === 'Growth' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                                                    'bg-gradient-to-r from-gray-400 to-gray-500'
+                                            plan.plan === 'Growth' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                                                'bg-gradient-to-r from-gray-400 to-gray-500'
                                             }`}
                                         style={{ width: `${plan.percentage}%` }}
                                     />
@@ -132,8 +149,8 @@ export default function AdminBillingPage() {
                                 <td className="py-4 font-medium text-gray-900">{txn.tenant}</td>
                                 <td className="py-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${txn.plan === 'Enterprise' ? 'bg-purple-100 text-purple-700' :
-                                            txn.plan === 'Growth' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-gray-100 text-gray-700'
+                                        txn.plan === 'Growth' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-gray-100 text-gray-700'
                                         }`}>
                                         {txn.plan}
                                     </span>
@@ -141,8 +158,8 @@ export default function AdminBillingPage() {
                                 <td className="py-4 font-medium text-gray-900">{txn.amount}</td>
                                 <td className="py-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${txn.status === 'success' ? 'bg-green-100 text-green-700' :
-                                            txn.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                                'bg-amber-100 text-amber-700'
+                                        txn.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                            'bg-amber-100 text-amber-700'
                                         }`}>
                                         {txn.status}
                                     </span>

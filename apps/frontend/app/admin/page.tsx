@@ -24,16 +24,21 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
         try {
             const token = localStorage.getItem('token');
+            console.log('Fetching dashboard data from:', `/api/admin/stats`);
             const res = await fetch(`/api/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            console.log('Stats response status:', res.status);
+
             const trendsRes = await fetch(`/api/admin/stats/trends?range=${timeRange}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            console.log('Trends response status:', trendsRes.status);
 
-            if (!res.ok) throw new Error('Failed to fetch dashboard stats');
+            if (!res.ok) throw new Error(`API returned ${res.status}`);
             const data = await res.json();
             const trendsData = await trendsRes.json();
+            console.log('Received data:', data);
 
             // Map icons mapping based on label
             const mappedStats = data.stats.map((s: any) => ({
@@ -52,8 +57,8 @@ export default function AdminDashboard() {
             setSystemHealth(data.systemHealth);
             setTrends(trendsData);
         } catch (err: any) {
-            console.error(err);
-            setError('Failed to load dashboard data');
+            console.error('Dashboard fetch error:', err);
+            setError(`Failed to load data: ${err.message}`);
         } finally {
             setLoading(false);
         }

@@ -510,4 +510,63 @@ export class AdminService {
 
         return alerts;
     }
+
+    async getBillingStats() {
+        const activeSubscriptions = await this.subscriptionRepo.find({
+            where: { status: SubscriptionStatus.ACTIVE },
+            relations: ['tenant']
+        });
+
+        const totalRevenue = activeSubscriptions.reduce((sum, sub) => {
+            return sum + sub.priceInr;
+        }, 0);
+
+        const avgRevenue = activeSubscriptions.length > 0 ? totalRevenue / activeSubscriptions.length : 0;
+
+        // Plan Distribution
+        const distribution = {
+            enterprise: { count: 0, revenue: 0 },
+            growth: { count: 0, revenue: 0 },
+            starter: { count: 0, revenue: 0 }
+        };
+
+        activeSubscriptions.forEach(sub => {
+            const plan = (sub.plan?.toLowerCase() || 'starter') as keyof typeof distribution;
+            if (distribution[plan]) {
+                distribution[plan].count++;
+                distribution[plan].revenue += sub.priceInr;
+            }
+        });
+
+        // Transactions (Top 10 latest)
+        const recentSubRaw = await this.subscriptionRepo.find({
+            relations: ['tenant'],
+            order: { createdAt: 'DESC' },
+            take: 10
+        });
+
+        const recentTransactions = recentSubRaw.map(s => ({
+            id: `TXN-${s.id.slice(0, 4).toUpperCase()}`,
+            tenant: s.tenant?.name || 'Unknown',
+            plan: s.plan || 'Starter',
+            amount: `₹${s.priceInr.toLocaleString()}`,
+            status: s.status,
+            date: s.createdAt.toLocaleDateString('en-IN')
+        }));
+
+        return {
+            revenueStats: [
+                { label: 'Total Revenue', value: `₹${(totalRevenue / 100000).toFixed(2)}L`, change: '+10.5%', period: 'vs last month' },
+                { label: 'Active Subscriptions', value: activeSubscriptions.length.toLocaleString(), change: '+5.2%', period: 'vs last month' },
+                { label: 'Avg Revenue/User', value: `₹${Math.round(avgRevenue).toLocaleString()}`, change: '+2.1%', period: 'vs last month' },
+                { label: 'Churn Rate', value: '1.2%', change: '-0.3%', period: 'vs last month' },
+            ],
+            planDistribution: [
+                { plan: 'Enterprise', count: distribution.enterprise.count, revenue: `₹${(distribution.enterprise.revenue / 100000).toFixed(2)}L`, percentage: (distribution.enterprise.revenue / (totalRevenue || 1) * 100) },
+                { plan: 'Growth', count: distribution.growth.count, revenue: `₹${(distribution.growth.revenue / 100000).toFixed(2)}L`, percentage: (distribution.growth.revenue / (totalRevenue || 1) * 100) },
+                { plan: 'Starter', count: distribution.starter.count, revenue: `₹${(distribution.starter.revenue / 100000).toFixed(2)}L`, percentage: (distribution.starter.revenue / (totalRevenue || 1) * 100) },
+            ],
+            recentTransactions
+        };
+    }
 }

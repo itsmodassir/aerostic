@@ -112,6 +112,11 @@ export class AdminController {
         return this.adminService.getAllWebhooks();
     }
 
+    @Get('billing/stats')
+    async getBillingStats() {
+        return this.adminService.getBillingStats();
+    }
+
     @Get('alerts')
     async getAlerts() {
         return this.adminService.getSystemAlerts();
