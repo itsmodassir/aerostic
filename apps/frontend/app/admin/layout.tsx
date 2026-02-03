@@ -15,6 +15,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
 
+    const [stats, setStats] = useState<any>(null);
+
     // Bypass layout for login page
     if (pathname === '/admin/login') {
         return <>{children}</>;
@@ -47,7 +49,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>;
     }
 
-    const [stats, setStats] = useState<any>(null);
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
