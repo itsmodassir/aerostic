@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import {
     CreditCard, TrendingUp, ArrowUpRight, Download, Filter, Search,
@@ -69,8 +71,8 @@ export default function AdminBillingPage() {
             </div>
 
             {/* Revenue Stats */}
-            <div className="grid grid-cols-4 gap-6">
-                {revenueStats.map((stat, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {revenueStats.map((stat: any, i: number) => (
                     <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100">
                         <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
                         <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
@@ -88,7 +90,7 @@ export default function AdminBillingPage() {
             <div className="bg-white rounded-2xl p-6 border border-gray-100">
                 <h2 className="text-lg font-bold text-gray-900 mb-6">Revenue by Plan</h2>
                 <div className="space-y-4">
-                    {planDistribution.map((plan, i) => (
+                    {planDistribution.map((plan: any, i: number) => (
                         <div key={i} className="flex items-center gap-4">
                             <div className="w-24 text-sm font-medium text-gray-900">{plan.plan}</div>
                             <div className="flex-1">
@@ -143,7 +145,7 @@ export default function AdminBillingPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {recentTransactions.map((txn, i) => (
+                        {recentTransactions.map((txn: any, i: number) => (
                             <tr key={i} className="text-sm">
                                 <td className="py-4 font-mono text-gray-600">{txn.id}</td>
                                 <td className="py-4 font-medium text-gray-900">{txn.tenant}</td>
