@@ -57,7 +57,10 @@ services:
       - PORT=3001
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - META_APP_ID=${META_APP_ID}
+
       - META_APP_SECRET=${META_APP_SECRET}
+      - META_CONFIG_ID=${META_CONFIG_ID}
+      - META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_DATABASE:-aerostic}
     depends_on:
@@ -81,6 +84,8 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - META_APP_ID=${META_APP_ID}
       - META_APP_SECRET=${META_APP_SECRET}
+      - META_CONFIG_ID=${META_CONFIG_ID}
+      - META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_DATABASE:-aerostic}
     depends_on:
@@ -104,6 +109,8 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - META_APP_ID=${META_APP_ID}
       - META_APP_SECRET=${META_APP_SECRET}
+      - META_CONFIG_ID=${META_CONFIG_ID}
+      - META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_DATABASE:-aerostic}
     depends_on:
