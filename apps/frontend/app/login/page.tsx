@@ -30,8 +30,8 @@ export default function LoginPage() {
                 localStorage.setItem('user', JSON.stringify(res.data.user));
             }
 
-            // Redirect to root (app.aerostic.com index) which is rewritten to dashboard
-            router.push('/');
+            // Redirect to dashboard
+            router.push('/dashboard');
         } catch (err: any) {
             setError('Invalid email or password');
         } finally {

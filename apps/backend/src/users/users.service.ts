@@ -17,7 +17,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(Tenant)
     private tenantsRepository: Repository<Tenant>,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.usersRepository.findOneBy({
@@ -107,6 +107,39 @@ export class UsersService {
         role: UserRole.ADMIN,
       });
       console.log('Admin User Seeded Successfully.');
+    }
+
+    // Seed Demo User (md@modassir.info)
+    const demoEmail = 'md@modassir.info';
+    const demoUserExists = await this.findOneByEmail(demoEmail);
+
+    if (!demoUserExists) {
+      console.log('Seeding Demo User...');
+      // Ensure tenant exists (re-fetch if needed, but should exist from above)
+      let tenant = await this.tenantsRepository.manager
+        .getRepository(Tenant)
+        .findOneBy({ name: 'System' });
+
+      if (tenant) {
+        await this.create({
+          email: demoEmail,
+          password: 'Am5361$44',
+          name: 'Modassir',
+          tenantId: tenant.id,
+          role: UserRole.SUPER_ADMIN,
+        });
+        console.log('Demo User Seeded Successfully.');
+      }
+    } else {
+      // Force update password for existing demo user
+      console.log('Demo User exists. Updating password...');
+      const salt = await bcrypt.genSalt();
+      const passwordHash = await bcrypt.hash('Am5361$44', salt);
+
+      demoUserExists.passwordHash = passwordHash;
+      demoUserExists.role = UserRole.SUPER_ADMIN; // Ensure super_admin role
+      await this.usersRepository.save(demoUserExists);
+      console.log('Demo User Password & Role Updated.');
     }
   }
 }

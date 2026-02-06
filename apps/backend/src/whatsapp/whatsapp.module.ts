@@ -5,13 +5,19 @@ import { WhatsappController } from './whatsapp.controller';
 import { SystemConfig } from '../admin/entities/system-config.entity';
 import { WhatsappAccount } from './entities/whatsapp-account.entity';
 import { MetaToken } from '../meta/entities/meta-token.entity';
+import { BullModule } from '@nestjs/bullmq';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SystemConfig, WhatsappAccount, MetaToken]),
+    BullModule.registerQueue({
+      name: 'whatsapp-messages',
+    }),
+    CommonModule,
   ],
   controllers: [WhatsappController],
   providers: [WhatsappService],
   exports: [WhatsappService],
 })
-export class WhatsappModule {}
+export class WhatsappModule { }
