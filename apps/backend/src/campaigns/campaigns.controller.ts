@@ -1,22 +1,25 @@
-import { Body, Controller, Get, Post, Query, Param } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Param, UseGuards } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
 @Controller('campaigns')
+@UseGuards(JwtAuthGuard)
 export class CampaignsController {
     constructor(private readonly campaignsService: CampaignsService) { }
 
     @Post()
-    create(@Body() body: any) {
-        return this.campaignsService.create(body.tenantId, body.name);
+    create(@UserTenant() tenantId: string, @Body() body: any) {
+        return this.campaignsService.create(tenantId, body.name);
     }
 
     @Get()
-    findAll(@Query('tenantId') tenantId: string) {
+    findAll(@UserTenant() tenantId: string) {
         return this.campaignsService.findAll(tenantId);
     }
 
     @Post(':id/send')
-    send(@Param('id') id: string, @Body() body: any) {
-        return this.campaignsService.dispatch(body.tenantId, id);
+    send(@UserTenant() tenantId: string, @Param('id') id: string) {
+        return this.campaignsService.dispatch(tenantId, id);
     }
 }

@@ -6,10 +6,12 @@ import { MetaToken } from './entities/meta-token.entity';
 import { SystemConfig } from '../admin/entities/system-config.entity';
 import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
 
+import { MetaTokenService } from './meta-token.service';
+
 @Module({
     imports: [TypeOrmModule.forFeature([MetaToken, WhatsappAccount, SystemConfig])],
     controllers: [MetaController],
-    providers: [MetaService],
+    providers: [MetaService, MetaTokenService],
     exports: [MetaService],
 })
 export class MetaModule { }

@@ -225,7 +225,7 @@ export default function SystemPage() {
                                 value={config['meta.config_id']}
                                 onChange={(e) => updateConfig('meta.config_id', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                placeholder="865816612932742"
+                                placeholder="925810693206943"
                             />
                         </div>
                     </div>

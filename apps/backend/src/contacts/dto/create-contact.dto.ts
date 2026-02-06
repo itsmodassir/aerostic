@@ -1,9 +1,9 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateContactDto {
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    tenantId: string;
+    tenantId?: string;
 
     @IsNotEmpty()
     @IsString()

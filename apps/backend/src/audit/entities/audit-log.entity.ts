@@ -1,5 +1,21 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
+export enum LogLevel {
+    INFO = 'info',
+    SUCCESS = 'success',
+    WARNING = 'warning',
+    ERROR = 'error'
+}
+
+export enum LogCategory {
+    SYSTEM = 'system',
+    USER = 'user',
+    SECURITY = 'security',
+    BILLING = 'billing',
+    WHATSAPP = 'whatsapp',
+    AI = 'ai'
+}
+
 @Entity('audit_logs')
 export class AuditLog {
     @PrimaryGeneratedColumn('uuid')
@@ -22,6 +38,23 @@ export class AuditLog {
 
     @Column({ nullable: true })
     ipAddress: string;
+
+    @Column({
+        type: 'enum',
+        enum: LogLevel,
+        default: LogLevel.INFO
+    })
+    level: LogLevel;
+
+    @Column({
+        type: 'enum',
+        enum: LogCategory,
+        default: LogCategory.SYSTEM
+    })
+    category: LogCategory;
+
+    @Column({ nullable: true })
+    source: string; // Service/module that generated the log
 
     @CreateDateColumn()
     timestamp: Date;

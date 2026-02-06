@@ -1,12 +1,13 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import * as qs from 'querystring';
-import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { SystemConfig } from '../admin/entities/system-config.entity';
 import { WhatsappAccount } from './entities/whatsapp-account.entity';
-import { MetaToken } from '../meta/entities/meta-token.entity';
+import { RedisService } from '../common/redis.service';
 
 @Injectable()
 export class WhatsappService {
@@ -16,8 +17,9 @@ export class WhatsappService {
         private configRepo: Repository<SystemConfig>,
         @InjectRepository(WhatsappAccount)
         private whatsappAccountRepo: Repository<WhatsappAccount>,
-        @InjectRepository(MetaToken)
-        private metaTokenRepo: Repository<MetaToken>,
+        @InjectQueue('whatsapp-messages')
+        private messageQueue: Queue,
+        private redisService: RedisService,
     ) { }
 
     async getEmbeddedSignupUrl(tenantId: string) {
@@ -30,7 +32,7 @@ export class WhatsappService {
         });
 
         const appId = dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID');
-        const redirectUri = 'http://localhost:3000/meta/callback'; // Configurable later
+        const redirectUri = 'https://api.aerostic.com/meta/callback';
 
         console.log('Generating OAuth URL with AppID:', appId);
 
@@ -46,20 +48,29 @@ export class WhatsappService {
             state: tenantId,
         });
 
-        return `https://www.facebook.com/v18.0/dialog/oauth?${params}`;
+        return `https://www.facebook.com/v22.0/dialog/oauth?${params}`;
     }
     async getCredentials(tenantId: string) {
-        // TODO: In a real implementation, you would look up the SystemUser access token 
-        // linked to this tenant in the DB (e.g. `whatsapp_configs` table).
-        // For this MVP, we will assume environment variables OR a hardcoded token for the demo tenant.
+        const cacheKey = `whatsapp:token:${tenantId}`;
+        const cached = await this.redisService.get(cacheKey);
 
-        // If we want to test with real data, we need the stored token from the OAuth callback.
-        // Since we haven't implemented persistent token storage linked to tenant yet (only exchange logic),
-        // we'll return null or look for a specific ENV.
-        return {
-            wabaId: this.configService.get('TEST_WABA_ID'),
-            accessToken: this.configService.get('TEST_ACCESS_TOKEN')
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const account = await this.whatsappAccountRepo.findOne({ where: { tenantId } });
+        if (!account) return null;
+
+        const credentials = {
+            wabaId: account.wabaId,
+            phoneNumberId: account.phoneNumberId,
+            accessToken: account.accessToken
         };
+
+        // Cache for 1 hour
+        await this.redisService.set(cacheKey, JSON.stringify(credentials), 3600);
+
+        return credentials;
     }
 
     async getStatus(tenantId: string) {
@@ -94,48 +105,36 @@ export class WhatsappService {
     }
 
     async sendTestMessage(tenantId: string, to: string) {
-        const account = await this.whatsappAccountRepo.findOne({ where: { tenantId } });
-        if (!account || account.status !== 'connected') {
+        const credentials = await this.getCredentials(tenantId);
+        if (!credentials || !credentials.accessToken) {
             throw new BadRequestException('WhatsApp account not connected for this tenant');
         }
 
-        // Fetch latest system token
-        const token = await this.metaTokenRepo.findOne({
-            where: { tokenType: 'system' },
-            order: { createdAt: 'DESC' }
+        const payload = {
+            messaging_product: 'whatsapp',
+            to: to,
+            type: 'template',
+            template: {
+                name: 'hello_world',
+                language: {
+                    code: 'en_US'
+                }
+            }
+        };
+
+        // Enqueue with minimal data. Processor will re-fetch (and use cache)
+        await this.messageQueue.add('send-test', {
+            tenantId,
+            to,
+            payload
+        }, {
+            attempts: 5,
+            backoff: {
+                type: 'exponential',
+                delay: 1000,
+            }
         });
 
-        if (!token) {
-            throw new BadRequestException('No active Access Token found. Please reconnect.');
-        }
-
-        try {
-            const url = `https://graph.facebook.com/v18.0/${account.phoneNumberId}/messages`;
-            const payload = {
-                messaging_product: 'whatsapp',
-                to: to,
-                type: 'template',
-                template: {
-                    name: 'hello_world',
-                    language: {
-                        code: 'en_US'
-                    }
-                }
-            };
-
-            const { data } = await axios.post(url, payload, {
-                headers: {
-                    'Authorization': `Bearer ${token.encryptedToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log('Meta API Response:', JSON.stringify(data, null, 2));
-
-            return { success: true, messageId: data.messages?.[0]?.id };
-        } catch (error: any) {
-            console.error('Send message failed:', error.response?.data || error.message);
-            throw new BadRequestException('Failed to send test message: ' + (error.response?.data?.error?.message || error.message));
-        }
+        return { success: true, message: 'Message enqueued for delivery' };
     }
 }

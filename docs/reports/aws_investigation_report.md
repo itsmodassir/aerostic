@@ -17,7 +17,7 @@ The AWS instance (`13.53.217.6`) is **Online** and fully operational.
 
 ## ⚠️ Important Access Information
 
-**You CANNOT access the site via the IP address (`http://13.53.217.6`).**
+**You CANNOT access the site via the ss (`http://13.53.217.6`).**
 
 The server is configured to strictly redirect all traffic to HTTPS (`https://...`). If you try to access the IP directly via HTTPS, you will get a security warning because the SSL certificate is valid for `aerostic.com`, not the IP address.
 

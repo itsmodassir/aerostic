@@ -8,6 +8,7 @@ import { Conversation } from './entities/conversation.entity';
 import { MetaToken } from '../meta/entities/meta-token.entity'; // Need to decrypt
 import { SendMessageDto } from './dto/send-message.dto';
 import axios from 'axios';
+import { MessagesGateway } from './messages.gateway';
 
 @Injectable()
 export class MessagesService {
@@ -22,6 +23,7 @@ export class MessagesService {
         private contactRepo: Repository<Contact>,
         @InjectRepository(Conversation)
         private conversationRepo: Repository<Conversation>,
+        private messagesGateway: MessagesGateway,
     ) { }
 
     async send(dto: SendMessageDto) {
@@ -110,6 +112,17 @@ export class MessagesService {
                 status: 'sent',
             });
             await this.messageRepo.save(message);
+
+            // 🔥 REAL-TIME EVENT: Emit to all connected clients in this tenant's room
+            this.messagesGateway.emitNewMessage(dto.tenantId || '', {
+                conversationId: conversation.id,
+                contactId: contact.id,
+                phone: dto.to,
+                direction: 'out',
+                type: dto.type,
+                content: dto.type === 'text' ? { body: dto.payload.text } : dto.payload,
+                timestamp: new Date(),
+            });
 
             return { sent: true, metaId, messageId: message.id };
 

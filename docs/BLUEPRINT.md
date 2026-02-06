@@ -4,23 +4,64 @@
 
 ---
 
-## 1️⃣ HIGH-LEVEL SYSTEM ARCHITECTURE
-
-Browser (User / Agent / Admin)
-        ↓
-    Nginx Proxy (Port 80/443)
-    /           |           \
-   /            |            \
-aerostic.com  app.aerostic.com  admin.aerostic.com
-(Landing)     (Dashboard)       (Admin Console)
-   \            |            /
-    \           |           /
-          Backend API (api.aerostic.com)
-                ↓
-          Core Services
-        (Postgres + Redis)
-                ↓
-      Meta WhatsApp Cloud API
+                        META (WhatsApp Cloud API)
+                                 │
+                                 │ Webhooks
+                                 ▼
+                      ┌─────────────────────┐
+                      │  Load Balancer      │
+                      │  AWS ALB / NGINX   │
+                      └─────────────────────┘
+                                 │
+               ┌─────────────────┴─────────────────┐
+               │                                   │
+               ▼                                   ▼
+      ┌─────────────────┐                ┌─────────────────┐
+      │ Backend API     │                │ Webhook Worker  │
+      │ Node.js Docker  │                │ Node.js Docker  │
+      │ api.aerostic.com│                │ webhook handler │
+      └─────────────────┘                └─────────────────┘
+               │                                   │
+               │                                   │
+               ▼                                   ▼
+      ┌────────────────────────────────────────────────┐
+      │              PostgreSQL Database              │
+      │                                              │
+      │ tenants                                      │
+      │ whatsapp_accounts                           │
+      │ contacts                                    │
+      │ messages                                    │
+      │ automations                                 │
+      └────────────────────────────────────────────────┘
+               │
+               │
+               ▼
+      ┌─────────────────┐
+      │ Redis Cache     │
+      │ token cache     │
+      │ session cache   │
+      └─────────────────┘
+               │
+               ▼
+      ┌─────────────────┐
+      │ Queue System    │
+      │ BullMQ / Redis  │
+      │ message queue   │
+      └─────────────────┘
+               │
+               ▼
+      ┌─────────────────┐
+      │ Worker Nodes    │
+      │ Send messages   │
+      │ Automation      │
+      └─────────────────┘
+               │
+               ▼
+      ┌─────────────────┐
+      │ Frontend        │
+      │ React SaaS      │
+      │ app.aerostic.com│
+      └─────────────────┘
 ```
 
 ---

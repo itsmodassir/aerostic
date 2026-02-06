@@ -1,16 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
 import { Contact } from '../contacts/entities/contact.entity';
 import { Conversation } from '../messages/entities/conversation.entity';
 import { Message } from '../messages/entities/message.entity';
 import { AutomationService } from '../automation/automation.service';
 import { AiService } from '../ai/ai.service';
+import { MessagesGateway } from '../messages/messages.gateway';
 
 @Injectable()
 export class WebhooksService {
+    private readonly logger = new Logger(WebhooksService.name);
+
     constructor(
         private configService: ConfigService,
         @InjectRepository(WhatsappAccount)
@@ -21,8 +26,11 @@ export class WebhooksService {
         private conversationRepo: Repository<Conversation>,
         @InjectRepository(Message)
         private messageRepo: Repository<Message>,
+        @InjectQueue('whatsapp-webhooks')
+        private webhookQueue: Queue,
         private automationService: AutomationService,
         private aiService: AiService,
+        private messagesGateway: MessagesGateway,
     ) { }
 
     verifyWebhook(mode: string, token: string, challenge: string): string {
@@ -35,6 +43,24 @@ export class WebhooksService {
     }
 
     async processWebhook(body: any) {
+        // Enqueue the raw payload for async processing
+        // This ensures the Meta webhook returns 200 OK immediately
+        await this.webhookQueue.add('process-event', { body }, {
+            attempts: 3,
+            backoff: {
+                type: 'exponential',
+                delay: 2000,
+            }
+        });
+
+        return { status: 'enqueued' };
+    }
+
+    /**
+     * Internal method called by the WebhooksProcessor
+     * Contains the actual logic to process incoming messages
+     */
+    async handleProcessedPayload(body: any) {
         const entry = body.entry?.[0];
         const changes = entry?.changes?.[0];
         const value = changes?.value;
@@ -44,7 +70,7 @@ export class WebhooksService {
             const phoneNumberId = value.metadata?.phone_number_id;
             const from = messageData.from; // Sender phone number
 
-            console.log('Received Message from:', from, 'via PhoneID:', phoneNumberId);
+            console.log('Asynchronously processing Message from:', from);
 
             // 1. Find Tenant by phoneNumberId
             const account = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
@@ -68,7 +94,6 @@ export class WebhooksService {
                     name: profileName,
                 });
                 await this.contactRepo.save(contact);
-                console.log('Created new contact:', profileName);
             }
 
             // 3. Find or Create Open Conversation
@@ -91,7 +116,6 @@ export class WebhooksService {
                 });
                 await this.conversationRepo.save(conversation);
             } else {
-                // Update timestamp
                 conversation.lastMessageAt = new Date();
                 await this.conversationRepo.save(conversation);
             }
@@ -102,13 +126,23 @@ export class WebhooksService {
                 conversationId: conversation.id,
                 direction: 'in',
                 type: messageData.type,
-                content: messageData[messageData.type] || {}, // Store text body or image info
+                content: messageData[messageData.type] || {},
                 metaMessageId: messageData.id,
                 status: 'received',
             });
 
             await this.messageRepo.save(message);
-            console.log('Message saved:', message.id);
+
+            // 🔥 REAL-TIME EVENT: Emit to all connected clients in this tenant's room
+            this.messagesGateway.emitNewMessage(account.tenantId, {
+                conversationId: conversation.id,
+                contactId: contact.id,
+                phone: from,
+                direction: 'in',
+                type: messageData.type,
+                content: messageData[messageData.type] || {},
+                timestamp: new Date(),
+            });
 
             // 5. Trigger Automation
             const handled = await this.automationService.evaluate(account.tenantId, from, messageData.text?.body || '');
@@ -118,6 +152,39 @@ export class WebhooksService {
                 await this.aiService.process(account.tenantId, from, messageData.text?.body || '');
             }
         }
+
+        // Handle message status updates (delivered, read, sent, failed)
+        if (value?.statuses) {
+            const statusUpdate = value.statuses[0];
+            const metaMessageId = statusUpdate.id;
+            const newStatus = statusUpdate.status; // 'sent' | 'delivered' | 'read' | 'failed'
+
+            this.logger.log(`Message status update: ${metaMessageId} → ${newStatus}`);
+
+            // Find the message by Meta message ID
+            const message = await this.messageRepo.findOne({
+                where: { metaMessageId },
+            });
+
+            if (message) {
+                // Update message status
+                message.status = newStatus;
+                await this.messageRepo.save(message);
+
+                // 🔥 REAL-TIME EVENT: Emit status update to tenant room
+                this.messagesGateway.emitMessageStatus(message.tenantId, {
+                    messageId: message.id,
+                    metaMessageId,
+                    status: newStatus,
+                    timestamp: new Date(),
+                });
+
+                this.logger.log(`Updated message ${message.id} status to ${newStatus}`);
+            } else {
+                this.logger.warn(`Message not found for Meta ID: ${metaMessageId}`);
+            }
+        }
+
         return { status: 'success' };
     }
 }

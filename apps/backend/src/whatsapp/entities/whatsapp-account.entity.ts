@@ -6,7 +6,7 @@ export class WhatsappAccount {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ name: 'tenant_id', type: 'uuid' })
+    @Column({ name: 'tenant_id', type: 'uuid', unique: true })
     @Index()
     tenantId: string;
 

@@ -9,11 +9,12 @@ import { MetaToken } from '../meta/entities/meta-token.entity';
 import { Conversation } from './entities/conversation.entity';
 import { Contact } from '../contacts/entities/contact.entity';
 import { User } from '../users/entities/user.entity';
+import { MessagesGateway } from './messages.gateway';
 
 @Module({
     imports: [TypeOrmModule.forFeature([Message, Conversation, WhatsappAccount, MetaToken, Contact, User])],
     controllers: [MessagesController],
-    providers: [MessagesService],
+    providers: [MessagesService, MessagesGateway],
     exports: [MessagesService],
 })
 export class MessagesModule { }

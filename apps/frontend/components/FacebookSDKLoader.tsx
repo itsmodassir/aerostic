@@ -57,11 +57,7 @@ export function launchWhatsAppSignup(configId: string, callback: (code: string) 
             config_id: configId,
             response_type: 'code',
             override_default_response_type: true,
-            extras: {
-                version: 'v3',
-                setup: {}
-            },
-            scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
+            extras: { version: 'v3' }
         }
     );
 }

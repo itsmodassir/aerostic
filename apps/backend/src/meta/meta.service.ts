@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { MetaToken } from './entities/meta-token.entity';
 import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
 import { SystemConfig } from '../admin/entities/system-config.entity';
+import { RedisService } from '../common/redis.service';
 
 @Injectable()
 export class MetaService {
@@ -17,6 +18,7 @@ export class MetaService {
         private whatsappAccountRepo: Repository<WhatsappAccount>,
         @InjectRepository(SystemConfig)
         private configRepo: Repository<SystemConfig>,
+        private redisService: RedisService,
     ) { }
 
     async handleOAuthCallback(code: string, tenantId: string, providedWabaId?: string, providedPhoneNumberId?: string) {
@@ -29,22 +31,27 @@ export class MetaService {
             ]
         });
 
-        const appId = dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID');
-        const appSecret = dbConfigs.find(c => c.key === 'meta.app_secret')?.value || this.configService.get('META_APP_SECRET');
+        const appId = dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID') || '';
+        const appSecret = dbConfigs.find(c => c.key === 'meta.app_secret')?.value || this.configService.get('META_APP_SECRET') || '';
 
-        // Use the configured redirect URI or fallback to production
+        // Use the configured redirect URI or fallback to production API endpoint
         let redirectUri = dbConfigs.find(c => c.key === 'meta.redirect_uri')?.value
             || this.configService.get('META_REDIRECT_URI')
-            || 'https://app.aerostic.com/meta/callback';
+            || 'https://api.aerostic.com/meta/callback';
 
         // Ensure we don't accidentally use localhost in production if not explicitly intended
         if (redirectUri.includes('localhost') && process.env.NODE_ENV === 'production') {
-            redirectUri = 'https://app.aerostic.com/meta/callback';
+            redirectUri = 'https://api.aerostic.com/meta/callback';
         }
 
-        // 1. Exchange auth code for access token
+        console.log('--- OAuth Debug (v22.0) ---');
+        console.log('App ID:', appId);
+        console.log('Redirect URI:', redirectUri);
+        console.log('-------------------');
+
+        // 1. Exchange auth code for short-lived access token
         const tokenRes = await axios.get(
-            'https://graph.facebook.com/v18.0/oauth/access_token',
+            'https://graph.facebook.com/v22.0/oauth/access_token',
             {
                 params: {
                     client_id: appId,
@@ -55,131 +62,109 @@ export class MetaService {
             },
         );
 
-        const accessToken = tokenRes.data.access_token;
-        // Store System Token
-        // In real app: Encrypt!
-        await this.metaTokenRepo.save({
-            tokenType: 'system',
-            encryptedToken: accessToken,
-            expiresAt: new Date(Date.now() + tokenRes.data.expires_in * 1000),
-        });
+        const shortToken = tokenRes.data.access_token;
 
+        // 2. Exchange short-lived token for long-lived token
+        const longTokenData = await this.exchangeForLongLivedToken(shortToken, appId, appSecret);
+        const accessToken = longTokenData.access_token;
+        const expiresAt = new Date(Date.now() + (longTokenData.expires_in || 5184000) * 1000);
 
-        // 2. Fetch Business ID (Optional but recommended)
-        let businessId = null;
-        try {
-            const businesses = await axios.get(
-                'https://graph.facebook.com/v18.0/me/businesses',
-                {
-                    headers: { Authorization: `Bearer ${accessToken}` },
+        // 3. Fetch WhatsApp Business Account using the 'Safe' endpoint
+        const meRes = await axios.get(
+            'https://graph.facebook.com/v22.0/me',
+            {
+                params: {
+                    fields: 'whatsapp_business_accounts',
+                    access_token: accessToken,
                 },
-            );
-            businessId = businesses.data.data?.[0]?.id;
-        } catch (e: any) {
-            console.warn('Could not fetch Business ID (likely permission issue), attempting to fetch WABAs directly...');
-        }
-
-        // 3. Fetch WABA (Try owned first, then client)
-        // If businessId is missing, we can try `me/owned_whatsapp_business_accounts` if supported,
-        // but typically we need businessId.
-        // However, some tokens allow `me/accounts`. Let's stick to business path if available, or try `me` endpoints as fallback.
-
-        // Actually, without business_management, we might not get business ID, but `whatsapp_business_management`
-        // might allow us to list WABAs via `me/`.
-
-        let wabas;
-        try {
-            const endpoint = businessId
-                ? `https://graph.facebook.com/v18.0/${businessId}/owned_whatsapp_business_accounts`
-                : `https://graph.facebook.com/v18.0/me/owned_whatsapp_business_accounts`; // Fallback attempt
-
-            wabas = await axios.get(endpoint, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-        } catch (error) {
-            // Try client WABAs if owned failed
-            const endpoint = businessId
-                ? `https://graph.facebook.com/v18.0/${businessId}/client_whatsapp_business_accounts`
-                : `https://graph.facebook.com/v18.0/me/client_whatsapp_business_accounts`;
-
-            wabas = await axios.get(endpoint, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-        }
-
-        let wabaId = providedWabaId || wabas.data.data?.[0]?.id;
-
-        // Note: The previous catch block already attempts client WABAs if owned fails.
-        // But if owned succeeded but returned empty list, we enter here.
-        if (!wabaId && !providedWabaId) {
-            console.log('No owned WABA found in primary attempt, checking client WABAs explicitly...');
-            try {
-                const endpoint = businessId
-                    ? `https://graph.facebook.com/v18.0/${businessId}/client_whatsapp_business_accounts`
-                    : `https://graph.facebook.com/v18.0/me/client_whatsapp_business_accounts`;
-
-                wabas = await axios.get(endpoint, {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                });
-                wabaId = wabas.data.data?.[0]?.id;
-            } catch (e) {
-                console.warn('Client WABA fetch also failed');
             }
-        }
+        );
+
+        const waba = meRes.data.whatsapp_business_accounts?.data?.[0];
+        const wabaId = providedWabaId || waba?.id;
 
         if (!wabaId) {
-            console.error('Meta Response (WABAs):', JSON.stringify(wabas?.data || {}));
-            throw new BadRequestException('No WhatsApp Business Account (WABA) found. Ensure you selected a WABA in the popup.');
+            console.error('Meta Response (me):', JSON.stringify(meRes.data));
+            throw new BadRequestException('No WhatsApp Business Account (WABA) found. Please ensure you selected a WABA in the popup.');
         }
 
         // 4. Fetch Phone Number
-        const numbers = await axios.get(
-            `https://graph.facebook.com/v18.0/${wabaId}/phone_numbers`,
+        const phoneRes = await axios.get(
+            `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`,
             {
-                headers: { Authorization: `Bearer ${accessToken}` },
+                params: { access_token: accessToken },
             },
         );
 
-        const phoneNumberId = providedPhoneNumberId || numbers.data.data?.[0]?.id;
-        const displayPhoneNumber = numbers.data.data?.find((n: any) => n.id === phoneNumberId)?.display_phone_number || numbers.data.data?.[0]?.display_phone_number;
+        const numberData = phoneRes.data.data?.[0];
+        const phoneNumberId = providedPhoneNumberId || numberData?.id;
+        const displayPhoneNumber = numberData?.display_phone_number;
 
-        // 5. Save Mapping (Upsert)
+        if (!phoneNumberId) {
+            throw new BadRequestException('No Phone Number ID found for this account.');
+        }
+
+        // 5. Save Mapping (Upsert) - Storing Token Directly in Account for Multi-Tenancy
         const existing = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
 
         if (existing) {
-            // Update existing
             existing.tenantId = tenantId;
             existing.wabaId = wabaId;
             existing.displayPhoneNumber = displayPhoneNumber;
+            existing.accessToken = accessToken;
+            existing.tokenExpiresAt = expiresAt;
             existing.status = 'connected';
             await this.whatsappAccountRepo.save(existing);
         } else {
-            // Create new
             await this.whatsappAccountRepo.save({
                 tenantId,
                 wabaId,
                 phoneNumberId,
                 displayPhoneNumber,
+                accessToken,
+                tokenExpiresAt: expiresAt,
                 mode: 'coexistence',
                 status: 'connected',
             });
         }
 
+        // Invalidate Redis Cache for this tenant
+        await this.redisService.del(`whatsapp:token:${tenantId}`);
+
         return { success: true };
     }
+
     async getTemplates(wabaId: string, accessToken: string) {
         try {
-            const url = `https://graph.facebook.com/v18.0/${wabaId}/message_templates`;
-            // Note: In real app, we need to handle pagination.
+            const url = `https://graph.facebook.com/v22.0/${wabaId}/message_templates`;
             const { data } = await axios.get(url, {
                 headers: { Authorization: `Bearer ${accessToken}` },
                 params: { limit: 100 }
             });
-            return data.data; // Array of templates
+            return data.data;
         } catch (error: any) {
             console.error('Failed to fetch templates from Meta', error.response?.data || error.message);
-            // Don't crash, return empty array so sync doesn't fail completely
             return [];
+        }
+    }
+
+    async exchangeForLongLivedToken(shortToken: string, appId: string, appSecret: string) {
+        try {
+            const response = await axios.get(
+                'https://graph.facebook.com/v22.0/oauth/access_token',
+                {
+                    params: {
+                        grant_type: 'fb_exchange_token',
+                        client_id: appId,
+                        client_secret: appSecret,
+                        fb_exchange_token: shortToken,
+                    },
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to exchange long-lived token:', error.response?.data || error.message);
+            throw new BadRequestException('Failed to exchange long-lived token');
         }
     }
 }

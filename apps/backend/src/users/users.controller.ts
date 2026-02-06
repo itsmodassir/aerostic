@@ -1,8 +1,11 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
@@ -13,8 +16,7 @@ export class UsersController {
     }
 
     @Get()
-    findAll(@Query('tenantId') tenantId: string) {
-        // Fallback to query param if not using subdomains yet
+    findAll(@UserTenant() tenantId: string) {
         return this.usersService.findAllByTenant(tenantId);
     }
 }
