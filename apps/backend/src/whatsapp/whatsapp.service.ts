@@ -20,7 +20,7 @@ export class WhatsappService {
     @InjectQueue('whatsapp-messages')
     private messageQueue: Queue,
     private redisService: RedisService,
-  ) {}
+  ) { }
 
   async getEmbeddedSignupUrl(tenantId: string) {
     // Fetch config from DB first, fallback to env
