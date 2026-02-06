@@ -198,7 +198,14 @@ export class AdminService {
     }
 
     // Override with stored values
+    console.log('--- ADMIN CONFIG DEBUG ---');
+    console.log('Env META_APP_ID:', this.configService.get('META_APP_ID'));
+    console.log('DB Configs count:', configs.length);
+
     for (const config of configs) {
+      if (config.key === 'meta.app_id') {
+        console.log('DB meta.app_id value:', config.value, 'isSecret:', config.isSecret);
+      }
       result[config.key] = {
         value: config.isSecret ? '••••••••••••••••' : config.value,
         description: config.description,
@@ -207,6 +214,10 @@ export class AdminService {
         updatedAt: config.updatedAt,
       };
     }
+
+    console.log('Final meta.app_id:', result['meta.app_id']);
+    console.log('Final meta.config_id:', result['meta.config_id']);
+    console.log('--- END DEBUG ---');
 
     return result;
   }
