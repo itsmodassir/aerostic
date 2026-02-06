@@ -49,13 +49,13 @@ We provide a helper script to automate the entire setup:
 
 ---
 
-## 📂 Documentation
+## � Documentation
 
-For deep technical details, please refer to the `docs/` folder:
-
-*   **[📘 System Blueprint](docs/BLUEPRINT.md)**: Full architecture, API design, and data flows.
-*   **[📋 Implementation Plan](docs/implementation_plan.md)**: Development roadmap and status.
-*   **[✅ Production Checklist](docs/production_checklist.md)**: Security and launch verification steps.
+- [**Blueprint**](docs/BLUEPRINT.md) - System architecture and roadmap
+- [**Deployment Guide**](docs/ec2_deployment_guide.md) - **New!** AWS EC2 production setup
+- [**Admin Panel**](docs/admin_panel_guide.md) - **New!** Super admin system documentation
+- [**API Reference**](docs/api_reference.md) - Backend API endpoints
+- [**Walkthrough**](docs/walkthrough.md) - Feature tour and updates
 
 ---
 
