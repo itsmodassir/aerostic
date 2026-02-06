@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         try {
             const user = JSON.parse(userStr);
-            if (user.role !== 'admin') {
+            if (user.role !== 'admin' && user.role !== 'super_admin') {
                 router.push('/dashboard');
                 return;
             }
