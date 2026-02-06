@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant } from '../tenants/entities/tenant.entity';
@@ -132,7 +133,8 @@ export class AdminService {
     private webhookEndpointRepo: Repository<WebhookEndpoint>,
     private auditService: AuditService,
     private billingService: BillingService,
-  ) {}
+    private configService: ConfigService,
+  ) { }
 
   async getAllTenants() {
     return this.tenantRepo.find({
@@ -165,10 +167,30 @@ export class AdminService {
     const configs = await this.configRepo.find();
     const result: Record<string, any> = {};
 
-    // Start with defaults
+    // Map keys to env vars
+    const envMap: Record<string, string> = {
+      'meta.app_id': 'META_APP_ID',
+      'meta.app_secret': 'META_APP_SECRET',
+      'meta.webhook_verify_token': 'META_WEBHOOK_VERIFY_TOKEN',
+      'meta.config_id': 'META_CONFIG_ID',
+      'razorpay.key_id': 'RAZORPAY_KEY_ID',
+      'razorpay.key_secret': 'RAZORPAY_KEY_SECRET',
+      'razorpay.webhook_secret': 'RAZORPAY_WEBHOOK_SECRET',
+      'ai.gemini_api_key': 'GEMINI_API_KEY',
+      'platform.app_url': 'APP_URL',
+    };
+
+    // Start with defaults + Env fallback
     for (const [key, def] of Object.entries(DEFAULT_CONFIG)) {
+      let value = def.value;
+      const envKey = envMap[key];
+      if (envKey) {
+        const envVal = this.configService.get(envKey);
+        if (envVal) value = envVal;
+      }
+
       result[key] = {
-        value: def.isSecret ? '••••••••••••••••' : def.value,
+        value: def.isSecret && value ? '••••••••••••••••' : value, // Mask if secret and has value
         description: def.description,
         category: def.category,
         isSecret: def.isSecret || false,
@@ -397,7 +419,7 @@ export class AdminService {
       name: sub.tenant?.name || 'Unknown',
       plan: sub.plan
         ? (sub.plan as string).charAt(0).toUpperCase() +
-          (sub.plan as string).slice(1)
+        (sub.plan as string).slice(1)
         : 'Starter',
       messages: '0', // We would need a more complex join to get message count per tenant here
       revenue: `₹${sub.priceInr.toLocaleString()}`,
