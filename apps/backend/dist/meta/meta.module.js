@@ -14,14 +14,17 @@ const meta_controller_1 = require("./meta.controller");
 const meta_token_entity_1 = require("./entities/meta-token.entity");
 const system_config_entity_1 = require("../admin/entities/system-config.entity");
 const whatsapp_account_entity_1 = require("../whatsapp/entities/whatsapp-account.entity");
+const meta_token_service_1 = require("./meta-token.service");
 let MetaModule = class MetaModule {
 };
 exports.MetaModule = MetaModule;
 exports.MetaModule = MetaModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([meta_token_entity_1.MetaToken, whatsapp_account_entity_1.WhatsappAccount, system_config_entity_1.SystemConfig])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([meta_token_entity_1.MetaToken, whatsapp_account_entity_1.WhatsappAccount, system_config_entity_1.SystemConfig]),
+        ],
         controllers: [meta_controller_1.MetaController],
-        providers: [meta_service_1.MetaService],
+        providers: [meta_service_1.MetaService, meta_token_service_1.MetaTokenService],
         exports: [meta_service_1.MetaService],
     })
 ], MetaModule);

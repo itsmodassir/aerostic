@@ -29,12 +29,16 @@ const analytics_module_1 = require("./analytics/analytics.module");
 const admin_module_1 = require("./admin/admin.module");
 const billing_module_1 = require("./billing/billing.module");
 const audit_module_1 = require("./audit/audit.module");
+const schedule_1 = require("@nestjs/schedule");
+const common_module_1 = require("./common/common.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            common_module_1.CommonModule,
+            schedule_1.ScheduleModule.forRoot(),
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],

@@ -33,7 +33,9 @@ let AutomationService = class AutomationService {
         return this.ruleRepo.find({ where: { tenantId } });
     }
     async evaluate(tenantId, from, messageBody) {
-        const rules = await this.ruleRepo.find({ where: { tenantId, isActive: true } });
+        const rules = await this.ruleRepo.find({
+            where: { tenantId, isActive: true },
+        });
         for (const rule of rules) {
             let match = false;
             const lowerMsg = messageBody.toLowerCase();
@@ -58,7 +60,7 @@ let AutomationService = class AutomationService {
                 tenantId,
                 to,
                 type: 'text',
-                payload: { text: rule.payload.text }
+                payload: { text: rule.payload.text },
             });
         }
     }

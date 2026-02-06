@@ -14,13 +14,21 @@ const analytics_controller_1 = require("./analytics.controller");
 const message_entity_1 = require("../messages/entities/message.entity");
 const campaign_entity_1 = require("../campaigns/entities/campaign.entity");
 const contact_entity_1 = require("../contacts/entities/contact.entity");
+const ai_agent_entity_1 = require("../ai/entities/ai-agent.entity");
+const usage_metric_entity_1 = require("../billing/entities/usage-metric.entity");
 let AnalyticsModule = class AnalyticsModule {
 };
 exports.AnalyticsModule = AnalyticsModule;
 exports.AnalyticsModule = AnalyticsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([message_entity_1.Message, campaign_entity_1.Campaign, contact_entity_1.Contact]),
+            typeorm_1.TypeOrmModule.forFeature([
+                message_entity_1.Message,
+                campaign_entity_1.Campaign,
+                contact_entity_1.Contact,
+                ai_agent_entity_1.AiAgent,
+                usage_metric_entity_1.UsageMetric,
+            ]),
         ],
         controllers: [analytics_controller_1.AnalyticsController],
         providers: [analytics_service_1.AnalyticsService],

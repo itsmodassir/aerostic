@@ -23,12 +23,7 @@ exports.WebhooksModule = WebhooksModule;
 exports.WebhooksModule = WebhooksModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([
-                whatsapp_account_entity_1.WhatsappAccount,
-                contact_entity_1.Contact,
-                conversation_entity_1.Conversation,
-                message_entity_1.Message,
-            ]),
+            typeorm_1.TypeOrmModule.forFeature([whatsapp_account_entity_1.WhatsappAccount, contact_entity_1.Contact, conversation_entity_1.Conversation, message_entity_1.Message]),
             automation_module_1.AutomationModule,
             ai_module_1.AiModule,
         ],

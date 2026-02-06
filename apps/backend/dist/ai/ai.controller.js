@@ -17,59 +17,64 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const ai_agent_entity_1 = require("./entities/ai-agent.entity");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const user_tenant_decorator_1 = require("../auth/decorators/user-tenant.decorator");
 let AiController = class AiController {
     aiAgentRepo;
     constructor(aiAgentRepo) {
         this.aiAgentRepo = aiAgentRepo;
     }
     async getAgent(tenantId) {
-        let agent = await this.aiAgentRepo.findOneBy({ tenantId });
+        const agent = await this.aiAgentRepo.findOneBy({ tenantId });
         if (!agent) {
             return {
-                systemPrompt: "You are a helpful and friendly customer support agent for Aerostic, a SaaS platform. Answer concisely.",
-                active: true
+                systemPrompt: 'You are a helpful and friendly customer support agent for Aerostic, a SaaS platform. Answer concisely.',
+                active: true,
             };
         }
         return agent;
     }
-    async saveAgent(body) {
-        let agent = await this.aiAgentRepo.findOneBy({ tenantId: body.tenantId });
+    async saveAgent(tenantId, body) {
+        let agent = await this.aiAgentRepo.findOneBy({ tenantId });
         if (!agent) {
-            agent = this.aiAgentRepo.create({ tenantId: body.tenantId });
+            agent = this.aiAgentRepo.create({ tenantId });
         }
         agent.systemPrompt = body.systemPrompt;
         agent.isActive = body.active;
         return this.aiAgentRepo.save(agent);
     }
-    async respond(body) {
-        console.log('AI Respond triggered internally', body);
+    async respond(tenantId, body) {
+        console.log('AI Respond triggered', { tenantId, ...body });
         return { status: 'processed' };
     }
 };
 exports.AiController = AiController;
 __decorate([
     (0, common_1.Get)('agent'),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "getAgent", null);
 __decorate([
     (0, common_1.Post)('agent'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "saveAgent", null);
 __decorate([
     (0, common_1.Post)('respond'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "respond", null);
 exports.AiController = AiController = __decorate([
     (0, common_1.Controller)('ai'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, typeorm_1.InjectRepository)(ai_agent_entity_1.AiAgent)),
     __metadata("design:paramtypes", [typeorm_2.Repository])
 ], AiController);

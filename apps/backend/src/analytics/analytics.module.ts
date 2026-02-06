@@ -9,10 +9,16 @@ import { AiAgent } from '../ai/entities/ai-agent.entity';
 import { UsageMetric } from '../billing/entities/usage-metric.entity';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Message, Campaign, Contact, AiAgent, UsageMetric]),
-    ],
-    controllers: [AnalyticsController],
-    providers: [AnalyticsService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Message,
+      Campaign,
+      Contact,
+      AiAgent,
+      UsageMetric,
+    ]),
+  ],
+  controllers: [AnalyticsController],
+  providers: [AnalyticsService],
 })
-export class AnalyticsModule { }
+export class AnalyticsModule {}

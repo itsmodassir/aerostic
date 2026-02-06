@@ -39,7 +39,7 @@ __decorate([
     __metadata("design:type", String)
 ], WhatsappAccount.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'tenant_id', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'tenant_id', type: 'uuid', unique: true }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], WhatsappAccount.prototype, "tenantId", void 0);

@@ -11,130 +11,140 @@ import { RedisService } from '../common/redis.service';
 
 @Injectable()
 export class WhatsappService {
-    constructor(
-        private configService: ConfigService,
-        @InjectRepository(SystemConfig)
-        private configRepo: Repository<SystemConfig>,
-        @InjectRepository(WhatsappAccount)
-        private whatsappAccountRepo: Repository<WhatsappAccount>,
-        @InjectQueue('whatsapp-messages')
-        private messageQueue: Queue,
-        private redisService: RedisService,
-    ) { }
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(SystemConfig)
+    private configRepo: Repository<SystemConfig>,
+    @InjectRepository(WhatsappAccount)
+    private whatsappAccountRepo: Repository<WhatsappAccount>,
+    @InjectQueue('whatsapp-messages')
+    private messageQueue: Queue,
+    private redisService: RedisService,
+  ) {}
 
-    async getEmbeddedSignupUrl(tenantId: string) {
-        // Fetch config from DB first, fallback to env
-        const dbConfigs = await this.configRepo.find({
-            where: [
-                { key: 'meta.app_id' },
-                { key: 'meta.redirect_uri' }
-            ]
-        });
+  async getEmbeddedSignupUrl(tenantId: string) {
+    // Fetch config from DB first, fallback to env
+    const dbConfigs = await this.configRepo.find({
+      where: [{ key: 'meta.app_id' }, { key: 'meta.redirect_uri' }],
+    });
 
-        const appId = dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID');
-        const redirectUri = 'https://api.aerostic.com/meta/callback';
+    const appId =
+      dbConfigs.find((c) => c.key === 'meta.app_id')?.value ||
+      this.configService.get('META_APP_ID');
+    const redirectUri = 'https://api.aerostic.com/meta/callback';
 
-        console.log('Generating OAuth URL with AppID:', appId);
+    console.log('Generating OAuth URL with AppID:', appId);
 
-        const params = qs.stringify({
-            client_id: appId,
-            redirect_uri: redirectUri,
-            scope: [
-                'whatsapp_business_management',
-                'whatsapp_business_messaging',
-                'business_management',
-            ].join(','),
-            response_type: 'code',
-            state: tenantId,
-        });
+    const params = qs.stringify({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      scope: [
+        'whatsapp_business_management',
+        'whatsapp_business_messaging',
+        'business_management',
+      ].join(','),
+      response_type: 'code',
+      state: tenantId,
+    });
 
-        return `https://www.facebook.com/v22.0/dialog/oauth?${params}`;
-    }
-    async getCredentials(tenantId: string) {
-        const cacheKey = `whatsapp:token:${tenantId}`;
-        const cached = await this.redisService.get(cacheKey);
+    return `https://www.facebook.com/v22.0/dialog/oauth?${params}`;
+  }
+  async getCredentials(tenantId: string) {
+    const cacheKey = `whatsapp:token:${tenantId}`;
+    const cached = await this.redisService.get(cacheKey);
 
-        if (cached) {
-            return JSON.parse(cached);
-        }
-
-        const account = await this.whatsappAccountRepo.findOne({ where: { tenantId } });
-        if (!account) return null;
-
-        const credentials = {
-            wabaId: account.wabaId,
-            phoneNumberId: account.phoneNumberId,
-            accessToken: account.accessToken
-        };
-
-        // Cache for 1 hour
-        await this.redisService.set(cacheKey, JSON.stringify(credentials), 3600);
-
-        return credentials;
+    if (cached) {
+      return JSON.parse(cached);
     }
 
-    async getStatus(tenantId: string) {
-        const account = await this.whatsappAccountRepo.findOne({ where: { tenantId } });
-        if (!account) return { connected: false };
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+    if (!account) return null;
 
-        return {
-            connected: account.status === 'connected',
-            mode: account.mode,
-            phoneNumber: account.displayPhoneNumber,
-            wabaId: account.wabaId,
-            qualityRating: account.qualityRating
-        };
+    const credentials = {
+      wabaId: account.wabaId,
+      phoneNumberId: account.phoneNumberId,
+      accessToken: account.accessToken,
+    };
+
+    // Cache for 1 hour
+    await this.redisService.set(cacheKey, JSON.stringify(credentials), 3600);
+
+    return credentials;
+  }
+
+  async getStatus(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+    if (!account) return { connected: false };
+
+    return {
+      connected: account.status === 'connected',
+      mode: account.mode,
+      phoneNumber: account.displayPhoneNumber,
+      wabaId: account.wabaId,
+      qualityRating: account.qualityRating,
+    };
+  }
+
+  async getPublicConfig() {
+    const dbConfigs = await this.configRepo.find({
+      where: [{ key: 'meta.app_id' }, { key: 'meta.config_id' }],
+    });
+
+    return {
+      appId:
+        dbConfigs.find((c) => c.key === 'meta.app_id')?.value ||
+        this.configService.get('META_APP_ID'),
+      configId:
+        dbConfigs.find((c) => c.key === 'meta.config_id')?.value ||
+        this.configService.get('META_CONFIG_ID'),
+    };
+  }
+
+  async disconnect(tenantId: string) {
+    return this.whatsappAccountRepo.delete({ tenantId });
+  }
+
+  async sendTestMessage(tenantId: string, to: string) {
+    const credentials = await this.getCredentials(tenantId);
+    if (!credentials || !credentials.accessToken) {
+      throw new BadRequestException(
+        'WhatsApp account not connected for this tenant',
+      );
     }
 
-    async getPublicConfig() {
-        const dbConfigs = await this.configRepo.find({
-            where: [
-                { key: 'meta.app_id' },
-                { key: 'meta.config_id' }
-            ]
-        });
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'template',
+      template: {
+        name: 'hello_world',
+        language: {
+          code: 'en_US',
+        },
+      },
+    };
 
-        return {
-            appId: dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID'),
-            configId: dbConfigs.find(c => c.key === 'meta.config_id')?.value || this.configService.get('META_CONFIG_ID'),
-        };
-    }
+    // Enqueue with minimal data. Processor will re-fetch (and use cache)
+    await this.messageQueue.add(
+      'send-test',
+      {
+        tenantId,
+        to,
+        payload,
+      },
+      {
+        attempts: 5,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    );
 
-    async disconnect(tenantId: string) {
-        return this.whatsappAccountRepo.delete({ tenantId });
-    }
-
-    async sendTestMessage(tenantId: string, to: string) {
-        const credentials = await this.getCredentials(tenantId);
-        if (!credentials || !credentials.accessToken) {
-            throw new BadRequestException('WhatsApp account not connected for this tenant');
-        }
-
-        const payload = {
-            messaging_product: 'whatsapp',
-            to: to,
-            type: 'template',
-            template: {
-                name: 'hello_world',
-                language: {
-                    code: 'en_US'
-                }
-            }
-        };
-
-        // Enqueue with minimal data. Processor will re-fetch (and use cache)
-        await this.messageQueue.add('send-test', {
-            tenantId,
-            to,
-            payload
-        }, {
-            attempts: 5,
-            backoff: {
-                type: 'exponential',
-                delay: 1000,
-            }
-        });
-
-        return { success: true, message: 'Message enqueued for delivery' };
-    }
+    return { success: true, message: 'Message enqueued for delivery' };
+  }
 }

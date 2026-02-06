@@ -16,12 +16,15 @@ exports.ContactsController = void 0;
 const common_1 = require("@nestjs/common");
 const contacts_service_1 = require("./contacts.service");
 const create_contact_dto_1 = require("./dto/create-contact.dto");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const user_tenant_decorator_1 = require("../auth/decorators/user-tenant.decorator");
 let ContactsController = class ContactsController {
     contactsService;
     constructor(contactsService) {
         this.contactsService = contactsService;
     }
-    create(createContactDto) {
+    create(tenantId, createContactDto) {
+        createContactDto.tenantId = tenantId;
         return this.contactsService.create(createContactDto);
     }
     findAll(tenantId) {
@@ -31,20 +34,22 @@ let ContactsController = class ContactsController {
 exports.ContactsController = ContactsController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_contact_dto_1.CreateContactDto]),
+    __metadata("design:paramtypes", [String, create_contact_dto_1.CreateContactDto]),
     __metadata("design:returntype", void 0)
 ], ContactsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ContactsController.prototype, "findAll", null);
 exports.ContactsController = ContactsController = __decorate([
     (0, common_1.Controller)('contacts'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [contacts_service_1.ContactsService])
 ], ContactsController);
 //# sourceMappingURL=contacts.controller.js.map

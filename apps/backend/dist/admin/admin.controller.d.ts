@@ -2,8 +2,10 @@ import { AdminService } from './admin.service';
 interface UpdateConfigDto {
     [key: string]: string;
 }
+import { PlanType, SubscriptionStatus } from '../billing/entities/subscription.entity';
 interface UpdateUserPlanDto {
-    plan: 'starter' | 'growth' | 'enterprise';
+    plan: PlanType;
+    status?: SubscriptionStatus;
 }
 export declare class AdminController {
     private readonly adminService;
@@ -48,6 +50,17 @@ export declare class AdminController {
             status: string;
             uptime: string;
         }[];
+        recentAlerts: {
+            type: string;
+            message: string;
+            time: string;
+        }[];
+        topTenants: {
+            name: string;
+            plan: string;
+            messages: string;
+            revenue: string;
+        }[];
     }>;
     getTrends(range: string): Promise<{
         revenue: {
@@ -68,6 +81,68 @@ export declare class AdminController {
         createdAt: Date;
         lastUsed: Date;
         requests: string;
+    }[]>;
+    getMessages(page?: number, limit?: number, search?: string): Promise<{
+        data: {
+            id: string;
+            tenant: string;
+            from: string;
+            to: string;
+            type: string;
+            status: string;
+            timestamp: Date;
+        }[];
+        total: number;
+        page: number;
+        totalPages: number;
+    }>;
+    getWebhooks(): Promise<{
+        stats: {
+            total: number;
+            active: number;
+            failing: number;
+            deliveriesToday: string;
+        };
+        webhooks: {
+            id: string;
+            url: string;
+            tenant: string;
+            events: string[];
+            status: string;
+            lastDelivery: Date;
+            successRate: string;
+        }[];
+    }>;
+    getBillingStats(): Promise<{
+        revenueStats: {
+            label: string;
+            value: string;
+            change: string;
+            period: string;
+        }[];
+        planDistribution: {
+            plan: string;
+            count: number;
+            revenue: string;
+            percentage: number;
+        }[];
+        recentTransactions: {
+            id: string;
+            tenant: string;
+            plan: PlanType;
+            amount: string;
+            status: SubscriptionStatus;
+            date: string;
+        }[];
+    }>;
+    getAlerts(): Promise<{
+        id: string;
+        type: string;
+        title: string;
+        description: string;
+        source: string;
+        time: string;
+        acknowledged: boolean;
     }[]>;
 }
 export {};

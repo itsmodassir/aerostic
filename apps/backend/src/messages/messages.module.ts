@@ -12,9 +12,18 @@ import { User } from '../users/entities/user.entity';
 import { MessagesGateway } from './messages.gateway';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Message, Conversation, WhatsappAccount, MetaToken, Contact, User])],
-    controllers: [MessagesController],
-    providers: [MessagesService, MessagesGateway],
-    exports: [MessagesService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Message,
+      Conversation,
+      WhatsappAccount,
+      MetaToken,
+      Contact,
+      User,
+    ]),
+  ],
+  controllers: [MessagesController],
+  providers: [MessagesService, MessagesGateway],
+  exports: [MessagesService],
 })
-export class MessagesModule { }
+export class MessagesModule {}

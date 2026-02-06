@@ -50,14 +50,19 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./entities/user.entity");
+const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const bcrypt = __importStar(require("bcrypt"));
 let UsersService = class UsersService {
     usersRepository;
-    constructor(usersRepository) {
+    tenantsRepository;
+    constructor(usersRepository, tenantsRepository) {
         this.usersRepository = usersRepository;
+        this.tenantsRepository = tenantsRepository;
     }
     async create(createUserDto) {
-        const existingUser = await this.usersRepository.findOneBy({ email: createUserDto.email });
+        const existingUser = await this.usersRepository.findOneBy({
+            email: createUserDto.email,
+        });
         if (existingUser) {
             throw new common_1.ConflictException('Email already exists');
         }
@@ -89,21 +94,52 @@ let UsersService = class UsersService {
             'vikram@example.com',
             'neha@example.com',
             'ravi@example.com',
-            'anjali@example.com'
+            'anjali@example.com',
         ];
         const result = await this.usersRepository
             .createQueryBuilder()
             .delete()
             .from(user_entity_1.User)
-            .where("email IN (:...emails)", { emails: mockEmails })
+            .where('email IN (:...emails)', { emails: mockEmails })
             .execute();
         return { deleted: result.affected || 0 };
+    }
+    async onModuleInit() {
+        const adminEmail = 'admin@aerostic.in';
+        const adminExists = await this.findOneByEmail(adminEmail);
+        if (!adminExists) {
+            console.log('Seeding Admin User...');
+            let tenant = await this.tenantsRepository.manager
+                .getRepository(tenant_entity_1.Tenant)
+                .findOneBy({ name: 'System' });
+            if (!tenant) {
+                console.log('Creating System Tenant...');
+                tenant = this.tenantsRepository.manager.getRepository(tenant_entity_1.Tenant).create({
+                    name: 'System',
+                    website: 'system.aerostic.in',
+                    plan: 'enterprise',
+                });
+                tenant = await this.tenantsRepository.manager
+                    .getRepository(tenant_entity_1.Tenant)
+                    .save(tenant);
+            }
+            await this.create({
+                email: adminEmail,
+                password: 'admin123',
+                name: 'System Admin',
+                tenantId: tenant.id,
+                role: user_entity_1.UserRole.ADMIN,
+            });
+            console.log('Admin User Seeded Successfully.');
+        }
     }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(tenant_entity_1.Tenant)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

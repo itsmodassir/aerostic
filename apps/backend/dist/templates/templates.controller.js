@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TemplatesController = void 0;
 const common_1 = require("@nestjs/common");
 const templates_service_1 = require("./templates.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const user_tenant_decorator_1 = require("../auth/decorators/user-tenant.decorator");
 let TemplatesController = class TemplatesController {
     templatesService;
     constructor(templatesService) {
@@ -23,27 +25,28 @@ let TemplatesController = class TemplatesController {
     findAll(tenantId) {
         return this.templatesService.findAll(tenantId);
     }
-    sync(body) {
-        return this.templatesService.sync(body.tenantId);
+    sync(tenantId) {
+        return this.templatesService.sync(tenantId);
     }
 };
 exports.TemplatesController = TemplatesController;
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], TemplatesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Post)('sync'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], TemplatesController.prototype, "sync", null);
 exports.TemplatesController = TemplatesController = __decorate([
     (0, common_1.Controller)('templates'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [templates_service_1.TemplatesService])
 ], TemplatesController);
 //# sourceMappingURL=templates.controller.js.map

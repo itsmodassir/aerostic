@@ -34,7 +34,7 @@ let CampaignProcessor = class CampaignProcessor extends bullmq_1.WorkerHost {
                 tenantId,
                 to,
                 type,
-                payload
+                payload,
             });
             await this.campaignRepo.increment({ id: campaignId }, 'sentCount', 1);
         }

@@ -18,10 +18,7 @@ let AiModule = class AiModule {
 exports.AiModule = AiModule;
 exports.AiModule = AiModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            typeorm_1.TypeOrmModule.forFeature([ai_agent_entity_1.AiAgent]),
-            messages_module_1.MessagesModule,
-        ],
+        imports: [typeorm_1.TypeOrmModule.forFeature([ai_agent_entity_1.AiAgent]), messages_module_1.MessagesModule],
         controllers: [ai_controller_1.AiController],
         providers: [ai_service_1.AiService],
         exports: [ai_service_1.AiService],

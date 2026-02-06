@@ -16,12 +16,15 @@ exports.MessagesController = void 0;
 const common_1 = require("@nestjs/common");
 const messages_service_1 = require("./messages.service");
 const send_message_dto_1 = require("./dto/send-message.dto");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const user_tenant_decorator_1 = require("../auth/decorators/user-tenant.decorator");
 let MessagesController = class MessagesController {
     messagesService;
     constructor(messagesService) {
         this.messagesService = messagesService;
     }
-    async sendMessage(dto) {
+    async sendMessage(tenantId, dto) {
+        dto.tenantId = tenantId;
         return this.messagesService.send(dto);
     }
     async getConversations(tenantId) {
@@ -34,21 +37,22 @@ let MessagesController = class MessagesController {
 exports.MessagesController = MessagesController;
 __decorate([
     (0, common_1.Post)('send'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [send_message_dto_1.SendMessageDto]),
+    __metadata("design:paramtypes", [String, send_message_dto_1.SendMessageDto]),
     __metadata("design:returntype", Promise)
 ], MessagesController.prototype, "sendMessage", null);
 __decorate([
     (0, common_1.Get)('conversations'),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], MessagesController.prototype, "getConversations", null);
 __decorate([
     (0, common_1.Get)('conversations/:id'),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
@@ -56,6 +60,7 @@ __decorate([
 ], MessagesController.prototype, "getConversationMessages", null);
 exports.MessagesController = MessagesController = __decorate([
     (0, common_1.Controller)('messages'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [messages_service_1.MessagesService])
 ], MessagesController);
 //# sourceMappingURL=messages.controller.js.map

@@ -68,4 +68,4 @@ import { CommonModule } from './common/common.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

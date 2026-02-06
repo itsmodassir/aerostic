@@ -3,7 +3,7 @@ import { SendMessageDto } from './dto/send-message.dto';
 export declare class MessagesController {
     private readonly messagesService;
     constructor(messagesService: MessagesService);
-    sendMessage(dto: SendMessageDto): Promise<{
+    sendMessage(tenantId: string, dto: SendMessageDto): Promise<{
         sent: boolean;
         metaId: any;
         messageId: string;

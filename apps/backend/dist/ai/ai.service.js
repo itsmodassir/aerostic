@@ -33,7 +33,7 @@ let AiService = class AiService {
         const apiKey = this.configService.get('GEMINI_API_KEY');
         if (apiKey) {
             this.genAI = new generative_ai_1.GoogleGenerativeAI(apiKey);
-            this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+            this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
         }
     }
     async process(tenantId, from, messageBody) {
@@ -44,7 +44,8 @@ let AiService = class AiService {
         }
         try {
             const agent = await this.aiAgentRepo.findOneBy({ tenantId });
-            const systemPrompt = agent?.systemPrompt || "You are a helpful and friendly customer support agent for Aerostic, a SaaS platform. Answer concisely.";
+            const systemPrompt = agent?.systemPrompt ||
+                'You are a helpful and friendly customer support agent for Aerostic, a SaaS platform. Answer concisely.';
             const isActive = agent ? agent.isActive : true;
             if (!isActive) {
                 console.log('AI Agent disabled for tenant');
@@ -66,7 +67,7 @@ Agent:`;
                 tenantId,
                 to: from,
                 type: 'text',
-                payload: { text: aiReply }
+                payload: { text: aiReply },
             });
         }
         catch (e) {

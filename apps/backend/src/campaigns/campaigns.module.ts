@@ -10,15 +10,15 @@ import { BullModule } from '@nestjs/bullmq';
 import { CampaignProcessor } from './campaigns.processor';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Campaign]),
-        BullModule.registerQueue({
-            name: 'campaign-queue',
-        }),
-        ContactsModule,
-        MessagesModule,
-    ],
-    controllers: [CampaignsController],
-    providers: [CampaignsService, CampaignProcessor],
+  imports: [
+    TypeOrmModule.forFeature([Campaign]),
+    BullModule.registerQueue({
+      name: 'campaign-queue',
+    }),
+    ContactsModule,
+    MessagesModule,
+  ],
+  controllers: [CampaignsController],
+  providers: [CampaignsService, CampaignProcessor],
 })
-export class CampaignsModule { }
+export class CampaignsModule {}

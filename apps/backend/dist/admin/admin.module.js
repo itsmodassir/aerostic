@@ -18,14 +18,29 @@ const message_entity_1 = require("../messages/entities/message.entity");
 const api_key_entity_1 = require("../billing/entities/api-key.entity");
 const subscription_entity_1 = require("../billing/entities/subscription.entity");
 const audit_module_1 = require("../audit/audit.module");
+const webhook_endpoint_entity_1 = require("../billing/entities/webhook-endpoint.entity");
+const conversation_entity_1 = require("../messages/entities/conversation.entity");
+const contact_entity_1 = require("../contacts/entities/contact.entity");
+const billing_module_1 = require("../billing/billing.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, whatsapp_account_entity_1.WhatsappAccount, system_config_entity_1.SystemConfig, message_entity_1.Message, api_key_entity_1.ApiKey, subscription_entity_1.Subscription]),
-            audit_module_1.AuditModule
+            typeorm_1.TypeOrmModule.forFeature([
+                tenant_entity_1.Tenant,
+                whatsapp_account_entity_1.WhatsappAccount,
+                system_config_entity_1.SystemConfig,
+                message_entity_1.Message,
+                api_key_entity_1.ApiKey,
+                subscription_entity_1.Subscription,
+                webhook_endpoint_entity_1.WebhookEndpoint,
+                conversation_entity_1.Conversation,
+                contact_entity_1.Contact,
+            ]),
+            audit_module_1.AuditModule,
+            billing_module_1.BillingModule,
         ],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],

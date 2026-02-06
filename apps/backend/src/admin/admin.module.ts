@@ -17,13 +17,23 @@ import { Contact } from '../contacts/entities/contact.entity';
 import { BillingModule } from '../billing/billing.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Tenant, WhatsappAccount, SystemConfig, Message, ApiKey, Subscription, WebhookEndpoint, Conversation, Contact]),
-        AuditModule,
-        BillingModule
-    ],
-    controllers: [AdminController],
-    providers: [AdminService],
-    exports: [AdminService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Tenant,
+      WhatsappAccount,
+      SystemConfig,
+      Message,
+      ApiKey,
+      Subscription,
+      WebhookEndpoint,
+      Conversation,
+      Contact,
+    ]),
+    AuditModule,
+    BillingModule,
+  ],
+  controllers: [AdminController],
+  providers: [AdminService],
+  exports: [AdminService],
 })
-export class AdminModule { }
+export class AdminModule {}

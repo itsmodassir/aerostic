@@ -6,12 +6,9 @@ import { AiAgent } from './entities/ai-agent.entity';
 import { AiController } from './ai.controller';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([AiAgent]),
-        MessagesModule,
-    ],
-    controllers: [AiController],
-    providers: [AiService],
-    exports: [AiService],
+  imports: [TypeOrmModule.forFeature([AiAgent]), MessagesModule],
+  controllers: [AiController],
+  providers: [AiService],
+  exports: [AiService],
 })
-export class AiModule { }
+export class AiModule {}

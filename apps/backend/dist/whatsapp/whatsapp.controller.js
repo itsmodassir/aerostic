@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WhatsappController = void 0;
 const common_1 = require("@nestjs/common");
 const whatsapp_service_1 = require("./whatsapp.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const user_tenant_decorator_1 = require("../auth/decorators/user-tenant.decorator");
 let WhatsappController = class WhatsappController {
     whatsappService;
     constructor(whatsappService) {
@@ -27,23 +29,26 @@ let WhatsappController = class WhatsappController {
     async getStatus(tenantId) {
         return this.whatsappService.getStatus(tenantId);
     }
+    async getPublicConfig() {
+        return this.whatsappService.getPublicConfig();
+    }
     async disconnect(tenantId) {
         return this.whatsappService.disconnect(tenantId);
     }
     async sendTest(tenantId, to) {
         return this.whatsappService.sendTestMessage(tenantId, to);
     }
-    async initCloudSignup(body) {
+    async initCloudSignup(tenantId, body) {
         return { status: 'otp_sent', phoneNumber: body.phoneNumber };
     }
-    async verifyCloudSignup(body) {
+    async verifyCloudSignup(tenantId, body) {
         return { status: 'connected', wabaId: 'new_waba_id' };
     }
 };
 exports.WhatsappController = WhatsappController;
 __decorate([
     (0, common_1.Get)('embedded/start'),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
@@ -51,21 +56,27 @@ __decorate([
 ], WhatsappController.prototype, "startEmbeddedSignup", null);
 __decorate([
     (0, common_1.Get)('status'),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "getStatus", null);
 __decorate([
+    (0, common_1.Get)('public-config'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WhatsappController.prototype, "getPublicConfig", null);
+__decorate([
     (0, common_1.Delete)(),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "disconnect", null);
 __decorate([
     (0, common_1.Post)('send-test'),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __param(1, (0, common_1.Body)('to')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
@@ -73,20 +84,23 @@ __decorate([
 ], WhatsappController.prototype, "sendTest", null);
 __decorate([
     (0, common_1.Post)('cloud/init'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "initCloudSignup", null);
 __decorate([
     (0, common_1.Post)('cloud/verify'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "verifyCloudSignup", null);
 exports.WhatsappController = WhatsappController = __decorate([
     (0, common_1.Controller)('whatsapp'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [whatsapp_service_1.WhatsappService])
 ], WhatsappController);
 //# sourceMappingURL=whatsapp.controller.js.map

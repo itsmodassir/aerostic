@@ -10,17 +10,12 @@ import { AutomationModule } from '../automation/automation.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            WhatsappAccount,
-            Contact,
-            Conversation,
-            Message,
-        ]),
-        AutomationModule,
-        AiModule,
-    ],
-    controllers: [WebhooksController],
-    providers: [WebhooksService],
+  imports: [
+    TypeOrmModule.forFeature([WhatsappAccount, Contact, Conversation, Message]),
+    AutomationModule,
+    AiModule,
+  ],
+  controllers: [WebhooksController],
+  providers: [WebhooksService],
 })
-export class WebhooksModule { }
+export class WebhooksModule {}

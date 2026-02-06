@@ -25,7 +25,7 @@ let ContactsService = class ContactsService {
     async create(createContactDto) {
         const existing = await this.contactsRepository.findOneBy({
             tenantId: createContactDto.tenantId,
-            phoneNumber: createContactDto.phoneNumber
+            phoneNumber: createContactDto.phoneNumber,
         });
         if (existing) {
             throw new common_1.ConflictException('Contact with this phone number already exists');
@@ -36,7 +36,7 @@ let ContactsService = class ContactsService {
     async findAll(tenantId) {
         return this.contactsRepository.find({
             where: { tenantId },
-            order: { name: 'ASC' }
+            order: { name: 'ASC' },
         });
     }
 };

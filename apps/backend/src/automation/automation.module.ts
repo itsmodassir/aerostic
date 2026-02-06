@@ -6,12 +6,9 @@ import { AutomationRule } from './entities/automation-rule.entity';
 import { MessagesModule } from '../messages/messages.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([AutomationRule]),
-        MessagesModule,
-    ],
-    controllers: [AutomationController],
-    providers: [AutomationService],
-    exports: [AutomationService],
+  imports: [TypeOrmModule.forFeature([AutomationRule]), MessagesModule],
+  controllers: [AutomationController],
+  providers: [AutomationService],
+  exports: [AutomationService],
 })
-export class AutomationModule { }
+export class AutomationModule {}

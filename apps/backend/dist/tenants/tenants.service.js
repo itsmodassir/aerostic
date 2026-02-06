@@ -33,6 +33,9 @@ let TenantsService = class TenantsService {
         }
         return tenant;
     }
+    async findByName(name) {
+        return this.tenantsRepository.findOneBy({ name });
+    }
     async findAll() {
         return this.tenantsRepository.find();
     }

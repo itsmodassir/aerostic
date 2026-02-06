@@ -18,10 +18,7 @@ let AutomationModule = class AutomationModule {
 exports.AutomationModule = AutomationModule;
 exports.AutomationModule = AutomationModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            typeorm_1.TypeOrmModule.forFeature([automation_rule_entity_1.AutomationRule]),
-            messages_module_1.MessagesModule,
-        ],
+        imports: [typeorm_1.TypeOrmModule.forFeature([automation_rule_entity_1.AutomationRule]), messages_module_1.MessagesModule],
         controllers: [automation_controller_1.AutomationController],
         providers: [automation_service_1.AutomationService],
         exports: [automation_service_1.AutomationService],

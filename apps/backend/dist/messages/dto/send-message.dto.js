@@ -19,7 +19,7 @@ class SendMessageDto {
 }
 exports.SendMessageDto = SendMessageDto;
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], SendMessageDto.prototype, "tenantId", void 0);

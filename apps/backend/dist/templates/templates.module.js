@@ -19,11 +19,7 @@ let TemplatesModule = class TemplatesModule {
 exports.TemplatesModule = TemplatesModule;
 exports.TemplatesModule = TemplatesModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            typeorm_1.TypeOrmModule.forFeature([template_entity_1.Template]),
-            meta_module_1.MetaModule,
-            whatsapp_module_1.WhatsappModule,
-        ],
+        imports: [typeorm_1.TypeOrmModule.forFeature([template_entity_1.Template]), meta_module_1.MetaModule, whatsapp_module_1.WhatsappModule],
         controllers: [templates_controller_1.TemplatesController],
         providers: [templates_service_1.TemplatesService],
         exports: [templates_service_1.TemplatesService],

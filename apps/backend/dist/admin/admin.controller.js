@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
+const admin_guard_1 = require("../common/guards/admin.guard");
 let AdminController = class AdminController {
     adminService;
     constructor(adminService) {
@@ -27,7 +28,7 @@ let AdminController = class AdminController {
         return this.adminService.getAllUsers();
     }
     async updateUserPlan(userId, dto) {
-        return this.adminService.updateUserPlan(userId, dto.plan);
+        return this.adminService.updateUserPlan(userId, dto.plan, dto.status);
     }
     async getAllAccounts() {
         return this.adminService.getAllAccounts();
@@ -65,6 +66,18 @@ let AdminController = class AdminController {
     }
     async getApiKeys() {
         return this.adminService.getAllApiKeys();
+    }
+    async getMessages(page = 1, limit = 20, search) {
+        return this.adminService.getAllMessages(page, limit, search);
+    }
+    async getWebhooks() {
+        return this.adminService.getAllWebhooks();
+    }
+    async getBillingStats() {
+        return this.adminService.getBillingStats();
+    }
+    async getAlerts() {
+        return this.adminService.getSystemAlerts();
     }
 };
 exports.AdminController = AdminController;
@@ -151,8 +164,36 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getApiKeys", null);
+__decorate([
+    (0, common_1.Get)('messages'),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('search')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getMessages", null);
+__decorate([
+    (0, common_1.Get)('webhooks'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getWebhooks", null);
+__decorate([
+    (0, common_1.Get)('billing/stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getBillingStats", null);
+__decorate([
+    (0, common_1.Get)('alerts'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getAlerts", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __metadata("design:paramtypes", [admin_service_1.AdminService])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map

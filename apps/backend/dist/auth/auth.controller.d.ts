@@ -19,6 +19,13 @@ export declare class AuthController {
     constructor(authService: AuthService, usersService: UsersService, tenantsService: TenantsService);
     login(loginDto: LoginDto): Promise<{
         access_token: string;
+        user: {
+            id: any;
+            email: any;
+            name: any;
+            role: any;
+            tenantId: any;
+        };
     }>;
     register(registerDto: RegisterDto): Promise<{
         id: string;

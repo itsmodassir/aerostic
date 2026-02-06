@@ -1,5 +1,5 @@
 export declare class CreateContactDto {
-    tenantId: string;
+    tenantId?: string;
     phoneNumber: string;
     name: string;
     email?: string;

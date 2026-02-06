@@ -25,25 +25,33 @@ const contact_entity_1 = require("../contacts/entities/contact.entity");
 const conversation_entity_1 = require("./entities/conversation.entity");
 const meta_token_entity_1 = require("../meta/entities/meta-token.entity");
 const axios_1 = __importDefault(require("axios"));
+const messages_gateway_1 = require("./messages.gateway");
 let MessagesService = class MessagesService {
     whatsappAccountRepo;
     messageRepo;
     metaTokenRepo;
     contactRepo;
     conversationRepo;
-    constructor(whatsappAccountRepo, messageRepo, metaTokenRepo, contactRepo, conversationRepo) {
+    messagesGateway;
+    constructor(whatsappAccountRepo, messageRepo, metaTokenRepo, contactRepo, conversationRepo, messagesGateway) {
         this.whatsappAccountRepo = whatsappAccountRepo;
         this.messageRepo = messageRepo;
         this.metaTokenRepo = metaTokenRepo;
         this.contactRepo = contactRepo;
         this.conversationRepo = conversationRepo;
+        this.messagesGateway = messagesGateway;
     }
     async send(dto) {
-        const account = await this.whatsappAccountRepo.findOneBy({ tenantId: dto.tenantId });
+        const account = await this.whatsappAccountRepo.findOneBy({
+            tenantId: dto.tenantId,
+        });
         if (!account) {
             throw new common_1.NotFoundException('WhatsApp account not found for this tenant');
         }
-        let contact = await this.contactRepo.findOneBy({ tenantId: dto.tenantId, phoneNumber: dto.to });
+        let contact = await this.contactRepo.findOneBy({
+            tenantId: dto.tenantId,
+            phoneNumber: dto.to,
+        });
         if (!contact) {
             contact = this.contactRepo.create({
                 tenantId: dto.tenantId,
@@ -53,7 +61,7 @@ let MessagesService = class MessagesService {
             await this.contactRepo.save(contact);
         }
         let conversation = await this.conversationRepo.findOne({
-            where: { tenantId: dto.tenantId, contactId: contact.id, status: 'open' }
+            where: { tenantId: dto.tenantId, contactId: contact.id, status: 'open' },
         });
         if (!conversation) {
             conversation = this.conversationRepo.create({
@@ -61,7 +69,7 @@ let MessagesService = class MessagesService {
                 contactId: contact.id,
                 phoneNumberId: account.phoneNumberId,
                 status: 'open',
-                lastMessageAt: new Date()
+                lastMessageAt: new Date(),
             });
             await this.conversationRepo.save(conversation);
         }
@@ -71,14 +79,14 @@ let MessagesService = class MessagesService {
         }
         const tokenRecord = await this.metaTokenRepo.findOne({
             where: { tokenType: 'system' },
-            order: { createdAt: 'DESC' }
+            order: { createdAt: 'DESC' },
         });
         if (!tokenRecord) {
             throw new common_1.InternalServerErrorException('System token configuration missing');
         }
         const token = tokenRecord.encryptedToken;
         const url = `https://graph.facebook.com/v18.0/${account.phoneNumberId}/messages`;
-        let body = {
+        const body = {
             messaging_product: 'whatsapp',
             to: dto.to,
             type: dto.type,
@@ -107,6 +115,15 @@ let MessagesService = class MessagesService {
                 status: 'sent',
             });
             await this.messageRepo.save(message);
+            this.messagesGateway.emitNewMessage(dto.tenantId || '', {
+                conversationId: conversation.id,
+                contactId: contact.id,
+                phone: dto.to,
+                direction: 'out',
+                type: dto.type,
+                content: dto.type === 'text' ? { body: dto.payload.text } : dto.payload,
+                timestamp: new Date(),
+            });
             return { sent: true, metaId, messageId: message.id };
         }
         catch (error) {
@@ -118,13 +135,13 @@ let MessagesService = class MessagesService {
         return this.conversationRepo.find({
             where: { tenantId, status: 'open' },
             relations: ['contact'],
-            order: { lastMessageAt: 'DESC' }
+            order: { lastMessageAt: 'DESC' },
         });
     }
     async getMessages(tenantId, conversationId) {
         return this.messageRepo.find({
             where: { tenantId, conversationId },
-            order: { createdAt: 'ASC' }
+            order: { createdAt: 'ASC' },
         });
     }
     async cleanupMockData() {
@@ -132,26 +149,26 @@ let MessagesService = class MessagesService {
             'Vikram Singh',
             'Neha Gupta',
             'Ravi Mehta',
-            'Anjali Sharma'
+            'Anjali Sharma',
         ];
         const contacts = await this.contactRepo
             .createQueryBuilder('contact')
-            .where("contact.name IN (:...names)", { names: mockNames })
+            .where('contact.name IN (:...names)', { names: mockNames })
             .getMany();
         if (contacts.length === 0)
             return { deleted: 0 };
-        const contactIds = contacts.map(c => c.id);
+        const contactIds = contacts.map((c) => c.id);
         await this.conversationRepo
             .createQueryBuilder()
             .delete()
             .from(conversation_entity_1.Conversation)
-            .where("contactId IN (:...ids)", { ids: contactIds })
+            .where('contactId IN (:...ids)', { ids: contactIds })
             .execute();
         const result = await this.contactRepo
             .createQueryBuilder()
             .delete()
             .from(contact_entity_1.Contact)
-            .where("id IN (:...ids)", { ids: contactIds })
+            .where('id IN (:...ids)', { ids: contactIds })
             .execute();
         return { deleted: result.affected || 0 };
     }
@@ -168,6 +185,7 @@ exports.MessagesService = MessagesService = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        messages_gateway_1.MessagesGateway])
 ], MessagesService);
 //# sourceMappingURL=messages.service.js.map

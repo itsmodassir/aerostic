@@ -20,9 +20,9 @@ export default function AdminLoginPage() {
         try {
             const res = await api.post('/auth/login', { email, password });
 
-            // Check if user is admin
             const user = res.data.user;
-            if (user.role !== 'admin') {
+            // Check if user is admin or super_admin
+            if (user.role !== 'admin' && user.role !== 'super_admin') {
                 setError('Access denied. This area is for administrators only.');
                 setLoading(false);
                 return;
@@ -30,8 +30,8 @@ export default function AdminLoginPage() {
 
             localStorage.setItem('token', res.data.access_token);
             localStorage.setItem('user', JSON.stringify(user));
-            // Redirect to admin root (which is rewritten to admin folder)
-            router.push('/');
+            // Redirect to admin dashboard
+            router.push('/admin');
         } catch (err: any) {
             setError('Invalid admin credentials');
         } finally {

@@ -1,5 +1,5 @@
 export declare class SendMessageDto {
-    tenantId: string;
+    tenantId?: string;
     to: string;
     type: string;
     payload: any;

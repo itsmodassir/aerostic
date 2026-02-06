@@ -15,46 +15,50 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CampaignsController = void 0;
 const common_1 = require("@nestjs/common");
 const campaigns_service_1 = require("./campaigns.service");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const user_tenant_decorator_1 = require("../auth/decorators/user-tenant.decorator");
 let CampaignsController = class CampaignsController {
     campaignsService;
     constructor(campaignsService) {
         this.campaignsService = campaignsService;
     }
-    create(body) {
-        return this.campaignsService.create(body.tenantId, body.name);
+    create(tenantId, body) {
+        return this.campaignsService.create(tenantId, body.name);
     }
     findAll(tenantId) {
         return this.campaignsService.findAll(tenantId);
     }
-    send(id, body) {
-        return this.campaignsService.dispatch(body.tenantId, id);
+    send(tenantId, id) {
+        return this.campaignsService.dispatch(tenantId, id);
     }
 };
 exports.CampaignsController = CampaignsController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], CampaignsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('tenantId')),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], CampaignsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Post)(':id/send'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, user_tenant_decorator_1.UserTenant)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], CampaignsController.prototype, "send", null);
 exports.CampaignsController = CampaignsController = __decorate([
     (0, common_1.Controller)('campaigns'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [campaigns_service_1.CampaignsService])
 ], CampaignsController);
 //# sourceMappingURL=campaigns.controller.js.map

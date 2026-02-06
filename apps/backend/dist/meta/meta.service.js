@@ -24,29 +24,46 @@ const typeorm_2 = require("typeorm");
 const meta_token_entity_1 = require("./entities/meta-token.entity");
 const whatsapp_account_entity_1 = require("../whatsapp/entities/whatsapp-account.entity");
 const system_config_entity_1 = require("../admin/entities/system-config.entity");
+const redis_service_1 = require("../common/redis.service");
 let MetaService = class MetaService {
     configService;
     metaTokenRepo;
     whatsappAccountRepo;
     configRepo;
-    constructor(configService, metaTokenRepo, whatsappAccountRepo, configRepo) {
+    redisService;
+    constructor(configService, metaTokenRepo, whatsappAccountRepo, configRepo, redisService) {
         this.configService = configService;
         this.metaTokenRepo = metaTokenRepo;
         this.whatsappAccountRepo = whatsappAccountRepo;
         this.configRepo = configRepo;
+        this.redisService = redisService;
     }
-    async handleOAuthCallback(code, tenantId) {
+    async handleOAuthCallback(code, tenantId, providedWabaId, providedPhoneNumberId) {
         const dbConfigs = await this.configRepo.find({
             where: [
                 { key: 'meta.app_id' },
                 { key: 'meta.app_secret' },
-                { key: 'meta.redirect_uri' }
-            ]
+                { key: 'meta.redirect_uri' },
+            ],
         });
-        const appId = dbConfigs.find(c => c.key === 'meta.app_id')?.value || this.configService.get('META_APP_ID');
-        const appSecret = dbConfigs.find(c => c.key === 'meta.app_secret')?.value || this.configService.get('META_APP_SECRET');
-        const redirectUri = 'http://localhost:3000/meta/callback';
-        const tokenRes = await axios_1.default.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+        const appId = dbConfigs.find((c) => c.key === 'meta.app_id')?.value ||
+            this.configService.get('META_APP_ID') ||
+            '';
+        const appSecret = dbConfigs.find((c) => c.key === 'meta.app_secret')?.value ||
+            this.configService.get('META_APP_SECRET') ||
+            '';
+        let redirectUri = dbConfigs.find((c) => c.key === 'meta.redirect_uri')?.value ||
+            this.configService.get('META_REDIRECT_URI') ||
+            'https://api.aerostic.com/meta/callback';
+        if (redirectUri.includes('localhost') &&
+            process.env.NODE_ENV === 'production') {
+            redirectUri = 'https://api.aerostic.com/meta/callback';
+        }
+        console.log('--- OAuth Debug (v22.0) ---');
+        console.log('App ID:', appId);
+        console.log('Redirect URI:', redirectUri);
+        console.log('-------------------');
+        const tokenRes = await axios_1.default.get('https://graph.facebook.com/v22.0/oauth/access_token', {
             params: {
                 client_id: appId,
                 client_secret: appSecret,
@@ -54,69 +71,40 @@ let MetaService = class MetaService {
                 code,
             },
         });
-        const accessToken = tokenRes.data.access_token;
-        await this.metaTokenRepo.save({
-            tokenType: 'system',
-            encryptedToken: accessToken,
-            expiresAt: new Date(Date.now() + tokenRes.data.expires_in * 1000),
+        const shortToken = tokenRes.data.access_token;
+        const longTokenData = await this.exchangeForLongLivedToken(shortToken, appId, appSecret);
+        const accessToken = longTokenData.access_token;
+        const expiresAt = new Date(Date.now() + (longTokenData.expires_in || 5184000) * 1000);
+        const meRes = await axios_1.default.get('https://graph.facebook.com/v22.0/me', {
+            params: {
+                fields: 'whatsapp_business_accounts',
+                access_token: accessToken,
+            },
         });
-        let businessId = null;
-        try {
-            const businesses = await axios_1.default.get('https://graph.facebook.com/v18.0/me/businesses', {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-            businessId = businesses.data.data?.[0]?.id;
-        }
-        catch (e) {
-            console.warn('Could not fetch Business ID (likely permission issue), attempting to fetch WABAs directly...');
-        }
-        let wabas;
-        try {
-            const endpoint = businessId
-                ? `https://graph.facebook.com/v18.0/${businessId}/owned_whatsapp_business_accounts`
-                : `https://graph.facebook.com/v18.0/me/owned_whatsapp_business_accounts`;
-            wabas = await axios_1.default.get(endpoint, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-        }
-        catch (error) {
-            const endpoint = businessId
-                ? `https://graph.facebook.com/v18.0/${businessId}/client_whatsapp_business_accounts`
-                : `https://graph.facebook.com/v18.0/me/client_whatsapp_business_accounts`;
-            wabas = await axios_1.default.get(endpoint, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-        }
-        let wabaId = wabas.data.data?.[0]?.id;
+        const waba = meRes.data.whatsapp_business_accounts?.data?.[0];
+        const wabaId = providedWabaId || waba?.id;
         if (!wabaId) {
-            console.log('No owned WABA found in primary attempt, checking client WABAs explicitly...');
-            try {
-                const endpoint = businessId
-                    ? `https://graph.facebook.com/v18.0/${businessId}/client_whatsapp_business_accounts`
-                    : `https://graph.facebook.com/v18.0/me/client_whatsapp_business_accounts`;
-                wabas = await axios_1.default.get(endpoint, {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                });
-                wabaId = wabas.data.data?.[0]?.id;
-            }
-            catch (e) {
-                console.warn('Client WABA fetch also failed');
-            }
+            console.error('Meta Response (me):', JSON.stringify(meRes.data));
+            throw new common_1.BadRequestException('No WhatsApp Business Account (WABA) found. Please ensure you selected a WABA in the popup.');
         }
-        if (!wabaId) {
-            console.error('Meta Response (WABAs):', JSON.stringify(wabas?.data || {}));
-            throw new common_1.BadRequestException('No WhatsApp Business Account (WABA) found. Ensure you selected a WABA in the popup.');
-        }
-        const numbers = await axios_1.default.get(`https://graph.facebook.com/v18.0/${wabaId}/phone_numbers`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
+        const phoneRes = await axios_1.default.get(`https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`, {
+            params: { access_token: accessToken },
         });
-        const phoneNumberId = numbers.data.data?.[0]?.id;
-        const displayPhoneNumber = numbers.data.data?.[0]?.display_phone_number;
-        const existing = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
+        const numberData = phoneRes.data.data?.[0];
+        const phoneNumberId = providedPhoneNumberId || numberData?.id;
+        const displayPhoneNumber = numberData?.display_phone_number;
+        if (!phoneNumberId) {
+            throw new common_1.BadRequestException('No Phone Number ID found for this account.');
+        }
+        const existing = await this.whatsappAccountRepo.findOneBy({
+            phoneNumberId,
+        });
         if (existing) {
             existing.tenantId = tenantId;
             existing.wabaId = wabaId;
             existing.displayPhoneNumber = displayPhoneNumber;
+            existing.accessToken = accessToken;
+            existing.tokenExpiresAt = expiresAt;
             existing.status = 'connected';
             await this.whatsappAccountRepo.save(existing);
         }
@@ -126,24 +114,44 @@ let MetaService = class MetaService {
                 wabaId,
                 phoneNumberId,
                 displayPhoneNumber,
+                accessToken,
+                tokenExpiresAt: expiresAt,
                 mode: 'coexistence',
                 status: 'connected',
             });
         }
+        await this.redisService.del(`whatsapp:token:${tenantId}`);
         return { success: true };
     }
     async getTemplates(wabaId, accessToken) {
         try {
-            const url = `https://graph.facebook.com/v18.0/${wabaId}/message_templates`;
+            const url = `https://graph.facebook.com/v22.0/${wabaId}/message_templates`;
             const { data } = await axios_1.default.get(url, {
                 headers: { Authorization: `Bearer ${accessToken}` },
-                params: { limit: 100 }
+                params: { limit: 100 },
             });
             return data.data;
         }
         catch (error) {
             console.error('Failed to fetch templates from Meta', error.response?.data || error.message);
             return [];
+        }
+    }
+    async exchangeForLongLivedToken(shortToken, appId, appSecret) {
+        try {
+            const response = await axios_1.default.get('https://graph.facebook.com/v22.0/oauth/access_token', {
+                params: {
+                    grant_type: 'fb_exchange_token',
+                    client_id: appId,
+                    client_secret: appSecret,
+                    fb_exchange_token: shortToken,
+                },
+            });
+            return response.data;
+        }
+        catch (error) {
+            console.error('Failed to exchange long-lived token:', error.response?.data || error.message);
+            throw new common_1.BadRequestException('Failed to exchange long-lived token');
         }
     }
 };
@@ -156,6 +164,7 @@ exports.MetaService = MetaService = __decorate([
     __metadata("design:paramtypes", [config_1.ConfigService,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        redis_service_1.RedisService])
 ], MetaService);
 //# sourceMappingURL=meta.service.js.map

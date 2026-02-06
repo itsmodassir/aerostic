@@ -19,14 +19,20 @@ const typeorm_2 = require("typeorm");
 const message_entity_1 = require("../messages/entities/message.entity");
 const campaign_entity_1 = require("../campaigns/entities/campaign.entity");
 const contact_entity_1 = require("../contacts/entities/contact.entity");
+const ai_agent_entity_1 = require("../ai/entities/ai-agent.entity");
+const usage_metric_entity_1 = require("../billing/entities/usage-metric.entity");
 let AnalyticsService = class AnalyticsService {
     messageRepo;
     campaignRepo;
     contactRepo;
-    constructor(messageRepo, campaignRepo, contactRepo) {
+    aiAgentRepo;
+    usageRepo;
+    constructor(messageRepo, campaignRepo, contactRepo, aiAgentRepo, usageRepo) {
         this.messageRepo = messageRepo;
         this.campaignRepo = campaignRepo;
         this.contactRepo = contactRepo;
+        this.aiAgentRepo = aiAgentRepo;
+        this.usageRepo = usageRepo;
     }
     async getOverview(tenantId) {
         const [totalSent, totalReceived] = await Promise.all([
@@ -34,33 +40,40 @@ let AnalyticsService = class AnalyticsService {
             this.messageRepo.count({ where: { tenantId, direction: 'in' } }),
         ]);
         const totalContacts = await this.contactRepo.count({ where: { tenantId } });
+        const totalAgents = await this.aiAgentRepo.count({ where: { tenantId } });
+        const aiCreditsResult = await this.usageRepo.findOne({
+            where: { tenantId, metric: 'ai_credits' },
+            order: { periodStart: 'DESC' },
+        });
         const campaigns = await this.campaignRepo.find({
             where: { tenantId },
             order: { createdAt: 'DESC' },
-            take: 5
+            take: 5,
         });
         const recentMessages = await this.messageRepo.find({
             where: { tenantId },
             order: { createdAt: 'DESC' },
             take: 5,
-            relations: ['conversation', 'conversation.contact']
+            relations: ['conversation', 'conversation.contact'],
         });
         return {
             stats: {
                 totalSent,
                 totalReceived,
                 totalContacts,
-                activeCampaigns: campaigns.filter(c => c.status === 'sending').length
+                totalAgents,
+                aiCreditsUsed: aiCreditsResult?.value || 0,
+                activeCampaigns: campaigns.filter((c) => c.status === 'sending').length,
             },
             recentCampaigns: campaigns,
-            recentMessages: recentMessages.map(m => ({
+            recentMessages: recentMessages.map((m) => ({
                 id: m.id,
                 type: m.type,
                 direction: m.direction,
                 status: m.status,
                 createdAt: m.createdAt,
-                contactName: m.conversation?.contact?.name || 'Unknown'
-            }))
+                contactName: m.conversation?.contact?.name || 'Unknown',
+            })),
         };
     }
 };
@@ -70,7 +83,11 @@ exports.AnalyticsService = AnalyticsService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(message_entity_1.Message)),
     __param(1, (0, typeorm_1.InjectRepository)(campaign_entity_1.Campaign)),
     __param(2, (0, typeorm_1.InjectRepository)(contact_entity_1.Contact)),
+    __param(3, (0, typeorm_1.InjectRepository)(ai_agent_entity_1.AiAgent)),
+    __param(4, (0, typeorm_1.InjectRepository)(usage_metric_entity_1.UsageMetric)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], AnalyticsService);

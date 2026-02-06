@@ -7,16 +7,16 @@ import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-    constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
-    // Usually protected by Super Admin guard
-    @Post()
-    create(@Body() createUserDto: CreateUserDto) {
-        return this.usersService.create(createUserDto);
-    }
+  // Usually protected by Super Admin guard
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
 
-    @Get()
-    findAll(@UserTenant() tenantId: string) {
-        return this.usersService.findAllByTenant(tenantId);
-    }
+  @Get()
+  findAll(@UserTenant() tenantId: string) {
+    return this.usersService.findAllByTenant(tenantId);
+  }
 }

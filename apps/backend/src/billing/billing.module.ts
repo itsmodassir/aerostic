@@ -9,17 +9,16 @@ import { BillingService } from './billing.service';
 import { BillingController } from './billing.controller';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            UsageMetric,
-            Subscription,
-            ApiKey,
-            WebhookEndpoint,
-        ]),
-    ],
-    controllers: [BillingController],
-    providers: [RazorpayService, BillingService],
-    exports: [RazorpayService, BillingService],
+  imports: [
+    TypeOrmModule.forFeature([
+      UsageMetric,
+      Subscription,
+      ApiKey,
+      WebhookEndpoint,
+    ]),
+  ],
+  controllers: [BillingController],
+  providers: [RazorpayService, BillingService],
+  exports: [RazorpayService, BillingService],
 })
-export class BillingModule { }
-
+export class BillingModule {}

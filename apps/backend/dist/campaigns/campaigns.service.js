@@ -41,17 +41,23 @@ let CampaignsService = class CampaignsService {
         return this.campaignRepo.save(campaign);
     }
     async findAll(tenantId) {
-        return this.campaignRepo.find({ where: { tenantId }, order: { createdAt: 'DESC' } });
+        return this.campaignRepo.find({
+            where: { tenantId },
+            order: { createdAt: 'DESC' },
+        });
     }
     async dispatch(tenantId, campaignId) {
-        const campaign = await this.campaignRepo.findOneBy({ id: campaignId, tenantId });
+        const campaign = await this.campaignRepo.findOneBy({
+            id: campaignId,
+            tenantId,
+        });
         if (!campaign)
             throw new Error('Campaign not found');
         const contacts = await this.contactsService.findAll(tenantId);
         campaign.totalContacts = contacts.length;
         campaign.status = 'sending';
         await this.campaignRepo.save(campaign);
-        const jobs = contacts.map(contact => ({
+        const jobs = contacts.map((contact) => ({
             name: 'send-message',
             data: {
                 tenantId,
@@ -60,9 +66,9 @@ let CampaignsService = class CampaignsService {
                 type: 'template',
                 payload: {
                     name: 'hello_world',
-                    language: { code: 'en_US' }
-                }
-            }
+                    language: { code: 'en_US' },
+                },
+            },
         }));
         await this.campaignQueue.addBulk(jobs);
         return campaign;

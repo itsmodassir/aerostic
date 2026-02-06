@@ -7,16 +7,19 @@ import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 @Controller('contacts')
 @UseGuards(JwtAuthGuard)
 export class ContactsController {
-    constructor(private readonly contactsService: ContactsService) { }
+  constructor(private readonly contactsService: ContactsService) {}
 
-    @Post()
-    create(@UserTenant() tenantId: string, @Body() createContactDto: CreateContactDto) {
-        createContactDto.tenantId = tenantId;
-        return this.contactsService.create(createContactDto);
-    }
+  @Post()
+  create(
+    @UserTenant() tenantId: string,
+    @Body() createContactDto: CreateContactDto,
+  ) {
+    createContactDto.tenantId = tenantId;
+    return this.contactsService.create(createContactDto);
+  }
 
-    @Get()
-    findAll(@UserTenant() tenantId: string) {
-        return this.contactsService.findAll(tenantId);
-    }
+  @Get()
+  findAll(@UserTenant() tenantId: string) {
+    return this.contactsService.findAll(tenantId);
+  }
 }

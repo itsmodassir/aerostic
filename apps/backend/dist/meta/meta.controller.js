@@ -20,8 +20,8 @@ let MetaController = class MetaController {
     constructor(metaService) {
         this.metaService = metaService;
     }
-    async metaCallback(code, tenantId) {
-        await this.metaService.handleOAuthCallback(code, tenantId);
+    async metaCallback(code, tenantId, wabaId, phoneNumberId) {
+        await this.metaService.handleOAuthCallback(code, tenantId, wabaId, phoneNumberId);
         return { success: true, message: 'WhatsApp Connected Successfully' };
     }
 };
@@ -30,8 +30,10 @@ __decorate([
     (0, common_1.Get)('callback'),
     __param(0, (0, common_1.Query)('code')),
     __param(1, (0, common_1.Query)('state')),
+    __param(2, (0, common_1.Query)('wabaId')),
+    __param(3, (0, common_1.Query)('phoneNumberId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MetaController.prototype, "metaCallback", null);
 exports.MetaController = MetaController = __decorate([

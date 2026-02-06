@@ -7,13 +7,11 @@ export declare class AiController {
         systemPrompt: string;
         active: boolean;
     }>;
-    saveAgent(body: {
-        tenantId: string;
+    saveAgent(tenantId: string, body: {
         systemPrompt: string;
         active: boolean;
     }): Promise<AiAgent>;
-    respond(body: {
-        tenantId: string;
+    respond(tenantId: string, body: {
         conversationId: string;
         message: string;
     }): Promise<{

@@ -86,7 +86,9 @@ let AuthController = class AuthController {
             return userWithoutPassword;
         }
         catch (error) {
-            if (error.message?.includes('already exists')) {
+            console.error('Registration error details:', error);
+            if (error.message?.includes('already exists') ||
+                error.message?.includes('duplicate key')) {
                 throw new common_1.BadRequestException('Email already registered');
             }
             throw error;

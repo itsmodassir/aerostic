@@ -19,7 +19,7 @@ class CreateContactDto {
 }
 exports.CreateContactDto = CreateContactDto;
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateContactDto.prototype, "tenantId", void 0);

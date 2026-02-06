@@ -55,17 +55,49 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async validateUser(email, pass) {
+        console.log(`[AuthDebug] Attempting login for: ${email}`);
         const user = await this.usersService.findOneByEmail(email);
-        if (user && (await bcrypt.compare(pass, user.passwordHash))) {
-            const { passwordHash, ...result } = user;
-            return result;
+        if (!user) {
+            console.log('[AuthDebug] User not found in DB');
+            return null;
+        }
+        console.log(`[AuthDebug] User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`);
+        const isMatch = await bcrypt.compare(pass, user.passwordHash);
+        console.log(`[AuthDebug] Password match: ${isMatch}`);
+        if (isMatch) {
+            const plainUser = {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                tenantId: user.tenantId,
+            };
+            console.log('[AuthDebug] Returning plain user object:', JSON.stringify(plainUser));
+            return plainUser;
         }
         return null;
     }
     async login(user) {
-        const payload = { email: user.email, sub: user.id, tenantId: user.tenantId, role: user.role };
+        console.log('[AuthDebug] Login method called with user:', JSON.stringify(user, null, 2));
+        if (!user || !user.email) {
+            console.error('[AuthDebug] User object is invalid:', user);
+            throw new Error('Invalid user object');
+        }
+        const payload = {
+            email: user.email,
+            sub: user.id,
+            tenantId: user.tenantId,
+            role: user.role,
+        };
         return {
             access_token: this.jwtService.sign(payload),
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                tenantId: user.tenantId,
+            },
         };
     }
 };

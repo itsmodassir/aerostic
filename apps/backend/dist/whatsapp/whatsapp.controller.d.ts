@@ -17,20 +17,22 @@ export declare class WhatsappController {
         wabaId: string;
         qualityRating: string;
     }>;
+    getPublicConfig(): Promise<{
+        appId: string | undefined;
+        configId: string | undefined;
+    }>;
     disconnect(tenantId: string): Promise<import("typeorm").DeleteResult>;
     sendTest(tenantId: string, to: string): Promise<{
         success: boolean;
-        messageId: any;
+        message: string;
     }>;
-    initCloudSignup(body: {
-        tenantId: string;
+    initCloudSignup(tenantId: string, body: {
         phoneNumber: string;
     }): Promise<{
         status: string;
         phoneNumber: string;
     }>;
-    verifyCloudSignup(body: {
-        tenantId: string;
+    verifyCloudSignup(tenantId: string, body: {
         otp: string;
     }): Promise<{
         status: string;

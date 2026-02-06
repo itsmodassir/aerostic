@@ -43,7 +43,7 @@ let TemplatesService = class TemplatesService {
             language: t.language,
             status: t.status,
             category: t.category,
-            components: t.components
+            components: t.components,
         }));
         await this.templateRepo.delete({ tenantId });
         return this.templateRepo.save(entities);

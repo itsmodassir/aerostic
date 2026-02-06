@@ -5,11 +5,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
 export class AnalyticsController {
-    constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
-    @Get('overview')
-    getOverview(@Req() req: any) {
-        const tenantId = req.user.tenantId;
-        return this.analyticsService.getOverview(tenantId);
-    }
+  @Get('overview')
+  getOverview(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    return this.analyticsService.getOverview(tenantId);
+  }
 }

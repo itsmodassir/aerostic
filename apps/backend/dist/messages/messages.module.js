@@ -17,14 +17,24 @@ const meta_token_entity_1 = require("../meta/entities/meta-token.entity");
 const conversation_entity_1 = require("./entities/conversation.entity");
 const contact_entity_1 = require("../contacts/entities/contact.entity");
 const user_entity_1 = require("../users/entities/user.entity");
+const messages_gateway_1 = require("./messages.gateway");
 let MessagesModule = class MessagesModule {
 };
 exports.MessagesModule = MessagesModule;
 exports.MessagesModule = MessagesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([message_entity_1.Message, conversation_entity_1.Conversation, whatsapp_account_entity_1.WhatsappAccount, meta_token_entity_1.MetaToken, contact_entity_1.Contact, user_entity_1.User])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                message_entity_1.Message,
+                conversation_entity_1.Conversation,
+                whatsapp_account_entity_1.WhatsappAccount,
+                meta_token_entity_1.MetaToken,
+                contact_entity_1.Contact,
+                user_entity_1.User,
+            ]),
+        ],
         controllers: [messages_controller_1.MessagesController],
-        providers: [messages_service_1.MessagesService],
+        providers: [messages_service_1.MessagesService, messages_gateway_1.MessagesGateway],
         exports: [messages_service_1.MessagesService],
     })
 ], MessagesModule);

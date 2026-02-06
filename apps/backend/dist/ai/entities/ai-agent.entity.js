@@ -72,7 +72,11 @@ __decorate([
     __metadata("design:type", String)
 ], AiAgent.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'enum', enum: AgentType, default: AgentType.CUSTOMER_SUPPORT }),
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: AgentType,
+        default: AgentType.CUSTOMER_SUPPORT,
+    }),
     __metadata("design:type", String)
 ], AiAgent.prototype, "type", void 0);
 __decorate([
@@ -88,7 +92,13 @@ __decorate([
     __metadata("design:type", String)
 ], AiAgent.prototype, "fallbackMessage", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'confidence_threshold', type: 'decimal', precision: 3, scale: 2, default: 0.7 }),
+    (0, typeorm_1.Column)({
+        name: 'confidence_threshold',
+        type: 'decimal',
+        precision: 3,
+        scale: 2,
+        default: 0.7,
+    }),
     __metadata("design:type", Number)
 ], AiAgent.prototype, "confidenceThreshold", void 0);
 __decorate([
