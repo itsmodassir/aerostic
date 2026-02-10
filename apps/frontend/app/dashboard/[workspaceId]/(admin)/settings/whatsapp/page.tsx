@@ -30,7 +30,12 @@ export default function WhatsappSettingsPage() {
     const [sendingTest, setSendingTest] = useState(false);
 
     // Meta Config
-    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string } | null>(null);
+    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string } | null>(
+        typeof window !== 'undefined' && process.env.NEXT_PUBLIC_META_APP_ID ? {
+            appId: process.env.NEXT_PUBLIC_META_APP_ID,
+            configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || ''
+        } : null
+    );
     const [embeddedIds, setEmbeddedIds] = useState<{ phoneNumberId: string, wabaId: string } | null>(null);
 
     const params = useParams();
