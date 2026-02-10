@@ -126,7 +126,6 @@ export class UsersService {
           role: TenantRole.OWNER,
         }),
       );
-      console.log('Admin User Seeded successfully with Owner role.');
     }
 
     // Seed Demo User (md@modassir.info)
