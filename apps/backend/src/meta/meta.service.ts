@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +11,7 @@ import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class MetaService {
+  private readonly logger = new Logger(MetaService.name);
   constructor(
     private configService: ConfigService,
     @InjectRepository(MetaToken)
@@ -49,10 +50,10 @@ export class MetaService {
 
     const redirectUri = 'https://app.aerostic.com/meta/callback';
 
-    console.log('--- OAuth Debug (v22.0) ---');
-    console.log('App ID:', appId);
-    console.log('Redirect URI:', redirectUri);
-    console.log('-------------------');
+    this.logger.debug('--- OAuth Debug (v22.0) ---');
+    this.logger.debug(`App ID: ${appId}`);
+    this.logger.debug(`Redirect URI: ${redirectUri}`);
+    this.logger.debug('-------------------');
 
     // 1. Exchange auth code for short-lived access token
     const tokenRes = await axios.get(
@@ -92,7 +93,7 @@ export class MetaService {
     const wabaId = providedWabaId || waba?.id;
 
     if (!wabaId) {
-      console.error('Meta Response (me):', JSON.stringify(meRes.data));
+      this.logger.error(`Meta Response (me): ${JSON.stringify(meRes.data)}`);
       throw new BadRequestException(
         'No WhatsApp Business Account (WABA) found. Please ensure you selected a WABA in the popup.',
       );
@@ -159,9 +160,8 @@ export class MetaService {
       });
       return data.data;
     } catch (error: any) {
-      console.error(
-        'Failed to fetch templates from Meta',
-        error.response?.data || error.message,
+      this.logger.error(
+        `Failed to fetch templates from Meta: ${JSON.stringify(error.response?.data || error.message)}`,
       );
       return [];
     }
@@ -186,9 +186,8 @@ export class MetaService {
       );
       return response.data;
     } catch (error: any) {
-      console.error(
-        'Failed to exchange long-lived token:',
-        error.response?.data || error.message,
+      this.logger.error(
+        `Failed to exchange long-lived token: ${JSON.stringify(error.response?.data || error.message)}`,
       );
       throw new BadRequestException('Failed to exchange long-lived token');
     }

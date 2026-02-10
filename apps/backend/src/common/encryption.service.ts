@@ -8,7 +8,10 @@ export class EncryptionService {
     private readonly key: Buffer;
 
     constructor(private configService: ConfigService) {
-        const secret = this.configService.get<string>('ENCRYPTION_KEY') || 'aerostic-prod-encryption-default-secret';
+        const secret = this.configService.get<string>('ENCRYPTION_KEY');
+        if (!secret) {
+            throw new Error('ENCRYPTION_KEY environment variable is required');
+        }
         // Use scrypt to generate a 32-byte key from the secret
         this.key = crypto.scryptSync(secret, 'aerostic-salt', 32);
     }

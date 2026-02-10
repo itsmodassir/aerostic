@@ -1,29 +1,31 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
   ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    console.log(`[AuthDebug] Attempting login for: ${email}`);
+    this.logger.debug(`Attempting login for: ${email}`);
     const user = await this.usersService.findOneByEmail(email);
 
     if (!user) {
-      console.log('[AuthDebug] User not found in DB');
+      this.logger.debug('User not found in DB');
       return null;
     }
 
-    console.log(
-      `[AuthDebug] User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`,
+    this.logger.debug(
+      `User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`,
     );
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
-    console.log(`[AuthDebug] Password match: ${isMatch}`);
+    this.logger.debug(`Password match: ${isMatch}`);
 
     if (isMatch) {
       // Explicitly map properties to a plain object to avoid TypeORM proxies/spread issues
@@ -33,9 +35,8 @@ export class AuthService {
         name: user.name,
         role: user.role,
       };
-      console.log(
-        '[AuthDebug] Returning plain user object:',
-        JSON.stringify(plainUser),
+      this.logger.debug(
+        `Returning plain user object: ${JSON.stringify(plainUser)}`,
       );
       return plainUser;
     }
@@ -43,13 +44,12 @@ export class AuthService {
   }
 
   async login(user: any) {
-    console.log(
-      '[AuthDebug] Login method called with user:',
-      JSON.stringify(user, null, 2),
+    this.logger.debug(
+      `Login method called with user: ${JSON.stringify(user, null, 2)}`,
     );
 
     if (!user || !user.email) {
-      console.error('[AuthDebug] User object is invalid:', user);
+      this.logger.error(`User object is invalid: ${JSON.stringify(user)}`);
       throw new Error('Invalid user object');
     }
 

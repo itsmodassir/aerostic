@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,6 +15,8 @@ import { TenantMembership, TenantRole } from '../tenants/entities/tenant-members
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -89,14 +92,14 @@ export class UsersService {
     const adminExists = await this.findOneByEmail(adminEmail);
 
     if (!adminExists) {
-      console.log('Seeding Admin User...');
+      this.logger.log('Seeding Admin User...');
       // Check for System Tenant
       let tenant = await this.tenantsRepository.manager
         .getRepository(Tenant)
         .findOneBy({ name: 'System' });
 
       if (!tenant) {
-        console.log('Creating System Tenant...');
+        this.logger.log('Creating System Tenant...');
         tenant = this.tenantsRepository.manager.getRepository(Tenant).create({
           name: 'System',
           website: 'system.aerostic.in', // detailed below
@@ -131,7 +134,7 @@ export class UsersService {
     const demoUserExists = await this.findOneByEmail(demoEmail);
 
     if (!demoUserExists) {
-      console.log('Seeding Demo User...');
+      this.logger.log('Seeding Demo User...');
       // Ensure tenant exists (re-fetch if needed, but should exist from above)
       let tenant = await this.tenantsRepository.manager
         .getRepository(Tenant)
@@ -152,18 +155,18 @@ export class UsersService {
             role: TenantRole.OWNER,
           }),
         );
-        console.log('Demo User Seeded Successfully.');
+        this.logger.log('Demo User Seeded Successfully.');
       }
     } else {
       // Force update password for existing demo user
-      console.log('Demo User exists. Updating password...');
+      this.logger.log('Demo User exists. Updating password...');
       const salt = await bcrypt.genSalt();
       const passwordHash = await bcrypt.hash('Am5361$44', salt);
 
       demoUserExists.passwordHash = passwordHash;
       demoUserExists.role = UserRole.SUPER_ADMIN; // Ensure super_admin role
       await this.usersRepository.save(demoUserExists);
-      console.log('Demo User Password & Role Updated.');
+      this.logger.log('Demo User Password & Role Updated.');
     }
   }
 }

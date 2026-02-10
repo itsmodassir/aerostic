@@ -23,6 +23,7 @@ import { UseGuards, Request as NestRequest } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { UserRole } from '../users/entities/user.entity';
+import { Throttle } from '@nestjs/throttler';
 
 class LoginDto {
   @IsNotEmpty()
@@ -61,6 +62,7 @@ export class AuthController {
   ) { }
 
   @Post('login')
+  @Throttle({ short: { limit: 5, ttl: 3600000 } })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,

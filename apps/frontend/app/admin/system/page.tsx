@@ -17,7 +17,7 @@ export default function SystemPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
-    const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+    const [error, setError] = useState('');
     const [configMeta, setConfigMeta] = useState<Record<string, ConfigItem>>({});
 
     // Configuration state
@@ -108,9 +108,6 @@ export default function SystemPage() {
         }
     };
 
-    const toggleShowSecret = (key: string) => {
-        setShowSecrets(prev => ({ ...prev, [key]: !prev[key] }));
-    };
 
     const updateConfig = (key: string, value: string) => {
         setConfig(prev => ({ ...prev, [key]: value }));
@@ -236,19 +233,12 @@ export default function SystemPage() {
                             </div>
                             <div className="relative">
                                 <input
-                                    type={showSecrets['meta.app_secret'] ? 'text' : 'password'}
+                                    type="password"
                                     value={config['meta.app_secret']}
                                     onChange={(e) => updateConfig('meta.app_secret', e.target.value)}
-                                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     autoComplete="new-password"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => toggleShowSecret('meta.app_secret')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showSecrets['meta.app_secret'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
                             </div>
                         </div>
                         <div>
@@ -335,19 +325,12 @@ export default function SystemPage() {
                             </div>
                             <div className="relative">
                                 <input
-                                    type={showSecrets['razorpay.key_secret'] ? 'text' : 'password'}
+                                    type="password"
                                     value={config['razorpay.key_secret']}
                                     onChange={(e) => updateConfig('razorpay.key_secret', e.target.value)}
-                                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     autoComplete="new-password"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => toggleShowSecret('razorpay.key_secret')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showSecrets['razorpay.key_secret'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
                             </div>
                         </div>
                         <div className="md:col-span-2">
@@ -362,19 +345,12 @@ export default function SystemPage() {
                             </div>
                             <div className="relative">
                                 <input
-                                    type={showSecrets['razorpay.webhook_secret'] ? 'text' : 'password'}
+                                    type="password"
                                     value={config['razorpay.webhook_secret']}
                                     onChange={(e) => updateConfig('razorpay.webhook_secret', e.target.value)}
-                                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     autoComplete="new-password"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => toggleShowSecret('razorpay.webhook_secret')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showSecrets['razorpay.webhook_secret'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -404,19 +380,12 @@ export default function SystemPage() {
                             </div>
                             <div className="relative">
                                 <input
-                                    type={showSecrets['ai.gemini_api_key'] ? 'text' : 'password'}
+                                    type="password"
                                     value={config['ai.gemini_api_key']}
                                     onChange={(e) => updateConfig('ai.gemini_api_key', e.target.value)}
-                                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     autoComplete="new-password"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => toggleShowSecret('ai.gemini_api_key')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showSecrets['ai.gemini_api_key'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
                             </div>
                         </div>
                         <div>
@@ -431,19 +400,12 @@ export default function SystemPage() {
                             </div>
                             <div className="relative">
                                 <input
-                                    type={showSecrets['ai.openai_api_key'] ? 'text' : 'password'}
+                                    type="password"
                                     value={config['ai.openai_api_key']}
                                     onChange={(e) => updateConfig('ai.openai_api_key', e.target.value)}
-                                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     autoComplete="new-password"
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => toggleShowSecret('ai.openai_api_key')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    {showSecrets['ai.openai_api_key'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
                             </div>
                         </div>
                     </div>

@@ -38,6 +38,10 @@ import { ThrottlerModule } from '@nestjs/throttler';
         url: configService.get('DATABASE_URL'),
         autoLoadEntities: true,
         synchronize: false, // 🔒 Disabled for production safety
+        logging:
+          configService.get('NODE_ENV') === 'development'
+            ? ['error', 'warn', 'query']
+            : ['error'], // Only log errors in production
       }),
       inject: [ConfigService],
     }),

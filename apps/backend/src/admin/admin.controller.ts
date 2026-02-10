@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -11,6 +10,8 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard';
 
@@ -23,7 +24,7 @@ import { AdminAnalyticsService } from './services/admin-analytics.service';
 import { AdminService } from './admin.service'; // Access to legacy methods like getAllMessages if not refactored yet
 
 // DTO for config updates
-interface UpdateConfigDto {
+class UpdateConfigDto {
   [key: string]: string;
 }
 
@@ -32,8 +33,12 @@ import {
   SubscriptionStatus,
 } from '../billing/entities/subscription.entity';
 
-interface UpdateUserPlanDto {
+class UpdateUserPlanDto {
+  @IsEnum(PlanType)
   plan: PlanType;
+
+  @IsOptional()
+  @IsEnum(SubscriptionStatus)
   status?: SubscriptionStatus;
 }
 
