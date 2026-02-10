@@ -34,7 +34,7 @@ export default function LandingPage() {
             <OrganizationSchema />
             <LocalBusinessSchema />
             <SoftwareApplicationSchema />
-            <FAQSchema faqItems={faqData} />
+            <FAQSchema faqs={faqData} />
 
             <Navbar />
             <Hero />
