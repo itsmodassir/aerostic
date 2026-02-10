@@ -55,6 +55,7 @@ Agent:`;
       if (aiReply.includes('HANDOFF_TO_AGENT')) {
         // TODO: Update Conversation Status to 'needs_human' or notify agents
         return;
+      }
 
       // Send the reply
       await this.messagesService.send({

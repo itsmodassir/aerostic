@@ -114,6 +114,9 @@ export class AuthController {
       workspaceId: membership?.tenantId,
       workspaceName: membership?.tenant?.name,
     };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
   }
 
   @Post('logout')

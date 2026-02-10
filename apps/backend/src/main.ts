@@ -47,7 +47,7 @@ async function bootstrap() {
   });
   
   // Security middleware
-  app.use((req, res, next) => {
+  app.use((req: any, res: any, next: any) => {
     // Prevent clickjacking
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     // Prevent MIME type sniffing
