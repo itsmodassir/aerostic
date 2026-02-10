@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import FacebookSDKLoader, { launchWhatsAppSignup } from '@/components/FacebookSDKLoader';
 
+const FALLBACK_APP_ID = '782076418251038';
+const FALLBACK_CONFIG_ID = '1093745902865717';
+
 export default function WhatsappSettingsPage() {
     const [loading, setLoading] = useState(false);
     const [tenantId, setTenantId] = useState<string | null>(null);
@@ -31,9 +34,9 @@ export default function WhatsappSettingsPage() {
 
     // Meta Config
     const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string } | null>(
-        typeof window !== 'undefined' && process.env.NEXT_PUBLIC_META_APP_ID ? {
-            appId: process.env.NEXT_PUBLIC_META_APP_ID,
-            configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || ''
+        typeof window !== 'undefined' ? {
+            appId: process.env.NEXT_PUBLIC_META_APP_ID || FALLBACK_APP_ID,
+            configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || FALLBACK_CONFIG_ID
         } : null
     );
     const [embeddedIds, setEmbeddedIds] = useState<{ phoneNumberId: string, wabaId: string } | null>(null);
@@ -84,6 +87,11 @@ export default function WhatsappSettingsPage() {
 
         initSettings();
     }, [params.workspaceId]);
+
+    useEffect(() => {
+        console.log('[MetaDebug] Current metaConfig:', metaConfig);
+        console.log('[MetaDebug] Env Var:', process.env.NEXT_PUBLIC_META_APP_ID);
+    }, [metaConfig]);
 
     // Embedded Signup Event Listener
     useEffect(() => {
