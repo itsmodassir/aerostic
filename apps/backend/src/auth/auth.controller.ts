@@ -62,22 +62,24 @@ export class AuthController {
   ) { }
 
   @Post('login')
-  @Throttle({ short: { limit: 5, ttl: 3600000 } })
+  @Throttle({ auth: { limit: 5, ttl: 3600000 } })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = await this.authService.validateUser(
-      loginDto.email,
-      loginDto.password,
-    );
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    try {
+      const user = await this.authService.validateUser(
+        loginDto.email,
+        loginDto.password,
+      );
+      if (!user) {
+        // Generic message prevents username enumeration
+        throw new UnauthorizedException('Invalid email or password');
+      }
 
-    const { access_token } = await this.authService.login(user);
+      const { access_token } = await this.authService.login(user);
 
-    // Set HttpOnly Cookie
+      // Set HttpOnly Cookie
     res.cookie('access_token', access_token, {
       httpOnly: true,
       secure: true, // Always true for production/staging (Cloudflare handles SSL)
