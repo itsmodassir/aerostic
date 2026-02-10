@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useParams } from 'next/navigation';
@@ -17,6 +15,7 @@ export default function WhatsappSettingsPage() {
     const [tenantId, setTenantId] = useState<string | null>(null);
     const [connectionMethod, setConnectionMethod] = useState<'facebook' | 'manual' | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<'connected' | 'pending' | 'disconnected'>('disconnected');
+    const [sdkLoaded, setSdkLoaded] = useState(false);
 
     // Manual config fields
     const [phoneNumberId, setPhoneNumberId] = useState('');
@@ -83,6 +82,13 @@ export default function WhatsappSettingsPage() {
 
     // Embedded Signup Event Listener
     useEffect(() => {
+        const checkSdk = setInterval(() => {
+            if (window.FB && window._fbInitialized) {
+                setSdkLoaded(true);
+                clearInterval(checkSdk);
+            }
+        }, 500);
+
         const handler = (event: MessageEvent) => {
             if (event.origin !== "https://www.facebook.com" && event.origin !== "https://web.facebook.com") {
                 return;
@@ -105,7 +111,10 @@ export default function WhatsappSettingsPage() {
             }
         };
         window.addEventListener('message', handler);
-        return () => window.removeEventListener('message', handler);
+        return () => {
+            window.removeEventListener('message', handler);
+            clearInterval(checkSdk);
+        };
     }, []);
 
     const handleFacebookConnect = () => {
@@ -392,13 +401,13 @@ export default function WhatsappSettingsPage() {
                         </div>
                         <button
                             onClick={handleFacebookConnect}
-                            disabled={!tenantId || loading}
-                            className="flex items-center gap-3 px-8 py-4 bg-white text-[#1877F2] font-bold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
+                            disabled={!tenantId || loading || !sdkLoaded}
+                            className={`flex items-center gap-3 px-8 py-4 bg-white text-[#1877F2] font-bold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${!sdkLoaded && metaConfig ? 'animate-pulse' : ''}`}
                         >
                             <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                             </svg>
-                            {loading ? 'Connecting...' : 'Login with Facebook'}
+                            {loading ? 'Connecting...' : !sdkLoaded && metaConfig ? 'Initializing SDK...' : 'Login with Facebook'}
                             <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>

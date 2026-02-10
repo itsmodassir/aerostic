@@ -23,6 +23,11 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
         }
 
         const cleanAppId = appId?.trim();
+        if (!cleanAppId) {
+            console.warn('[MetaSDK] No AppID provided to FacebookSDKLoader');
+            return;
+        }
+
         console.log('[MetaSDK] Initializing SDK with AppId:', cleanAppId);
 
         window.fbAsyncInit = function () {
@@ -39,6 +44,7 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
             }
         };
 
+        // If the script is already loaded but fbAsyncInit hasn't run
         if (window.FB && !window._fbInitialized) {
             window.fbAsyncInit();
         }
@@ -49,6 +55,10 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
             id="facebook-jssdk"
             src="https://connect.facebook.net/en_US/sdk.js"
             strategy="afterInteractive"
+            onLoad={() => {
+                console.log('[MetaSDK] Facebook Script loaded');
+                if (window.fbAsyncInit) window.fbAsyncInit();
+            }}
         />
     );
 }
@@ -61,16 +71,16 @@ export function launchWhatsAppSignup(
     console.log('[MetaSDK] launchWhatsAppSignup called', { configId, state });
 
     if (!window.FB) {
-        alert('Facebook SDK not loaded yet');
+        console.error('[MetaSDK] Facebook SDK not loaded yet');
+        alert('Facebook SDK is still loading. Please wait a moment and try again.');
         return;
     }
 
-    window.FB.getLoginStatus(() => {
-        console.log('[MetaSDK] Calling FB.login now...');
-
+    try {
         window.FB.login(
             (response: any) => {
                 if (response?.authResponse?.code) {
+                    console.log('[MetaSDK] Got auth code');
                     callback(response.authResponse.code);
                 } else {
                     console.warn('[MetaSDK] Signup cancelled or failed', response);
@@ -80,15 +90,21 @@ export function launchWhatsAppSignup(
                 config_id: configId,
                 response_type: 'code',
                 override_default_response_type: true,
-
-                // 🚨 REQUIRED
                 redirect_uri: 'https://app.aerostic.com/meta/callback',
-
                 extras: {
                     version: 'v3',
+                    session_info: {
+                        version: 'v3'
+                    },
+                    setup: {
+                        // Optional: can add more setup params here if needed
+                    },
                     state
                 }
             }
         );
-    });
+    } catch (error) {
+        console.error('[MetaSDK] Error launching signup:', error);
+        alert('Failed to launch Facebook login. Please check if popups are blocked.');
+    }
 }
