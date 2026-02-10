@@ -4,4 +4,8 @@ export class CreateTenantDto {
   @IsNotEmpty()
   @IsString()
   name: string;
+
+  @IsNotEmpty()
+  @IsString()
+  slug: string;
 }

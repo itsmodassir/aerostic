@@ -38,9 +38,8 @@ export default function TenantsPage() {
 
     const fetchTenants = async () => {
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/users`, { // Using /users as it returns tenant info
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to fetch tenants');
             const data = await res.json();
@@ -66,13 +65,12 @@ export default function TenantsPage() {
         if (!selectedTenant) return;
         setIsUpdating(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/users/${selectedTenant.id}/plan`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     plan: editPlan,
                     status: editStatus

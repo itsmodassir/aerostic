@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useParams } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import {
     LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut, Bell,
     Megaphone, FileText, Bot, Shield, User, CreditCard, HelpCircle,
@@ -10,18 +12,6 @@ import {
 import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
 
-const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Inbox', href: '/dashboard/inbox', icon: MessageSquare },
-    { name: 'Contacts', href: '/dashboard/contacts', icon: Users2 },
-    { name: 'Broadcasts', href: '/dashboard/campaigns', icon: Megaphone },
-    { name: 'Templates', href: '/dashboard/templates', icon: FileText },
-    { name: 'Automation', href: '/dashboard/automation', icon: Zap },
-    { name: 'AI Agent', href: '/dashboard/agents', icon: Bot },
-    { name: 'Settings', href: '/dashboard/settings/whatsapp', icon: Settings },
-    // Platform Admin - only for super_admin or specific platform admins
-    { name: 'Platform Admin', href: '/dashboard/admin', icon: Shield, adminOnly: true },
-];
 
 const PLAN_COLORS = {
     starter: { bg: 'bg-gray-100', text: 'text-gray-700', name: 'Starter' },
@@ -32,15 +22,62 @@ const PLAN_COLORS = {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [email, setEmail] = useState('Admin');
-    const [userName, setUserName] = useState('User');
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [authorized, setAuthorized] = useState(false);
+    const params = useParams();
+    const workspaceId = params?.workspaceId as string || 'default';
+    const { user, loading, logout, isSuperAdmin: isAdmin } = useAuth();
+
+    const navigation = [
+        { name: 'Dashboard', href: `/dashboard/${workspaceId}`, icon: LayoutDashboard },
+        { name: 'Inbox', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
+        { name: 'Contacts', href: `/dashboard/${workspaceId}/contacts`, icon: Users2, permission: 'contacts:read' },
+        { name: 'Broadcasts', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
+        { name: 'Templates', href: `/dashboard/${workspaceId}/templates`, icon: FileText, permission: 'campaigns:read' },
+        { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
+        { name: 'AI Agent', href: `/dashboard/${workspaceId}/agents`, icon: Bot, permission: 'automation:create' },
+        { name: 'Settings', href: `/dashboard/${workspaceId}/settings/whatsapp`, icon: Settings, permission: 'billing:manage' },
+        // Platform Admin - only for super_admin or specific platform admins
+        { name: 'Platform Admin', href: `/dashboard/${workspaceId}/admin`, icon: Shield, adminOnly: true },
+    ];
+
     const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
+    const [membership, setMembership] = useState<any>(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
+
+    // Set plan based on user info
+    useEffect(() => {
+        if (user) {
+            if (user.email === 'md@modassir.info') {
+                setUserPlan('growth');
+            } else if (user.email?.includes('enterprise')) {
+                setUserPlan('enterprise');
+            }
+        }
+    }, [user]);
+
+    // Fetch workspace membership
+    useEffect(() => {
+        const fetchMembership = async () => {
+            // Auth provided by cookie
+            try {
+                const response = await fetch('/api/auth/membership', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setMembership(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch membership:', error);
+            }
+        };
+
+        if (user) {
+            fetchMembership();
+        }
+    }, [user]);
 
     // Demo notifications
     const [notifications] = useState([
@@ -48,34 +85,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { id: 2, title: 'Campaign completed', message: 'Welcome Series sent to 150 contacts', time: '1h ago', unread: true },
         { id: 3, title: 'AI Agent resolved', message: 'Support bot handled 5 queries', time: '3h ago', unread: false },
     ]);
-
-    useEffect(() => {
-        // Hydrate user info
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                setEmail(payload.email || 'Admin');
-                setUserName(payload.name || payload.email?.split('@')[0] || 'User');
-                // Check if user is platform admin - only allow super_admin or specific email
-                setIsAdmin(payload.role === 'super_admin' || payload.email === 'md@modassir.info');
-                // Set plan based on email
-                if (payload.email === 'md@modassir.info') {
-                    setUserPlan('growth');
-                } else if (payload.email?.includes('enterprise')) {
-                    setUserPlan('enterprise');
-                }
-                setAuthorized(true);
-            } catch (e) {
-                router.push('/login');
-            }
-        }
-    }, []);
 
     // Close dropdowns on outside click
     useEffect(() => {
@@ -91,25 +100,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Filter navigation items based on admin status
-    const visibleNavigation = navigation.filter(item =>
-        !(item as any).adminOnly || isAdmin
-    );
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        router.push('/login');
-    };
+    // Filter navigation items based on admin status and permissions
+    const permissions = membership?.permissions || [];
+    const visibleNavigation = navigation.filter(item => {
+        if (isAdmin) return true; // Super Admin sees everything
+        if (item.adminOnly) return false; // Non-super admins don't see platform admin
+        if (item.permission && !permissions.includes(item.permission)) return false;
+        return true;
+    });
 
     const planInfo = PLAN_COLORS[userPlan];
     const unreadCount = notifications.filter(n => n.unread).length;
+    const userName = user?.name || 'User';
+    const email = user?.email || '';
 
-    if (!authorized) {
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
         );
+    }
+
+    if (!user) {
+        return null; // Hook handles redirect
     }
 
     return (
@@ -122,6 +136,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain" />
                         <span>Aerostic</span>
                     </Link>
+                </div>
+                <div className="px-4 py-4 border-b">
+                    <WorkspaceSwitcher />
                 </div>
                 <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                     {visibleNavigation.map((item) => {
@@ -150,7 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </nav>
                 <div className="p-4 border-t bg-muted/20">
                     <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
@@ -167,13 +184,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-8 shadow-sm">
                     {/* Breadcrumb / Title Stub */}
                     <h2 className="text-lg font-semibold text-foreground capitalize">
-                        {pathname.split('/')[2]?.replace('-', ' ') || 'Dashboard'}
+                        {pathname.split('/')[3]?.replace('-', ' ') || 'Overview'}
                     </h2>
 
                     <div className="flex items-center gap-4">
                         {/* Plan Badge */}
                         <Link
-                            href="/dashboard/billing"
+                            href={`/dashboard/${workspaceId}/billing`}
                             className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${planInfo.bg} ${planInfo.text} hover:opacity-80 transition-opacity`}
                         >
                             <Crown className="w-3 h-3" />
@@ -216,7 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         ))}
                                     </div>
                                     <div className="p-3 border-t border-gray-100">
-                                        <Link href="/dashboard/notifications" className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                        <Link href={`/dashboard/${workspaceId}/notifications`} className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
                                             View all notifications
                                         </Link>
                                     </div>
@@ -262,7 +279,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             </span>
                                             {isAdmin && (
                                                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                                    Admin
+                                                    Platform Admin
+                                                </span>
+                                            )}
+                                            {membership?.role && (
+                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 capitalize">
+                                                    {membership.role}
                                                 </span>
                                             )}
                                         </div>
@@ -271,7 +293,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     {/* Menu Items */}
                                     <div className="py-2">
                                         <Link
-                                            href="/dashboard/profile"
+                                            href={`/dashboard/${workspaceId}/profile`}
                                             onClick={() => setShowProfileMenu(false)}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
@@ -279,7 +301,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             My Profile
                                         </Link>
                                         <Link
-                                            href="/dashboard/billing"
+                                            href={`/dashboard/${workspaceId}/billing`}
                                             onClick={() => setShowProfileMenu(false)}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
@@ -287,7 +309,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             Billing & Plans
                                         </Link>
                                         <Link
-                                            href="/dashboard/settings/whatsapp"
+                                            href={`/dashboard/${workspaceId}/settings/whatsapp`}
                                             onClick={() => setShowProfileMenu(false)}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
@@ -307,7 +329,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     {/* Logout */}
                                     <div className="border-t border-gray-100 py-2">
                                         <button
-                                            onClick={handleLogout}
+                                            onClick={logout}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
                                         >
                                             <LogOut className="w-4 h-4" />

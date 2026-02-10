@@ -29,6 +29,9 @@ export class AuditLog {
   @Column({ nullable: true })
   actorId: string; // User ID who performed the action
 
+  @Column({ name: 'tenant_id', nullable: true })
+  tenantId: string; // Workspace ID associated with the action
+
   @Column()
   actorName: string; // Name or email for display
 

@@ -7,6 +7,7 @@ import { WhatsappAccount } from './entities/whatsapp-account.entity';
 import { MetaToken } from '../meta/entities/meta-token.entity';
 import { BullModule } from '@nestjs/bullmq';
 import { CommonModule } from '../common/common.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CommonModule } from '../common/common.module';
       name: 'whatsapp-messages',
     }),
     CommonModule,
+    AuditModule,
   ],
   controllers: [WhatsappController],
   providers: [WhatsappService],

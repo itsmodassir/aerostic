@@ -16,9 +16,8 @@ export default function AuditLogsPage() {
 
     const fetchLogs = async () => {
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/admin/audit-logs`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
@@ -97,8 +96,8 @@ export default function AuditLogsPage() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${log.action.includes('DELETE') ? 'bg-red-100 text-red-700' :
-                                            log.action.includes('UPDATE') ? 'bg-amber-100 text-amber-700' :
-                                                'bg-green-100 text-green-700'
+                                        log.action.includes('UPDATE') ? 'bg-amber-100 text-amber-700' :
+                                            'bg-green-100 text-green-700'
                                         }`}>
                                         {log.action}
                                     </span>

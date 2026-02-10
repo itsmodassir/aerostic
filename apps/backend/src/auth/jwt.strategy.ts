@@ -5,9 +5,25 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+
   constructor(configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: any) => {
+          let token = null;
+          if (req && req.cookies) {
+            token = req.cookies['access_token'];
+          }
+          if (!token && req.headers.cookie) {
+            // Manual parsing if cookie-parser is missing
+            const match = req.headers.cookie.match(/access_token=([^;]+)/);
+            if (match) {
+              token = match[1];
+            }
+          }
+          return token || ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET') || 'default_secret',
     });
@@ -15,10 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     return {
-      userId: payload.sub,
+      id: payload.sub,
       email: payload.email,
-      tenantId: payload.tenantId,
-      role: payload.role,
+      role: payload.role, // This is UserRole (global), not TenantRole
     };
   }
 }

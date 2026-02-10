@@ -9,6 +9,7 @@ import { Message } from '../messages/entities/message.entity';
 import { ApiKey } from '../billing/entities/api-key.entity';
 import { Between } from 'typeorm';
 import { WebhookEndpoint } from '../billing/entities/webhook-endpoint.entity';
+import { EncryptionService } from '../common/encryption.service';
 
 // Default configuration values with explicit typing
 interface ConfigDef {
@@ -134,6 +135,7 @@ export class AdminService {
     private auditService: AuditService,
     private billingService: BillingService,
     private configService: ConfigService,
+    private encryptionService: EncryptionService,
   ) { }
 
   async getAllTenants() {
@@ -180,13 +182,21 @@ export class AdminService {
       'platform.app_url': 'APP_URL',
     };
 
+    // Keep track of which keys are from DB
+    const dbKeys = new Set(configs.map(c => c.key));
+
     // Start with defaults + Env fallback
     for (const [key, def] of Object.entries(DEFAULT_CONFIG)) {
       let value = def.value;
       const envKey = envMap[key];
+      let source = 'default';
+
       if (envKey) {
         const envVal = this.configService.get(envKey);
-        if (envVal) value = envVal;
+        if (envVal) {
+          value = envVal;
+          source = 'env';
+        }
       }
 
       result[key] = {
@@ -194,6 +204,7 @@ export class AdminService {
         description: def.description,
         category: def.category,
         isSecret: def.isSecret || false,
+        source: source,
       };
     }
 
@@ -205,6 +216,7 @@ export class AdminService {
         category: config.category,
         isSecret: config.isSecret,
         updatedAt: config.updatedAt,
+        source: 'database',
       };
     }
 
@@ -214,7 +226,7 @@ export class AdminService {
   async getConfigValue(key: string): Promise<string | null> {
     const config = await this.configRepo.findOne({ where: { key } });
     if (config) {
-      return config.value;
+      return config.isSecret ? this.encryptionService.decrypt(config.value) : config.value;
     }
     return DEFAULT_CONFIG[key]?.value || null;
   }
@@ -228,10 +240,20 @@ export class AdminService {
       // Skip masked values (user didn't change them)
       if (value === '••••••••••••••••' || value === '') continue;
 
+      // Basic Validation for Numeric IDs
+      if (['meta.app_id', 'meta.config_id'].includes(key)) {
+        if (!/^\d+$/.test(value)) {
+          console.error(`Invalid numeric ID for ${key}: ${value}`);
+          continue; // Skip invalid numeric IDs
+        }
+      }
+
       let config = await this.configRepo.findOne({ where: { key } });
+      const isSecret = config?.isSecret || DEFAULT_CONFIG[key]?.isSecret || false;
+      const finalValue = isSecret ? this.encryptionService.encrypt(value) : value;
 
       if (config) {
-        config.value = value;
+        config.value = finalValue;
         await this.configRepo.save(config);
       } else {
         const defaultDef = DEFAULT_CONFIG[key] || {
@@ -241,7 +263,7 @@ export class AdminService {
         };
         config = this.configRepo.create({
           key,
-          value,
+          value: finalValue,
           description: defaultDef.description || key,
           category: defaultDef.category || 'general',
           isSecret: defaultDef.isSecret || false,
@@ -258,6 +280,7 @@ export class AdminService {
       'Administrator',
       'UPDATE_CONFIG',
       'System Configuration',
+      undefined,
       { updatedKeys: updated },
     );
 
@@ -300,6 +323,7 @@ export class AdminService {
       'Administrator',
       'UPDATE_TENANT_PLAN',
       `Tenant: ${tenant.name}`,
+      tenant.id,
       { oldPlan, newPlan: plan, status },
     );
 

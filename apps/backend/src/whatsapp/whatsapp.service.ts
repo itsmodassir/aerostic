@@ -8,6 +8,7 @@ import { Queue } from 'bullmq';
 import { SystemConfig } from '../admin/entities/system-config.entity';
 import { WhatsappAccount } from './entities/whatsapp-account.entity';
 import { RedisService } from '../common/redis.service';
+import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class WhatsappService {
@@ -20,6 +21,7 @@ export class WhatsappService {
     @InjectQueue('whatsapp-messages')
     private messageQueue: Queue,
     private redisService: RedisService,
+    private encryptionService: EncryptionService,
   ) { }
 
   async getEmbeddedSignupUrl(tenantId: string) {
@@ -29,8 +31,8 @@ export class WhatsappService {
     });
 
     const appId =
-      dbConfigs.find((c) => c.key === 'meta.app_id')?.value ||
-      this.configService.get('META_APP_ID');
+      dbConfigs.find((c) => c.key === 'meta.app_id')?.value?.trim() ||
+      this.configService.get('META_APP_ID')?.trim();
     const redirectUri = 'https://api.aerostic.com/meta/callback';
 
     console.log('Generating OAuth URL with AppID:', appId);
@@ -65,7 +67,7 @@ export class WhatsappService {
     const credentials = {
       wabaId: account.wabaId,
       phoneNumberId: account.phoneNumberId,
-      accessToken: account.accessToken,
+      accessToken: this.encryptionService.decrypt(account.accessToken),
     };
 
     // Cache for 1 hour
@@ -96,11 +98,11 @@ export class WhatsappService {
 
     return {
       appId:
-        dbConfigs.find((c) => c.key === 'meta.app_id')?.value ||
-        this.configService.get('META_APP_ID'),
+        dbConfigs.find((c) => c.key === 'meta.app_id')?.value?.trim() ||
+        this.configService.get('META_APP_ID')?.trim(),
       configId:
-        dbConfigs.find((c) => c.key === 'meta.config_id')?.value ||
-        this.configService.get('META_CONFIG_ID'),
+        dbConfigs.find((c) => c.key === 'meta.config_id')?.value?.trim() ||
+        this.configService.get('META_CONFIG_ID')?.trim(),
     };
   }
 

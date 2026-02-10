@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { APP_GUARD } from '@nestjs/core';
+import { TenantThrottlerGuard } from './common/guards/tenant-throttler.guard';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
@@ -22,6 +24,7 @@ import { BillingModule } from './billing/billing.module';
 import { AuditModule } from './audit/audit.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CommonModule } from './common/common.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -34,7 +37,7 @@ import { CommonModule } from './common/common.module';
         type: 'postgres',
         url: configService.get('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: true, // ⚠️ Disable in production
+        synchronize: false, // 🔒 Disabled for production safety
       }),
       inject: [ConfigService],
     }),
@@ -48,6 +51,19 @@ import { CommonModule } from './common/common.module';
       }),
       inject: [ConfigService],
     }),
+    ThrottlerModule.forRoot([{
+      name: 'short',
+      ttl: 1000,
+      limit: 3,
+    }, {
+      name: 'medium',
+      ttl: 10000,
+      limit: 20
+    }, {
+      name: 'long',
+      ttl: 60000,
+      limit: 100
+    }]),
     TenantsModule,
     UsersModule,
     WhatsappModule,
@@ -66,6 +82,12 @@ import { CommonModule } from './common/common.module';
     AuditModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: TenantThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule { }

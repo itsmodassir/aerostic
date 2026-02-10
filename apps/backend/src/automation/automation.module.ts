@@ -4,11 +4,12 @@ import { AutomationService } from './automation.service';
 import { AutomationController } from './automation.controller';
 import { AutomationRule } from './entities/automation-rule.entity';
 import { MessagesModule } from '../messages/messages.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AutomationRule]), MessagesModule],
+  imports: [TypeOrmModule.forFeature([AutomationRule]), MessagesModule, AuditModule],
   controllers: [AutomationController],
   providers: [AutomationService],
   exports: [AutomationService],
 })
-export class AutomationModule {}
+export class AutomationModule { }

@@ -7,6 +7,7 @@ import { MetaToken } from './entities/meta-token.entity';
 import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
 import { SystemConfig } from '../admin/entities/system-config.entity';
 import { RedisService } from '../common/redis.service';
+import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class MetaService {
@@ -19,7 +20,8 @@ export class MetaService {
     @InjectRepository(SystemConfig)
     private configRepo: Repository<SystemConfig>,
     private redisService: RedisService,
-  ) {}
+    private encryptionService: EncryptionService,
+  ) { }
 
   async handleOAuthCallback(
     code: string,
@@ -37,27 +39,15 @@ export class MetaService {
     });
 
     const appId =
-      dbConfigs.find((c) => c.key === 'meta.app_id')?.value ||
-      this.configService.get('META_APP_ID') ||
+      dbConfigs.find((c) => c.key === 'meta.app_id')?.value?.trim() ||
+      this.configService.get('META_APP_ID')?.trim() ||
       '';
     const appSecret =
-      dbConfigs.find((c) => c.key === 'meta.app_secret')?.value ||
-      this.configService.get('META_APP_SECRET') ||
+      dbConfigs.find((c) => c.key === 'meta.app_secret')?.value?.trim() ||
+      this.configService.get('META_APP_SECRET')?.trim() ||
       '';
 
-    // Use the configured redirect URI or fallback to production API endpoint
-    let redirectUri =
-      dbConfigs.find((c) => c.key === 'meta.redirect_uri')?.value ||
-      this.configService.get('META_REDIRECT_URI') ||
-      'https://api.aerostic.com/meta/callback';
-
-    // Ensure we don't accidentally use localhost in production if not explicitly intended
-    if (
-      redirectUri.includes('localhost') &&
-      process.env.NODE_ENV === 'production'
-    ) {
-      redirectUri = 'https://api.aerostic.com/meta/callback';
-    }
+    const redirectUri = 'https://app.aerostic.com/meta/callback';
 
     console.log('--- OAuth Debug (v22.0) ---');
     console.log('App ID:', appId);
@@ -131,11 +121,13 @@ export class MetaService {
       phoneNumberId,
     });
 
+    const encryptedToken = this.encryptionService.encrypt(accessToken);
+
     if (existing) {
       existing.tenantId = tenantId;
       existing.wabaId = wabaId;
       existing.displayPhoneNumber = displayPhoneNumber;
-      existing.accessToken = accessToken;
+      existing.accessToken = encryptedToken;
       existing.tokenExpiresAt = expiresAt;
       existing.status = 'connected';
       await this.whatsappAccountRepo.save(existing);
@@ -145,7 +137,7 @@ export class MetaService {
         wabaId,
         phoneNumberId,
         displayPhoneNumber,
-        accessToken,
+        accessToken: encryptedToken,
         tokenExpiresAt: expiresAt,
         mode: 'coexistence',
         status: 'connected',

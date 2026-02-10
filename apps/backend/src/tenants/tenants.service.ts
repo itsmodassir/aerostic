@@ -9,11 +9,22 @@ export class TenantsService {
   constructor(
     @InjectRepository(Tenant)
     private tenantsRepository: Repository<Tenant>,
-  ) {}
+  ) { }
 
   async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
-    const tenant = this.tenantsRepository.create(createTenantDto);
+    const slug = createTenantDto.slug || this.slugify(createTenantDto.name);
+    const tenant = this.tenantsRepository.create({
+      ...createTenantDto,
+      slug,
+    });
     return this.tenantsRepository.save(tenant);
+  }
+
+  private slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/[^\w ]+/g, '')
+      .replace(/ +/g, '-');
   }
 
   async findOne(id: string): Promise<Tenant> {
@@ -26,6 +37,10 @@ export class TenantsService {
 
   async findByName(name: string): Promise<Tenant | null> {
     return this.tenantsRepository.findOneBy({ name });
+  }
+
+  async findBySlug(slug: string): Promise<Tenant | null> {
+    return this.tenantsRepository.findOneBy({ slug });
   }
 
   async findAll(): Promise<Tenant[]> {

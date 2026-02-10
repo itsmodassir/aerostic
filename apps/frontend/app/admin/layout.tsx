@@ -10,35 +10,27 @@ import {
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/hooks/useAuth';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
     const [authorized, setAuthorized] = useState(false);
 
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
+        if (authLoading) return;
         if (pathname === '/admin/login') return;
 
-        const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('user');
-
-        if (!token || !userStr) {
+        if (!user || (user.globalRole !== 'super_admin' && user.globalRole !== 'admin' as any)) {
+            // Check globalRole. Casting as any because interface might say 'super_admin' | 'user' but db might have 'admin'
             router.push('/admin/login');
             return;
         }
-
-        try {
-            const user = JSON.parse(userStr);
-            if (user.role !== 'admin' && user.role !== 'super_admin') {
-                router.push('/dashboard');
-                return;
-            }
-            setAuthorized(true);
-        } catch (e) {
-            router.push('/admin/login');
-        }
-    }, [router, pathname]);
+        setAuthorized(true);
+    }, [user, authLoading, pathname, router]);
 
     useEffect(() => {
         if (authorized && pathname !== '/admin/login') {
@@ -48,9 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const fetchStats = async () => {
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
             const data = await res.json();
             setStats(data.stats);

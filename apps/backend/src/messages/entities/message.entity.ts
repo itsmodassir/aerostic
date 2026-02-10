@@ -44,7 +44,8 @@ export class Message {
   @Column({ nullable: true })
   status: string;
 
-  @Column({ name: 'meta_message_id', nullable: true })
+  @Column({ name: 'meta_message_id', nullable: true, unique: true })
+  @Index()
   metaMessageId: string;
 
   @CreateDateColumn({ name: 'created_at' })

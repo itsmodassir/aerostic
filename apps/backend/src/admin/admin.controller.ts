@@ -1,3 +1,4 @@
+
 import {
   Controller,
   Get,
@@ -8,9 +9,18 @@ import {
   Param,
   UseGuards,
   Query,
+  Req,
 } from '@nestjs/common';
-import { AdminService } from './admin.service';
 import { AdminGuard } from '../common/guards/admin.guard';
+import { SuperAdminGuard } from '../common/guards/super-admin.guard';
+
+// New Services
+import { AdminConfigService } from './services/admin-config.service';
+import { AdminTenantService } from './services/admin-tenant.service';
+import { AdminBillingService } from './services/admin-billing.service';
+import { AdminHealthService } from './services/admin-health.service';
+import { AdminAnalyticsService } from './services/admin-analytics.service';
+import { AdminService } from './admin.service'; // Access to legacy methods like getAllMessages if not refactored yet
 
 // DTO for config updates
 interface UpdateConfigDto {
@@ -28,19 +38,27 @@ interface UpdateUserPlanDto {
 }
 
 @Controller('admin')
-@UseGuards(AdminGuard)
+@UseGuards(SuperAdminGuard) // Enforce SuperAdmin checks for ALL admin endpoints
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly configService: AdminConfigService,
+    private readonly tenantService: AdminTenantService,
+    private readonly billingService: AdminBillingService,
+    private readonly healthService: AdminHealthService,
+    private readonly analyticsService: AdminAnalyticsService,
+    private readonly legacyAdminService: AdminService,
+  ) { }
 
   // ============ Tenant Management ============
   @Get('tenants')
   async getAllTenants() {
-    return this.adminService.getAllTenants();
+    return this.tenantService.getAllTenants();
   }
 
   @Get('users')
   async getAllUsers() {
-    return this.adminService.getAllUsers();
+    // Fixed: Returns valid tenant summary instead of trying to look like users
+    return this.tenantService.getAllTenantsSummary();
   }
 
   @Patch('users/:id/plan')
@@ -48,7 +66,7 @@ export class AdminController {
     @Param('id') userId: string,
     @Body() dto: UpdateUserPlanDto,
   ) {
-    return this.adminService.updateUserPlan(
+    return this.tenantService.updateUserPlan(
       userId,
       dto.plan,
       dto.status as any,
@@ -58,61 +76,62 @@ export class AdminController {
   // ============ WhatsApp Account Management ============
   @Get('whatsapp-accounts')
   async getAllAccounts() {
-    return this.adminService.getAllAccounts();
+    return this.legacyAdminService.getAllAccounts();
   }
 
   // ============ System Configuration ============
   @Get('config')
   async getConfig() {
-    return this.adminService.getConfig();
+    return this.configService.getConfig();
   }
 
   @Post('config')
-  async updateConfig(@Body() updates: UpdateConfigDto) {
-    return this.adminService.setConfig(updates);
+  async updateConfig(@Body() updates: UpdateConfigDto, @Req() req: any) {
+    // Pass actor ID from request user
+    return this.configService.setConfig(updates, req.user?.id);
   }
 
   @Delete('config/:key')
   async deleteConfig(@Param('key') key: string) {
-    await this.adminService.deleteConfig(key);
+    await this.configService.deleteConfig(key);
     return { success: true };
   }
 
   // ============ System Operations ============
   @Post('tokens/rotate')
   async rotateSystemTokens() {
-    return this.adminService.rotateSystemTokens();
+    return this.legacyAdminService.rotateSystemTokens();
   }
 
   @Get('system-logs')
   async getLogs() {
-    return this.adminService.getSystemLogs();
+    return this.healthService.getSystemLogs();
   }
 
   @Get('health')
   async getHealth() {
+    const health = await this.healthService.checkSystemHealth();
     return {
       status: 'healthy',
-      uptime: process.uptime(),
+      checks: health,
       timestamp: new Date(),
-      memory: process.memoryUsage(),
       version: '1.0.0',
     };
   }
 
   @Get('stats')
   async getStats() {
-    return this.adminService.getDashboardStats();
+    return this.analyticsService.getDashboardStats();
   }
 
   @Get('stats/trends')
   async getTrends(@Query('range') range: string) {
-    return this.adminService.getAnalyticsTrends(range);
+    return this.analyticsService.getAnalyticsTrends(range);
   }
 
   @Get('api-keys')
   async getApiKeys() {
-    return this.adminService.getAllApiKeys();
+    return this.billingService.getAllApiKeys();
   }
 
   @Get('messages')
@@ -121,21 +140,21 @@ export class AdminController {
     @Query('limit') limit: number = 20,
     @Query('search') search?: string,
   ) {
-    return this.adminService.getAllMessages(page, limit, search);
+    return this.legacyAdminService.getAllMessages(page, limit, search);
   }
 
   @Get('webhooks')
   async getWebhooks() {
-    return this.adminService.getAllWebhooks();
+    return this.billingService.getAllWebhooks();
   }
 
   @Get('billing/stats')
   async getBillingStats() {
-    return this.adminService.getBillingStats();
+    return this.billingService.getBillingStats();
   }
 
   @Get('alerts')
   async getAlerts() {
-    return this.adminService.getSystemAlerts();
+    return this.analyticsService.getSystemAlerts();
   }
 }

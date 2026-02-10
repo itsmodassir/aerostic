@@ -10,6 +10,8 @@ import { Tenant } from '../tenants/entities/tenant.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 
+import { TenantMembership, TenantRole } from '../tenants/entities/tenant-membership.entity';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -17,6 +19,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(Tenant)
     private tenantsRepository: Repository<Tenant>,
+    @InjectRepository(TenantMembership)
+    private membershipRepository: Repository<TenantMembership>,
   ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -33,6 +37,7 @@ export class UsersService {
     const user = this.usersRepository.create({
       ...createUserDto,
       passwordHash,
+      role: createUserDto.role || UserRole.USER,
     });
 
     return this.usersRepository.save(user);
@@ -51,7 +56,11 @@ export class UsersService {
   }
 
   async findAllByTenant(tenantId: string): Promise<User[]> {
-    return this.usersRepository.findBy({ tenantId });
+    const memberships = await this.membershipRepository.find({
+      where: { tenantId },
+      relations: ['user'],
+    });
+    return memberships.map((m) => m.user);
   }
 
   async cleanupMockData(): Promise<{ deleted: number }> {
@@ -99,14 +108,22 @@ export class UsersService {
       }
 
       // Create Admin User
-      await this.create({
+      const admin = await this.create({
         email: adminEmail,
         password: 'admin123',
         name: 'System Admin',
-        tenantId: tenant.id,
-        role: UserRole.ADMIN,
+        role: UserRole.USER,
       });
-      console.log('Admin User Seeded Successfully.');
+
+      // Assign Membership
+      await this.membershipRepository.save(
+        this.membershipRepository.create({
+          userId: admin.id,
+          tenantId: tenant.id,
+          role: TenantRole.OWNER,
+        }),
+      );
+      console.log('Admin User Seeded successfully with Owner role.');
     }
 
     // Seed Demo User (md@modassir.info)
@@ -121,13 +138,20 @@ export class UsersService {
         .findOneBy({ name: 'System' });
 
       if (tenant) {
-        await this.create({
+        const demo = await this.create({
           email: demoEmail,
           password: 'Am5361$44',
           name: 'Modassir',
-          tenantId: tenant.id,
           role: UserRole.SUPER_ADMIN,
         });
+
+        await this.membershipRepository.save(
+          this.membershipRepository.create({
+            userId: demo.id,
+            tenantId: tenant.id,
+            role: TenantRole.OWNER,
+          }),
+        );
         console.log('Demo User Seeded Successfully.');
       }
     } else {

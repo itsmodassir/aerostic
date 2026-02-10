@@ -15,6 +15,10 @@ export class Tenant {
   @Column()
   name: string;
 
+  @Column({ unique: true })
+  @Index()
+  slug: string;
+
   @Column({ default: 'starter' })
   plan: string;
 

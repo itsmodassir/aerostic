@@ -13,6 +13,8 @@ import { MetaToken } from '../meta/entities/meta-token.entity'; // Need to decry
 import { SendMessageDto } from './dto/send-message.dto';
 import axios from 'axios';
 import { MessagesGateway } from './messages.gateway';
+import { AuditService } from '../audit/audit.service';
+import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
 
 @Injectable()
 export class MessagesService {
@@ -28,7 +30,8 @@ export class MessagesService {
     @InjectRepository(Conversation)
     private conversationRepo: Repository<Conversation>,
     private messagesGateway: MessagesGateway,
-  ) {}
+    private auditService: AuditService,
+  ) { }
 
   async send(dto: SendMessageDto) {
     // 1. Resolve Tenant's WhatsApp Account
@@ -133,6 +136,25 @@ export class MessagesService {
         content: dto.type === 'text' ? { body: dto.payload.text } : dto.payload,
         timestamp: new Date(),
       });
+
+      // Audit message sending
+      await this.auditService.logAction(
+        'SYSTEM',
+        'Message Service',
+        'SEND_WHATSAPP_MESSAGE',
+        `Destination: ${dto.to}`,
+        dto.tenantId,
+        {
+          messageId: message.id,
+          metaId,
+          type: dto.type,
+          conversationId: conversation.id
+        },
+        undefined,
+        LogLevel.SUCCESS,
+        LogCategory.WHATSAPP,
+        'MessagesService'
+      );
 
       return { sent: true, metaId, messageId: message.id };
     } catch (error) {

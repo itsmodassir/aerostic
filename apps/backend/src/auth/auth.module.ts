@@ -7,11 +7,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TenantMembership } from '../tenants/entities/tenant-membership.entity';
+import { Role } from '../tenants/entities/role.entity';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
     UsersModule,
     TenantsModule,
+    AuditModule,
+    TypeOrmModule.forFeature([TenantMembership, Role]), // Required for AuthController injection
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -26,4 +32,4 @@ import { AuthController } from './auth.controller';
   controllers: [AuthController],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

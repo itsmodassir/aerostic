@@ -14,9 +14,8 @@ export default function AdminHealthPage() {
     const fetchHealth = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
             const data = await res.json();
             setStats(data.systemHealth || []);

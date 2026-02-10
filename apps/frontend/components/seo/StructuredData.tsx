@@ -151,6 +151,8 @@ interface FAQItem {
 }
 
 export function FAQSchema({ faqs }: { faqs: FAQItem[] }) {
+    if (!faqs || !Array.isArray(faqs)) return null;
+
     const schema = {
         "@context": "https://schema.org",
         "@type": "FAQPage",

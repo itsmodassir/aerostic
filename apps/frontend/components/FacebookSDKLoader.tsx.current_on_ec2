@@ -1,0 +1,88 @@
+'use client';
+
+import Script from 'next/script';
+import { useEffect } from 'react';
+
+declare global {
+    interface Window {
+        fbAsyncInit: () => void;
+        FB: any;
+        _fbInitialized?: boolean;
+    }
+}
+
+interface FacebookSDKLoaderProps {
+    appId: string;
+}
+
+export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
+    useEffect(() => {
+        console.log('[MetaSDK] useEffect triggered. AppId:', appId);
+
+        window.fbAsyncInit = function () {
+            console.log('[MetaSDK] fbAsyncInit called by SDK script');
+            if (window.FB) {
+                window.FB.init({
+                    appId: appId,
+                    autoLogAppEvents: true,
+                    cookie: true,
+                    xfbml: true,
+                    version: 'v21.0'
+                });
+                window._fbInitialized = true;
+                console.log('[MetaSDK] window.FB.init execution complete');
+            }
+        };
+
+        // If FB is already present (e.g. from previous navigation)
+        if (window.FB && !window._fbInitialized) {
+            console.log('[MetaSDK] FB object already present, calling fbAsyncInit manually');
+            window.fbAsyncInit();
+        }
+    }, [appId]);
+
+    const handleOnLoad = () => {
+        console.log('[MetaSDK] Script onLoad event');
+    };
+
+    return (
+        <Script
+            id="facebook-jssdk"
+            src="https://connect.facebook.net/en_US/sdk.js"
+            strategy="afterInteractive"
+            onLoad={handleOnLoad}
+        />
+    );
+}
+
+export function launchWhatsAppSignup(configId: string, callback: (code: string) => void) {
+    console.log('[MetaSDK] launchWhatsAppSignup called. ConfigID:', configId);
+
+    if (!window.FB) {
+        alert('Facebook SDK Script not yet loaded in window.');
+        return;
+    }
+
+    // getLoginStatus often ensures the SDK is fully "ready" before we call login
+    console.log('[MetaSDK] Checking login status as ready-check...');
+    window.FB.getLoginStatus((response: any) => {
+        console.log('[MetaSDK] Ready-check response:', response.status);
+
+        console.log('[MetaSDK] Calling FB.login now...');
+        window.FB.login(
+            (response: any) => {
+                if (response.authResponse) {
+                    callback(response.authResponse.code);
+                } else {
+                    console.log('[MetaSDK] User cancelled or login failed');
+                }
+            },
+            {
+                config_id: configId,
+                response_type: 'code',
+                override_default_response_type: true,
+                extras: { version: 'v3' }
+            }
+        );
+    });
+}

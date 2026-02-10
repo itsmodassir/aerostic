@@ -10,6 +10,7 @@ import { Conversation } from './entities/conversation.entity';
 import { Contact } from '../contacts/entities/contact.entity';
 import { User } from '../users/entities/user.entity';
 import { MessagesGateway } from './messages.gateway';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { MessagesGateway } from './messages.gateway';
       Contact,
       User,
     ]),
+    AuditModule,
   ],
   controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway],

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -31,7 +32,7 @@ export class WebhooksService {
     private automationService: AutomationService,
     private aiService: AiService,
     private messagesGateway: MessagesGateway,
-  ) {}
+  ) { }
 
   verifyWebhook(mode: string, token: string, challenge: string): string {
     const verifyToken = this.configService.get('META_WEBHOOK_VERIFY_TOKEN');
@@ -58,6 +59,29 @@ export class WebhooksService {
     );
 
     return { status: 'enqueued' };
+  }
+
+  verifySignature(rawBody: string, signature: string): boolean {
+    const appSecret = this.configService.get('META_APP_SECRET');
+    if (!appSecret) {
+      this.logger.error('META_APP_SECRET not configured');
+      return false;
+    }
+
+    try {
+      const [algo, hash] = signature.split('=');
+      if (algo !== 'sha256') return false;
+
+      const expectedHash = crypto
+        .createHmac('sha256', appSecret)
+        .update(rawBody)
+        .digest('hex');
+
+      return hash === expectedHash;
+    } catch (error) {
+      this.logger.error('Error verifying signature:', error);
+      return false;
+    }
   }
 
   /**
@@ -127,6 +151,16 @@ export class WebhooksService {
       }
 
       // 4. Save Message
+      // Check for duplicate message ID (Idempotency)
+      const existingMsg = await this.messageRepo.findOneBy({
+        metaMessageId: messageData.id
+      });
+
+      if (existingMsg) {
+        this.logger.warn(`Duplicate message received: ${messageData.id}. Skipping.`);
+        return;
+      }
+
       const message = this.messageRepo.create({
         tenantId: account.tenantId,
         conversationId: conversation.id,

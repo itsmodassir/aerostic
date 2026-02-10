@@ -8,6 +8,7 @@ interface ConfigItem {
     description: string;
     category: string;
     isSecret: boolean;
+    source: 'default' | 'env' | 'database';
     updatedAt?: string;
 }
 
@@ -17,6 +18,7 @@ export default function SystemPage() {
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
     const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+    const [configMeta, setConfigMeta] = useState<Record<string, ConfigItem>>({});
 
     // Configuration state
     const [config, setConfig] = useState({
@@ -50,16 +52,14 @@ export default function SystemPage() {
     const fetchConfig = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/config`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include'
             });
 
             if (!res.ok) throw new Error('Failed to fetch config');
 
             const data: Record<string, ConfigItem> = await res.json();
+            setConfigMeta(data);
 
             // Map to flat structure
             const newConfig: any = { ...config };
@@ -80,13 +80,12 @@ export default function SystemPage() {
         setError('');
 
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/config`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
                 },
+                credentials: 'include',
                 body: JSON.stringify(config),
             });
 
@@ -115,6 +114,32 @@ export default function SystemPage() {
 
     const updateConfig = (key: string, value: string) => {
         setConfig(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleReset = async (key: string) => {
+        if (!confirm(`Are you sure you want to reset ${key} to its default value?`)) return;
+
+        try {
+            const res = await fetch(`/api/admin/config/${key}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('Failed to reset config');
+            await fetchConfig();
+        } catch (e: any) {
+            setError(e.message || 'Failed to reset configuration');
+        }
+    };
+
+    const SourceBadge = ({ source }: { source: string }) => {
+        if (source === 'database') {
+            return <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-md font-medium">DB Override</span>;
+        }
+        if (source === 'env') {
+            return <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-600 rounded-md font-medium">ENV</span>;
+        }
+        return <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded-md font-medium">Default</span>;
     };
 
     if (loading) {
@@ -181,23 +206,41 @@ export default function SystemPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Meta App ID</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Meta App ID</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['meta.app_id']?.source} />
+                                    {configMeta['meta.app_id']?.source === 'database' && (
+                                        <button onClick={() => handleReset('meta.app_id')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="text"
                                 value={config['meta.app_id']}
                                 onChange={(e) => updateConfig('meta.app_id', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 placeholder="123456789012345"
+                                autoComplete="off"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Meta App Secret</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Meta App Secret</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['meta.app_secret']?.source} />
+                                    {configMeta['meta.app_secret']?.source === 'database' && (
+                                        <button onClick={() => handleReset('meta.app_secret')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <input
                                     type={showSecrets['meta.app_secret'] ? 'text' : 'password'}
                                     value={config['meta.app_secret']}
                                     onChange={(e) => updateConfig('meta.app_secret', e.target.value)}
                                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
@@ -208,24 +251,42 @@ export default function SystemPage() {
                                 </button>
                             </div>
                         </div>
-                        <div className="">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Webhook Verify Token</label>
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Webhook Verify Token</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['meta.webhook_verify_token']?.source} />
+                                    {configMeta['meta.webhook_verify_token']?.source === 'database' && (
+                                        <button onClick={() => handleReset('meta.webhook_verify_token')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="text"
                                 value={config['meta.webhook_verify_token']}
                                 onChange={(e) => updateConfig('meta.webhook_verify_token', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 placeholder="your_verify_token"
+                                autoComplete="off"
                             />
                         </div>
-                        <div className="">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Configuration ID</label>
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">WhatsApp Configuration ID</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['meta.config_id']?.source} />
+                                    {configMeta['meta.config_id']?.source === 'database' && (
+                                        <button onClick={() => handleReset('meta.config_id')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="text"
                                 value={config['meta.config_id']}
                                 onChange={(e) => updateConfig('meta.config_id', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 placeholder="925810693206943"
+                                autoComplete="off"
                             />
                         </div>
                     </div>
@@ -244,23 +305,41 @@ export default function SystemPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Razorpay Key ID</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Razorpay Key ID</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['razorpay.key_id']?.source} />
+                                    {configMeta['razorpay.key_id']?.source === 'database' && (
+                                        <button onClick={() => handleReset('razorpay.key_id')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="text"
                                 value={config['razorpay.key_id']}
                                 onChange={(e) => updateConfig('razorpay.key_id', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 placeholder="rzp_live_..."
+                                autoComplete="off"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Razorpay Key Secret</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Razorpay Key Secret</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['razorpay.key_secret']?.source} />
+                                    {configMeta['razorpay.key_secret']?.source === 'database' && (
+                                        <button onClick={() => handleReset('razorpay.key_secret')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <input
                                     type={showSecrets['razorpay.key_secret'] ? 'text' : 'password'}
                                     value={config['razorpay.key_secret']}
                                     onChange={(e) => updateConfig('razorpay.key_secret', e.target.value)}
                                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
@@ -272,13 +351,22 @@ export default function SystemPage() {
                             </div>
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Webhook Secret</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Webhook Secret</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['razorpay.webhook_secret']?.source} />
+                                    {configMeta['razorpay.webhook_secret']?.source === 'database' && (
+                                        <button onClick={() => handleReset('razorpay.webhook_secret')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <input
                                     type={showSecrets['razorpay.webhook_secret'] ? 'text' : 'password'}
                                     value={config['razorpay.webhook_secret']}
                                     onChange={(e) => updateConfig('razorpay.webhook_secret', e.target.value)}
                                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
@@ -305,13 +393,22 @@ export default function SystemPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Google Gemini API Key</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Google Gemini API Key</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['ai.gemini_api_key']?.source} />
+                                    {configMeta['ai.gemini_api_key']?.source === 'database' && (
+                                        <button onClick={() => handleReset('ai.gemini_api_key')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <input
                                     type={showSecrets['ai.gemini_api_key'] ? 'text' : 'password'}
                                     value={config['ai.gemini_api_key']}
                                     onChange={(e) => updateConfig('ai.gemini_api_key', e.target.value)}
                                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
@@ -323,13 +420,22 @@ export default function SystemPage() {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">OpenAI API Key (Optional)</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">OpenAI API Key (Optional)</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['ai.openai_api_key']?.source} />
+                                    {configMeta['ai.openai_api_key']?.source === 'database' && (
+                                        <button onClick={() => handleReset('ai.openai_api_key')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <input
                                     type={showSecrets['ai.openai_api_key'] ? 'text' : 'password'}
                                     value={config['ai.openai_api_key']}
                                     onChange={(e) => updateConfig('ai.openai_api_key', e.target.value)}
                                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
@@ -356,40 +462,76 @@ export default function SystemPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Application URL</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Application URL</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['platform.app_url']?.source} />
+                                    {configMeta['platform.app_url']?.source === 'database' && (
+                                        <button onClick={() => handleReset('platform.app_url')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="url"
                                 value={config['platform.app_url']}
                                 onChange={(e) => updateConfig('platform.app_url', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 placeholder="https://app.aerostic.com"
+                                autoComplete="off"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Trial Days</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Trial Days</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['platform.trial_days']?.source} />
+                                    {configMeta['platform.trial_days']?.source === 'database' && (
+                                        <button onClick={() => handleReset('platform.trial_days')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="number"
                                 value={config['platform.trial_days']}
                                 onChange={(e) => updateConfig('platform.trial_days', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                autoComplete="off"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Message Rate Limit (per minute)</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Message Rate Limit (per minute)</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['platform.message_rate_limit']?.source} />
+                                    {configMeta['platform.message_rate_limit']?.source === 'database' && (
+                                        <button onClick={() => handleReset('platform.message_rate_limit')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="number"
                                 value={config['platform.message_rate_limit']}
                                 onChange={(e) => updateConfig('platform.message_rate_limit', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                autoComplete="off"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Max Tenants Per Server</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Max Tenants Per Server</label>
+                                <div className="flex items-center gap-2">
+                                    <SourceBadge source={configMeta['platform.max_tenants']?.source} />
+                                    {configMeta['platform.max_tenants']?.source === 'database' && (
+                                        <button onClick={() => handleReset('platform.max_tenants')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                    )}
+                                </div>
+                            </div>
                             <input
                                 type="number"
                                 value={config['platform.max_tenants']}
                                 onChange={(e) => updateConfig('platform.max_tenants', e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                autoComplete="off"
                             />
                         </div>
                     </div>

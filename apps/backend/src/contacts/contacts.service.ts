@@ -3,13 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contact } from './entities/contact.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { AuditService } from '../audit/audit.service';
+import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
 
 @Injectable()
 export class ContactsService {
   constructor(
     @InjectRepository(Contact)
     private contactsRepository: Repository<Contact>,
-  ) {}
+    private auditService: AuditService,
+  ) { }
 
   async create(createContactDto: CreateContactDto): Promise<Contact> {
     const existing = await this.contactsRepository.findOneBy({
@@ -24,7 +27,23 @@ export class ContactsService {
     }
 
     const contact = this.contactsRepository.create(createContactDto);
-    return this.contactsRepository.save(contact);
+    const saved = await this.contactsRepository.save(contact);
+
+    // Audit contact creation
+    await this.auditService.logAction(
+      'SYSTEM', // Ideally pass actor info here
+      'Contact Service',
+      'CREATE_CONTACT',
+      `Contact: ${saved.phoneNumber}`,
+      saved.tenantId,
+      { contactId: saved.id, name: saved.name },
+      undefined,
+      LogLevel.INFO,
+      LogCategory.USER,
+      'ContactsService'
+    );
+
+    return saved;
   }
 
   async findAll(tenantId: string): Promise<Contact[]> {

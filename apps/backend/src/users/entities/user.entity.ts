@@ -12,8 +12,7 @@ import { Tenant } from '../../tenants/entities/tenant.entity';
 
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  AGENT = 'agent',
+  USER = 'user',
 }
 
 @Entity('users')
@@ -21,13 +20,6 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'tenant_id', type: 'uuid' })
-  @Index()
-  tenantId: string;
-
-  @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'tenant_id' })
-  tenant: Tenant;
 
   @Column()
   name: string;

@@ -5,16 +5,11 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true, // Enable cookie-based auth
 });
 
-// Add a request interceptor to include the JWT token
-api.interceptors.request.use((config) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+// Request interceptor removed as we now use HttpOnly cookies for auth
+// api.interceptors.request.use((config) => { ... });
 
 // Add a response interceptor to handle non-JSON responses
 api.interceptors.response.use(

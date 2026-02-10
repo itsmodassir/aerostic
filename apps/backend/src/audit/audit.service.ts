@@ -4,6 +4,7 @@ import { Repository, Between, Like } from 'typeorm';
 import { AuditLog, LogLevel, LogCategory } from './entities/audit-log.entity';
 
 interface LogFilters {
+  tenantId?: string;
   page?: number;
   limit?: number;
   level?: LogLevel;
@@ -18,13 +19,14 @@ export class AuditService {
   constructor(
     @InjectRepository(AuditLog)
     private auditRepo: Repository<AuditLog>,
-  ) {}
+  ) { }
 
   async logAction(
     actorId: string,
     actorName: string,
     action: string,
     target: string,
+    tenantId?: string,
     metadata: any = {},
     ipAddress: string = '',
     level: LogLevel = LogLevel.INFO,
@@ -36,6 +38,7 @@ export class AuditService {
       actorName,
       action,
       target,
+      tenantId,
       metadata,
       ipAddress,
       level,
@@ -54,6 +57,7 @@ export class AuditService {
 
   async getLogsWithFilters(filters: LogFilters = {}) {
     const {
+      tenantId,
       page = 1,
       limit = 50,
       level,
@@ -66,6 +70,9 @@ export class AuditService {
     const query = this.auditRepo.createQueryBuilder('log');
 
     // Apply filters
+    if (tenantId) {
+      query.andWhere('log.tenantId = :tenantId', { tenantId });
+    }
     if (level) {
       query.andWhere('log.level = :level', { level });
     }

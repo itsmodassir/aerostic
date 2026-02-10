@@ -4,176 +4,123 @@
 
 ---
 
+## 1️⃣ ARCHITECTURE OVERVIEW
+
+```text
+                        CLOUDFLARE (WAF + DNS)
+                                  │
                         META (WhatsApp Cloud API)
-                                 │
-                                 │ Webhooks
-                                 ▼
-                      ┌─────────────────────┐
-                      │  Load Balancer      │
-                      │  AWS ALB / NGINX   │
-                      └─────────────────────┘
-                                 │
-               ┌─────────────────┴─────────────────┐
-               │                                   │
-               ▼                                   ▼
-      ┌─────────────────┐                ┌─────────────────┐
-      │ Backend API     │                │ Webhook Worker  │
-      │ Node.js Docker  │                │ Node.js Docker  │
-      │ api.aerostic.com│                │ webhook handler │
-      └─────────────────┘                └─────────────────┘
-               │                                   │
-               │                                   │
-               ▼                                   ▼
-      ┌────────────────────────────────────────────────┐
-      │              PostgreSQL Database              │
-      │                                              │
-      │ tenants                                      │
-      │ whatsapp_accounts                           │
-      │ contacts                                    │
-      │ messages                                    │
-      │ automations                                 │
-      └────────────────────────────────────────────────┘
-               │
-               │
-               ▼
-      ┌─────────────────┐
-      │ Redis Cache     │
-      │ token cache     │
-      │ session cache   │
-      └─────────────────┘
-               │
-               ▼
-      ┌─────────────────┐
-      │ Queue System    │
-      │ BullMQ / Redis  │
-      │ message queue   │
-      └─────────────────┘
-               │
-               ▼
-      ┌─────────────────┐
-      │ Worker Nodes    │
-      │ Send messages   │
-      │ Automation      │
-      └─────────────────┘
-               │
-               ▼
-      ┌─────────────────┐
-      │ Frontend        │
-      │ React SaaS      │
-      │ app.aerostic.com│
-      └─────────────────┘
+                                  │
+                                  │ Webhooks
+                                  ▼
+                        ┌─────────────────────┐
+                        │  NGINX Reverse Proxy│
+                        │  (Docker + Certbot) │
+                        └─────────────────────┘
+                                  │ (Subdomain Routing)
+                ┌─────────────────┼─────────────────┐
+                ▼                 ▼                 ▼
+       ┌─────────────────┐ ┌─────────────────┐ ┌──────────────────┐
+       │ Frontend App    │ │ Backend API     │ │ Webhook Handler  │
+       │ aerostic.com    │ │ api.aerostic.com│ │ (Async Processing)│
+       │ app.aerostic.com│ └─────────────────┘ └──────────────────┘
+       │ admin.aerostic.com│       │                 │
+       └─────────────────┘         │                 │
+                │                  ▼                 ▼
+                │       ┌────────────────────────────────────────────────┐
+                │       │              PostgreSQL 15 (TypeORM)           │
+                │       │         (Managed via Versioned Migrations)     │
+                │       └────────────────────────────────────────────────┘
+                ▼                  │
+       ┌─────────────────┐         ▼
+       │ Redis 7 (Queues)│  ┌─────────────────┐
+       │ BullMQ Workers  │  │ AI Agent Engine │
+       │ Broadcasts      │  │ Google Gemini Pro│
+       └─────────────────┘  └─────────────────┘
 ```
 
 ---
 
-## 2️⃣ CORE FEATURES
+## 2️⃣ PROJECT STRUCTURE (ENGINEERING TREE)
 
-### 🌐 Strict Subdomain Routing
-- **Landing Page**: `aerostic.com`
-- **User Dashboard**: `app.aerostic.com` (Handles `/dashboard`, `/login`, `/register`)
-- **Platform Admin**: `admin.aerostic.com` (Isolated system-wide control)
-- **Middleware**: Next.js middleware enforces strict hostname-based redirection and rewrites.
-
-### 📲 WhatsApp Integration
-- **Hybrid Support**:
-    1.  **Cloud API (New Number)**: Direct integration via Meta API.
-    2.  **Embedded Signup (Existing Number)**: Improved OAuth flow with explicit ID capture from Meta `FINISH` event.
--   **Security**: System User Token ownership (Aerostic owns token, user grants permission).
-
-### 🤖 AI & Automation
--   **AI Engine**: Google Gemini Pro integration.
--   **Flow**: Incoming Message -> Webhook -> AI Agent -> Confidence Check -> Reply or Handoff.
--   **Dispatcher**: Centralized message sending service (`/messages/send`) to ensure compliance.
-
----
-
-## 3️⃣ USER ROLES
-
-| Role            | Access                        |
-| --------------- | ----------------------------- |
-| **Super Admin** | System logs, billing, all tenants, Meta tokens |
-| **Workspace Admin**| Settings, WhatsApp connection, Team management |
-| **Agent**       | Inbox, Conversations (No settings access) |
-| **AI Agent**    | Automated responder (Internal service) |
+```text
+aerostic/
+├── apps/
+│   ├── backend/         # NestJS 11 + TypeORM (Enterprise API)
+│   │   ├── src/
+│   │   │   ├── admin/   # Platform Admin Service
+│   │   │   ├── common/  # Encryption, Guards, Redis
+│   │   │   ├── meta/    # Meta OAuth & Cloud API
+│   │   │   └── webhooks/# Meta Webhook Handler
+│   │   └── migrations/  # Versioned DB Schema Changes
+│   └── frontend/        # Next.js 16 (Subdomain-Aware)
+│       ├── app/
+│       │   ├── (public)/# aerostic.com (Landing)
+│       │   ├── (auth)/  # Consolidated login/register
+│       │   ├── dashboard/# app.aerostic.com (SaaS)
+│       │   └── admin/   # admin.aerostic.com (Platform Control)
+│       └── middleware.ts# Subdomain router & tenant context
+├── docs/                # System Blueprints & Master Docs
+├── nginx/               # Production Nginx (Cloudflare Hardened)
+├── docker-compose.yml   # Multi-service Orchestration
+└── deploy_aws.sh        # Automated AWS Deployment
+```
 
 ---
 
-## 4️⃣ DATABASE SCHEMA (Simplified)
+## 3️⃣ WEBSITE ROUTE TREE
 
-### Tenants & Users
-- `tenants`: id, name, plan, status
-- `users`: id, tenant_id, email, password_hash, role
+| Domain | Scope | Access Roles |
+| :--- | :--- | :--- |
+| **aerostic.com** | Branding & Landing | Public |
+| **auth.aerostic.com** | Authentication Hub | Users/Admins |
+| **app.aerostic.com** | Workspace SaaS Hub | `Owner`, `Admin`, `Agent` |
+| **admin.aerostic.com** | Platform Control | `SuperAdmin` |
 
-### WhatsApp Config
-- `whatsapp_accounts`: tenant_id, waba_id, phone_number_id, access_token (encrypted)
-- `meta_tokens`: system_user_token, encrypted, rotation_schedule
-
-### Messaging
-- `conversations`: id, tenant_id, contact_id, status (open/resolved)
-- `messages`: id, conversation_id, content, type, direction (inbound/outbound)
-
----
-
-## 5️⃣ API STRUCTURE (NestJS)
-
-### Auth
-- `POST /auth/login`: User login
-- `POST /auth/register`: New tenant signup
-
-### Admin & Billing (New)
-- `GET /admin/config`: Fetch system-wide configurations
-- `POST /admin/config`: Update system settings
-- `PATCH /admin/users/:id/plan`: Manage tenant plans
-- `GET /billing/api-keys`: Manage Developer API keys
-- `GET /billing/webhooks`: Manage User Webhooks
-
-### WhatsApp
-- `GET /whatsapp/embedded/start`: Initiate Embedded Signup (OAuth)
-- `GET /meta/callback`: Handle Meta OAuth callback & token exchange
-- `POST /whatsapp/cloud/init`: Register new Cloud API number
-- `GET /whatsapp/me`: Fetch configured WhatsApp account details
-
-### Messaging (The Dispatcher)
-- `POST /messages/send`: **Sole entry point** for sending messages (Text/Template/Media).
-    - Validates tenant limits
-    - Selects correct phone number ID
-    - Calls Meta Graph API
-
-### Webhooks
-- `POST /webhooks/meta`: Receives real-time updates (Messages, Status).
-    - Verifies signature (X-Hub-Signature)
-    - Routes to specific Tenant
-    - Triggers AI/Automation pipelines
+### app.aerostic.com Path Detail:
+- `/dashboard/[workspaceId]/` -> Main entry for tenants.
+- `.../(owner)/` -> Billing, Subscription, Team Settings.
+- `.../(admin)/` -> Campaigns, Automation, AI Settings.
+- `.../(agent)/` -> Shared Inbox, Contacts, Live Chat.
 
 ---
 
-## 7️⃣ ANALYTICS & REPORTING
+## 4️⃣ CORE SECURITY FEATURES
 
-### Real-time Tracking
-- **Message Usage**: Tracked via `Message` entity counts (directional: 'out').
-- **AI Credits**: Monitored via `UsageMetric` entity (calculates credits burned per AI interaction).
-- **Agent Count**: Dynamic tracking of `AiAgent` entities per workspace.
+### 🔒 Data Security
+- **Encryption at Rest**: Sensitive tokens (`accessToken`, `appSecret`) are encrypted using **AES-256-CBC**.
+- **HMAC Verification**: All Meta webhooks verified via `X-Hub-Signature-256`.
+- **Database Safety**: `synchronize: false` in production; managed via versioned **TypeORM Migrations**.
 
-### Data Flow
-1. **Request**: Frontend calls `/analytics/overview` (JWT Protected).
-2. **Aggregation**: `AnalyticsService` queries DB for counts and recent activity.
-3. **Response**: Live stats (contacts, sent, received, agents) + Recent conversation history.
+### 🛡️ Infrastructure (Hardened Nginx)
+- **Cloudflare Trusted**: Trusts Cloudflare IP ranges; uses `CF-Connecting-IP` for real visitor tracing.
+- **TLS 1.3**: Hardened SSL configuration with preferred ciphers.
+- **Rate Limiting**: Nginx-level throttling for `/api/login` and `/webhooks/meta`.
+- **WebSocket Isolation**: `Upgrade` headers scoped strictly to `/socket.io/`.
 
 ---
 
-## 8️⃣ INFRASTRUCTURE & DEPLOYMENT
+## 5️⃣ DATABASE SCHEMA (MODERN)
 
-### Docker Stack
-- **Frontend**: Next.js (Standalone build)
-- **Backend**: NestJS (Node 18 Alpine)
-- **Database**: PostgreSQL 15 (Persistent Volume)
-- **Cache**: Redis 7 (Queue management)
-- **Proxy**: Nginx (Reverse Proxy for Port 80 routing)
+### Core Entities
+- **Tenants**: ID, Name, Plan, Status.
+- **WhatsappAccount**: Encrypted `accessToken`, `wabaId`, `phoneNumberId`, `status`.
+- **Message**: Unique `meta_message_id` (Idempotency), Direction, Content, Type.
+- **SystemConfig**: Encrypted platform secrets (AI Keys, Meta Secrets).
 
-### AWS Deployment
-- **Script**: `deploy_aws.sh`
-- **Process**:
-    1.  Install Docker & Compose
-    2.  Clone Repository
-    3.  Build & Run Containers
-    4.  Expose on Port 80 (HTTP)
+---
+
+## 6️⃣ DATA FLOW: MESSAGE INBOUND
+1. **Cloudflare** passes request to **Nginx**.
+2. **Nginx** validates real IP and routes to **Webhook Handler**.
+3. **Webhook Handler** verifies Meta signature.
+4. **Service** checks for duplicate `meta_message_id` (Idempotency).
+5. **AI Service** (Gemini Pro) processes content if enabled.
+6. **Socket.IO** emits real-time update to the relevant `[workspaceId]` group.
+
+---
+
+## 7️⃣ INFRASTRUCTURE & DEPLOYMENT
+- **Runtime**: Node 22 (Backend), Standalone build (Frontend).
+- **Orchestration**: Docker Compose with bridge networking.
+- **Monitoring**: Health endpoints with consistent `text/plain` responses on all subdomains.

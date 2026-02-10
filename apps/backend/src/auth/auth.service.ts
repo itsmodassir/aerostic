@@ -8,7 +8,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
     console.log(`[AuthDebug] Attempting login for: ${email}`);
@@ -32,7 +32,6 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        tenantId: user.tenantId,
       };
       console.log(
         '[AuthDebug] Returning plain user object:',
@@ -57,7 +56,6 @@ export class AuthService {
     const payload = {
       email: user.email,
       sub: user.id,
-      tenantId: user.tenantId,
       role: user.role,
     };
     return {
@@ -67,7 +65,6 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        tenantId: user.tenantId,
       },
     };
   }

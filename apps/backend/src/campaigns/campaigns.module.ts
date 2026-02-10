@@ -8,6 +8,7 @@ import { MessagesModule } from '../messages/messages.module';
 
 import { BullModule } from '@nestjs/bullmq';
 import { CampaignProcessor } from './campaigns.processor';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -17,8 +18,9 @@ import { CampaignProcessor } from './campaigns.processor';
     }),
     ContactsModule,
     MessagesModule,
+    AuditModule,
   ],
   controllers: [CampaignsController],
   providers: [CampaignsService, CampaignProcessor],
 })
-export class CampaignsModule {}
+export class CampaignsModule { }

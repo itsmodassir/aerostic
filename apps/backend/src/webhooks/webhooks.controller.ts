@@ -13,7 +13,7 @@ import type { Request, Response } from 'express';
 
 @Controller('webhooks')
 export class WebhooksController {
-  constructor(private readonly webhooksService: WebhooksService) {}
+  constructor(private readonly webhooksService: WebhooksService) { }
 
   @Get('meta')
   verify(
@@ -31,9 +31,27 @@ export class WebhooksController {
   }
 
   @Post('meta')
-  async receive(@Body() body: any) {
-    // In production: Verify X-Hub-Signature header here
+  async receive(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: any,
+  ) {
+    const signature = req.headers['x-hub-signature-256'] as string;
+
+    if (!signature) {
+      return res.status(HttpStatus.FORBIDDEN).send('Signature missing');
+    }
+
+    const isValid = this.webhooksService.verifySignature(
+      JSON.stringify(body),
+      signature,
+    );
+
+    if (!isValid) {
+      return res.status(HttpStatus.FORBIDDEN).send('Invalid signature');
+    }
+
     await this.webhooksService.processWebhook(body);
-    return { status: 'ok' };
+    return res.status(HttpStatus.OK).json({ status: 'ok' });
   }
 }

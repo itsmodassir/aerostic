@@ -10,6 +10,9 @@ import { ApiKey } from './entities/api-key.entity';
 import { WebhookEndpoint } from './entities/webhook-endpoint.entity';
 import { RazorpayService } from './razorpay.service';
 import * as crypto from 'crypto';
+import { AuditService } from '../audit/audit.service';
+import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
+import { RazorpayEvent } from './entities/razorpay-event.entity';
 
 @Injectable()
 export class BillingService {
@@ -22,8 +25,72 @@ export class BillingService {
     private apiKeyRepo: Repository<ApiKey>,
     @InjectRepository(WebhookEndpoint)
     private webhookRepo: Repository<WebhookEndpoint>,
+    @InjectRepository(RazorpayEvent) // Inject event repo
+    private eventRepo: Repository<RazorpayEvent>,
     private razorpayService: RazorpayService,
-  ) {}
+    private auditService: AuditService,
+  ) { }
+
+  // ============ WEBHOOK HANDLING & IDEMPOTENCY ============
+
+  async handleWebhookEvent(body: any): Promise<{ received: boolean }> {
+    const eventName = body.event;
+    const payload = body.payload;
+
+    // 1. Idempotency Check
+    // Try to get a unique event ID. Razorpay sends 'x-razorpay-event-id' header usually.
+    // If we only have body, we construct a unique ID from entity ID + event name strategy or hash.
+    // Ideally controller passes the ID. Here we will use payload entity ID if available as best effort unique key per event type.
+    const entityId = payload.payment?.entity?.id || payload.subscription?.entity?.id;
+    const uniqueEventId = body.id || (entityId ? `${eventName}_${entityId}` : `evt_${Date.now()}_${Math.random()}`);
+
+    const existingEvent = await this.eventRepo.findOne({ where: { eventId: uniqueEventId } });
+
+    if (existingEvent) {
+      this.logger.log(`Duplicate webhook event handled: ${uniqueEventId}`);
+      return { received: true };
+    }
+
+    // 2. Persist Event immediately
+    await this.eventRepo.save(this.eventRepo.create({
+      eventId: uniqueEventId,
+      event: eventName,
+      payload: body, // Store full body for debugging/replay
+      status: 'processing'
+    }));
+
+    try {
+      // 3. Process Event
+      switch (eventName) {
+        case 'subscription.activated':
+          await this.activateSubscription(
+            payload.subscription.entity.notes.tenant_id,
+            payload.subscription.entity.id,
+            payload.subscription.entity.plan_id,
+          );
+          break;
+        case 'subscription.cancelled':
+        case 'subscription.expired':
+          // Handle cancellation logic here
+          break;
+        case 'payment.captured':
+          // Handle payment success logic
+          break;
+      }
+
+      // 4. Update status to processed
+      await this.eventRepo.update({ eventId: uniqueEventId }, { status: 'processed' });
+
+    } catch (error) {
+      this.logger.error(`Failed to process webhook event ${uniqueEventId}`, error);
+      await this.eventRepo.update({ eventId: uniqueEventId }, { status: 'failed' });
+      // We still return 200 to Razorpay usually to stop retries if it's a logic error, 
+      // unless it's transient. For now returning success to acknowledge receipt.
+    }
+
+    return { received: true };
+  }
+
 
   // ============ SUBSCRIPTIONS ============
 
@@ -45,7 +112,23 @@ export class BillingService {
       maxAgents: 1,
     });
 
-    return this.subscriptionRepo.save(subscription);
+    const saved = await this.subscriptionRepo.save(subscription);
+
+    // Audit trial creation
+    await this.auditService.logAction(
+      'SYSTEM',
+      'Billing Service',
+      'CREATE_TRIAL',
+      `Tenant: ${tenantId}`,
+      tenantId,
+      { status: saved.status, plan: saved.plan },
+      undefined,
+      LogLevel.SUCCESS,
+      LogCategory.BILLING,
+      'BillingService'
+    );
+
+    return saved;
   }
 
   async activateSubscription(
@@ -83,7 +166,23 @@ export class BillingService {
       Date.now() + 30 * 24 * 60 * 60 * 1000,
     );
 
-    return this.subscriptionRepo.save(subscription);
+    const saved = await this.subscriptionRepo.save(subscription);
+
+    // Audit subscription activation
+    await this.auditService.logAction(
+      'SYSTEM',
+      'Billing Service',
+      'ACTIVATE_SUBSCRIPTION',
+      `Plan: ${planType}`,
+      tenantId,
+      { subscriptionId: razorpaySubscriptionId, plan: planType },
+      undefined,
+      LogLevel.SUCCESS,
+      LogCategory.BILLING,
+      'BillingService'
+    );
+
+    return saved;
   }
 
   async manualUpdateSubscription(
@@ -114,7 +213,23 @@ export class BillingService {
       );
     }
 
-    return this.subscriptionRepo.save(subscription);
+    const saved = await this.subscriptionRepo.save(subscription);
+
+    // Audit manual update
+    await this.auditService.logAction(
+      'SYSTEM',
+      'Billing Service',
+      'MANUAL_UPDATE_SUBSCRIPTION',
+      `Plan: ${plan}, Status: ${status}`,
+      tenantId,
+      { plan, status },
+      undefined,
+      LogLevel.INFO,
+      LogCategory.BILLING,
+      'BillingService'
+    );
+
+    return saved;
   }
 
   public getPlanLimits(plan: PlanType) {
@@ -164,10 +279,24 @@ export class BillingService {
       permissions,
     });
 
-    await this.apiKeyRepo.save(apiKey);
+    const saved = await this.apiKeyRepo.save(apiKey);
+
+    // Audit API key creation
+    await this.auditService.logAction(
+      'SYSTEM',
+      'Billing Service',
+      'CREATE_API_KEY',
+      `Key Name: ${name}`,
+      tenantId,
+      { keyId: saved.id, prefix: keyPrefix },
+      undefined,
+      LogLevel.INFO,
+      LogCategory.SECURITY,
+      'BillingService'
+    );
 
     // Return raw key only once - user must save it
-    return { apiKey, rawKey };
+    return { apiKey: saved, rawKey };
   }
 
   async validateApiKey(rawKey: string): Promise<ApiKey | null> {
@@ -187,6 +316,20 @@ export class BillingService {
 
   async revokeApiKey(tenantId: string, keyId: string): Promise<void> {
     await this.apiKeyRepo.update({ id: keyId, tenantId }, { isActive: false });
+
+    // Audit API key revocation
+    await this.auditService.logAction(
+      'SYSTEM',
+      'Billing Service',
+      'REVOKE_API_KEY',
+      `Key ID: ${keyId}`,
+      tenantId,
+      undefined,
+      undefined,
+      LogLevel.WARNING,
+      LogCategory.SECURITY,
+      'BillingService'
+    );
   }
 
   // ============ WEBHOOKS ============

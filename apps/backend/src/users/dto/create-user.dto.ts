@@ -2,22 +2,19 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
-  IsUUID,
   MinLength,
 } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserDto {
   @IsNotEmpty()
-  @IsUUID()
-  tenantId: string;
-
-  @IsNotEmpty()
   @IsString()
   name: string;
 
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
   @IsNotEmpty()
@@ -25,5 +22,6 @@ export class CreateUserDto {
   password: string;
 
   @IsEnum(UserRole)
-  role: UserRole;
+  @IsOptional()
+  role?: UserRole;
 }

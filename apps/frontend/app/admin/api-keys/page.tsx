@@ -31,9 +31,8 @@ export default function AdminApiKeysPage() {
 
     const fetchApiKeys = async () => {
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/admin/api-keys`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
