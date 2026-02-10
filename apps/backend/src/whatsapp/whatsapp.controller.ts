@@ -14,10 +14,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
 @Controller('whatsapp')
-@UseGuards(JwtAuthGuard)
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(private readonly whatsappService: WhatsappService) { }
 
+  @UseGuards(JwtAuthGuard)
   @Get('embedded/start')
   async startEmbeddedSignup(
     @UserTenant() tenantId: string,
@@ -26,6 +26,7 @@ export class WhatsappController {
     const url = await this.whatsappService.getEmbeddedSignupUrl(tenantId);
     return res.redirect(url);
   }
+  @UseGuards(JwtAuthGuard)
   @Get('status')
   async getStatus(@UserTenant() tenantId: string) {
     return this.whatsappService.getStatus(tenantId);
@@ -36,17 +37,20 @@ export class WhatsappController {
     return this.whatsappService.getPublicConfig();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete()
   async disconnect(@UserTenant() tenantId: string) {
     return this.whatsappService.disconnect(tenantId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('send-test')
   async sendTest(@UserTenant() tenantId: string, @Body('to') to: string) {
     return this.whatsappService.sendTestMessage(tenantId, to);
   }
 
   // Cloud API Onboarding (Mode 1)
+  @UseGuards(JwtAuthGuard)
   @Post('cloud/init')
   async initCloudSignup(
     @UserTenant() tenantId: string,
@@ -56,6 +60,7 @@ export class WhatsappController {
     return { status: 'otp_sent', phoneNumber: body.phoneNumber };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('cloud/verify')
   async verifyCloudSignup(
     @UserTenant() tenantId: string,
