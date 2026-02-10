@@ -35,8 +35,6 @@ export class WhatsappService {
       this.configService.get('META_APP_ID')?.trim();
     const redirectUri = 'https://api.aerostic.com/meta/callback';
 
-    console.log('Generating OAuth URL with AppID:', appId);
-
     const params = qs.stringify({
       client_id: appId,
       redirect_uri: redirectUri,

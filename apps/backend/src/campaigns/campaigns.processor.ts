@@ -17,7 +17,6 @@ export class CampaignProcessor extends WorkerHost {
 
   async process(job: Job<any, any, string>): Promise<any> {
     const { tenantId, to, type, payload, campaignId } = job.data;
-    console.log(`Processing Campaign Job for ${to} (Campaign ${campaignId})`);
 
     try {
       await this.messagesService.send({

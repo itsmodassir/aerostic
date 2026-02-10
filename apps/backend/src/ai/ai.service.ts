@@ -25,10 +25,7 @@ export class AiService {
   }
 
   async process(tenantId: string, from: string, messageBody: string) {
-    console.log(`AI Processing message from ${from}: ${messageBody}`);
-
     if (!this.model) {
-      console.log('AI not configured (GEMINI_API_KEY missing)');
       return;
     }
 
@@ -43,9 +40,7 @@ export class AiService {
       const isActive = agent ? agent.isActive : true; // Default active
 
       if (!isActive) {
-        console.log('AI Agent disabled for tenant');
         return;
-      }
 
       const prompt = `
 System: ${systemPrompt}
@@ -58,10 +53,8 @@ Agent:`;
       const aiReply = response.text();
 
       if (aiReply.includes('HANDOFF_TO_AGENT')) {
-        console.log(`AI Confidence Low / Handoff triggered for ${from}`);
         // TODO: Update Conversation Status to 'needs_human' or notify agents
         return;
-      }
 
       // Send the reply
       await this.messagesService.send({

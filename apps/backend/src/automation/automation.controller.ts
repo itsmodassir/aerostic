@@ -21,7 +21,6 @@ export class AutomationController {
   @Post('execute')
   async execute() {
     // Internal Dispatcher Call for Rule Execution
-    console.log('Automation Execute triggered');
     return { status: 'executed' };
   }
 }

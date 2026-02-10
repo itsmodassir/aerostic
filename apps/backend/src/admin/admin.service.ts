@@ -152,7 +152,6 @@ export class AdminService {
   }
 
   async rotateSystemTokens() {
-    console.log('Rotating system tokens...');
     return { status: 'success', timestamp: new Date() };
   }
 

@@ -98,8 +98,6 @@ export class WebhooksService {
       const phoneNumberId = value.metadata?.phone_number_id;
       const from = messageData.from; // Sender phone number
 
-      console.log('Asynchronously processing Message from:', from);
-
       // 1. Find Tenant by phoneNumberId
       const account = await this.whatsappAccountRepo.findOneBy({
         phoneNumberId,

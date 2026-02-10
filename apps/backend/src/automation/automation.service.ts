@@ -43,7 +43,6 @@ export class AutomationService {
       }
 
       if (match) {
-        console.log(`Executing Rule: ${rule.name}`);
         await this.executeAction(tenantId, from, rule);
         return true; // Use handled it
       }

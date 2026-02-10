@@ -49,7 +49,6 @@ export class AiController {
   ) {
     // Internal Dispatcher Call
     // This ensures AI routes through proper channels
-    console.log('AI Respond triggered', { tenantId, ...body });
     return { status: 'processed' };
   }
 }
