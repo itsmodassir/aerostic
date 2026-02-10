@@ -2,14 +2,23 @@
 
 # Configuration
 APP_DIR="/var/www/aerostic"
+REPO_URL="https://github.com/itsmodassir/aerostic.git"
 
 echo "🚀 Starting Aerostic Production Deployment..."
 
-# 1. Update Code
-echo "🔄 Pulling latest changes..."
-cd $APP_DIR
-git checkout main
-git pull origin main
+# 1. Update/Clone Code
+if [ ! -d "$APP_DIR" ]; then
+    echo "📂 Directory missing. Cloning repository..."
+    sudo mkdir -p /var/www
+    sudo chown -R $USER:$USER /var/www
+    git clone $REPO_URL $APP_DIR
+    cd $APP_DIR
+else
+    echo "🔄 Pulling latest changes..."
+    cd $APP_DIR
+    git checkout main
+    git pull origin main
+fi
 
 # 2. Install Dependencies (Optimized)
 echo "📦 Installing dependencies..."
@@ -39,7 +48,14 @@ cd ../..
 
 # 6. Restart Services
 echo "🔄 Restarting Services..."
-pm2 restart all --update-env
+if pm2 list | grep -q "aerostic-backend"; then
+    pm2 restart all --update-env
+else
+    echo "⚠️ PM2 services not found. Starting fresh..."
+    pm2 start apps/backend/dist/main.js --name aerostic-backend
+    pm2 start apps/frontend/node_modules/next/dist/bin/next --name aerostic-frontend -- start -p 3000
+    pm2 save
+fi
 
 echo "✅ Deployment Complete!"
 pm2 status
