@@ -41,6 +41,7 @@ export class AiService {
 
       if (!isActive) {
         return;
+      }
 
       const prompt = `
 System: ${systemPrompt}
