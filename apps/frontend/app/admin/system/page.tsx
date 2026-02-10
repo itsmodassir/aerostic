@@ -17,7 +17,6 @@ export default function SystemPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
-    const [error, setError] = useState('');
     const [configMeta, setConfigMeta] = useState<Record<string, ConfigItem>>({});
 
     // Configuration state
