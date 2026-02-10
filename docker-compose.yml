@@ -62,6 +62,7 @@ services:
       - META_CONFIG_ID=${META_CONFIG_ID}
       - META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_DATABASE:-aerostic}
     depends_on:
       postgres:
@@ -87,6 +88,7 @@ services:
       - META_CONFIG_ID=${META_CONFIG_ID}
       - META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_DATABASE:-aerostic}
     depends_on:
       postgres:
@@ -112,6 +114,7 @@ services:
       - META_CONFIG_ID=${META_CONFIG_ID}
       - META_WEBHOOK_VERIFY_TOKEN=${META_WEBHOOK_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_DATABASE:-aerostic}
     depends_on:
       postgres:
