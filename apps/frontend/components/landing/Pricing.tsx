@@ -134,8 +134,8 @@ export default function Pricing() {
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
                             className={`flex flex-col relative rounded-3xl overflow-hidden transition-all duration-300 ${plan.highlight
-                                    ? 'bg-gray-900 text-white shadow-2xl scale-105 z-10 border-2 border-emerald-500'
-                                    : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl'
+                                ? 'bg-gray-900 text-white shadow-2xl md:scale-105 z-10 border-2 border-emerald-500'
+                                : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl'
                                 }`}
                         >
                             {plan.highlight && (
@@ -183,8 +183,8 @@ export default function Pricing() {
                                 <Link
                                     href="https://app.aerostic.com/register"
                                     className={`block w-full py-4 rounded-xl text-center font-bold text-lg transition-all ${plan.highlight
-                                            ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/30'
-                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                        ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/30'
+                                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                                         }`}
                                 >
                                     {plan.cta}

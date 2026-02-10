@@ -103,14 +103,14 @@ export default function CampaignsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Broadcasts</h1>
-                    <p className="text-gray-500">Send bulk marketing messages to your audience.</p>
+                    <p className="text-sm text-gray-500">Send bulk marketing messages to your audience.</p>
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto"
                 >
                     <Plus size={18} />
                     New Campaign
@@ -124,33 +124,33 @@ export default function CampaignsPage() {
                     </div>
                 ) : (
                     campaigns.map((camp) => (
-                        <div key={camp.id} className="bg-white p-6 rounded-lg shadow-sm border flex items-center justify-between">
-                            <div>
-                                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                    {camp.name}
-                                    <span className={`px-2 py-0.5 rounded text-xs uppercase font-bold ${camp.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        <div key={camp.id} className="bg-white p-4 md:p-6 rounded-lg shadow-sm border flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 flex flex-wrap items-center gap-2">
+                                    <span className="truncate">{camp.name}</span>
+                                    <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] sm:text-xs uppercase font-bold ${camp.status === 'completed' ? 'bg-green-100 text-green-700' :
                                         camp.status === 'sending' ? 'bg-blue-100 text-blue-700' :
                                             'bg-gray-100 text-gray-600'
                                         }`}>
                                         {camp.status}
                                     </span>
                                 </h3>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Dispatched on {new Date(camp.createdAt).toLocaleDateString()} at {new Date(camp.createdAt).toLocaleTimeString()}
+                                <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                                    {new Date(camp.createdAt).toLocaleDateString()} at {new Date(camp.createdAt).toLocaleTimeString()}
                                 </p>
                             </div>
-                            <div className="flex gap-8 text-center">
+                            <div className="grid grid-cols-3 gap-4 sm:gap-8 text-center sm:text-right border-t sm:border-0 pt-4 sm:pt-0">
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{camp.totalContacts}</p>
-                                    <p className="text-xs text-gray-500 uppercase">Targeted</p>
+                                    <p className="text-xl md:text-2xl font-bold text-gray-900">{camp.totalContacts}</p>
+                                    <p className="text-[10px] text-gray-500 uppercase">Targeted</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-green-600">{camp.sentCount}</p>
-                                    <p className="text-xs text-gray-500 uppercase">Sent</p>
+                                    <p className="text-xl md:text-2xl font-bold text-green-600">{camp.sentCount}</p>
+                                    <p className="text-[10px] text-gray-500 uppercase">Sent</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-red-500">{camp.failedCount}</p>
-                                    <p className="text-xs text-gray-500 uppercase">Failed</p>
+                                    <p className="text-xl md:text-2xl font-bold text-red-500">{camp.failedCount}</p>
+                                    <p className="text-[10px] text-gray-500 uppercase">Failed</p>
                                 </div>
                             </div>
                         </div>

@@ -29,7 +29,7 @@ export default function Hero() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 mb-8"
+                        className="text-4xl md:text-7xl font-bold tracking-tight text-gray-900 mb-8"
                     >
                         The Safest Way to Scale <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600">

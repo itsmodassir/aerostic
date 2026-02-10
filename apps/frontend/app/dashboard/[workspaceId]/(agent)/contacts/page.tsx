@@ -70,16 +70,16 @@ export default function ContactsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-600">
+                <div className="flex flex-wrap gap-2">
+                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-600">
                         <Upload size={18} />
                         Import CSV
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
                         <Plus size={18} />
                         Add Contact
@@ -98,8 +98,8 @@ export default function ContactsPage() {
             </div>
 
             {/* Contacts Table */}
-            <div className="bg-white rounded-lg shadow border overflow-hidden">
-                <table className="w-full text-left">
+            <div className="bg-white rounded-lg shadow border overflow-x-auto">
+                <table className="w-full text-left min-w-[600px]">
                     <thead className="bg-gray-50 border-b">
                         <tr>
                             <th className="px-6 py-3 text-sm font-medium text-gray-500">Name</th>

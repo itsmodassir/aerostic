@@ -75,31 +75,33 @@ export default function AutomationPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Automation</h1>
-                    <p className="text-gray-500">Create rules to automate your conversations.</p>
+                    <p className="text-sm text-gray-500">Create rules to automate your conversations.</p>
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto"
                 >
                     <Plus size={18} />
                     New Rule
                 </button>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm border mb-8 flex items-center justify-between">
-                <div>
-                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <Zap className="text-yellow-500" fill="currentColor" />
-                        AI Agent
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                        When no rules match, let the AI reply intelligently.
-                    </p>
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 shrink-0">
+                        <Zap size={20} fill="currentColor" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">AI Agent</h2>
+                        <p className="text-sm text-gray-500">
+                            When no rules match, let the AI reply intelligently.
+                        </p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-0 pt-4 sm:pt-0">
                     <span className="text-sm font-medium text-gray-700">Disabled (Stub)</span>
                     <button className="w-12 h-6 bg-gray-200 rounded-full relative transition-colors">
                         <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 shadow-sm"></div>
@@ -115,23 +117,23 @@ export default function AutomationPage() {
                     </div>
                 ) : (
                     rules.map((rule) => (
-                        <div key={rule.id} className="bg-white p-6 rounded-lg shadow-sm border flex items-center justify-between">
+                        <div key={rule.id} className="bg-white p-4 md:p-6 rounded-lg shadow-sm border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 shrink-0">
                                     <Zap size={20} />
                                 </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-900">{rule.name}</h3>
-                                    <p className="text-sm text-gray-500">
+                                <div className="min-w-0">
+                                    <h3 className="font-semibold text-gray-900 truncate">{rule.name}</h3>
+                                    <p className="text-xs sm:text-sm text-gray-500">
                                         If message <strong>{rule.condition}</strong> "{rule.keyword}", then <strong>reply</strong>.
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${rule.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                            <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-0 pt-4 sm:pt-0">
+                                <span className={`shrink-0 px-2 py-1 rounded text-[10px] font-medium ${rule.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                                     {rule.isActive ? 'Active' : 'Inactive'}
                                 </span>
-                                <button className="text-red-500 hover:bg-red-50 p-2 rounded-lg">
+                                <button className="text-red-500 hover:bg-red-50 p-2 rounded-lg ml-auto">
                                     <Trash2 size={18} />
                                 </button>
                             </div>

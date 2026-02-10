@@ -167,16 +167,16 @@ export default function AgentsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">AI Agents</h1>
-                    <p className="text-gray-600 mt-1">Configure intelligent agents for WhatsApp automation</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">AI Agents</h1>
+                    <p className="text-sm md:text-gray-600 mt-1">Configure intelligent agents for WhatsApp automation</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {/* Plan indicator */}
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl">
+                    <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl">
                         <Bot className="w-4 h-4 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-700">
+                        <span className="text-sm font-medium text-purple-700 whitespace-nowrap">
                             {agents.length} / {planLimits.maxAgents === -1 ? '∞' : planLimits.maxAgents} Agents
                         </span>
                     </div>
@@ -184,7 +184,7 @@ export default function AgentsPage() {
                     {canCreateMore ? (
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
+                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
                         >
                             <Plus className="w-5 h-5" />
                             Create Agent
@@ -192,7 +192,7 @@ export default function AgentsPage() {
                     ) : (
                         <Link
                             href="/dashboard/billing"
-                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
+                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
                         >
                             <Crown className="w-5 h-5" />
                             Upgrade for More
@@ -226,8 +226,8 @@ export default function AgentsPage() {
             )}
 
             {/* Stats Overview */}
-            <div className="grid md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl p-5 border border-gray-200">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl p-4 md:p-5 border border-gray-200">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-blue-100 rounded-xl">
                             <Bot className="w-5 h-5 text-blue-600" />
@@ -284,7 +284,7 @@ export default function AgentsPage() {
 
             {/* Agents Grid */}
             {agents.length === 0 ? (
-                <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300">
+                <div className="text-center py-10 md:py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300 px-4">
                     <Bot className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-gray-700 mb-2">No Agents Yet</h3>
                     <p className="text-gray-500 mb-6 max-w-md mx-auto">
@@ -301,7 +301,7 @@ export default function AgentsPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {agents.map((agent) => (
                         <div key={agent.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all">
                             <div className="flex items-start justify-between mb-4">
@@ -419,7 +419,7 @@ export default function AgentsPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     Agent Type <span className="text-red-500">*</span>
                                 </label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {AGENT_TYPES.map((type) => (
                                         <button
                                             key={type.id}
@@ -431,12 +431,12 @@ export default function AgentsPage() {
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg bg-${type.color}-100`}>
+                                                <div className={`p-2 rounded-lg bg-${type.color}-100 shrink-0`}>
                                                     <type.icon className={`w-5 h-5 text-${type.color}-600`} />
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{type.name}</p>
-                                                    <p className="text-xs text-gray-500">{type.description}</p>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-gray-900 truncate">{type.name}</p>
+                                                    <p className="text-[10px] text-gray-500 truncate">{type.description}</p>
                                                 </div>
                                             </div>
                                         </button>

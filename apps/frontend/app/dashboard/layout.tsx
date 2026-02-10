@@ -7,7 +7,7 @@ import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import {
     LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut, Bell,
     Megaphone, FileText, Bot, Shield, User, CreditCard, HelpCircle,
-    ChevronDown, Crown, Check
+    ChevronDown, Crown, Check, Menu
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
@@ -43,6 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [membership, setMembership] = useState<any>(null);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
 
@@ -128,8 +129,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="flex h-screen bg-muted/40">
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm sm:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
+            <aside className={clsx(
+                "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-background transition-transform duration-300 sm:translate-x-0",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
                 <div className="flex h-16 items-center px-6 border-b">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
@@ -181,11 +193,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Main Content */}
             <div className="flex flex-col sm:ml-64 w-full min-h-screen">
-                <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-8 shadow-sm">
-                    {/* Breadcrumb / Title Stub */}
-                    <h2 className="text-lg font-semibold text-foreground capitalize">
-                        {pathname.split('/')[3]?.replace('-', ' ') || 'Overview'}
-                    </h2>
+                <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 md:px-8 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="p-2 -ml-2 text-muted-foreground hover:text-foreground sm:hidden"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        {/* Breadcrumb / Title Stub */}
+                        <h2 className="text-lg font-semibold text-foreground capitalize">
+                            {pathname.split('/')[3]?.replace('-', ' ') || 'Overview'}
+                        </h2>
+                    </div>
 
                     <div className="flex items-center gap-4">
                         {/* Plan Badge */}

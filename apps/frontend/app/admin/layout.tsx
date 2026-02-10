@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Users, CreditCard, BarChart3, Settings, Shield,
     FileText, Activity, Bell, Database, Globe, Key, Webhook,
-    MessageSquare, AlertTriangle, Server, LogOut
+    MessageSquare, AlertTriangle, Server, LogOut, Menu, X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
     const [authorized, setAuthorized] = useState(false);
-
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
@@ -81,9 +81,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex">
+        <div className="min-h-screen bg-gray-100 flex relative overflow-x-hidden">
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="w-72 bg-gray-900 text-white fixed h-full overflow-y-auto">
+            <aside className={`w-72 bg-gray-900 text-white fixed h-full overflow-y-auto z-50 transition-transform duration-300 transform lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Logo */}
                 <div className="flex h-16 items-center px-6 border-b border-gray-800">
                     <Link href="/" className="flex items-center gap-2 font-bold text-xl text-white">
@@ -146,13 +154,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 ml-72">
+            <main className="flex-1 lg:ml-72 min-w-0 w-full">
                 {/* Top Bar */}
                 <header className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Admin Console</h1>
-                            <p className="text-sm text-gray-500">Manage your platform</p>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="p-2 -ml-2 text-gray-600 lg:hidden"
+                            >
+                                <Menu className="w-6 h-6" />
+                            </button>
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-900 leading-none">Admin Console</h1>
+                                <p className="text-xs md:text-sm text-gray-500 mt-1">Manage your platform</p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <button className="p-2 text-gray-400 hover:text-gray-600 relative">
@@ -163,7 +179,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                                     A
                                 </div>
-                                <span className="text-sm font-medium text-gray-700">Admin</span>
+                                <span className="text-sm font-medium text-gray-700 hidden sm:block">Admin</span>
                             </div>
                         </div>
                     </div>
@@ -174,6 +190,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {children}
                 </div>
             </main>
-        </div>
+        </div >
     );
 }

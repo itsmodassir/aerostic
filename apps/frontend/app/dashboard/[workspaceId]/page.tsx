@@ -166,48 +166,50 @@ export default function DashboardPage() {
     return (
         <div className="space-y-6">
             {/* Welcome Header with Tabs */}
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
                         {greeting}, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{userName}</span>! 👋
                     </h1>
-                    <p className="text-gray-500 mt-1">Here's what's happening with your WhatsApp workspace today.</p>
+                    <p className="text-sm md:text-gray-500 mt-1">Here's what's happening today.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative">
                         <Bell className="w-5 h-5 text-gray-500" />
                         <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                     </button>
-                    <Link href="/dashboard/billing" className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-lg transition-all">
+                    <Link href="/dashboard/billing" className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-lg transition-all">
                         <Crown className="w-4 h-4" />
-                        <span className="font-semibold text-sm">{planFeatures.name} Plan</span>
+                        <span className="font-semibold text-xs md:text-sm whitespace-nowrap">{planFeatures.name} Plan</span>
                     </Link>
                 </div>
             </div>
 
             {/* Dashboard Tabs */}
-            <div className="flex gap-2 border-b border-gray-200 pb-0">
-                {[
-                    { id: 'overview', label: 'Overview', icon: BarChart2 },
-                    { id: 'developer', label: 'Developer Tools', icon: Code, locked: !planFeatures.apiAccess },
-                    { id: 'team', label: 'Team Inbox', icon: Users, locked: !planFeatures.teamCollaboration },
-                    { id: 'settings', label: 'Configuration', icon: Settings },
-                ].map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => !tab.locked && setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${activeTab === tab.id
-                            ? 'border-blue-600 text-blue-600'
-                            : tab.locked
-                                ? 'border-transparent text-gray-400 cursor-not-allowed'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                    >
-                        <tab.icon className="w-4 h-4" />
-                        <span className="font-medium">{tab.label}</span>
-                        {tab.locked && <Lock className="w-3 h-3" />}
-                    </button>
-                ))}
+            <div className="flex gap-2 border-b border-gray-200 pb-0 overflow-x-auto scrollbar-none">
+                <div className="flex gap-2 min-w-max">
+                    {[
+                        { id: 'overview', label: 'Overview', icon: BarChart2 },
+                        { id: 'developer', label: 'Developer Tools', icon: Code, locked: !planFeatures.apiAccess },
+                        { id: 'team', label: 'Team Inbox', icon: Users, locked: !planFeatures.teamCollaboration },
+                        { id: 'settings', label: 'Configuration', icon: Settings },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => !tab.locked && setActiveTab(tab.id as any)}
+                            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${activeTab === tab.id
+                                ? 'border-blue-600 text-blue-600'
+                                : tab.locked
+                                    ? 'border-transparent text-gray-400 cursor-not-allowed'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                        >
+                            <tab.icon className="w-4 h-4" />
+                            <span className="font-medium">{tab.label}</span>
+                            {tab.locked && <Lock className="w-3 h-3" />}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Tab Content */}
@@ -242,7 +244,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
     return (
         <div className="space-y-6">
             {/* Usage Banners */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Messages Usage */}
                 <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-5 text-white relative overflow-hidden">
                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
@@ -291,7 +293,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <QuickAction icon={Send} label="New Campaign" href="/dashboard/campaigns" color="bg-blue-500" />
                 <QuickAction icon={Users2} label="Add Contact" href="/dashboard/contacts" color="bg-green-500" />
                 <QuickAction icon={Bot} label="AI Agents" href="/dashboard/agents" color="bg-purple-500" available={planFeatures.aiAgents > 0} />
@@ -300,7 +302,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard title="Total Contacts" value={stats?.totalContacts || 0} icon={Users2} trend="+12%" trendUp={true} color="blue" />
                 <StatCard title="Messages Sent" value={stats?.totalSent || 0} icon={ArrowUpRight} trend="+28%" trendUp={true} color="green" />
                 <StatCard title="Messages Received" value={stats?.totalReceived || 0} icon={ArrowDownLeft} trend="+15%" trendUp={true} color="purple" />
@@ -309,7 +311,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
 
             {/* Analytics Section */}
             {planFeatures.advancedAnalytics ? (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <MetricCard title="Delivery Rate" value="98.5%" icon={CheckCircle} color="green" />
                     <MetricCard title="Read Rate" value="76.2%" icon={Eye} color="blue" />
                     <MetricCard title="Response Rate" value="34.8%" icon={MousePointer} color="purple" />
@@ -325,9 +327,9 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
             )}
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Recent Activity */}
-                <div className="col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden">
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
                             <Activity className="w-5 h-5 text-blue-600" />
@@ -369,7 +371,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
             </div>
 
             {/* Feature Access Grid */}
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <FeatureCard title="API Access" description="REST API" icon={Code} available={planFeatures.apiAccess} href="/dashboard/developer" />
                 <FeatureCard title="Webhooks" description="Real-time events" icon={Webhook} available={planFeatures.webhooks} href="/dashboard/developer" />
                 <FeatureCard title="Team Inbox" description="Collaborate" icon={Users} available={planFeatures.teamCollaboration} href="/dashboard/inbox" />
@@ -634,7 +636,7 @@ function DeveloperTab({ planFeatures }: any) {
             </div>
 
             {/* Quick Reference */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                     <h4 className="font-semibold text-gray-900 mb-3">Base URL</h4>
                     <code className="text-sm bg-gray-100 px-3 py-1.5 rounded block">{API_URL}</code>
@@ -887,9 +889,9 @@ function TeamTab({ planFeatures }: any) {
 
                 <div className="space-y-3">
                     {teamMembers.map((member, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-xl gap-4">
                             <div className="flex items-center gap-3">
-                                <div className="relative">
+                                <div className="relative shrink-0">
                                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
                                         {member.avatar}
                                     </div>
@@ -935,7 +937,7 @@ function TeamTab({ planFeatures }: any) {
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div className="p-4 bg-blue-50 rounded-xl text-center">
                         <p className="text-3xl font-bold text-blue-600">{inboxStats.unassigned}</p>
                         <p className="text-sm text-blue-600">Unassigned</p>
@@ -1202,7 +1204,7 @@ function SettingsTab({ planFeatures, userPlan }: any) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number ID</label>
                         <input
@@ -1345,7 +1347,7 @@ function SettingsTab({ planFeatures, userPlan }: any) {
                         </Link>
                     )}
                 </div>
-                <div className="mt-6 grid grid-cols-4 gap-4">
+                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-3 bg-white/10 rounded-lg">
                         <p className="text-2xl font-bold">{planFeatures.messagesLimit > 0 ? planFeatures.messagesLimit.toLocaleString() : '∞'}</p>
                         <p className="text-sm text-blue-100">Messages</p>
@@ -1471,9 +1473,9 @@ function FeatureCard({ title, description, icon: Icon, available, href }: any) {
 function LockedFeatureCard({ title, description, icon: Icon, plan }: any) {
     return (
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 bg-gray-200 rounded-xl flex items-center justify-center">
+                    <div className="w-11 h-11 bg-gray-200 rounded-xl flex items-center justify-center shrink-0">
                         <Lock className="w-5 h-5 text-gray-400" />
                     </div>
                     <div>
@@ -1481,7 +1483,7 @@ function LockedFeatureCard({ title, description, icon: Icon, plan }: any) {
                         <p className="text-gray-500 text-sm">{description}</p>
                     </div>
                 </div>
-                <Link href="/dashboard/billing" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 text-sm">
+                <Link href="/dashboard/billing" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 text-sm text-center">
                     Upgrade to {plan}
                 </Link>
             </div>

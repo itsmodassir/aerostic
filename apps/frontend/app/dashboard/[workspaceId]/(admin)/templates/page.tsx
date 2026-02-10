@@ -60,15 +60,15 @@ export default function TemplatesPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Message Templates</h1>
-                    <p className="text-gray-500">Manage your WhatsApp approved templates.</p>
+                    <p className="text-sm text-gray-500">Manage your WhatsApp approved templates.</p>
                 </div>
                 <button
                     onClick={handleSync}
                     disabled={syncing}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto"
                 >
                     <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
                     {syncing ? 'Syncing...' : 'Sync with Meta'}

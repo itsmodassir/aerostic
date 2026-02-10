@@ -317,9 +317,12 @@ export default function InboxPage() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] bg-gray-100 rounded-2xl overflow-hidden shadow-lg">
+        <div className="flex h-[calc(100vh-8rem)] bg-gray-100 rounded-2xl overflow-hidden shadow-lg relative">
             {/* Sidebar - Conversation List */}
-            <div className="w-96 border-r bg-white flex flex-col">
+            <div className={clsx(
+                "w-full md:w-96 border-r bg-white flex flex-col transition-all",
+                selectedConversation && "hidden md:flex"
+            )}>
                 {/* Header */}
                 <div className="p-4 border-b">
                     <div className="flex items-center justify-between mb-4">
@@ -341,7 +344,7 @@ export default function InboxPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-4 gap-2 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                         <button
                             onClick={() => setFilterAssignee('all')}
                             className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'all' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
@@ -495,53 +498,54 @@ export default function InboxPage() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-gray-50">
+            <div className={clsx(
+                "flex-1 flex flex-col bg-gray-50 transition-all",
+                !selectedConversation && "hidden md:flex"
+            )}>
                 {selectedConversation ? (
                     <>
                         {/* Chat Header */}
-                        <div className="px-6 py-4 bg-white border-b flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="relative">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                        <div className="px-4 md:px-6 py-4 bg-white border-b flex items-center justify-between">
+                            <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
+                                <button
+                                    onClick={() => setSelectedConversation(null)}
+                                    className="md:hidden p-2 -ml-2 text-gray-400 hover:text-gray-600"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+                                <div className="relative shrink-0">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-base md:text-lg">
                                         {selectedConversation.contact.name.charAt(0)}
                                     </div>
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-900">{selectedConversation.contact.name}</h3>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(selectedConversation.status)}`}>
+                                        <h3 className="font-bold text-gray-900 truncate">{selectedConversation.contact.name}</h3>
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium hidden sm:inline-block ${getStatusBadge(selectedConversation.status)}`}>
                                             {selectedConversation.status}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-500 flex items-center gap-2">
+                                    <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
                                         <Phone className="w-3 h-3" />
                                         {selectedConversation.contact.phoneNumber}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                {/* Assignment */}
+                            <div className="flex items-center gap-1 md:gap-2">
+                                {/* Assignment - Compressed on mobile */}
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowAssignModal(!showAssignModal)}
-                                        className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                        className="flex items-center gap-2 p-2 md:px-3 md:py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                                     >
-                                        {selectedConversation.assignedTo ? (
-                                            <>
-                                                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                                                    {selectedConversation.assignedTo.name.charAt(0)}
-                                                </div>
-                                                <span className="text-sm text-gray-700">{selectedConversation.assignedTo.name}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <UserPlus className="w-4 h-4 text-gray-500" />
-                                                <span className="text-sm text-gray-500">Assign</span>
-                                            </>
-                                        )}
-                                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                                        <UserPlus className="w-4 h-4 text-gray-500" />
+                                        <span className="hidden lg:inline text-sm text-gray-500">
+                                            {selectedConversation.assignedTo ? selectedConversation.assignedTo.name : 'Assign'}
+                                        </span>
+                                        <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:inline" />
                                     </button>
+                                    {/* ... modal logic stays same ... */}
 
                                     {showAssignModal && (
                                         <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border overflow-hidden z-10">
@@ -577,11 +581,11 @@ export default function InboxPage() {
                                     )}
                                 </div>
 
-                                {/* Status Dropdown */}
+                                {/* Status Dropdown - Hidden on XS */}
                                 <select
                                     value={selectedConversation.status}
                                     onChange={(e) => handleStatusChange(e.target.value as any)}
-                                    className="px-3 py-2 bg-gray-100 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500"
+                                    className="hidden sm:inline-block px-3 py-2 bg-gray-100 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="open">Open</option>
                                     <option value="pending">Pending</option>
@@ -740,9 +744,9 @@ export default function InboxPage() {
                 )}
             </div>
 
-            {/* Contact Details Sidebar */}
+            {/* Contact Details Sidebar - Overlay on mobile */}
             {showContactDetails && selectedConversation && (
-                <div className="w-80 bg-white border-l flex flex-col">
+                <div className="absolute inset-y-0 right-0 w-80 bg-white border-l flex flex-col shadow-2xl z-20 md:relative md:shadow-none">
                     <div className="p-4 border-b flex items-center justify-between">
                         <h3 className="font-semibold text-gray-900">Contact Details</h3>
                         <button
