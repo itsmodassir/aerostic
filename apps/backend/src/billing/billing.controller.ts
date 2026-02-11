@@ -8,10 +8,12 @@ import {
   Req,
   UseGuards,
   HttpCode,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('billing')
@@ -19,7 +21,7 @@ export class BillingController {
   constructor(
     private razorpayService: RazorpayService,
     private billingService: BillingService,
-  ) {}
+  ) { }
 
   // ============ PLANS ============
 
@@ -31,14 +33,14 @@ export class BillingController {
   // ============ SUBSCRIPTION ============
 
   @Get('subscription')
-  async getSubscription(@Req() req: any) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+  async getSubscription(@UserTenant() tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     return this.billingService.getSubscription(tenantId);
   }
 
   @Post('subscribe')
-  async createSubscription(@Req() req: any, @Body() body: { planId: string }) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+  async createSubscription(@UserTenant() tenantId: string, @Req() req: any, @Body() body: { planId: string }) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     const email = req.user?.email || 'demo@example.com';
     const phone = req.user?.phone || '9999999999';
 
@@ -86,17 +88,17 @@ export class BillingController {
   // ============ API KEYS ============
 
   @Get('api-keys')
-  async getApiKeys(@Req() req: any) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+  async getApiKeys(@UserTenant() tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     return this.billingService.getApiKeys(tenantId);
   }
 
   @Post('api-keys')
   async createApiKey(
-    @Req() req: any,
+    @UserTenant() tenantId: string,
     @Body() body: { name: string; permissions: string[] },
   ) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     return this.billingService.createApiKey(
       tenantId,
       body.name,
@@ -105,8 +107,8 @@ export class BillingController {
   }
 
   @Delete('api-keys/:id')
-  async revokeApiKey(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+  async revokeApiKey(@UserTenant() tenantId: string, @Param('id') id: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     await this.billingService.revokeApiKey(tenantId, id);
     return { success: true };
   }
@@ -114,17 +116,17 @@ export class BillingController {
   // ============ WEBHOOKS ============
 
   @Get('webhooks')
-  async getWebhooks(@Req() req: any) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+  async getWebhooks(@UserTenant() tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     return this.billingService.getWebhookEndpoints(tenantId);
   }
 
   @Post('webhooks')
   async createWebhook(
-    @Req() req: any,
+    @UserTenant() tenantId: string,
     @Body() body: { url: string; events: string[]; description?: string },
   ) {
-    const tenantId = req.user?.tenantId || 'demo-tenant';
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     return this.billingService.createWebhookEndpoint(
       tenantId,
       body.url,

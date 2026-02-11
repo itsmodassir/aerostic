@@ -33,7 +33,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: payload.sub,
       email: payload.email,
-      role: payload.role, // This is UserRole (global), not TenantRole
+      role: payload.role,
+      tenantId: payload.tenantId, // Include tenantId in the validated user object
     };
   }
 }

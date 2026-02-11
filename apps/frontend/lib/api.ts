@@ -8,8 +8,17 @@ const api = axios.create({
     withCredentials: true, // Enable cookie-based auth
 });
 
-// Request interceptor removed as we now use HttpOnly cookies for auth
-// api.interceptors.request.use((config) => { ... });
+// Request interceptor to automatically add the tenant ID from the URL
+api.interceptors.request.use((config) => {
+    if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const workspaceMatch = path.match(/\/dashboard\/([0-9a-f-]{36})/i);
+        if (workspaceMatch) {
+            config.headers['x-tenant-id'] = workspaceMatch[1];
+        }
+    }
+    return config;
+});
 
 // Add a response interceptor to handle non-JSON responses
 api.interceptors.response.use(

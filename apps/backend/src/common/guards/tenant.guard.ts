@@ -38,17 +38,21 @@ export class TenantGuard implements CanActivate {
       }
     }
 
-    // 2. Resolve Tenant ID from User/JWT
-    const tenantIdFromUser = request.user?.tenantId;
+    // 2. Resolve Tenant ID from User/JWT or Header
+    const tenantIdFromUser = request.user?.tenantId || request.headers['x-tenant-id'];
 
     // 3. Identification Logic
-    // If a subdomain is used, it takes priority as the context
+    // Subdomain > JWT/Header
     let targetTenant: Tenant | null = null;
 
     if (tenantFromHost) {
       targetTenant = tenantFromHost;
     } else if (tenantIdFromUser) {
-      targetTenant = await this.tenantRepo.findOne({ where: { id: tenantIdFromUser } });
+      // Ensure it's a valid UUID before querying
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(tenantIdFromUser)) {
+        targetTenant = await this.tenantRepo.findOne({ where: { id: tenantIdFromUser } });
+      }
     }
 
     if (!targetTenant) {

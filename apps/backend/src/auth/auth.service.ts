@@ -57,6 +57,7 @@ export class AuthService {
       email: user.email,
       sub: user.id,
       role: user.role,
+      tenantId: user.tenantId,
     };
     return {
       access_token: this.jwtService.sign(payload),
@@ -65,6 +66,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        tenantId: user.tenantId,
       },
     };
   }
