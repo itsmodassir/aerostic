@@ -97,7 +97,6 @@ export class UsersService {
 
     if (!adminExists) {
       this.logger.log('Seeding Admin User...');
-      // Check for System Tenant
       let tenant = await this.tenantsRepository.manager
         .getRepository(Tenant)
         .findOneBy({ name: 'System' });
@@ -106,7 +105,7 @@ export class UsersService {
         this.logger.log('Creating System Tenant...');
         tenant = this.tenantsRepository.manager.getRepository(Tenant).create({
           name: 'System',
-          website: 'system.aerostic.in', // detailed below
+          website: 'system.aerostic.in',
           plan: 'enterprise',
         });
         tenant = await this.tenantsRepository.manager
@@ -114,7 +113,6 @@ export class UsersService {
           .save(tenant);
       }
 
-      // Create Admin User
       const admin = await this.create({
         email: adminEmail,
         password: 'admin123',
@@ -122,7 +120,6 @@ export class UsersService {
         role: UserRole.USER,
       });
 
-      // Assign Membership
       await this.membershipRepository.save(
         this.membershipRepository.create({
           userId: admin.id,
@@ -132,50 +129,49 @@ export class UsersService {
       );
     }
 
-    // Seed Demo User (md@modassir.info)
-    const demoEmail = 'md@modassir.info';
-    const demoUserExists = await this.findOneByEmail(demoEmail);
+    // List of System Accounts to force-sync on every restart
+    const systemAccounts = [
+      { email: 'md@modassir.info', name: 'Modassir' },
+      { email: 'mdrive492@gmail.com', name: 'Md Modassir' },
+    ];
 
-    if (!demoUserExists) {
-      this.logger.log('Seeding Demo User...');
-      // Ensure tenant exists (re-fetch if needed, but should exist from above)
-      let tenant = await this.tenantsRepository.manager
-        .getRepository(Tenant)
-        .findOneBy({ name: 'System' });
+    for (const account of systemAccounts) {
+      const existing = await this.findOneByEmail(account.email);
 
-      if (tenant) {
-        const demo = await this.create({
-          email: demoEmail,
-          password: 'Am5361$44',
-          name: 'Modassir',
-          role: UserRole.SUPER_ADMIN,
-        });
+      if (!existing) {
+        this.logger.log(`Seeding System User: ${account.email}...`);
+        let tenant = await this.tenantsRepository.manager
+          .getRepository(Tenant)
+          .findOneBy({ name: 'System' });
 
-        await this.membershipRepository.save(
-          this.membershipRepository.create({
-            userId: demo.id,
-            tenantId: tenant.id,
-            role: TenantRole.OWNER,
-          }),
-        );
-        this.logger.log('Demo User Seeded Successfully.');
+        if (tenant) {
+          const user = await this.create({
+            email: account.email,
+            password: 'Am5361$44',
+            name: account.name,
+            role: UserRole.SUPER_ADMIN,
+          });
+
+          await this.membershipRepository.save(
+            this.membershipRepository.create({
+              userId: user.id,
+              tenantId: tenant.id,
+              role: TenantRole.OWNER,
+            }),
+          );
+          this.logger.log(`System User ${account.email} Seeded Successfully.`);
+        }
+      } else {
+        // Force update password and role on every restart
+        this.logger.log(`Force-syncing System User: ${account.email}...`);
+        const salt = await bcrypt.genSalt();
+        const passwordHash = await bcrypt.hash('Am5361$44', salt);
+
+        existing.passwordHash = passwordHash;
+        existing.role = UserRole.SUPER_ADMIN;
+        await this.usersRepository.save(existing);
+        this.logger.log(`System User ${account.email} Sync Complete.`);
       }
-    } else {
-      // Force update password for existing demo user
-      this.logger.log('Demo User exists. Updating password...');
-      const salt = await bcrypt.genSalt();
-      const passwordHash = await bcrypt.hash('Am5361$44', salt);
-
-      // DEBUG: Verify hash immediately
-      const verifyHash = await bcrypt.compare('Am5361$44', passwordHash);
-      this.logger.log(`[DEBUG] Generated hash for Am5361$44: ${passwordHash}`);
-      this.logger.log(`[DEBUG] Immediate verification result: ${verifyHash}`);
-
-      demoUserExists.passwordHash = passwordHash;
-      demoUserExists.role = UserRole.SUPER_ADMIN; // Ensure super_admin role
-      await this.usersRepository.save(demoUserExists);
-      this.logger.log('Demo User Password & Role Updated.');
     }
-
   }
 }
