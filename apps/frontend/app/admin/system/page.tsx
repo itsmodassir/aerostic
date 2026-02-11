@@ -50,12 +50,18 @@ export default function SystemPage() {
 
     const fetchConfig = async () => {
         setLoading(true);
+        setError('');
         try {
+            console.log('Fetching system config...');
             const res = await fetch(`/api/v1/admin/config`, {
                 credentials: 'include'
             });
 
-            if (!res.ok) throw new Error('Failed to fetch config');
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error(`Fetch config failed: ${res.status} ${res.statusText}`, errorText);
+                throw new Error(`Failed to fetch config (${res.status})`);
+            }
 
             const data: Record<string, ConfigItem> = await res.json();
             setConfigMeta(data);
@@ -66,9 +72,9 @@ export default function SystemPage() {
                 newConfig[key] = item.value || '';
             }
             setConfig(newConfig);
-        } catch (e) {
-            console.log('Using default config - API unavailable');
-            // Keep defaults
+        } catch (e: any) {
+            console.error('Core config fetch error:', e);
+            setError(e.message || 'API unavailable');
         } finally {
             setLoading(false);
         }
@@ -79,6 +85,7 @@ export default function SystemPage() {
         setError('');
 
         try {
+            console.log('Saving config updates:', config);
             const res = await fetch(`/api/v1/admin/config`, {
                 method: 'POST',
                 headers: {
@@ -89,11 +96,13 @@ export default function SystemPage() {
             });
 
             if (!res.ok) {
-                throw new Error('Failed to save configuration');
+                const errorText = await res.text();
+                console.error(`Save config failed: ${res.status} ${res.statusText}`, errorText);
+                throw new Error(`Failed to save configuration (${res.status})`);
             }
 
             const result = await res.json();
-            console.log('Config saved:', result);
+            console.log('Config successfully saved:', result);
 
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
@@ -101,6 +110,7 @@ export default function SystemPage() {
             // Refresh to get updated values
             await fetchConfig();
         } catch (e: any) {
+            console.error('Core config save error:', e);
             setError(e.message || 'Failed to save configuration');
         } finally {
             setSaving(false);

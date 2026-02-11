@@ -194,6 +194,8 @@ export class AdminConfigService {
             // Skip masked values (user didn't change them)
             if (value === '••••••••••••••••' || value === '') continue;
 
+            console.log(`Updating config key: ${key}`);
+
             // Prevent overwriting env-managed keys
             if (currentConfig[key]?.readOnly) {
                 console.warn(`Attempted to overwrite read-only config key: ${key}`);
@@ -235,14 +237,19 @@ export class AdminConfigService {
         }
 
         // Log action
-        await this.auditService.logAction(
-            'admin',
-            'Administrator', // In real system, pass correct actor info
-            'UPDATE_CONFIG',
-            'System Configuration',
-            undefined,
-            { updatedKeys: updated },
-        );
+        try {
+            await this.auditService.logAction(
+                'admin',
+                'Administrator', // In real system, pass correct actor info
+                'UPDATE_CONFIG',
+                'System Configuration',
+                undefined,
+                { updatedKeys: updated },
+            );
+        } catch (auditError) {
+            console.error('Failed to log configuration update to audit service:', auditError);
+            // Don't fail the whole request if audit logging fails
+        }
 
         return { success: true, updated };
     }

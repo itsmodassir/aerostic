@@ -10,7 +10,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Allow } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard';
@@ -27,7 +27,7 @@ import { AdminService } from './admin.service';
 
 // DTO for config updates
 class UpdateConfigDto {
-  [key: string]: string;
+  [key: string]: any;
 }
 
 import {
