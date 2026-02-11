@@ -29,12 +29,14 @@ npm ci --production=false --legacy-peer-deps
 # 3. Build Backend
 echo "🏗️ Building Backend..."
 cd apps/backend
+npm install --production=false --legacy-peer-deps
 npm run build
 cd ../..
 
 # 4. Build Frontend
 echo "🏗️ Building Frontend..."
 cd apps/frontend
+npm install --production=false --legacy-peer-deps
 # Ensure NEXT_PUBLIC endpoints are baked in
 if [ -f "../../.env" ]; then
     export $(grep -v '^#' ../../.env | xargs)
