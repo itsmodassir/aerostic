@@ -59,99 +59,109 @@ export class MetaService {
     this.logger.debug('-------------------');
 
     // 1. Exchange auth code for short-lived access token
-    const tokenRes = await axios.get(
-      'https://graph.facebook.com/v22.0/oauth/access_token',
-      {
-        params: {
-          client_id: appId,
-          client_secret: appSecret,
-          redirect_uri: redirectUri,
-          code,
+    try {
+      const tokenRes = await axios.get(
+        'https://graph.facebook.com/v22.0/oauth/access_token',
+        {
+          params: {
+            client_id: appId,
+            client_secret: appSecret,
+            redirect_uri: redirectUri,
+            code,
+          },
         },
-      },
-    );
-
-    const shortToken = tokenRes.data.access_token;
-
-    // 2. Exchange short-lived token for long-lived token
-    const longTokenData = await this.exchangeForLongLivedToken(
-      shortToken,
-      appId,
-      appSecret,
-    );
-    const accessToken = longTokenData.access_token;
-    const expiresAt = new Date(
-      Date.now() + (longTokenData.expires_in || 5184000) * 1000,
-    );
-
-    // 3. Fetch WhatsApp Business Account using the 'Safe' endpoint
-    const meRes = await axios.get('https://graph.facebook.com/v22.0/me', {
-      params: {
-        fields: 'whatsapp_business_accounts',
-        access_token: accessToken,
-      },
-    });
-
-    const waba = meRes.data.whatsapp_business_accounts?.data?.[0];
-    const wabaId = providedWabaId || waba?.id;
-
-    if (!wabaId) {
-      this.logger.error(`Meta Response (me): ${JSON.stringify(meRes.data)}`);
-      throw new BadRequestException(
-        'No WhatsApp Business Account (WABA) found. Please ensure you selected a WABA in the popup.',
       );
-    }
 
-    // 4. Fetch Phone Number
-    const phoneRes = await axios.get(
-      `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`,
-      {
-        params: { access_token: accessToken },
-      },
-    );
+      const shortToken = tokenRes.data.access_token;
 
-    const numberData = phoneRes.data.data?.[0];
-    const phoneNumberId = providedPhoneNumberId || numberData?.id;
-    const displayPhoneNumber = numberData?.display_phone_number;
-
-    if (!phoneNumberId) {
-      throw new BadRequestException(
-        'No Phone Number ID found for this account.',
+      // 2. Exchange short-lived token for long-lived token
+      const longTokenData = await this.exchangeForLongLivedToken(
+        shortToken,
+        appId,
+        appSecret,
       );
-    }
+      const accessToken = longTokenData.access_token;
+      const expiresAt = new Date(
+        Date.now() + (longTokenData.expires_in || 5184000) * 1000,
+      );
 
-    // 5. Save Mapping (Upsert) - Storing Token Directly in Account for Multi-Tenancy
-    const existing = await this.whatsappAccountRepo.findOneBy({
-      phoneNumberId,
-    });
-
-    const encryptedToken = this.encryptionService.encrypt(accessToken);
-
-    if (existing) {
-      existing.tenantId = tenantId;
-      existing.wabaId = wabaId;
-      existing.displayPhoneNumber = displayPhoneNumber;
-      existing.accessToken = encryptedToken;
-      existing.tokenExpiresAt = expiresAt;
-      existing.status = 'connected';
-      await this.whatsappAccountRepo.save(existing);
-    } else {
-      await this.whatsappAccountRepo.save({
-        tenantId,
-        wabaId,
-        phoneNumberId,
-        displayPhoneNumber,
-        accessToken: encryptedToken,
-        tokenExpiresAt: expiresAt,
-        mode: 'coexistence',
-        status: 'connected',
+      // 3. Fetch WhatsApp Business Account using the 'Safe' endpoint
+      const meRes = await axios.get('https://graph.facebook.com/v22.0/me', {
+        params: {
+          fields: 'whatsapp_business_accounts',
+          access_token: accessToken,
+        },
       });
+
+      const waba = meRes.data.whatsapp_business_accounts?.data?.[0];
+      const wabaId = providedWabaId || waba?.id;
+
+      if (!wabaId) {
+        this.logger.error(`Meta Response (me): ${JSON.stringify(meRes.data)}`);
+        throw new BadRequestException(
+          'No WhatsApp Business Account (WABA) found. Please ensure you selected a WABA in the popup.',
+        );
+      }
+
+      // 4. Fetch Phone Number
+      const phoneRes = await axios.get(
+        `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`,
+        {
+          params: { access_token: accessToken },
+        },
+      );
+
+      const numberData = phoneRes.data.data?.[0];
+      const phoneNumberId = providedPhoneNumberId || numberData?.id;
+      const displayPhoneNumber = numberData?.display_phone_number;
+
+      if (!phoneNumberId) {
+        throw new BadRequestException(
+          'No Phone Number ID found for this account.',
+        );
+      }
+
+      // 5. Save Mapping (Upsert) - Storing Token Directly in Account for Multi-Tenancy
+      const existing = await this.whatsappAccountRepo.findOneBy({
+        phoneNumberId,
+      });
+
+      const encryptedToken = this.encryptionService.encrypt(accessToken);
+
+      if (existing) {
+        existing.tenantId = tenantId;
+        existing.wabaId = wabaId;
+        existing.displayPhoneNumber = displayPhoneNumber;
+        existing.accessToken = encryptedToken;
+        existing.tokenExpiresAt = expiresAt;
+        existing.status = 'connected';
+        await this.whatsappAccountRepo.save(existing);
+      } else {
+        await this.whatsappAccountRepo.save({
+          tenantId,
+          wabaId,
+          phoneNumberId,
+          displayPhoneNumber,
+          accessToken: encryptedToken,
+          tokenExpiresAt: expiresAt,
+          mode: 'coexistence',
+          status: 'connected',
+        });
+      }
+
+      // Invalidate Redis Cache for this tenant
+      await this.redisService.del(`whatsapp:token:${tenantId}`);
+
+      return { success: true };
+    } catch (error: any) {
+      this.logger.error(
+        `OAuth Callback Failed: ${JSON.stringify(error.response?.data || error.message)}`,
+      );
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(
+        error.response?.data?.error?.message || 'Failed to connect WhatsApp account',
+      );
     }
-
-    // Invalidate Redis Cache for this tenant
-    await this.redisService.del(`whatsapp:token:${tenantId}`);
-
-    return { success: true };
   }
 
   async getTemplates(wabaId: string, accessToken: string) {

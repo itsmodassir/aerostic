@@ -37,7 +37,7 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
                     autoLogAppEvents: true,
                     cookie: true,
                     xfbml: true,
-                    version: 'v21.0'
+                    version: 'v22.0'
                 });
                 window._fbInitialized = true;
                 console.log('[MetaSDK] FB.init complete');
@@ -77,10 +77,10 @@ export function launchWhatsAppSignup(
     }
 
     // Determine redirect URI based on environment
-    const redirectUri = process.env.NEXT_PUBLIC_META_REDIRECT_URI || 
-                       (typeof window !== 'undefined' && window.location.origin ? 
-                        `${window.location.origin}/meta/callback` : 
-                        'https://app.aerostic.com/meta/callback');
+    const redirectUri = process.env.NEXT_PUBLIC_META_REDIRECT_URI ||
+        (typeof window !== 'undefined' && window.location.origin ?
+            `${window.location.origin}/meta/callback` :
+            'https://app.aerostic.com/meta/callback');
 
     try {
         window.FB.login(

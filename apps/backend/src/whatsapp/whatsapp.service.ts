@@ -104,6 +104,10 @@ export class WhatsappService {
       configId:
         dbConfigs.find((c) => c.key === 'meta.config_id')?.value?.trim() ||
         this.configService.get('META_CONFIG_ID')?.trim(),
+      redirectUri:
+        dbConfigs.find((c) => c.key === 'meta.redirect_uri')?.value?.trim() ||
+        this.configService.get('META_REDIRECT_URI')?.trim() ||
+        'https://app.aerostic.com/meta/callback',
     };
   }
 

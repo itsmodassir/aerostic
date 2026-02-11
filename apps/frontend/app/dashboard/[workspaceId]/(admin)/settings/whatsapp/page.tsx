@@ -145,6 +145,12 @@ export default function WhatsappSettingsPage() {
             return;
         }
 
+        // Use the redirect_uri from the backend if available, otherwise it fallbacks in launchWhatsAppSignup
+        const launchOptions: any = {
+            configId: metaConfig.configId,
+            state: tenantId,
+        };
+
         launchWhatsAppSignup(metaConfig.configId, tenantId, async (code) => {
             alert('Debug: Got code from Facebook: ' + code);
             setLoading(true);
