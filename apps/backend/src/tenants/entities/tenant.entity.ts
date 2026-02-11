@@ -28,8 +28,11 @@ export class Tenant {
   status: string;
 
   // Subscription
-  @Column({ name: 'subscription_status', default: 'trial' })
-  subscriptionStatus: string; // trial, active, past_due, cancelled
+  @Column({ name: 'subscription_status', default: 'trialing' })
+  subscriptionStatus: string; // trialing, active, past_due, cancelled
+
+  @Column({ name: 'trial_ends_at', nullable: true })
+  trialEndsAt: Date;
 
   @Column({ name: 'razorpay_customer_id', nullable: true })
   razorpayCustomerId: string;

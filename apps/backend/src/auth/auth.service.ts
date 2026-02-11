@@ -1,6 +1,9 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TenantMembership } from '../tenants/entities/tenant-membership.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -10,6 +13,8 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    @InjectRepository(TenantMembership)
+    private membershipRepository: Repository<TenantMembership>,
   ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -17,23 +22,26 @@ export class AuthService {
     const user = await this.usersService.findOneByEmail(email);
 
     if (!user) {
-      this.logger.debug('User not found in DB');
       return null;
     }
 
-    this.logger.warn(`User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`);
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
-    this.logger.warn(`Password match: ${isMatch}`);
 
     if (isMatch) {
-      // Explicitly map properties to a plain object to avoid TypeORM proxies/spread issues
+      // Resolve the primary tenantId for the user
+      const membership = await this.membershipRepository.findOne({
+        where: { userId: user.id },
+        order: { createdAt: 'ASC' }
+      });
+
       const plainUser = {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
+        tenantId: membership?.tenantId, // Include tenantId
+        tokenVersion: user.tokenVersion,
       };
-      this.logger.warn(`Returning plain user object: ${JSON.stringify(plainUser)}`);
       return plainUser;
     }
     return null;
@@ -54,9 +62,10 @@ export class AuthService {
       sub: user.id,
       role: user.role,
       tenantId: user.tenantId,
+      tokenVersion: user.tokenVersion,
     };
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, { expiresIn: '30d' }),
       user: {
         id: user.id,
         email: user.email,
@@ -65,5 +74,11 @@ export class AuthService {
         tenantId: user.tenantId,
       },
     };
+  }
+
+  async logout(userId: string) {
+    if (userId) {
+      await this.usersService.invalidateTokens(userId);
+    }
   }
 }

@@ -90,6 +90,10 @@ export class TenantGuard implements CanActivate {
       throw new UnauthorizedException('Subscription cancelled');
     }
 
+    if (targetTenant.subscriptionStatus === 'trialing' && targetTenant.trialEndsAt && new Date() > targetTenant.trialEndsAt) {
+      throw new UnauthorizedException('Trial expired. Please upgrade your plan.');
+    }
+
     // Attach tenant to request
     request.tenant = targetTenant;
 

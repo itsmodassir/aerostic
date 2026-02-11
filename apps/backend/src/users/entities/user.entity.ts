@@ -27,6 +27,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  @Column({ name: 'token_version', default: 0 })
+  tokenVersion: number;
+
   @Column({ name: 'password_hash' })
   passwordHash: string;
 

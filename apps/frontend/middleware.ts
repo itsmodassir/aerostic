@@ -35,6 +35,9 @@ export function middleware(request: NextRequest) {
         if (pathname.startsWith('/dashboard')) {
             return NextResponse.redirect(new URL(`https://app.${baseDomain}/dashboard/default`, request.url));
         }
+        if (pathname === '/login' || pathname === '/register') {
+            return NextResponse.redirect(new URL(`https://app.${baseDomain}${pathname}`, request.url));
+        }
         return NextResponse.next();
     }
 

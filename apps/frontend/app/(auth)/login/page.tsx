@@ -18,6 +18,18 @@ export default function LoginPage() {
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const router = useRouter();
 
+    useEffect(() => {
+        // Aggressively clear any existing session data on mount
+        localStorage.clear();
+
+        // Clear cookies for all possible domains
+        const domains = [window.location.hostname, '.aerostic.com', 'app.aerostic.com'];
+        domains.forEach(domain => {
+            document.cookie = `access_token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+            document.cookie = `access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+        });
+    }, []);
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);

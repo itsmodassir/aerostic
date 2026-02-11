@@ -69,56 +69,63 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     try {
+      console.log(`[AuthController] Login attempt for: ${loginDto.email}`);
       const user = await this.authService.validateUser(
         loginDto.email,
         loginDto.password,
       );
       if (!user) {
-        // Generic message prevents username enumeration
+        console.warn(`[AuthController] Invalid credentials for: ${loginDto.email}`);
         throw new UnauthorizedException('Invalid email or password');
       }
 
+      console.log(`[AuthController] User validated: ${user.id} (${user.role})`);
       const { access_token } = await this.authService.login(user);
 
       const isProduction = process.env.NODE_ENV === 'production';
 
-      // Set HttpOnly Cookie
+      console.log('[AuthController] Setting cookie...');
       res.cookie('access_token', access_token, {
         httpOnly: true,
         secure: isProduction, // False for localhost
         sameSite: 'lax',
         domain: isProduction ? '.aerostic.com' : undefined, // Undefined for localhost
         path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
-      // Audit login
-      await this.auditService.logAction(
-        user.id,
-        user.name,
-        'LOGIN',
-        'User Session',
-        undefined,
-        { email: user.email },
-        undefined,
-        LogLevel.INFO,
-        LogCategory.SECURITY,
-        'AuthController'
-      );
+      console.log('[AuthController] Auditing login...');
+      try {
+        await this.auditService.logAction(
+          user.id,
+          user.name,
+          'LOGIN',
+          'User Session',
+          undefined,
+          { email: user.email },
+          undefined,
+          LogLevel.INFO,
+          LogCategory.SECURITY,
+          'AuthController'
+        );
+      } catch (auditError) {
+        console.error('[AuthController] Audit log failed (non-critical):', auditError);
+      }
 
-      // Get user's primary workspace (first membership)
+      console.log('[AuthController] Fetching membership...');
       const membership = await this.membershipRepo.findOne({
         where: { userId: user.id },
         relations: ['tenant'],
       });
 
+      console.log(`[AuthController] Membership found: ${membership?.tenantId}`);
       return {
         user,
         workspaceId: membership?.tenantId,
         workspaceName: membership?.tenant?.name,
       };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AuthController] Login CRASH:', error);
       if (error instanceof UnauthorizedException) {
         throw error;
       }
@@ -127,11 +134,32 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
+  @UseGuards(JwtAuthGuard)
+  async logout(@NestRequest() req: any, @Res({ passthrough: true }) res: Response) {
+    if (req.user && req.user.id) {
+      await this.authService.logout(req.user.id);
+    }
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // 1. Clear root domain cookie (Wildcard)
     res.clearCookie('access_token', {
-      domain: '.aerostic.com',
+      domain: isProduction ? '.aerostic.com' : undefined,
       path: '/',
     });
+
+    if (isProduction) {
+      // 2. Clear app subdomain specific cookie (Potential Zombie)
+      res.clearCookie('access_token', {
+        domain: 'app.aerostic.com',
+        path: '/',
+      });
+
+      // 3. Clear HostOnly cookie (No domain attribute)
+      res.clearCookie('access_token', {
+        path: '/',
+      });
+    }
+
     return { success: true };
   }
 
@@ -147,6 +175,8 @@ export class AuthController {
           name: registerDto.workspace,
           slug: slug || `workspace-${Date.now()}`,
           plan: 'free', // Default plan
+          subscriptionStatus: 'trialing',
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         });
         await tenantRepo.save(tenant);
 
@@ -207,7 +237,8 @@ export class AuthController {
 
   @Get('membership')
   @UseGuards(JwtAuthGuard, TenantGuard)
-  async getMembership(@NestRequest() req: any) {
+  async getMembership(@NestRequest() req: any, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
     return {
       ...req.membership,
       permissions: req.permissions, // Resolved in TenantGuard
@@ -226,7 +257,8 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@NestRequest() req: any) {
+  async getProfile(@NestRequest() req: any, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
     // Return the full user profile including global role
     return {
       id: req.user.id,

@@ -20,6 +20,10 @@ export function useAuth() {
             try {
                 const res = await fetch('/api/v1/auth/me', {
                     credentials: 'include', // 🔑 cookie-based auth
+                    cache: 'no-store',
+                    headers: {
+                        'Pragma': 'no-cache',
+                    },
                 });
 
                 if (!res.ok) {
@@ -30,6 +34,7 @@ export function useAuth() {
                 }
 
                 const data = await res.json();
+                console.log('[useAuth] Fetched user:', data);
                 setUser(data);
             } catch (err) {
                 console.error('Auth check failed', err);
@@ -45,7 +50,7 @@ export function useAuth() {
 
     const logout = async () => {
         try {
-            await fetch('/api/auth/logout', {
+            await fetch('/api/v1/auth/logout', {
                 method: 'POST',
                 credentials: 'include',
             });

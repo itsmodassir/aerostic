@@ -55,13 +55,13 @@ export default function Navbar() {
                 {/* Auth Buttons */}
                 <div className="hidden md:flex items-center space-x-4">
                     <Link
-                        href="/login"
+                        href={`https://app.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com'}/login`}
                         className="text-sm font-semibold text-gray-700 hover:text-emerald-600 transition-colors px-4 py-2"
                     >
                         Log In
                     </Link>
                     <Link
-                        href="/register"
+                        href={`https://app.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com'}/register`}
                         className="bg-gray-900 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-emerald-600 transition-all shadow-lg hover:shadow-emerald-200 hover:-translate-y-0.5"
                     >
                         Get Started
@@ -99,14 +99,14 @@ export default function Navbar() {
                             ))}
                             <div className="pt-4 flex flex-col space-y-4">
                                 <Link
-                                    href="/login"
+                                    href={`https://app.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com'}/login`}
                                     className="w-full text-center py-3 text-gray-600 font-semibold border border-gray-100 rounded-xl"
                                     onClick={() => setIsOpen(false)}
                                 >
                                     Log In
                                 </Link>
                                 <Link
-                                    href="/register"
+                                    href={`https://app.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com'}/register`}
                                     className="w-full text-center py-3 bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-100"
                                     onClick={() => setIsOpen(false)}
                                 >
