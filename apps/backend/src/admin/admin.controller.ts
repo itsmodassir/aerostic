@@ -144,6 +144,11 @@ export class AdminController {
     };
   }
 
+  @Get('env')
+  async getEnv() {
+    return this.healthService.getEnvContent();
+  }
+
   @Get('stats')
   async getStats() {
     return this.analyticsService.getDashboardStats();
