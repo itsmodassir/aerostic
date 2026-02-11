@@ -13,7 +13,7 @@ export class AuthService {
   ) { }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    this.logger.debug(`Attempting login for: ${email}`);
+    this.logger.warn(`Attempting login for: ${email}`);
     const user = await this.usersService.findOneByEmail(email);
 
     if (!user) {
@@ -21,11 +21,9 @@ export class AuthService {
       return null;
     }
 
-    this.logger.debug(
-      `User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`,
-    );
+    this.logger.warn(`User found in DB: ID=${user.id}, Email=${user.email}, Role=${user.role}`);
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
-    this.logger.debug(`Password match: ${isMatch}`);
+    this.logger.warn(`Password match: ${isMatch}`);
 
     if (isMatch) {
       // Explicitly map properties to a plain object to avoid TypeORM proxies/spread issues
@@ -35,9 +33,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
       };
-      this.logger.debug(
-        `Returning plain user object: ${JSON.stringify(plainUser)}`,
-      );
+      this.logger.warn(`Returning plain user object: ${JSON.stringify(plainUser)}`);
       return plainUser;
     }
     return null;
