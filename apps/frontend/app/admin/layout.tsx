@@ -73,6 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Audit Logs', href: '/admin/audit-logs', icon: Database },
         { name: 'System Health', href: '/admin/health', icon: Activity },
         { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle },
+        { name: 'Database Explorer', href: '/admin/database', icon: Database },
         { name: 'Configuration', href: '/admin/system', icon: Settings },
     ];
 

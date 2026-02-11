@@ -54,16 +54,23 @@ export class AdminAnalyticsService {
             return sum + sub.priceInr;
         }, 0);
 
-        // Calculate Top Tenants
-        const topTenantsRaw = activeSubscriptions.slice(0, 5).map((sub) => ({
-            name: sub.tenant?.name || 'Unknown',
-            plan: sub.plan
-                ? (sub.plan as string).charAt(0).toUpperCase() +
-                (sub.plan as string).slice(1)
-                : 'Starter',
-            messages: '0',
-            revenue: `₹${sub.priceInr.toLocaleString()}`,
-        }));
+        // Calculate Top Tenants with real message counts
+        const topTenantsData = await Promise.all(
+            activeSubscriptions.slice(0, 5).map(async (sub) => {
+                const messageCount = await this.messageRepo.count({
+                    where: { tenantId: sub.tenantId },
+                });
+                return {
+                    name: sub.tenant?.name || 'Unknown',
+                    plan: sub.plan
+                        ? (sub.plan as string).charAt(0).toUpperCase() +
+                        (sub.plan as string).slice(1)
+                        : 'Starter',
+                    messages: messageCount.toLocaleString(),
+                    revenue: `₹${sub.priceInr.toLocaleString()}`,
+                };
+            }),
+        );
 
         // Format revenue in lakhs (Indian numbering)
         const revenueLakhs = (monthlyRevenue / 100000).toFixed(1);
@@ -100,7 +107,7 @@ export class AdminAnalyticsService {
             ],
             systemHealth,
             recentAlerts,
-            topTenants: topTenantsRaw,
+            topTenants: topTenantsData,
         };
     }
 

@@ -23,6 +23,7 @@ import { AdminTenantService } from './services/admin-tenant.service';
 import { AdminBillingService } from './services/admin-billing.service';
 import { AdminHealthService } from './services/admin-health.service';
 import { AdminAnalyticsService } from './services/admin-analytics.service';
+import { AdminDatabaseService } from './services/admin-database.service';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { AdminAnalyticsService } from './services/admin-analytics.service';
     AdminBillingService,
     AdminHealthService,
     AdminAnalyticsService,
+    AdminDatabaseService,
   ],
   exports: [
     AdminService,
@@ -57,6 +59,7 @@ import { AdminAnalyticsService } from './services/admin-analytics.service';
     AdminBillingService,
     AdminHealthService,
     AdminAnalyticsService,
+    AdminDatabaseService,
   ],
 })
 export class AdminModule { }

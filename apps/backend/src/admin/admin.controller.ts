@@ -21,7 +21,9 @@ import { AdminTenantService } from './services/admin-tenant.service';
 import { AdminBillingService } from './services/admin-billing.service';
 import { AdminHealthService } from './services/admin-health.service';
 import { AdminAnalyticsService } from './services/admin-analytics.service';
-import { AdminService } from './admin.service'; // Access to legacy methods like getAllMessages if not refactored yet
+import { AdminDatabaseService } from './services/admin-database.service';
+import { AuditService } from '../audit/audit.service';
+import { AdminService } from './admin.service';
 
 // DTO for config updates
 class UpdateConfigDto {
@@ -43,7 +45,7 @@ class UpdateUserPlanDto {
 }
 
 @Controller('admin')
-@UseGuards(SuperAdminGuard) // Enforce SuperAdmin checks for ALL admin endpoints
+@UseGuards(SuperAdminGuard)
 export class AdminController {
   constructor(
     private readonly configService: AdminConfigService,
@@ -51,8 +53,25 @@ export class AdminController {
     private readonly billingService: AdminBillingService,
     private readonly healthService: AdminHealthService,
     private readonly analyticsService: AdminAnalyticsService,
+    private readonly databaseService: AdminDatabaseService,
+    private readonly auditService: AuditService,
     private readonly legacyAdminService: AdminService,
   ) { }
+
+  // ============ Database Explorer ============
+  @Get('database/tables')
+  async getTables() {
+    return this.databaseService.getTables();
+  }
+
+  @Get('database/tables/:tableName')
+  async getTableData(
+    @Param('tableName') tableName: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 50,
+  ) {
+    return this.databaseService.getTableData(tableName, page, limit);
+  }
 
   // ============ Tenant Management ============
   @Get('tenants')
@@ -111,6 +130,11 @@ export class AdminController {
   @Get('system-logs')
   async getLogs() {
     return this.healthService.getSystemLogs();
+  }
+
+  @Get('audit-logs')
+  async getAuditLogs(@Query('limit') limit: number = 100) {
+    return this.auditService.getLogs(limit);
   }
 
   @Get('health')
