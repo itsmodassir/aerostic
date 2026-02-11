@@ -177,7 +177,7 @@ export class AuthController {
 
         // Auto-create role if missing (safety net)
         if (!ownerRole) {
-          ownerRole = roleRepo.create({ name: 'owner', permissions: [] }); // permissions jsonb
+          ownerRole = roleRepo.create({ name: 'owner' });
           await roleRepo.save(ownerRole);
         }
 
