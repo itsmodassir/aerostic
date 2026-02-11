@@ -97,6 +97,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
     }, [user, isAdmin, router]);
 
+    // Redirect 'default' to actual workspace
+    useEffect(() => {
+        if (workspaceId === 'default' && user) {
+            fetch('/api/v1/auth/workspaces', { credentials: 'include' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const firstSlug = data[0].tenant?.slug;
+                        if (firstSlug) {
+                            router.replace(`/dashboard/${firstSlug}`);
+                        }
+                    }
+                })
+                .catch(err => console.error('Failed to resolve default workspace:', err));
+        }
+    }, [workspaceId, user, router]);
+
     // Demo notifications
     const [notifications] = useState([
         { id: 1, title: 'New message received', message: 'From +91 98765 43210', time: '2m ago', unread: true },
