@@ -38,7 +38,7 @@ export default function TenantsPage() {
 
     const fetchTenants = async () => {
         try {
-            const res = await fetch(`/api/admin/users`, { // Using /users as it returns tenant info
+            const res = await fetch(`/api/v1/admin/users`, { // Using /users as it returns tenant info
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to fetch tenants');
@@ -65,7 +65,7 @@ export default function TenantsPage() {
         if (!selectedTenant) return;
         setIsUpdating(true);
         try {
-            const res = await fetch(`/api/admin/users/${selectedTenant.id}/plan`, {
+            const res = await fetch(`/api/v1/admin/users/${selectedTenant.id}/plan`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'

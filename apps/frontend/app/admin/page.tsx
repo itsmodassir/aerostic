@@ -25,13 +25,13 @@ export default function AdminDashboard() {
 
     const fetchDashboardData = async () => {
         try {
-            console.log('Fetching dashboard data from:', `/api/admin/stats`);
-            const res = await fetch(`/api/admin/stats`, {
+            console.log('Fetching dashboard data from:', `/api/v1/admin/stats`);
+            const res = await fetch(`/api/v1/admin/stats`, {
                 credentials: 'include'
             });
             console.log('Stats response status:', res.status);
 
-            const trendsRes = await fetch(`/api/admin/stats/trends?range=${timeRange}`, {
+            const trendsRes = await fetch(`/api/v1/admin/stats/trends?range=${timeRange}`, {
                 credentials: 'include'
             });
             console.log('Trends response status:', trendsRes.status);

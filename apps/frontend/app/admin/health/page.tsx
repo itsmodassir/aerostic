@@ -14,7 +14,7 @@ export default function AdminHealthPage() {
     const fetchHealth = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/stats`, {
+            const res = await fetch(`/api/v1/admin/stats`, {
                 credentials: 'include'
             });
             const data = await res.json();

@@ -18,7 +18,7 @@ export default function AdminBillingPage() {
     const fetchBillingData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/billing/stats`, {
+            const res = await fetch(`/api/v1/admin/billing/stats`, {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to fetch billing stats');

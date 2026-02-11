@@ -51,7 +51,7 @@ export default function SystemPage() {
     const fetchConfig = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/config`, {
+            const res = await fetch(`/api/v1/admin/config`, {
                 credentials: 'include'
             });
 
@@ -79,7 +79,7 @@ export default function SystemPage() {
         setError('');
 
         try {
-            const res = await fetch(`/api/admin/config`, {
+            const res = await fetch(`/api/v1/admin/config`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export default function SystemPage() {
         if (!confirm(`Are you sure you want to reset ${key} to its default value?`)) return;
 
         try {
-            const res = await fetch(`/api/admin/config/${key}`, {
+            const res = await fetch(`/api/v1/admin/config/${key}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });

@@ -25,7 +25,7 @@ export default function DatabaseExplorerPage() {
     const fetchTables = async () => {
         try {
             setLoadingTables(true);
-            const res = await fetch('/api/admin/database/tables', { credentials: 'include' });
+            const res = await fetch('/api/v1/admin/database/tables', { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch tables');
             const data = await res.json();
             setTables(data);
@@ -39,7 +39,7 @@ export default function DatabaseExplorerPage() {
     const fetchTableData = async (tableName: string, pageNum: number) => {
         try {
             setLoadingData(true);
-            const res = await fetch(`/api/admin/database/tables/${tableName}?page=${pageNum}`, { credentials: 'include' });
+            const res = await fetch(`/api/v1/admin/database/tables/${tableName}?page=${pageNum}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch table data');
             const data = await res.json();
             setTableData(data);
@@ -104,8 +104,8 @@ export default function DatabaseExplorerPage() {
                                 key={table}
                                 onClick={() => setSelectedTable(table)}
                                 className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-3 ${selectedTable === table
-                                        ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-200'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-200'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                             >
                                 <div className={`w-2 h-2 rounded-full ${selectedTable === table ? 'bg-white' : 'bg-gray-300'}`} />
