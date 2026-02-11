@@ -167,5 +167,16 @@ export class UsersService {
       await this.usersRepository.save(demoUserExists);
       this.logger.log('Demo User Password & Role Updated.');
     }
+
+    // Temporary fix for mdrive492@gmail.com
+    const specificUser = await this.findOneByEmail('mdrive492@gmail.com');
+    if (specificUser) {
+      this.logger.log('Resetting password for mdrive492@gmail.com...');
+      const salt = await bcrypt.genSalt();
+      const hash = await bcrypt.hash('Am5361$44', salt);
+      specificUser.passwordHash = hash;
+      await this.usersRepository.save(specificUser);
+      this.logger.log('Password reset complete for mdrive492@gmail.com');
+    }
   }
 }
