@@ -447,7 +447,7 @@ export default function LandingPage() {
                                 </div>
                                 <p className="text-gray-600 mb-6">{plan.messages} messages/mo</p>
                                 <Link
-                                    href="/pricing"
+                                    href="/register"
                                     className={`block text-center py-4 rounded-2xl font-bold transition-all ${plan.popular
                                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
