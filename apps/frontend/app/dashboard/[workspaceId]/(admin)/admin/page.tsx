@@ -375,7 +375,7 @@ function ConfigurationTab() {
 
     const fetchConfig = async () => {
         try {
-            const res = await fetch(`${API_URL}/admin/config`, {
+            const res = await fetch(`/api/v1/admin/config`, {
                 credentials: 'include'
             });
             if (res.ok) {
@@ -398,7 +398,7 @@ function ConfigurationTab() {
     const saveConfig = async () => {
         setSaving(true);
         try {
-            const res = await fetch(`${API_URL}/admin/config`, {
+            const res = await fetch(`/api/v1/admin/config`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
