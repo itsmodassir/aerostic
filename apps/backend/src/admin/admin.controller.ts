@@ -25,11 +25,6 @@ import { AdminDatabaseService } from './services/admin-database.service';
 import { AuditService } from '../audit/audit.service';
 import { AdminService } from './admin.service';
 
-// DTO for config updates
-class UpdateConfigDto {
-  [key: string]: any;
-}
-
 import {
   PlanType,
   SubscriptionStatus,
@@ -110,7 +105,8 @@ export class AdminController {
   }
 
   @Post('config')
-  async updateConfig(@Body() updates: UpdateConfigDto, @Req() req: any) {
+  async updateConfig(@Body() updates: any, @Req() req: any) {
+    console.log('Received config update request:', updates);
     // Pass actor ID from request user
     return this.configService.setConfig(updates, req.user?.id);
   }
