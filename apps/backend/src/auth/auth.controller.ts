@@ -60,6 +60,8 @@ class RegisterDto {
 
   @IsNotEmpty()
   workspace: string;
+
+  otp?: string; // Optional for initiation, required for finalization
 }
 
 @Controller('auth')
@@ -74,71 +76,23 @@ export class AuthController {
     private auditService: AuditService,
     private dataSource: DataSource,
     private mailService: MailService,
-  ) {}
+  ) { }
 
-  @Post('login/initiate')
-  async initiateLogin(@Body() loginDto: LoginDto) {
-    const user = await this.authService.validateUser(
-      loginDto.email,
-      loginDto.password,
+  @Post('register/initiate')
+  async initiateRegister(@Body() registerDto: RegisterDto) {
+    // 1. Check if user already exists
+    const existingUser = await this.usersService.findOneByEmail(
+      registerDto.email,
     );
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+    if (existingUser) {
+      throw new BadRequestException('Email already registered');
     }
 
-    const otp = await this.authService.generateOtp(user.email);
+    // 2. Generate and send OTP
+    const otp = await this.authService.generateOtp(registerDto.email);
+    await this.mailService.sendOtpEmail(registerDto.email, otp);
 
-    this.mailService.sendOtpEmail(user.email, otp).catch((err) => {
-      console.error('Failed to send OTP email:', err);
-    });
-
-    return { success: true, message: 'OTP sent to your email' };
-  }
-
-  @Post('login/verify')
-  async verifyLogin(
-    @Body() verifyDto: VerifyLoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const isValid = await this.authService.verifyOtp(
-      verifyDto.email,
-      verifyDto.otp,
-    );
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid or expired OTP');
-    }
-
-    const user = await this.usersService.findOneByEmail(verifyDto.email);
-    if (!user) throw new UnauthorizedException('User not found');
-
-    const { access_token } = await this.authService.login(user);
-
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    res.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      domain: isProduction ? '.aerostic.com' : undefined,
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    const membership = await this.membershipRepo.findOne({
-      where: { userId: user.id },
-      relations: ['tenant'],
-    });
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-      workspaceId: membership?.tenantId,
-      workspaceName: membership?.tenant?.name,
-    };
+    return { success: true, message: 'Verification code sent to email' };
   }
 
   @Post('login')
@@ -252,6 +206,18 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
+    if (!registerDto.otp) {
+      throw new BadRequestException('Verification code is required');
+    }
+
+    const isValid = await this.authService.verifyOtp(
+      registerDto.email,
+      registerDto.otp,
+    );
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
     try {
       return await this.dataSource.transaction(async (manager) => {
         // 1. Create Tenant

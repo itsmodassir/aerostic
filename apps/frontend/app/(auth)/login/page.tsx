@@ -37,28 +37,7 @@ export default function LoginPage() {
         setLoading(true);
         setError('');
         try {
-            await api.post('/auth/login/initiate', { email, password });
-            setStep('otp');
-        } catch (err: any) {
-            console.error('Login error:', err);
-            if (err.response?.status === 401) {
-                setError('Invalid email or password');
-            } else if (err.response?.status === 429) {
-                setError('Too many login attempts. Please try again in an hour.');
-            } else {
-                setError(err.response?.data?.message || 'Login failed. Please try again.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            const res = await api.post('/auth/login/verify', { email, otp });
+            const res = await api.post('/auth/login', { email, password });
 
             if (res.data.user) {
                 localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -69,11 +48,17 @@ export default function LoginPage() {
             if (workspaceId) {
                 router.push(`/dashboard/${workspaceId}`);
             } else {
-                router.push('/auth/workspaces');
+                router.push('/workspaces/new');
             }
         } catch (err: any) {
-            console.error('OTP error:', err);
-            setError(err.response?.data?.message || 'Invalid or expired OTP');
+            console.error('Login error:', err);
+            if (err.response?.status === 401) {
+                setError('Invalid email or password');
+            } else if (err.response?.status === 429) {
+                setError('Too many login attempts. Please try again in an hour.');
+            } else {
+                setError(err.response?.data?.message || 'Login failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -188,12 +173,10 @@ export default function LoginPage() {
                                 Back to home
                             </Link>
                             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                {step === 'login' ? 'Welcome back' : 'Verify login'}
+                                Welcome back
                             </h2>
                             <p className="text-gray-500">
-                                {step === 'login'
-                                    ? 'Sign in to continue to your dashboard'
-                                    : `We've sent a code to ${email}`}
+                                Sign in to continue to your dashboard
                             </p>
                         </div>
 
@@ -206,123 +189,77 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        {step === 'login' ? (
-                            <form onSubmit={handleLogin} className="space-y-5">
-                                {/* Email Field */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Email address
-                                    </label>
-                                    <div className={`relative transition-all duration-300 ${focusedField === 'email' ? 'transform scale-[1.02]' : ''}`}>
-                                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'email' ? 'text-blue-600' : 'text-gray-400'}`} />
-                                        <input
-                                            type="email"
-                                            required
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900"
-                                            placeholder="you@company.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            onFocus={() => setFocusedField('email')}
-                                            onBlur={() => setFocusedField(null)}
-                                        />
-                                        {email && email.includes('@') && (
-                                            <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Password Field */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-sm font-semibold text-gray-700">
-                                            Password
-                                        </label>
-                                        <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                                            Forgot password?
-                                        </Link>
-                                    </div>
-                                    <div className={`relative transition-all duration-300 ${focusedField === 'password' ? 'transform scale-[1.02]' : ''}`}>
-                                        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'password' ? 'text-blue-600' : 'text-gray-400'}`} />
-                                        <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            required
-                                            className="w-full pl-12 pr-12 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900"
-                                            placeholder="Enter your password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            onFocus={() => setFocusedField('password')}
-                                            onBlur={() => setFocusedField(null)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 focus:ring-4 focus:ring-blue-500/30 transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
-                                >
-                                    {loading ? (
-                                        <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : (
-                                        <>
-                                            Continue to OTP
-                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                        </>
+                        <form onSubmit={handleLogin} className="space-y-5">
+                            {/* Email Field */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Email address
+                                </label>
+                                <div className={`relative transition-all duration-300 ${focusedField === 'email' ? 'transform scale-[1.02]' : ''}`}>
+                                    <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'email' ? 'text-blue-600' : 'text-gray-400'}`} />
+                                    <input
+                                        type="email"
+                                        required
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900"
+                                        placeholder="you@company.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        onFocus={() => setFocusedField('email')}
+                                        onBlur={() => setFocusedField(null)}
+                                    />
+                                    {email && email.includes('@') && (
+                                        <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
                                     )}
-                                </button>
-                            </form>
-                        ) : (
-                            <form onSubmit={handleVerifyOtp} className="space-y-5">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Verification Code
+                                </div>
+                            </div>
+
+                            {/* Password Field */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-semibold text-gray-700">
+                                        Password
                                     </label>
-                                    <div className={`relative transition-all duration-300 ${focusedField === 'otp' ? 'transform scale-[1.02]' : ''}`}>
-                                        <Shield className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'otp' ? 'text-blue-600' : 'text-gray-400'}`} />
-                                        <input
-                                            type="text"
-                                            required
-                                            maxLength={6}
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900 tracking-[0.5em] text-center font-bold text-xl"
-                                            placeholder="000000"
-                                            value={otp}
-                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                            onFocus={() => setFocusedField('otp')}
-                                            onBlur={() => setFocusedField(null)}
-                                        />
-                                    </div>
+                                    <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                        Forgot password?
+                                    </Link>
+                                </div>
+                                <div className={`relative transition-all duration-300 ${focusedField === 'password' ? 'transform scale-[1.02]' : ''}`}>
+                                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'password' ? 'text-blue-600' : 'text-gray-400'}`} />
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        required
+                                        className="w-full pl-12 pr-12 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900"
+                                        placeholder="Enter your password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onFocus={() => setFocusedField('password')}
+                                        onBlur={() => setFocusedField(null)}
+                                    />
                                     <button
                                         type="button"
-                                        onClick={() => setStep('login')}
-                                        className="mt-2 text-sm text-blue-600 hover:underline"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                     >
-                                        Change email or password
+                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
                                 </div>
+                            </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={loading || otp.length < 6}
-                                    className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 focus:ring-4 focus:ring-blue-500/30 transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
-                                >
-                                    {loading ? (
-                                        <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : (
-                                        <>
-                                            Verify & Enter Dashboard
-                                            <CheckCircle className="w-5 h-5" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                        )}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 focus:ring-4 focus:ring-blue-500/30 transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
+                            >
+                                {loading ? (
+                                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        Sign In
+                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
 
                         {/* Divider */}
                         <div className="relative my-8">

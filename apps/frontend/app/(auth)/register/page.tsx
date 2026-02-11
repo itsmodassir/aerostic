@@ -18,10 +18,30 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
-    const [step, setStep] = useState(1);
+    const [otp, setOtp] = useState('');
+    const [step, setStep] = useState<'details' | 'otp'>('details');
     const router = useRouter();
 
-    const handleRegister = async (e: React.FormEvent) => {
+    const handleInitiateRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            await api.post('/auth/register/initiate', {
+                name,
+                email,
+                password,
+                workspace: tenantName
+            });
+            setStep('otp');
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to send verification code');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
@@ -30,11 +50,12 @@ export default function RegisterPage() {
                 name,
                 email,
                 password,
-                workspace: tenantName
+                workspace: tenantName,
+                otp
             });
             router.push('/login');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Registration failed');
+            setError(err.response?.data?.message || 'Verification failed');
         } finally {
             setLoading(false);
         }
@@ -158,8 +179,12 @@ export default function RegisterPage() {
                                 <Sparkles className="w-4 h-4" />
                                 14-day free trial
                             </div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Workspace</h2>
-                            <p className="text-gray-500">Get started in less than 2 minutes</p>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                                {step === 'details' ? 'Create Your Workspace' : 'Verify Email'}
+                            </h2>
+                            <p className="text-gray-500">
+                                {step === 'details' ? 'Get started in less than 2 minutes' : `Code sent to ${email}`}
+                            </p>
                         </div>
 
                         {error && (
@@ -171,148 +196,176 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleRegister} className="space-y-5">
-                            {/* Workspace & Name Row */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Workspace
-                                    </label>
-                                    <div className={`relative transition-all duration-300 ${focusedField === 'tenant' ? 'transform scale-[1.02]' : ''
-                                        }`}>
-                                        <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'tenant' ? 'text-purple-600' : 'text-gray-400'
-                                            }`} />
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
-                                            placeholder="Acme Corp"
-                                            value={tenantName}
-                                            onChange={(e) => setTenantName(e.target.value)}
-                                            onFocus={() => setFocusedField('tenant')}
-                                            onBlur={() => setFocusedField(null)}
-                                        />
+                        {step === 'details' ? (
+                            <form onSubmit={handleInitiateRegister} className="space-y-5">
+                                {/* Workspace & Name Row */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Workspace
+                                        </label>
+                                        <div className={`relative transition-all duration-300 ${focusedField === 'tenant' ? 'transform scale-[1.02]' : ''}`}>
+                                            <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'tenant' ? 'text-purple-600' : 'text-gray-400'}`} />
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
+                                                placeholder="Acme Corp"
+                                                value={tenantName}
+                                                onChange={(e) => setTenantName(e.target.value)}
+                                                onFocus={() => setFocusedField('tenant')}
+                                                onBlur={() => setFocusedField(null)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Your Name
+                                        </label>
+                                        <div className={`relative transition-all duration-300 ${focusedField === 'name' ? 'transform scale-[1.02]' : ''}`}>
+                                            <User className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'name' ? 'text-purple-600' : 'text-gray-400'}`} />
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
+                                                placeholder="John Doe"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                onFocus={() => setFocusedField('name')}
+                                                onBlur={() => setFocusedField(null)}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Your Name
-                                    </label>
-                                    <div className={`relative transition-all duration-300 ${focusedField === 'name' ? 'transform scale-[1.02]' : ''
-                                        }`}>
-                                        <User className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'name' ? 'text-purple-600' : 'text-gray-400'
-                                            }`} />
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
-                                            placeholder="John Doe"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            onFocus={() => setFocusedField('name')}
-                                            onBlur={() => setFocusedField(null)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Email */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Work Email
-                                </label>
-                                <div className={`relative transition-all duration-300 ${focusedField === 'email' ? 'transform scale-[1.02]' : ''
-                                    }`}>
-                                    <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'email' ? 'text-purple-600' : 'text-gray-400'
-                                        }`} />
-                                    <input
-                                        type="email"
-                                        required
-                                        className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
-                                        placeholder="you@company.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        onFocus={() => setFocusedField('email')}
-                                        onBlur={() => setFocusedField(null)}
-                                    />
-                                    {email && email.includes('@') && email.includes('.') && (
-                                        <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                                {/* Email */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Work Email
+                                    </label>
+                                    <div className={`relative transition-all duration-300 ${focusedField === 'email' ? 'transform scale-[1.02]' : ''}`}>
+                                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'email' ? 'text-purple-600' : 'text-gray-400'}`} />
+                                        <input
+                                            type="email"
+                                            required
+                                            className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
+                                            placeholder="you@company.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            onFocus={() => setFocusedField('email')}
+                                            onBlur={() => setFocusedField(null)}
+                                        />
+                                        {email && email.includes('@') && email.includes('.') && (
+                                            <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Password */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Password
+                                    </label>
+                                    <div className={`relative transition-all duration-300 ${focusedField === 'password' ? 'transform scale-[1.02]' : ''}`}>
+                                        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'password' ? 'text-purple-600' : 'text-gray-400'}`} />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            required
+                                            minLength={6}
+                                            className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
+                                            placeholder="Min 6 characters"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            onFocus={() => setFocusedField('password')}
+                                            onBlur={() => setFocusedField(null)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                    {/* Password Strength */}
+                                    {password.length > 0 && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <div className="flex gap-1 flex-1">
+                                                {[1, 2, 3].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-1.5 flex-1 rounded-full transition-colors ${level <= strength.level ? strength.color : 'bg-gray-200'}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className={`text-xs font-medium ${strength.level === 1 ? 'text-red-500' : strength.level === 2 ? 'text-amber-500' : 'text-green-500'}`}>
+                                                {strength.text}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
-                            </div>
 
-                            {/* Password */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Password
-                                </label>
-                                <div className={`relative transition-all duration-300 ${focusedField === 'password' ? 'transform scale-[1.02]' : ''
-                                    }`}>
-                                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'password' ? 'text-purple-600' : 'text-gray-400'
-                                        }`} />
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        required
-                                        minLength={6}
-                                        className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
-                                        placeholder="Min 6 characters"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        onFocus={() => setFocusedField('password')}
-                                        onBlur={() => setFocusedField(null)}
-                                    />
+                                {/* Submit */}
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-500/30 transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                >
+                                    {loading ? (
+                                        <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            Sign Up
+                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleVerifyOtp} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Verification Code
+                                    </label>
+                                    <div className={`relative transition-all duration-300 ${focusedField === 'otp' ? 'transform scale-[1.02]' : ''}`}>
+                                        <Shield className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'otp' ? 'text-purple-600' : 'text-gray-400'}`} />
+                                        <input
+                                            type="text"
+                                            required
+                                            maxLength={6}
+                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900 tracking-[0.5em] text-center font-bold text-xl"
+                                            placeholder="000000"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                            onFocus={() => setFocusedField('otp')}
+                                            onBlur={() => setFocusedField(null)}
+                                        />
+                                    </div>
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        onClick={() => setStep('details')}
+                                        className="mt-2 text-sm text-purple-600 hover:underline"
                                     >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        Change details
                                     </button>
                                 </div>
-                                {/* Password Strength */}
-                                {password.length > 0 && (
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <div className="flex gap-1 flex-1">
-                                            {[1, 2, 3].map((level) => (
-                                                <div
-                                                    key={level}
-                                                    className={`h-1.5 flex-1 rounded-full transition-colors ${level <= strength.level ? strength.color : 'bg-gray-200'
-                                                        }`}
-                                                />
-                                            ))}
-                                        </div>
-                                        <span className={`text-xs font-medium ${strength.level === 1 ? 'text-red-500' :
-                                            strength.level === 2 ? 'text-amber-500' : 'text-green-500'
-                                            }`}>
-                                            {strength.text}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
 
-                            {/* Submit */}
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-500/30 transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
-                            >
-                                {loading ? (
-                                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        Create Workspace
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
-
-                            <p className="text-xs text-center text-gray-500">
-                                By registering, you agree to our{' '}
-                                <Link href="/terms" className="text-purple-600 hover:underline">Terms of Service</Link>
-                                {' '}and{' '}
-                                <Link href="/privacy" className="text-purple-600 hover:underline">Privacy Policy</Link>
-                            </p>
-                        </form>
+                                <button
+                                    type="submit"
+                                    disabled={loading || otp.length < 6}
+                                    className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-500/30 transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                >
+                                    {loading ? (
+                                        <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            Verify & Create Workspace
+                                            <CheckCircle className="w-5 h-5" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        )}
 
                         {/* Divider */}
                         <div className="relative my-8">
