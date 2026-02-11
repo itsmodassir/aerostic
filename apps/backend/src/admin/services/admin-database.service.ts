@@ -16,7 +16,7 @@ export class AdminDatabaseService {
         ORDER BY table_name;
       `);
 
-            return tables.map(t => t.table_name);
+            return tables.map((t: any) => t.table_name);
         } catch (error) {
             throw new InternalServerErrorException('Failed to fetch table list');
         }
