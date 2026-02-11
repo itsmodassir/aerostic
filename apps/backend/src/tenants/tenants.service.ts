@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant } from './entities/tenant.entity';
@@ -6,7 +6,7 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { TenantMembership, TenantRole } from './entities/tenant-membership.entity';
 import { Role } from './entities/role.entity';
 
-@Injectable() // Service is injectable
+@Injectable()
 export class TenantsService {
   constructor(
     @InjectRepository(Tenant)
@@ -23,7 +23,7 @@ export class TenantsService {
     // Check if slug exists
     const existing = await this.tenantsRepository.findOne({ where: { slug } });
     if (existing) {
-      throw new Error('Workspace with this name already exists');
+      throw new BadRequestException('Workspace with this name already exists');
     }
 
     const tenant = this.tenantsRepository.create({
@@ -37,13 +37,10 @@ export class TenantsService {
     // Create membership for the creator (Owner)
     const ownerRole = await this.roleRepository.findOne({ where: { name: 'owner' } });
 
-    // Handle case where roles might not be seeded yet (though they should be)
-    // Fallback to enum if needed, but we should aim for role entity
-
     const membership = this.membershipRepository.create({
       userId,
       tenantId: savedTenant.id,
-      role: TenantRole.OWNER, // Enum fallback/sync
+      role: TenantRole.OWNER,
       roleId: ownerRole?.id,
       status: 'active',
     });
@@ -56,8 +53,10 @@ export class TenantsService {
   private slugify(text: string): string {
     return text
       .toLowerCase()
-      .replace(/[^\w ]+/g, '')
-      .replace(/ +/g, '-');
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   async findOne(id: string): Promise<Tenant> {
