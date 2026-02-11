@@ -18,13 +18,14 @@ export function useAuth() {
     useEffect(() => {
         const loadUser = async () => {
             try {
-                const res = await fetch('/api/auth/me', {
+                const res = await fetch('/api/v1/auth/me', {
                     credentials: 'include', // 🔑 cookie-based auth
                 });
 
                 if (!res.ok) {
                     setUser(null);
                     setLoading(false);
+                    router.push('/login');
                     return;
                 }
 
@@ -33,13 +34,14 @@ export function useAuth() {
             } catch (err) {
                 console.error('Auth check failed', err);
                 setUser(null);
+                router.push('/login');
             } finally {
                 setLoading(false);
             }
         };
 
         loadUser();
-    }, []);
+    }, [router]);
 
     const logout = async () => {
         try {

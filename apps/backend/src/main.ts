@@ -21,20 +21,21 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Essential for webhook signature verification
   });
-  
+
   // API Versioning
   app.setGlobalPrefix('api/v1');
-  
+
   // CORS Configuration
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+  const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
+  const allowedOrigins = allowedOriginsEnv ? allowedOriginsEnv.split(',') : ['*'];
+
   app.enableCors({
     origin: (
       origin: string,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 && !allowedOrigins.includes('*')) {
+      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -42,10 +43,10 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
     maxAge: 3600,
   });
-  
+
   // Security middleware
   app.use((req: any, res: any, next: any) => {
     // Prevent clickjacking
@@ -64,9 +65,6 @@ async function bootstrap() {
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new SentryExceptionFilter({ httpAdapter } as any));
-
-  // Use Sentry globally
-  // The SDK automatically captures unhandled exceptions if instrumented correctly
 
   await app.listen(process.env.PORT ?? 3001);
 }

@@ -48,7 +48,10 @@ export class MetaService {
       this.configService.get('META_APP_SECRET')?.trim() ||
       '';
 
-    const redirectUri = 'https://app.aerostic.com/meta/callback';
+    const redirectUri =
+      dbConfigs.find((c) => c.key === 'meta.redirect_uri')?.value?.trim() ||
+      this.configService.get('META_REDIRECT_URI')?.trim() ||
+      'http://localhost:3000/meta/callback';
 
     this.logger.debug('--- OAuth Debug (v22.0) ---');
     this.logger.debug(`App ID: ${appId}`);

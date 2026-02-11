@@ -80,42 +80,46 @@ export class AuthController {
       const { access_token } = await this.authService.login(user);
 
       // Set HttpOnly Cookie
-    res.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: true, // Always true for production/staging (Cloudflare handles SSL)
-      sameSite: 'lax',
-      domain: '.aerostic.com',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+      res.cookie('access_token', access_token, {
+        httpOnly: true,
+        secure: true, // Always true for production/staging (Cloudflare handles SSL)
+        sameSite: 'lax',
+        domain: '.aerostic.com',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
 
-    // Audit login
-    await this.auditService.logAction(
-      user.id,
-      user.name,
-      'LOGIN',
-      'User Session',
-      undefined,
-      { email: user.email },
-      undefined,
-      LogLevel.INFO,
-      LogCategory.SECURITY,
-      'AuthController'
-    );
+      // Audit login
+      await this.auditService.logAction(
+        user.id,
+        user.name,
+        'LOGIN',
+        'User Session',
+        undefined,
+        { email: user.email },
+        undefined,
+        LogLevel.INFO,
+        LogCategory.SECURITY,
+        'AuthController'
+      );
 
-    // Get user's primary workspace (first membership)
-    const membership = await this.membershipRepo.findOne({
-      where: { userId: user.id },
-      relations: ['tenant'],
-    });
+      // Get user's primary workspace (first membership)
+      const membership = await this.membershipRepo.findOne({
+        where: { userId: user.id },
+        relations: ['tenant'],
+      });
 
-    return {
-      user,
-      workspaceId: membership?.tenantId,
-      workspaceName: membership?.tenant?.name,
-    };
+      return {
+        user,
+        workspaceId: membership?.tenantId,
+        workspaceName: membership?.tenant?.name,
+      };
     } catch (error) {
-      throw new UnauthorizedException('Invalid email or password');
+      console.error('Login error:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new Error('Internal server error during login');
     }
   }
 

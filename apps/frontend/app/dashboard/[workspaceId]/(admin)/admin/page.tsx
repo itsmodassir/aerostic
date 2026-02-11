@@ -41,7 +41,7 @@ export default function AdminPage() {
 
     const checkAdmin = async () => {
         try {
-            const res = await fetch('/api/auth/me', { credentials: 'include' });
+            const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
             if (res.ok) {
                 const user = await res.json();
                 setIsAdmin(user.globalRole === 'super_admin' || user.email === 'md@modassir.info');

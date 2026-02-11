@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const fetchMembership = async () => {
             // Auth provided by cookie
             try {
-                const response = await fetch('/api/auth/membership', {
+                const response = await fetch('/api/v1/auth/membership', {
                     credentials: 'include'
                 });
                 if (response.ok) {

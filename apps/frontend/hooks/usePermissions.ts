@@ -16,7 +16,7 @@ export function usePermissions() {
             }
 
             try {
-                const response = await fetch('/api/auth/membership', {
+                const response = await fetch('/api/v1/auth/membership', {
                     credentials: 'include'
                 });
 

@@ -33,7 +33,10 @@ export class WhatsappService {
     const appId =
       dbConfigs.find((c) => c.key === 'meta.app_id')?.value?.trim() ||
       this.configService.get('META_APP_ID')?.trim();
-    const redirectUri = 'https://api.aerostic.com/meta/callback';
+    const redirectUri =
+      dbConfigs.find((c) => c.key === 'meta.redirect_uri')?.value?.trim() ||
+      this.configService.get('META_REDIRECT_URI')?.trim() ||
+      'http://localhost:3000/meta/callback';
 
     const params = qs.stringify({
       client_id: appId,

@@ -762,7 +762,7 @@ function TeamTab({ planFeatures }: any) {
 
             // Get user details from cookie endpoint
             try {
-                const res = await fetch('/api/auth/me', { credentials: 'include' });
+                const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
                 if (res.ok) {
                     const user = await res.json();
                     tenantId = user.tenantId || 'demo-tenant';

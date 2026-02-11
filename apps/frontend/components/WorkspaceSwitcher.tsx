@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ChevronDown, Plus, Check, Building2, LogOut } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
@@ -19,25 +19,15 @@ export function WorkspaceSwitcher() {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const params = useParams();
 
-    // 1. Robust Active Slug Detection
-    const getActiveSlug = (hostname: string) => {
-        const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com';
-        if (!hostname.endsWith(base)) return null;
-
-        const sub = hostname.replace(`.${base}`, '');
-        if (['app', 'admin', 'api', 'www'].includes(sub)) return null;
-
-        return sub;
-    };
-
-    const currentSlug = typeof window !== 'undefined' ? getActiveSlug(window.location.hostname) : null;
+    const currentWorkspaceId = params?.workspaceId as string;
 
     useEffect(() => {
         const fetchWorkspaces = async () => {
             try {
                 // Ensure backend returns flat structure or map it here if needed
-                const response = await fetch('/api/auth/workspaces', {
+                const response = await fetch('/api/v1/auth/workspaces', {
                     credentials: 'include'
                 });
                 if (response.ok) {
@@ -63,7 +53,7 @@ export function WorkspaceSwitcher() {
 
     const handleLogout = async () => {
         try {
-            await fetch('/api/auth/logout', {
+            await fetch('/api/v1/auth/logout', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -84,21 +74,11 @@ export function WorkspaceSwitcher() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const activeWorkspace = workspaces.find(w => w.slug === currentSlug) || workspaces[0];
+    const activeWorkspace = workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0];
 
     // 2. Optimized Switcher Logic
-    const switchWorkspace = (slug: string) => {
-        const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com';
-
-        // Preserve path and query params for better UX
-        const path = window.location.pathname + window.location.search;
-        const isLocal = window.location.hostname.includes('localhost');
-
-        if (isLocal) {
-            console.log(`Switching to workspace: ${slug}`);
-        } else {
-            window.location.href = `https://${slug}.${baseDomain}${path}`;
-        }
+    const switchWorkspace = (id: string) => {
+        router.push(`/dashboard/${id}`);
         setOpen(false);
     };
 
@@ -129,10 +109,10 @@ export function WorkspaceSwitcher() {
                         {workspaces.map((w) => (
                             <button
                                 key={w.id}
-                                onClick={() => switchWorkspace(w.slug)}
+                                onClick={() => switchWorkspace(w.id)}
                                 className={clsx(
                                     "flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-muted transition-colors",
-                                    w.slug === currentSlug && "bg-muted/50 font-medium"
+                                    w.id === currentWorkspaceId && "bg-muted/50 font-medium"
                                 )}
                             >
                                 <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground">
@@ -142,7 +122,7 @@ export function WorkspaceSwitcher() {
                                     <p className="truncate text-foreground">{w.name}</p>
                                     <p className="text-[10px] text-muted-foreground capitalize">{w.role}</p>
                                 </div>
-                                {w.slug === currentSlug && (
+                                {w.id === currentWorkspaceId && (
                                     <Check className="w-4 h-4 text-primary" />
                                 )}
                             </button>

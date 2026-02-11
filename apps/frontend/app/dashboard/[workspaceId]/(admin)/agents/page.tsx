@@ -50,7 +50,7 @@ export default function AgentsPage() {
     useEffect(() => {
         const init = async () => {
             try {
-                const res = await fetch('/api/auth/me', { credentials: 'include' });
+                const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
                 if (res.ok) {
                     const user = await res.json();
                     const userEmail = user.email || '';
@@ -68,7 +68,7 @@ export default function AgentsPage() {
 
     const fetchAgents = async () => {
         try {
-            const res = await fetch('/api/ai/agents');
+            const res = await fetch('/api/v1/ai/agents');
             if (res.ok) {
                 setAgents(await res.json());
             } else {
@@ -89,7 +89,7 @@ export default function AgentsPage() {
 
     const toggleAgent = async (id: string, isActive: boolean) => {
         try {
-            await fetch(`/api/ai/agents/${id}/toggle`, {
+            await fetch(`/api/v1/ai/agents/${id}/toggle`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ isActive: !isActive }),

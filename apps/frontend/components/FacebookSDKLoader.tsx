@@ -76,6 +76,12 @@ export function launchWhatsAppSignup(
         return;
     }
 
+    // Determine redirect URI based on environment
+    const redirectUri = process.env.NEXT_PUBLIC_META_REDIRECT_URI || 
+                       (typeof window !== 'undefined' && window.location.origin ? 
+                        `${window.location.origin}/meta/callback` : 
+                        'https://app.aerostic.com/meta/callback');
+
     try {
         window.FB.login(
             (response: any) => {
@@ -90,7 +96,7 @@ export function launchWhatsAppSignup(
                 config_id: configId,
                 response_type: 'code',
                 override_default_response_type: true,
-                redirect_uri: 'https://app.aerostic.com/meta/callback',
+                redirect_uri: redirectUri,
                 extras: {
                     version: 'v3',
                     session_info: {
