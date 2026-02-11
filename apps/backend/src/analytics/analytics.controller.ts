@@ -6,7 +6,7 @@ import { TenantGuard } from '../common/guards/tenant.guard';
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, TenantGuard)
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('overview')
   getOverview(@Req() req: any) {

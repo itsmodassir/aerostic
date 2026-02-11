@@ -32,7 +32,7 @@ export class WebhooksService {
     private automationService: AutomationService,
     private aiService: AiService,
     private messagesGateway: MessagesGateway,
-  ) { }
+  ) {}
 
   verifyWebhook(mode: string, token: string, challenge: string): string {
     const verifyToken = this.configService.get('META_WEBHOOK_VERIFY_TOKEN');
@@ -151,11 +151,13 @@ export class WebhooksService {
       // 4. Save Message
       // Check for duplicate message ID (Idempotency)
       const existingMsg = await this.messageRepo.findOneBy({
-        metaMessageId: messageData.id
+        metaMessageId: messageData.id,
       });
 
       if (existingMsg) {
-        this.logger.warn(`Duplicate message received: ${messageData.id}. Skipping.`);
+        this.logger.warn(
+          `Duplicate message received: ${messageData.id}. Skipping.`,
+        );
         return;
       }
 

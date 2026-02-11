@@ -63,6 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+        { name: 'Inbox', href: '/admin/inbox', icon: MessageSquare },
         { name: 'Tenants', href: '/admin/tenants', icon: Users },
         { name: 'Billing & Revenue', href: '/admin/billing', icon: CreditCard },
         { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },

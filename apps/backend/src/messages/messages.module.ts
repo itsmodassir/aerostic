@@ -28,4 +28,4 @@ import { AuditModule } from '../audit/audit.module';
   providers: [MessagesService, MessagesGateway],
   exports: [MessagesService, MessagesGateway],
 })
-export class MessagesModule { }
+export class MessagesModule {}

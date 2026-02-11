@@ -8,9 +8,7 @@ import { SentryExceptionFilter } from './common/filters/sentry-exception.filter'
 async function bootstrap() {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    integrations: [
-      nodeProfilingIntegration(),
-    ],
+    integrations: [nodeProfilingIntegration()],
     // Performance Monitoring
     tracesSampleRate: 1.0, //  Capture 100% of the transactions
     // Set sampling rate for profiling - this is relative to tracesSampleRate
@@ -27,7 +25,9 @@ async function bootstrap() {
 
   // CORS Configuration
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
-  const allowedOrigins = allowedOriginsEnv ? allowedOriginsEnv.split(',') : ['*'];
+  const allowedOrigins = allowedOriginsEnv
+    ? allowedOriginsEnv.split(',')
+    : ['*'];
 
   app.enableCors({
     origin: (
@@ -35,7 +35,11 @@ async function bootstrap() {
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes('*') ||
+        allowedOrigins.includes(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -58,10 +62,12 @@ async function bootstrap() {
     next();
   });
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new SentryExceptionFilter({ httpAdapter } as any));

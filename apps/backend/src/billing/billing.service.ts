@@ -13,6 +13,9 @@ import * as crypto from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
 import { RazorpayEvent } from './entities/razorpay-event.entity';
+import { MailService } from '../common/mail.service';
+import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class BillingService {
@@ -25,11 +28,15 @@ export class BillingService {
     private apiKeyRepo: Repository<ApiKey>,
     @InjectRepository(WebhookEndpoint)
     private webhookRepo: Repository<WebhookEndpoint>,
-    @InjectRepository(RazorpayEvent) // Inject event repo
+    @InjectRepository(RazorpayEvent)
     private eventRepo: Repository<RazorpayEvent>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
     private razorpayService: RazorpayService,
     private auditService: AuditService,
-  ) { }
+    private mailService: MailService,
+    private usersService: UsersService,
+  ) {}
 
   // ============ WEBHOOK HANDLING & IDEMPOTENCY ============
 
@@ -41,10 +48,17 @@ export class BillingService {
     // Try to get a unique event ID. Razorpay sends 'x-razorpay-event-id' header usually.
     // If we only have body, we construct a unique ID from entity ID + event name strategy or hash.
     // Ideally controller passes the ID. Here we will use payload entity ID if available as best effort unique key per event type.
-    const entityId = payload.payment?.entity?.id || payload.subscription?.entity?.id;
-    const uniqueEventId = body.id || (entityId ? `${eventName}_${entityId}` : `evt_${Date.now()}_${Math.random()}`);
+    const entityId =
+      payload.payment?.entity?.id || payload.subscription?.entity?.id;
+    const uniqueEventId =
+      body.id ||
+      (entityId
+        ? `${eventName}_${entityId}`
+        : `evt_${Date.now()}_${Math.random()}`);
 
-    const existingEvent = await this.eventRepo.findOne({ where: { eventId: uniqueEventId } });
+    const existingEvent = await this.eventRepo.findOne({
+      where: { eventId: uniqueEventId },
+    });
 
     if (existingEvent) {
       this.logger.log(`Duplicate webhook event handled: ${uniqueEventId}`);
@@ -52,12 +66,14 @@ export class BillingService {
     }
 
     // 2. Persist Event immediately
-    await this.eventRepo.save(this.eventRepo.create({
-      eventId: uniqueEventId,
-      event: eventName,
-      payload: body, // Store full body for debugging/replay
-      status: 'processing'
-    }));
+    await this.eventRepo.save(
+      this.eventRepo.create({
+        eventId: uniqueEventId,
+        event: eventName,
+        payload: body, // Store full body for debugging/replay
+        status: 'processing',
+      }),
+    );
 
     try {
       // 3. Process Event
@@ -74,23 +90,34 @@ export class BillingService {
           // Handle cancellation logic here
           break;
         case 'payment.captured':
-          // Handle payment success logic
+          await this.generateAndSendInvoice(
+            payload.payment.entity.id,
+            payload.payment.entity.amount,
+            payload.payment.entity.notes?.tenant_id,
+          );
           break;
       }
 
       // 4. Update status to processed
-      await this.eventRepo.update({ eventId: uniqueEventId }, { status: 'processed' });
-
+      await this.eventRepo.update(
+        { eventId: uniqueEventId },
+        { status: 'processed' },
+      );
     } catch (error) {
-      this.logger.error(`Failed to process webhook event ${uniqueEventId}`, error);
-      await this.eventRepo.update({ eventId: uniqueEventId }, { status: 'failed' });
-      // We still return 200 to Razorpay usually to stop retries if it's a logic error, 
+      this.logger.error(
+        `Failed to process webhook event ${uniqueEventId}`,
+        error,
+      );
+      await this.eventRepo.update(
+        { eventId: uniqueEventId },
+        { status: 'failed' },
+      );
+      // We still return 200 to Razorpay usually to stop retries if it's a logic error,
       // unless it's transient. For now returning success to acknowledge receipt.
     }
 
     return { received: true };
   }
-
 
   // ============ SUBSCRIPTIONS ============
 
@@ -125,7 +152,7 @@ export class BillingService {
       undefined,
       LogLevel.SUCCESS,
       LogCategory.BILLING,
-      'BillingService'
+      'BillingService',
     );
 
     return saved;
@@ -179,7 +206,7 @@ export class BillingService {
       undefined,
       LogLevel.SUCCESS,
       LogCategory.BILLING,
-      'BillingService'
+      'BillingService',
     );
 
     return saved;
@@ -226,7 +253,7 @@ export class BillingService {
       undefined,
       LogLevel.INFO,
       LogCategory.BILLING,
-      'BillingService'
+      'BillingService',
     );
 
     return saved;
@@ -292,7 +319,7 @@ export class BillingService {
       undefined,
       LogLevel.INFO,
       LogCategory.SECURITY,
-      'BillingService'
+      'BillingService',
     );
 
     // Return raw key only once - user must save it
@@ -328,7 +355,7 @@ export class BillingService {
       undefined,
       LogLevel.WARNING,
       LogCategory.SECURITY,
-      'BillingService'
+      'BillingService',
     );
   }
 
@@ -412,6 +439,58 @@ export class BillingService {
       webhook.lastFailureAt = new Date();
       webhook.lastFailureReason = error.message;
       await this.webhookRepo.save(webhook);
+    }
+  }
+
+  private async generateAndSendInvoice(
+    paymentId: string,
+    amount: number,
+    tenantId: string,
+  ) {
+    try {
+      if (!tenantId) {
+        this.logger.warn(
+          `No tenantId found in payment notes for ${paymentId}, skipping invoice`,
+        );
+        return;
+      }
+
+      this.logger.log(
+        `Generating invoice for payment ${paymentId}, tenant ${tenantId}`,
+      );
+
+      // 1. Get primary contact (owner) for the tenant
+      const user = await this.userRepo
+        .createQueryBuilder('user')
+        .innerJoin('user.memberships', 'membership')
+        .where('membership.tenantId = :tenantId', { tenantId })
+        .getOne();
+
+      if (!user) {
+        this.logger.warn(
+          `No user found for tenant ${tenantId}, skipping invoice email`,
+        );
+        return;
+      }
+
+      // 2. Format data
+      const invoiceData = {
+        id: `INV-${paymentId.replace('pay_', '')}`,
+        amount: amount / 100, // Razorpay amount is in paise
+        date: new Date().toLocaleDateString(),
+      };
+
+      // 3. Send via MailService
+      await this.mailService.sendInvoiceEmail(user.email, invoiceData);
+
+      this.logger.log(
+        `Invoice email sent to ${user.email} for payment ${paymentId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate/send invoice for payment ${paymentId}`,
+        error,
+      );
     }
   }
 }

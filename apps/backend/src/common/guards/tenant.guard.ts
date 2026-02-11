@@ -16,7 +16,7 @@ export class TenantGuard implements CanActivate {
     private tenantRepo: Repository<Tenant>,
     @InjectRepository(TenantMembership)
     private membershipRepo: Repository<TenantMembership>,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -33,13 +33,16 @@ export class TenantGuard implements CanActivate {
         const subdomain = parts[0];
         if (!reserved.includes(subdomain)) {
           // Attempt to find tenant by slug
-          tenantFromHost = await this.tenantRepo.findOne({ where: { slug: subdomain } });
+          tenantFromHost = await this.tenantRepo.findOne({
+            where: { slug: subdomain },
+          });
         }
       }
     }
 
     // 2. Resolve Tenant ID from User/JWT or Header
-    const tenantIdFromUser = request.user?.tenantId || request.headers['x-tenant-id'];
+    const tenantIdFromUser =
+      request.user?.tenantId || request.headers['x-tenant-id'];
 
     // 3. Identification Logic
     // Subdomain > JWT/Header
@@ -49,31 +52,43 @@ export class TenantGuard implements CanActivate {
       targetTenant = tenantFromHost;
     } else if (tenantIdFromUser) {
       // Ensure it's a valid UUID before querying
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(tenantIdFromUser)) {
-        targetTenant = await this.tenantRepo.findOne({ where: { id: tenantIdFromUser } });
+        targetTenant = await this.tenantRepo.findOne({
+          where: { id: tenantIdFromUser },
+        });
       }
     }
 
     if (!targetTenant) {
-      throw new UnauthorizedException('Tenant not identified or invalid context');
+      throw new UnauthorizedException(
+        'Tenant not identified or invalid context',
+      );
     }
 
     // 4. Verification Check: Does the user have a membership in this tenant?
     if (request.user && request.user.role !== 'super_admin') {
       const membership = await this.membershipRepo.findOne({
         where: { userId: request.user.id, tenantId: targetTenant.id },
-        relations: ['roleEntity', 'roleEntity.rolePermissions', 'roleEntity.rolePermissions.permission'],
+        relations: [
+          'roleEntity',
+          'roleEntity.rolePermissions',
+          'roleEntity.rolePermissions.permission',
+        ],
       });
 
       if (!membership) {
-        throw new UnauthorizedException('You do not have access to this workspace');
+        throw new UnauthorizedException(
+          'You do not have access to this workspace',
+        );
       }
 
       // 5. Build Permissions String Array (e.g., ['campaigns:send', 'inbox:read'])
-      const permissions = membership.roleEntity?.rolePermissions?.map(
-        rp => `${rp.permission.resource}:${rp.permission.action}`
-      ) || [];
+      const permissions =
+        membership.roleEntity?.rolePermissions?.map(
+          (rp) => `${rp.permission.resource}:${rp.permission.action}`,
+        ) || [];
 
       // Attach to request for downstream guards and controllers
       request.membership = membership;
@@ -90,8 +105,14 @@ export class TenantGuard implements CanActivate {
       throw new UnauthorizedException('Subscription cancelled');
     }
 
-    if (targetTenant.subscriptionStatus === 'trialing' && targetTenant.trialEndsAt && new Date() > targetTenant.trialEndsAt) {
-      throw new UnauthorizedException('Trial expired. Please upgrade your plan.');
+    if (
+      targetTenant.subscriptionStatus === 'trialing' &&
+      targetTenant.trialEndsAt &&
+      new Date() > targetTenant.trialEndsAt
+    ) {
+      throw new UnauthorizedException(
+        'Trial expired. Please upgrade your plan.',
+      );
     }
 
     // Attach tenant to request

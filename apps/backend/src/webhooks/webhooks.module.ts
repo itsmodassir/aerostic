@@ -24,4 +24,4 @@ import { MessagesModule } from '../messages/messages.module';
   controllers: [WebhooksController],
   providers: [WebhooksService],
 })
-export class WebhooksModule { }
+export class WebhooksModule {}

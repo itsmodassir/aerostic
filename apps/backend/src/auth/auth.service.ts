@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TenantMembership } from '../tenants/entities/tenant-membership.entity';
+import { RedisService } from '../common/redis.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -13,9 +14,26 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private redisService: RedisService,
     @InjectRepository(TenantMembership)
     private membershipRepository: Repository<TenantMembership>,
-  ) { }
+  ) {}
+
+  async generateOtp(email: string): Promise<string> {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await this.redisService.set(`otp:${email}`, otp, 300); // 5 minutes
+    this.logger.log(`OTP generated for ${email}`);
+    return otp;
+  }
+
+  async verifyOtp(email: string, otp: string): Promise<boolean> {
+    const storedOtp = await this.redisService.get(`otp:${email}`);
+    if (storedOtp && storedOtp === otp) {
+      await this.redisService.del(`otp:${email}`);
+      return true;
+    }
+    return false;
+  }
 
   async validateUser(email: string, pass: string): Promise<any> {
     this.logger.warn(`Attempting login for: ${email}`);
@@ -31,7 +49,7 @@ export class AuthService {
       // Resolve the primary tenantId for the user
       const membership = await this.membershipRepository.findOne({
         where: { userId: user.id },
-        order: { createdAt: 'ASC' }
+        order: { createdAt: 'ASC' },
       });
 
       const plainUser = {

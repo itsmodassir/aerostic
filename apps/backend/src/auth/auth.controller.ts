@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -14,8 +13,12 @@ import { UsersService } from '../users/users.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { AuditService } from '../audit/audit.service';
 import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
+import { MailService } from '../common/mail.service';
 import { IsNotEmpty, IsEmail } from 'class-validator';
-import { TenantMembership, TenantRole } from '../tenants/entities/tenant-membership.entity';
+import {
+  TenantMembership,
+  TenantRole,
+} from '../tenants/entities/tenant-membership.entity';
 import { Role } from '../tenants/entities/role.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -33,6 +36,15 @@ class LoginDto {
 
   @IsNotEmpty()
   password: string;
+}
+
+class VerifyLoginDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  otp: string;
 }
 
 class RegisterDto {
@@ -54,13 +66,80 @@ class RegisterDto {
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private usersService: UsersService,
     @InjectRepository(TenantMembership)
     private membershipRepo: Repository<TenantMembership>,
     @InjectRepository(Role)
     private roleRepo: Repository<Role>,
     private auditService: AuditService,
     private dataSource: DataSource,
-  ) { }
+    private mailService: MailService,
+  ) {}
+
+  @Post('login/initiate')
+  async initiateLogin(@Body() loginDto: LoginDto) {
+    const user = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.password,
+    );
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const otp = await this.authService.generateOtp(user.email);
+
+    this.mailService.sendOtpEmail(user.email, otp).catch((err) => {
+      console.error('Failed to send OTP email:', err);
+    });
+
+    return { success: true, message: 'OTP sent to your email' };
+  }
+
+  @Post('login/verify')
+  async verifyLogin(
+    @Body() verifyDto: VerifyLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const isValid = await this.authService.verifyOtp(
+      verifyDto.email,
+      verifyDto.otp,
+    );
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+
+    const user = await this.usersService.findOneByEmail(verifyDto.email);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const { access_token } = await this.authService.login(user);
+
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      domain: isProduction ? '.aerostic.com' : undefined,
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    const membership = await this.membershipRepo.findOne({
+      where: { userId: user.id },
+      relations: ['tenant'],
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      workspaceId: membership?.tenantId,
+      workspaceName: membership?.tenant?.name,
+    };
+  }
 
   @Post('login')
   @Throttle({ auth: { limit: 5, ttl: 3600000 } })
@@ -75,7 +154,9 @@ export class AuthController {
         loginDto.password,
       );
       if (!user) {
-        console.warn(`[AuthController] Invalid credentials for: ${loginDto.email}`);
+        console.warn(
+          `[AuthController] Invalid credentials for: ${loginDto.email}`,
+        );
         throw new UnauthorizedException('Invalid email or password');
       }
 
@@ -106,10 +187,13 @@ export class AuthController {
           undefined,
           LogLevel.INFO,
           LogCategory.SECURITY,
-          'AuthController'
+          'AuthController',
         );
       } catch (auditError) {
-        console.error('[AuthController] Audit log failed (non-critical):', auditError);
+        console.error(
+          '[AuthController] Audit log failed (non-critical):',
+          auditError,
+        );
       }
 
       console.log('[AuthController] Fetching membership...');
@@ -135,7 +219,10 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  async logout(@NestRequest() req: any, @Res({ passthrough: true }) res: Response) {
+  async logout(
+    @NestRequest() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     if (req.user && req.user.id) {
       await this.authService.logout(req.user.id);
     }
@@ -168,7 +255,10 @@ export class AuthController {
     try {
       return await this.dataSource.transaction(async (manager) => {
         // 1. Create Tenant
-        const slug = registerDto.workspace.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const slug = registerDto.workspace
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
         const tenantRepo = manager.getRepository(Tenant); // Use Entity class
 
         const tenant = tenantRepo.create({
@@ -183,7 +273,9 @@ export class AuthController {
         // 2. Create User
         // Use the transaction manager to ensure atomicity
         const userRepo = manager.getRepository(User);
-        const existingUser = await userRepo.findOne({ where: { email: registerDto.email } });
+        const existingUser = await userRepo.findOne({
+          where: { email: registerDto.email },
+        });
         if (existingUser) {
           throw new BadRequestException('Email already registered');
         }
@@ -220,6 +312,13 @@ export class AuthController {
         });
         await membershipRepo.save(membership);
 
+        // 4. Send Welcome Email (Non-blocking)
+        this.mailService
+          .sendWelcomeEmail(user.email, user.name)
+          .catch((err) => {
+            console.error('Failed to send welcome email:', err);
+          });
+
         const { passwordHash: _, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
@@ -237,7 +336,10 @@ export class AuthController {
 
   @Get('membership')
   @UseGuards(JwtAuthGuard, TenantGuard)
-  async getMembership(@NestRequest() req: any, @Res({ passthrough: true }) res: Response) {
+  async getMembership(
+    @NestRequest() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     res.setHeader('Cache-Control', 'no-store');
     return {
       ...req.membership,
@@ -257,7 +359,10 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@NestRequest() req: any, @Res({ passthrough: true }) res: Response) {
+  async getProfile(
+    @NestRequest() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     res.setHeader('Cache-Control', 'no-store');
     // Return the full user profile including global role
     return {

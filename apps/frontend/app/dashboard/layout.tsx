@@ -58,27 +58,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
     }, [user]);
 
-    // Fetch workspace membership
+    // Fetch workspace membership and subscription
     useEffect(() => {
-        const fetchMembership = async () => {
-            // Auth provided by cookie
+        const fetchData = async () => {
             try {
-                const response = await fetch('/api/v1/auth/membership', {
+                // 1. Fetch Membership
+                const memResponse = await fetch('/api/v1/auth/membership', {
                     credentials: 'include'
                 });
-                if (response.ok) {
-                    const data = await response.json();
+                if (memResponse.ok) {
+                    const data = await memResponse.json();
                     setMembership(data);
                 }
+
+                // 2. Fetch Subscription (Guard)
+                if (!isAdmin) {
+                    const subResponse = await fetch('/api/v1/billing/subscription', {
+                        credentials: 'include'
+                    });
+                    if (subResponse.ok) {
+                        const subData = await subResponse.json();
+                        // If no subscription or trial/active status, redirect to onboarding
+                        const validStatuses = ['trial', 'active'];
+                        if (!subData || !validStatuses.includes(subData.status)) {
+                            router.push('/onboarding');
+                        }
+                    } else if (subResponse.status === 401 || subResponse.status === 404) {
+                        router.push('/onboarding');
+                    }
+                }
             } catch (error) {
-                console.error('Failed to fetch membership:', error);
+                console.error('Failed to fetch dashboard data:', error);
             }
         };
 
         if (user) {
-            fetchMembership();
+            fetchData();
         }
-    }, [user]);
+    }, [user, isAdmin, router]);
 
     // Demo notifications
     const [notifications] = useState([

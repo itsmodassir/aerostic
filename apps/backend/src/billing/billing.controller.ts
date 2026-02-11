@@ -21,7 +21,7 @@ export class BillingController {
   constructor(
     private razorpayService: RazorpayService,
     private billingService: BillingService,
-  ) { }
+  ) {}
 
   // ============ PLANS ============
 
@@ -39,7 +39,11 @@ export class BillingController {
   }
 
   @Post('subscribe')
-  async createSubscription(@UserTenant() tenantId: string, @Req() req: any, @Body() body: { planId: string }) {
+  async createSubscription(
+    @UserTenant() tenantId: string,
+    @Req() req: any,
+    @Body() body: { planId: string },
+  ) {
     if (!tenantId) throw new UnauthorizedException('Tenant ID required');
     const email = req.user?.email || 'demo@example.com';
     const phone = req.user?.phone || '9999999999';
@@ -50,6 +54,12 @@ export class BillingController {
       email,
       phone,
     });
+  }
+
+  @Post('trial')
+  async startTrial(@UserTenant() tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
+    return this.billingService.createTrialSubscription(tenantId);
   }
 
   @Post('webhook')

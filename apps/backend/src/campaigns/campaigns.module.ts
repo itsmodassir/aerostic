@@ -23,4 +23,4 @@ import { AuditModule } from '../audit/audit.module';
   controllers: [CampaignsController],
   providers: [CampaignsService, CampaignProcessor],
 })
-export class CampaignsModule { }
+export class CampaignsModule {}

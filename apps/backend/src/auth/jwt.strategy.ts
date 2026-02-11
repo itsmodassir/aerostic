@@ -6,7 +6,6 @@ import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-
   constructor(
     configService: ConfigService,
     private usersService: UsersService,
@@ -42,9 +41,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Check if token version matches (if payload has version)
     // For backward compatibility, if payload lacks version, we might allow it momentarily or strict reject.
-    // Given we want partial logout, strict reject is safer but might logout everyone immediately on deploy. 
+    // Given we want partial logout, strict reject is safer but might logout everyone immediately on deploy.
     // Plan calls for global logout, so strict reject is acceptable.
-    if (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion) {
+    if (
+      payload.tokenVersion !== undefined &&
+      user.tokenVersion !== payload.tokenVersion
+    ) {
       throw new UnauthorizedException('Token revoked');
     }
 

@@ -11,6 +11,7 @@ import { Subscription } from '../billing/entities/subscription.entity';
 import { AuditModule } from '../audit/audit.module';
 import { WebhookEndpoint } from '../billing/entities/webhook-endpoint.entity';
 import { User } from '../users/entities/user.entity';
+import { EmailMessage } from './entities/email-message.entity';
 
 import { Conversation } from '../messages/entities/conversation.entity';
 import { Contact } from '../contacts/entities/contact.entity';
@@ -24,6 +25,7 @@ import { AdminBillingService } from './services/admin-billing.service';
 import { AdminHealthService } from './services/admin-health.service';
 import { AdminAnalyticsService } from './services/admin-analytics.service';
 import { AdminDatabaseService } from './services/admin-database.service';
+import { AdminInboxService } from './services/admin-inbox.service';
 
 @Module({
   imports: [
@@ -38,6 +40,7 @@ import { AdminDatabaseService } from './services/admin-database.service';
       Conversation,
       Contact,
       User,
+      EmailMessage,
     ]),
     AuditModule,
     BillingModule,
@@ -51,6 +54,7 @@ import { AdminDatabaseService } from './services/admin-database.service';
     AdminHealthService,
     AdminAnalyticsService,
     AdminDatabaseService,
+    AdminInboxService,
   ],
   exports: [
     AdminService,
@@ -60,6 +64,7 @@ import { AdminDatabaseService } from './services/admin-database.service';
     AdminHealthService,
     AdminAnalyticsService,
     AdminDatabaseService,
+    AdminInboxService,
   ],
 })
-export class AdminModule { }
+export class AdminModule {}

@@ -31,7 +31,7 @@ export class MessagesService {
     private conversationRepo: Repository<Conversation>,
     private messagesGateway: MessagesGateway,
     private auditService: AuditService,
-  ) { }
+  ) {}
 
   async send(dto: SendMessageDto) {
     // 1. Resolve Tenant's WhatsApp Account
@@ -148,12 +148,12 @@ export class MessagesService {
           messageId: message.id,
           metaId,
           type: dto.type,
-          conversationId: conversation.id
+          conversationId: conversation.id,
         },
         undefined,
         LogLevel.SUCCESS,
         LogCategory.WHATSAPP,
-        'MessagesService'
+        'MessagesService',
       );
 
       return { sent: true, metaId, messageId: message.id };

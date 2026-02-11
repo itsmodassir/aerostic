@@ -136,7 +136,7 @@ export class AdminService {
     private billingService: BillingService,
     private configService: ConfigService,
     private encryptionService: EncryptionService,
-  ) { }
+  ) {}
 
   async getAllTenants() {
     return this.tenantRepo.find({
@@ -182,7 +182,7 @@ export class AdminService {
     };
 
     // Keep track of which keys are from DB
-    const dbKeys = new Set(configs.map(c => c.key));
+    const dbKeys = new Set(configs.map((c) => c.key));
 
     // Start with defaults + Env fallback
     for (const [key, def] of Object.entries(DEFAULT_CONFIG)) {
@@ -210,7 +210,9 @@ export class AdminService {
     // Override with stored values
     for (const config of configs) {
       result[config.key] = {
-        value: config.isSecret ? '••••••••••••••••' : (config.value?.trim() || ''),
+        value: config.isSecret
+          ? '••••••••••••••••'
+          : config.value?.trim() || '',
         description: config.description,
         category: config.category,
         isSecret: config.isSecret,
@@ -225,7 +227,9 @@ export class AdminService {
   async getConfigValue(key: string): Promise<string | null> {
     const config = await this.configRepo.findOne({ where: { key } });
     if (config) {
-      return config.isSecret ? this.encryptionService.decrypt(config.value) : config.value;
+      return config.isSecret
+        ? this.encryptionService.decrypt(config.value)
+        : config.value;
     }
     return DEFAULT_CONFIG[key]?.value || null;
   }
@@ -248,8 +252,11 @@ export class AdminService {
       }
 
       let config = await this.configRepo.findOne({ where: { key } });
-      const isSecret = config?.isSecret || DEFAULT_CONFIG[key]?.isSecret || false;
-      const finalValue = isSecret ? this.encryptionService.encrypt(value) : value;
+      const isSecret =
+        config?.isSecret || DEFAULT_CONFIG[key]?.isSecret || false;
+      const finalValue = isSecret
+        ? this.encryptionService.encrypt(value)
+        : value;
 
       if (config) {
         config.value = finalValue;
@@ -442,7 +449,7 @@ export class AdminService {
       name: sub.tenant?.name || 'Unknown',
       plan: sub.plan
         ? (sub.plan as string).charAt(0).toUpperCase() +
-        (sub.plan as string).slice(1)
+          (sub.plan as string).slice(1)
         : 'Starter',
       messages: '0', // We would need a more complex join to get message count per tenant here
       revenue: `₹${sub.priceInr.toLocaleString()}`,

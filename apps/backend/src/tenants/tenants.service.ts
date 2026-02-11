@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant } from './entities/tenant.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';
-import { TenantMembership, TenantRole } from './entities/tenant-membership.entity';
+import {
+  TenantMembership,
+  TenantRole,
+} from './entities/tenant-membership.entity';
 import { Role } from './entities/role.entity';
 
 @Injectable()
@@ -15,9 +22,12 @@ export class TenantsService {
     private membershipRepository: Repository<TenantMembership>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-  ) { }
+  ) {}
 
-  async create(createTenantDto: CreateTenantDto, userId: string): Promise<Tenant> {
+  async create(
+    createTenantDto: CreateTenantDto,
+    userId: string,
+  ): Promise<Tenant> {
     const slug = createTenantDto.slug || this.slugify(createTenantDto.name);
 
     // Check if slug exists
@@ -35,7 +45,9 @@ export class TenantsService {
     const savedTenant = await this.tenantsRepository.save(tenant);
 
     // Create membership for the creator (Owner)
-    const ownerRole = await this.roleRepository.findOne({ where: { name: 'owner' } });
+    const ownerRole = await this.roleRepository.findOne({
+      where: { name: 'owner' },
+    });
 
     const membership = this.membershipRepository.create({
       userId,

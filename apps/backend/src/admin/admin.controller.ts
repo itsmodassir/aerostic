@@ -22,6 +22,7 @@ import { AdminBillingService } from './services/admin-billing.service';
 import { AdminHealthService } from './services/admin-health.service';
 import { AdminAnalyticsService } from './services/admin-analytics.service';
 import { AdminDatabaseService } from './services/admin-database.service';
+import { AdminInboxService } from './services/admin-inbox.service';
 import { AuditService } from '../audit/audit.service';
 import { AdminService } from './admin.service';
 
@@ -29,6 +30,7 @@ import {
   PlanType,
   SubscriptionStatus,
 } from '../billing/entities/subscription.entity';
+import { InboxFolderName } from './entities/email-message.entity';
 
 class UpdateUserPlanDto {
   @IsEnum(PlanType)
@@ -49,9 +51,10 @@ export class AdminController {
     private readonly healthService: AdminHealthService,
     private readonly analyticsService: AdminAnalyticsService,
     private readonly databaseService: AdminDatabaseService,
+    private readonly inboxService: AdminInboxService,
     private readonly auditService: AuditService,
     private readonly legacyAdminService: AdminService,
-  ) { }
+  ) {}
 
   // ============ Database Explorer ============
   @Get('database/tables')
@@ -186,5 +189,67 @@ export class AdminController {
   @Get('alerts')
   async getAlerts() {
     return this.analyticsService.getSystemAlerts();
+  }
+
+  // ============ Admin Shared Inbox ============
+  @Get('inbox/messages')
+  async getInboxMessages(
+    @Query('mailbox') mailbox?: string,
+    @Query('folder') folder: InboxFolderName = InboxFolderName.INBOX,
+  ) {
+    return this.inboxService.getMessages(mailbox, folder);
+  }
+
+  @Get('inbox/messages/:id')
+  async getInboxMessage(@Param('id') id: string) {
+    return this.inboxService.getMessageById(id);
+  }
+
+  @Patch('inbox/messages/:id/read')
+  async markInboxMessageRead(@Param('id') id: string) {
+    return this.inboxService.markAsRead(id);
+  }
+
+  @Post('inbox/messages/send')
+  async sendInboxMessage(
+    @Body()
+    dto: {
+      mailbox: string;
+      to: string;
+      subject: string;
+      content: string;
+    },
+  ) {
+    return this.inboxService.sendMessage(
+      dto.mailbox,
+      dto.to,
+      dto.subject,
+      dto.content,
+    );
+  }
+
+  @Post('inbox/messages/receive')
+  async receiveInboxMessage(
+    @Body()
+    dto: {
+      mailbox: string;
+      from: string;
+      to: string;
+      subject: string;
+      content: string;
+    },
+  ) {
+    return this.inboxService.receiveMessage(
+      dto.mailbox,
+      dto.from,
+      dto.to,
+      dto.subject,
+      dto.content,
+    );
+  }
+
+  @Delete('inbox/messages/:id')
+  async deleteInboxMessage(@Param('id') id: string) {
+    return this.inboxService.deleteMessage(id);
   }
 }

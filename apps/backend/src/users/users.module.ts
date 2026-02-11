@@ -12,4 +12,4 @@ import { TenantMembership } from '../tenants/entities/tenant-membership.entity';
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

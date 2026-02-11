@@ -13,7 +13,7 @@ import type { Request, Response } from 'express';
 
 @Controller('webhooks')
 export class WebhooksController {
-  constructor(private readonly webhooksService: WebhooksService) { }
+  constructor(private readonly webhooksService: WebhooksService) {}
 
   @Get('meta')
   verify(
@@ -31,11 +31,7 @@ export class WebhooksController {
   }
 
   @Post('meta')
-  async receive(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: any,
-  ) {
+  async receive(@Req() req: Request, @Res() res: Response, @Body() body: any) {
     const signature = req.headers['x-hub-signature-256'] as string;
 
     if (!signature) {

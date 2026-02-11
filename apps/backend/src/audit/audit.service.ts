@@ -19,7 +19,7 @@ export class AuditService {
   constructor(
     @InjectRepository(AuditLog)
     private auditRepo: Repository<AuditLog>,
-  ) { }
+  ) {}
 
   async logAction(
     actorId: string,

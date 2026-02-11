@@ -17,7 +17,7 @@ import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
 export class CampaignsController {
-  constructor(private readonly campaignsService: CampaignsService) { }
+  constructor(private readonly campaignsService: CampaignsService) {}
 
   @Post()
   @Permissions('campaigns:create')

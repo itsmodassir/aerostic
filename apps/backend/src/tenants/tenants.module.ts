@@ -24,4 +24,4 @@ import { AuditModule } from '../audit/audit.module';
   providers: [TenantsService],
   exports: [TenantsService],
 })
-export class TenantsModule { }
+export class TenantsModule {}

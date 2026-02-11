@@ -12,7 +12,7 @@ export class ContactsService {
     @InjectRepository(Contact)
     private contactsRepository: Repository<Contact>,
     private auditService: AuditService,
-  ) { }
+  ) {}
 
   async create(createContactDto: CreateContactDto): Promise<Contact> {
     const existing = await this.contactsRepository.findOneBy({
@@ -40,7 +40,7 @@ export class ContactsService {
       undefined,
       LogLevel.INFO,
       LogCategory.USER,
-      'ContactsService'
+      'ContactsService',
     );
 
     return saved;

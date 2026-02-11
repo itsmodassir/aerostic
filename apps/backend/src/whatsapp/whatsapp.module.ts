@@ -22,4 +22,4 @@ import { AuditModule } from '../audit/audit.module';
   providers: [WhatsappService],
   exports: [WhatsappService],
 })
-export class WhatsappModule { }
+export class WhatsappModule {}

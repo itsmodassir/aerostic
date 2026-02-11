@@ -32,4 +32,4 @@ import { AuditModule } from '../audit/audit.module';
   controllers: [AuthController],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

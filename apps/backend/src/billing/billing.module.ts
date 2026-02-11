@@ -16,6 +16,8 @@ import { RazorpayWebhookGuard } from './guards/razorpay-webhook.guard';
 // Guards are usually not required to be providers if using standard @UseGuards
 // But we might need ConfigService imports if not global
 import { AuditModule } from '../audit/audit.module';
+import { UsersModule } from '../users/users.module';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
@@ -25,8 +27,10 @@ import { AuditModule } from '../audit/audit.module';
       ApiKey,
       WebhookEndpoint,
       RazorpayEvent,
+      User,
     ]),
     AuditModule,
+    UsersModule,
   ],
   controllers: [
     BillingController, // Deprecated? Keeping for now or removing if fully migrated.
@@ -35,13 +39,9 @@ import { AuditModule } from '../audit/audit.module';
     // For safety, I'll keep it but new controllers are primary.
     BillingWebhookController,
     BillingSubscriptionController,
-    BillingApiKeysController
+    BillingApiKeysController,
   ],
-  providers: [
-    RazorpayService,
-    BillingService,
-    RazorpayWebhookGuard
-  ],
+  providers: [RazorpayService, BillingService, RazorpayWebhookGuard],
   exports: [RazorpayService, BillingService],
 })
-export class BillingModule { }
+export class BillingModule {}

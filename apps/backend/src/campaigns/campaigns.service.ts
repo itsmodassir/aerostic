@@ -19,7 +19,7 @@ export class CampaignsService {
     private messagesService: MessagesService,
     @InjectQueue('campaign-queue') private campaignQueue: Queue,
     private auditService: AuditService,
-  ) { }
+  ) {}
 
   async create(tenantId: string, name: string) {
     // Simplified
@@ -79,7 +79,7 @@ export class CampaignsService {
       undefined,
       LogLevel.SUCCESS,
       LogCategory.WHATSAPP,
-      'CampaignsService'
+      'CampaignsService',
     );
 
     return campaign;

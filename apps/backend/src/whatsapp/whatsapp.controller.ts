@@ -15,7 +15,7 @@ import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) { }
+  constructor(private readonly whatsappService: WhatsappService) {}
 
   @UseGuards(JwtAuthGuard)
   @Get('embedded/start')

@@ -11,7 +11,10 @@ import { Tenant } from '../tenants/entities/tenant.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 
-import { TenantMembership, TenantRole } from '../tenants/entities/tenant-membership.entity';
+import {
+  TenantMembership,
+  TenantRole,
+} from '../tenants/entities/tenant-membership.entity';
 
 @Injectable()
 export class UsersService {
@@ -24,7 +27,7 @@ export class UsersService {
     private tenantsRepository: Repository<Tenant>,
     @InjectRepository(TenantMembership)
     private membershipRepository: Repository<TenantMembership>,
-  ) { }
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.usersRepository.findOneBy({
@@ -140,7 +143,7 @@ export class UsersService {
 
       if (!existing) {
         this.logger.log(`Seeding System User: ${account.email}...`);
-        let tenant = await this.tenantsRepository.manager
+        const tenant = await this.tenantsRepository.manager
           .getRepository(Tenant)
           .findOneBy({ name: 'System' });
 

@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('tenants')
 export class TenantsController {
-  constructor(private readonly tenantsService: TenantsService) { }
+  constructor(private readonly tenantsService: TenantsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)

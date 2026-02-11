@@ -22,7 +22,7 @@ export class MetaService {
     private configRepo: Repository<SystemConfig>,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
-  ) { }
+  ) {}
 
   async handleOAuthCallback(
     code: string,
@@ -159,7 +159,8 @@ export class MetaService {
       );
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
-        error.response?.data?.error?.message || 'Failed to connect WhatsApp account',
+        error.response?.data?.error?.message ||
+          'Failed to connect WhatsApp account',
       );
     }
   }

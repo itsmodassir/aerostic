@@ -11,4 +11,4 @@ import { AuditModule } from '../audit/audit.module';
   providers: [ContactsService],
   exports: [ContactsService],
 })
-export class ContactsModule { }
+export class ContactsModule {}

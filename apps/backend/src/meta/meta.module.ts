@@ -18,4 +18,4 @@ import { AuditModule } from '../audit/audit.module';
   providers: [MetaService, MetaTokenService],
   exports: [MetaService],
 })
-export class MetaModule { }
+export class MetaModule {}

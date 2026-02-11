@@ -22,7 +22,7 @@ export class WhatsappService {
     private messageQueue: Queue,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
-  ) { }
+  ) {}
 
   async getEmbeddedSignupUrl(tenantId: string) {
     // Fetch config from DB first, fallback to env
