@@ -33,7 +33,16 @@ export default function AdminLoginPage() {
             // Redirect to admin dashboard
             router.push('/admin');
         } catch (err: any) {
-            setError('Invalid admin credentials');
+            console.error('Admin Login error:', err);
+            if (err.message === 'API endpoint unavailable') {
+                setError('Server is starting up... Please wait 5 seconds.');
+            } else if (err.response?.status === 429) {
+                setError('Too many login attempts. Please try again in an hour.');
+            } else if (err.response?.status === 502 || err.response?.status === 504) {
+                setError('Server is updating... Please try again in a few seconds.');
+            } else {
+                setError('Invalid admin credentials');
+            }
         } finally {
             setLoading(false);
         }
