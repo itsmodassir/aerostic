@@ -18,11 +18,13 @@ import { IsNotEmpty, IsEmail } from 'class-validator';
 import { TenantMembership, TenantRole } from '../tenants/entities/tenant-membership.entity';
 import { Role } from '../tenants/entities/role.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { UseGuards, Request as NestRequest } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
-import { UserRole } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
+import * as bcrypt from 'bcrypt';
 import { Throttle } from '@nestjs/throttler';
 
 class LoginDto {
@@ -52,13 +54,12 @@ class RegisterDto {
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private usersService: UsersService,
-    private tenantsService: TenantsService,
     @InjectRepository(TenantMembership)
     private membershipRepo: Repository<TenantMembership>,
     @InjectRepository(Role)
     private roleRepo: Repository<Role>,
     private auditService: AuditService,
+    private dataSource: DataSource,
   ) { }
 
   @Post('login')
@@ -79,12 +80,14 @@ export class AuthController {
 
       const { access_token } = await this.authService.login(user);
 
+      const isProduction = process.env.NODE_ENV === 'production';
+
       // Set HttpOnly Cookie
       res.cookie('access_token', access_token, {
         httpOnly: true,
-        secure: true, // Always true for production/staging (Cloudflare handles SSL)
+        secure: isProduction, // False for localhost
         sameSite: 'lax',
-        domain: '.aerostic.com',
+        domain: isProduction ? '.aerostic.com' : undefined, // Undefined for localhost
         path: '/',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
@@ -135,50 +138,61 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     try {
-      // Create tenant first
-      const tenant = await this.tenantsService.create({
-        name: registerDto.workspace,
-        slug: registerDto.workspace.toLowerCase().replace(/ /g, '-'), // Basic slugification
-      });
+      return await this.dataSource.transaction(async (manager) => {
+        // 1. Create Tenant
+        const slug = registerDto.workspace.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const tenantRepo = manager.getRepository(Tenant); // Use Entity class
 
-      // Create user
-      const user = await this.usersService.create({
-        email: registerDto.email,
-        password: registerDto.password,
-        name: registerDto.name,
-        role: UserRole.USER,
-      });
+        const tenant = tenantRepo.create({
+          name: registerDto.workspace,
+          slug: slug || `workspace-${Date.now()}`,
+          plan: 'free', // Default plan
+        });
+        await tenantRepo.save(tenant);
 
-      // Find the OWNER role entity
-      const ownerRole = await this.roleRepo.findOne({ where: { name: 'owner' } });
+        // 2. Create User
+        // Use the transaction manager to ensure atomicity
+        const userRepo = manager.getRepository(User);
+        const existingUser = await userRepo.findOne({ where: { email: registerDto.email } });
+        if (existingUser) {
+          throw new BadRequestException('Email already registered');
+        }
 
-      // Create membership
-      await this.membershipRepo.save(
-        this.membershipRepo.create({
+        const salt = await bcrypt.genSalt();
+        const passwordHash = await bcrypt.hash(registerDto.password, salt);
+
+        const user = userRepo.create({
+          email: registerDto.email,
+          passwordHash,
+          name: registerDto.name,
+          role: UserRole.USER,
+          isActive: true,
+          apiAccessEnabled: false,
+        });
+        await userRepo.save(user);
+
+        // 3. Create Membership
+        const roleRepo = manager.getRepository(Role);
+        let ownerRole = await roleRepo.findOne({ where: { name: 'owner' } });
+
+        // Auto-create role if missing (safety net)
+        if (!ownerRole) {
+          ownerRole = roleRepo.create({ name: 'owner', permissions: [] }); // permissions jsonb
+          await roleRepo.save(ownerRole);
+        }
+
+        const membershipRepo = manager.getRepository(TenantMembership);
+        const membership = membershipRepo.create({
           userId: user.id,
           tenantId: tenant.id,
-          roleId: ownerRole?.id, // Dynamic roleId
-          role: TenantRole.OWNER, // Still keeping enum for legacy/migration
-        }),
-      );
+          roleId: ownerRole.id,
+          role: TenantRole.OWNER,
+        });
+        await membershipRepo.save(membership);
 
-      // Audit registration
-      await this.auditService.logAction(
-        user.id,
-        user.name,
-        'REGISTER',
-        `Workspace: ${tenant.name}`,
-        tenant.id,
-        { email: user.email, workspace: registerDto.workspace },
-        undefined,
-        LogLevel.SUCCESS,
-        LogCategory.USER,
-        'AuthController'
-      );
-
-      // Return user data without password
-      const { passwordHash, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+        const { passwordHash: _, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
     } catch (error) {
       console.error('Registration error details:', error);
       if (

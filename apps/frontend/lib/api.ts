@@ -8,13 +8,18 @@ const api = axios.create({
     withCredentials: true, // Enable cookie-based auth
 });
 
-// Request interceptor to automatically add the tenant ID from the URL
+// Request interceptor to automatically add the tenant ID and Auth Token
 api.interceptors.request.use((config) => {
     if (typeof window !== 'undefined') {
         const path = window.location.pathname;
         const workspaceMatch = path.match(/\/dashboard\/([0-9a-f-]{36})/i);
         if (workspaceMatch) {
             config.headers['x-tenant-id'] = workspaceMatch[1];
+        }
+
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
         }
     }
     return config;
