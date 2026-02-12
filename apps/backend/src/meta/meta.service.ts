@@ -22,7 +22,7 @@ export class MetaService {
     private configRepo: Repository<SystemConfig>,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
-  ) {}
+  ) { }
 
   async handleOAuthCallback(
     code: string,
@@ -86,14 +86,16 @@ export class MetaService {
       );
 
       // 3. Fetch WhatsApp Business Account using the 'Safe' endpoint
-      const meRes = await axios.get('https://graph.facebook.com/v22.0/me', {
-        params: {
-          fields: 'whatsapp_business_accounts',
-          access_token: accessToken,
+      const meRes = await axios.get(
+        'https://graph.facebook.com/v22.0/me/whatsapp_business_accounts',
+        {
+          params: {
+            access_token: accessToken,
+          },
         },
-      });
+      );
 
-      const waba = meRes.data.whatsapp_business_accounts?.data?.[0];
+      const waba = meRes.data.data?.[0];
       const wabaId = providedWabaId || waba?.id;
 
       if (!wabaId) {
@@ -160,7 +162,7 @@ export class MetaService {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         error.response?.data?.error?.message ||
-          'Failed to connect WhatsApp account',
+        'Failed to connect WhatsApp account',
       );
     }
   }
