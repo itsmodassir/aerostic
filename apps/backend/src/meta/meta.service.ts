@@ -85,23 +85,49 @@ export class MetaService {
         Date.now() + (longTokenData.expires_in || 5184000) * 1000,
       );
 
-      // 3. Fetch WhatsApp Business Account using the 'Safe' endpoint
-      const meRes = await axios.get(
-        'https://graph.facebook.com/v22.0/me/whatsapp_business_accounts',
+      // 3. Fetch WABA (Robust Flow: User -> Businesses -> WABAs)
+      // Step 3a: Get Businesses
+      const businessesRes = await axios.get(
+        `https://graph.facebook.com/v22.0/me/businesses`,
         {
-          params: {
-            access_token: accessToken,
-          },
+          params: { access_token: accessToken },
         },
       );
+      const businesses = businessesRes.data.data;
 
-      const waba = meRes.data.data?.[0];
-      const wabaId = providedWabaId || waba?.id;
+      let wabaId = providedWabaId;
+      let waba = null;
+
+      // Step 3b: Look for WABA in businesses
+      if (!wabaId && businesses && businesses.length > 0) {
+        for (const business of businesses) {
+          try {
+            const wabaRes = await axios.get(
+              `https://graph.facebook.com/v22.0/${business.id}/owned_whatsapp_business_accounts`,
+              {
+                params: { access_token: accessToken },
+              },
+            );
+            if (wabaRes.data.data && wabaRes.data.data.length > 0) {
+              waba = wabaRes.data.data[0];
+              wabaId = waba.id;
+              // Stop at the first found WABA for now
+              break;
+            }
+          } catch (err) {
+            this.logger.warn(
+              `Failed to fetch WABAs for business ${business.id}: ${err.message}`,
+            );
+          }
+        }
+      }
 
       if (!wabaId) {
-        this.logger.error(`Meta Response (me): ${JSON.stringify(meRes.data)}`);
+        this.logger.error(
+          `Meta Response (businesses): ${JSON.stringify(businesses)}`,
+        );
         throw new BadRequestException(
-          'No WhatsApp Business Account (WABA) found. Please ensure you selected a WABA in the popup.',
+          'No WhatsApp Business Account (WABA) found. Please ensure you have a WABA associated with your Facebook account.',
         );
       }
 
