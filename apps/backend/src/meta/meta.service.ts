@@ -85,6 +85,28 @@ export class MetaService {
         Date.now() + (longTokenData.expires_in || 5184000) * 1000,
       );
 
+      // Embedded Signup Fix: Get assigned WABA directly via debug_token
+      if (!providedWabaId) {
+        try {
+          const debugRes = await axios.get(
+            `https://graph.facebook.com/v22.0/debug_token`,
+            {
+              params: {
+                input_token: accessToken,
+                access_token: `${appId}|${appSecret}`,
+              },
+            },
+          );
+
+          this.logger.debug(`Token Debug: ${JSON.stringify(debugRes.data)}`);
+
+          // Attempt to extract granular_scopes or other info if needed in future
+          // For now, just logging it as requested by the user to help debug "User" vs "System User" token issues
+        } catch (err) {
+          this.logger.warn(`Debug token failed: ${err.message}`);
+        }
+      }
+
       // 3. Fetch WABA (Production Ready for Aerostic Multi-Tenant)
 
       // PRIORITY 1: Use Embedded Signup data if provided

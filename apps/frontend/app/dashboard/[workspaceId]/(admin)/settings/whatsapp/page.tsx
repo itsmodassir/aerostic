@@ -138,20 +138,71 @@ export default function WhatsappSettingsPage() {
             return;
         }
 
-        // Construct the OAuth URL directly to avoid SDK popup issues
-        const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/meta/callback` : 'https://app.aerostic.com/meta/callback';
-        const state = tenantId; // Pass tenantId as state to persist through callback
+        // Define the callback for FB.login
+        const fbLoginCallback = async (response: any) => {
+            if (response.authResponse) {
+                const code = response.authResponse.code;
+                console.log('FB Login Success, Code:', code);
 
-        // Facebook Embedded Signup URL structure
-        const fbUrl = `https://www.facebook.com/v22.0/dialog/oauth?` +
-            `client_id=${metaConfig.appId}` +
-            `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-            `&response_type=code` +
-            `&config_id=${metaConfig.configId}` +
-            `&state=${state}`; // State is critical for security and context
+                // Check if we have the embedded IDs from the window message
+                const currentEmbeddedIds = embeddedIds;
 
-        console.log('Redirecting to Facebook:', fbUrl);
-        window.location.href = fbUrl;
+                // If not in state, we might have missed the event or it hasn't fired yet. 
+                // In a perfect world we wait, but for now let's send what we have.
+                // The backend has a fallback lookup now.
+
+                const wabaIdToPass = currentEmbeddedIds?.wabaId;
+                const phoneNumberIdToPass = currentEmbeddedIds?.phoneNumberId;
+
+                setLoading(true);
+                try {
+                    await api.get('/meta/callback', {
+                        params: {
+                            code,
+                            state: tenantId,
+                            wabaId: wabaIdToPass,
+                            phoneNumberId: phoneNumberIdToPass
+                        }
+                    });
+
+                    setConnectionStatus('connected');
+                    alert('WhatsApp Connected Successfully!');
+                    window.location.reload();
+
+                } catch (err: any) {
+                    console.error('Backend Exchange Failed:', err);
+                    alert('Failed to connect WhatsApp: ' + (err.response?.data?.message || err.message));
+                } finally {
+                    setLoading(false);
+                }
+
+            } else {
+                console.error('User cancelled login or did not fully authorize.');
+            }
+        };
+
+        // Launch via SDK
+        if (window.FB) {
+            console.log('Launching FB.login with config_id:', metaConfig.configId);
+            window.FB.login(fbLoginCallback, {
+                config_id: metaConfig.configId, // configuration ID goes here
+                response_type: 'code', // must be set to 'code' for System User access token
+                override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default types
+                extras: { "version": "v3" }
+            });
+        } else {
+            console.warn('Facebook SDK not loaded, falling back to redirect (NOT RECOMMENDED)');
+            // Fallback (Logic from before, just in case)
+            const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/meta/callback` : 'https://app.aerostic.com/meta/callback';
+            const state = tenantId;
+            const fbUrl = `https://www.facebook.com/v22.0/dialog/oauth?` +
+                `client_id=${metaConfig.appId}` +
+                `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+                `&response_type=code` +
+                `&config_id=${metaConfig.configId}` +
+                `&state=${state}`;
+            window.location.href = fbUrl;
+        }
     };
 
     const handleManualSubmit = async () => {
