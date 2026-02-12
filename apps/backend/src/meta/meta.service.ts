@@ -85,38 +85,60 @@ export class MetaService {
         Date.now() + (longTokenData.expires_in || 5184000) * 1000,
       );
 
-      // 3. Fetch WABA (Robust Flow: User -> Businesses -> WABAs)
-      // Step 3a: Get Businesses
-      const businessesRes = await axios.get(
-        `https://graph.facebook.com/v22.0/me/businesses`,
-        {
-          params: { access_token: accessToken },
-        },
-      );
-      const businesses = businessesRes.data.data;
+      // 3. Fetch WABA (Production Ready for Aerostic Multi-Tenant)
 
-      let wabaId = providedWabaId;
+      // PRIORITY 1: Use Embedded Signup data if provided
+      let wabaId = providedWabaId || null;
       let waba = null;
 
-      // Step 3b: Look for WABA in businesses
-      if (!wabaId && businesses && businesses.length > 0) {
+      if (!wabaId) {
+        // Step 3a: Get Businesses
+        const businessesRes = await axios.get(
+          `https://graph.facebook.com/v22.0/me/businesses`,
+          {
+            params: { access_token: accessToken },
+          },
+        );
+
+        const businesses = businessesRes.data.data || [];
+
+        this.logger.debug(`Businesses found: ${JSON.stringify(businesses)}`);
+
+        // Step 3b: Search WABA in each business
         for (const business of businesses) {
           try {
-            const wabaRes = await axios.get(
+            // Try OWNED WABA first
+            let wabaRes = await axios.get(
               `https://graph.facebook.com/v22.0/${business.id}/owned_whatsapp_business_accounts`,
               {
                 params: { access_token: accessToken },
               },
             );
-            if (wabaRes.data.data && wabaRes.data.data.length > 0) {
+
+            if (wabaRes.data.data?.length) {
               waba = wabaRes.data.data[0];
               wabaId = waba.id;
-              // Stop at the first found WABA for now
+              this.logger.debug(`Found OWNED WABA: ${wabaId}`);
+              break;
+            }
+
+            // Try CLIENT WABA fallback (VERY IMPORTANT)
+            wabaRes = await axios.get(
+              `https://graph.facebook.com/v22.0/${business.id}/client_whatsapp_business_accounts`,
+              {
+                params: { access_token: accessToken },
+              },
+            );
+
+            if (wabaRes.data.data?.length) {
+              waba = wabaRes.data.data[0];
+              wabaId = waba.id;
+              this.logger.debug(`Found CLIENT WABA: ${wabaId}`);
               break;
             }
           } catch (err) {
             this.logger.warn(
-              `Failed to fetch WABAs for business ${business.id}: ${err.message}`,
+              `Business ${business.id} WABA fetch failed: ${err.response?.data?.error?.message || err.message}`,
             );
           }
         }
@@ -124,7 +146,7 @@ export class MetaService {
 
       if (!wabaId) {
         this.logger.error(
-          `Meta Response (businesses): ${JSON.stringify(businesses)}`,
+          `Meta Response (businesses): ${JSON.stringify(businessesRes?.data?.data)}`,
         );
         throw new BadRequestException(
           'No WhatsApp Business Account (WABA) found. Please ensure you have a WABA associated with your Facebook account.',
