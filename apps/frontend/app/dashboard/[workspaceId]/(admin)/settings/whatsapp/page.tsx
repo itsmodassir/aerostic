@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { useParams } from 'next/navigation';
 import {
@@ -40,8 +40,13 @@ export default function WhatsappSettingsPage() {
         } : null
     );
     const [embeddedIds, setEmbeddedIds] = useState<{ phoneNumberId: string, wabaId: string } | null>(null);
+    const embeddedIdsRef = useRef<{ phoneNumberId: string, wabaId: string } | null>(null);
 
     const params = useParams();
+
+    useEffect(() => {
+        embeddedIdsRef.current = embeddedIds;
+    }, [embeddedIds]);
 
     useEffect(() => {
         const initSettings = async () => {
@@ -112,7 +117,9 @@ export default function WhatsappSettingsPage() {
                     if (data.event === 'FINISH') {
                         const { phone_number_id, waba_id } = data.data;
                         console.log("Embedded Signup Finished:", phone_number_id, waba_id);
-                        setEmbeddedIds({ phoneNumberId: phone_number_id, wabaId: waba_id });
+                        const newIds = { phoneNumberId: phone_number_id, wabaId: waba_id };
+                        setEmbeddedIds(newIds);
+                        embeddedIdsRef.current = newIds;
                     } else if (data.event === 'CANCEL') {
                         console.warn("Embedded Signup Cancelled");
                     } else if (data.event === 'ERROR') {
@@ -144,15 +151,27 @@ export default function WhatsappSettingsPage() {
                 const code = response.authResponse.code;
                 console.log('FB Login Success, Code:', code);
 
-                // Check if we have the embedded IDs from the window message
-                const currentEmbeddedIds = embeddedIds;
+                // Race Condition Fix: Wait for Embedded Signup FINISH event
+                let attempts = 0;
+                let ids = embeddedIdsRef.current;
 
-                // If not in state, we might have missed the event or it hasn't fired yet. 
-                // In a perfect world we wait, but for now let's send what we have.
-                // The backend has a fallback lookup now.
+                if (!ids) {
+                    console.log('Waiting for Embedded Signup IDs...');
+                    while (!ids && attempts < 20) { // Wait up to 10 seconds (20 * 500ms)
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        ids = embeddedIdsRef.current;
+                        attempts++;
+                    }
+                }
 
-                const wabaIdToPass = currentEmbeddedIds?.wabaId;
-                const phoneNumberIdToPass = currentEmbeddedIds?.phoneNumberId;
+                if (ids) {
+                    console.log("Captured Embedded IDs:", ids);
+                } else {
+                    console.warn('Timeout waiting for Embedded Signup IDs. Proceeding with fallback lookup.');
+                }
+
+                const wabaIdToPass = ids?.wabaId;
+                const phoneNumberIdToPass = ids?.phoneNumberId;
 
                 setLoading(true);
                 try {
