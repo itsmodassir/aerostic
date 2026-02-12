@@ -3,13 +3,7 @@
 import Script from 'next/script';
 import { useEffect } from 'react';
 
-declare global {
-    interface Window {
-        fbAsyncInit: () => void;
-        FB: any;
-        _fbInitialized?: boolean;
-    }
-}
+
 
 interface FacebookSDKLoaderProps {
     appId: string;
