@@ -140,6 +140,12 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    environment:
+      - AUTH_SECRET=${AUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://app.aerostic.com}
+      - NEXTAUTH_SECRET=${AUTH_SECRET}
+      - BACKEND_URL=http://api:3001
+      - NEXT_PUBLIC_API_URL=/api/v1
     depends_on:
       - api
 
