@@ -579,3 +579,4 @@ export default function WhatsappSettingsPage() {
             </div>
         );
     }
+}
