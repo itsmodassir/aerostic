@@ -90,6 +90,7 @@ export class MetaService {
       // PRIORITY 1: Use Embedded Signup data if provided
       let wabaId = providedWabaId || null;
       let waba = null;
+      let businesses = [];
 
       if (!wabaId) {
         // Step 3a: Get Businesses
@@ -100,7 +101,7 @@ export class MetaService {
           },
         );
 
-        const businesses = businessesRes.data.data || [];
+        businesses = businessesRes.data.data || [];
 
         this.logger.debug(`Businesses found: ${JSON.stringify(businesses)}`);
 
@@ -146,7 +147,7 @@ export class MetaService {
 
       if (!wabaId) {
         this.logger.error(
-          `Meta Response (businesses): ${JSON.stringify(businessesRes?.data?.data)}`,
+          `Meta Response (businesses): ${JSON.stringify(businesses)}`,
         );
         throw new BadRequestException(
           'No WhatsApp Business Account (WABA) found. Please ensure you have a WABA associated with your Facebook account.',
