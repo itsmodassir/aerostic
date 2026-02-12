@@ -205,12 +205,24 @@ export default function WhatsappSettingsPage() {
 
         // Launch via SDK
         if (window.FB) {
-            console.log('Launching FB.login with config_id:', metaConfig.configId);
+            const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/meta/callback` : 'https://app.aerostic.com/meta/callback';
+            console.log('Launching FB.login with config_id:', metaConfig.configId, 'redirect_uri:', redirectUri);
+
             window.FB.login(fbLoginCallback, {
-                config_id: metaConfig.configId, // configuration ID goes here
-                response_type: 'code', // must be set to 'code' for System User access token
-                override_default_response_type: true, // when true, any response types passed in the "response_type" will take precedence over the default types
-                extras: { "version": "v3" }
+                config_id: metaConfig.configId,
+                response_type: 'code',
+                override_default_response_type: true,
+                redirect_uri: redirectUri,
+                extras: {
+                    version: 'v3',
+                    session_info: {
+                        version: 'v3'
+                    },
+                    setup: {
+                        // Optional setup params
+                    },
+                    state: tenantId
+                }
             });
         } else {
             console.warn('Facebook SDK not loaded, falling back to redirect (NOT RECOMMENDED)');
