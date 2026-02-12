@@ -156,11 +156,12 @@ export default function WhatsappSettingsPage() {
                 let ids = embeddedIdsRef.current;
 
                 if (!ids) {
-                    console.log('Waiting for Embedded Signup IDs...');
+                    console.log('[MetaDebug] Waiting for Embedded Signup IDs...');
                     while (!ids && attempts < 20) { // Wait up to 10 seconds (20 * 500ms)
                         await new Promise(resolve => setTimeout(resolve, 500));
                         ids = embeddedIdsRef.current;
                         attempts++;
+                        console.log(`[MetaDebug] Attempt ${attempts}: IDs =`, ids);
                     }
                 }
 
@@ -175,6 +176,7 @@ export default function WhatsappSettingsPage() {
 
                 setLoading(true);
                 try {
+                    console.log('[MetaDebug] Calling backend with code:', code);
                     await api.get('/meta/callback', {
                         params: {
                             code,
@@ -184,12 +186,13 @@ export default function WhatsappSettingsPage() {
                         }
                     });
 
+                    console.log('[MetaDebug] Backend success');
                     setConnectionStatus('connected');
                     alert('WhatsApp Connected Successfully!');
                     window.location.reload();
 
                 } catch (err: any) {
-                    console.error('Backend Exchange Failed:', err);
+                    console.error('[MetaDebug] Backend Exchange Failed:', err);
                     alert('Failed to connect WhatsApp: ' + (err.response?.data?.message || err.message));
                 } finally {
                     setLoading(false);
