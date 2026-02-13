@@ -104,6 +104,12 @@ export default function TemplatesPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [view, setView] = useState<'mine' | 'library'>('mine');
     const [selectedLibraryTemplate, setSelectedLibraryTemplate] = useState<any>(null);
+    const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+    const filteredTemplates = templates.filter(t => {
+        if (statusFilter === 'ALL') return true;
+        return t.status === statusFilter;
+    });
 
     useEffect(() => {
         const init = async () => {
@@ -212,18 +218,39 @@ export default function TemplatesPage() {
                 initialData={selectedLibraryTemplate}
             />
 
+            {view === 'mine' && (
+                <div className="flex gap-2 pb-2">
+                    {['ALL', 'APPROVED', 'PENDING', 'REJECTED'].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${statusFilter === status
+                                ? 'bg-gray-900 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            {status.charAt(0) + status.slice(1).toLowerCase()}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {view === 'mine' ? (
                 loading ? (
                     <div>Loading templates...</div>
-                ) : templates.length === 0 ? (
+                ) : filteredTemplates.length === 0 ? (
                     <div className="p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
                         <Search className="mx-auto h-8 w-8 text-gray-400 mb-2" />
                         <h3 className="text-sm font-medium text-gray-900">No templates found</h3>
-                        <p className="mt-1 text-sm text-gray-500">Click "Sync with Meta" or use the Library to get started.</p>
+                        <p className="mt-1 text-sm text-gray-500">
+                            {statusFilter !== 'ALL'
+                                ? `No ${statusFilter.toLowerCase()} templates found.`
+                                : 'Click "Sync with Meta" or use the Library to get started.'}
+                        </p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {templates.map((tpl) => (
+                        {filteredTemplates.map((tpl) => (
                             <div key={tpl.id} className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                                 <div className="p-4 border-b flex justify-between items-start">
                                     <div className="flex-1 min-w-0">
