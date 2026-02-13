@@ -8,6 +8,7 @@ import { WhatsappAccount } from '../whatsapp/entities/whatsapp-account.entity';
 import { SystemConfig } from '../admin/entities/system-config.entity';
 import { RedisService } from '../common/redis.service';
 import { EncryptionService } from '../common/encryption.service';
+import { Template } from '../templates/entities/template.entity';
 
 @Injectable()
 export class MetaService {
@@ -20,9 +21,77 @@ export class MetaService {
     private whatsappAccountRepo: Repository<WhatsappAccount>,
     @InjectRepository(SystemConfig)
     private configRepo: Repository<SystemConfig>,
+    @InjectRepository(Template)
+    private templateRepo: Repository<Template>,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
   ) { }
+
+  /**
+   * VERIFY Webhook (GET)
+   */
+  async verifyWebhook(mode: string, token: string, challenge: string) {
+    // 1. Get Verify Token from Config
+    const dbConfig = await this.configRepo.findOneBy({ key: 'meta.webhook_verify_token' });
+    const verifyToken = dbConfig?.value || this.configService.get('META_WEBHOOK_VERIFY_TOKEN') || 'aerostic_verification_token';
+
+    // 2. Validate
+    if (mode === 'subscribe' && token === verifyToken) {
+      this.logger.log('Webhook verified successfully.');
+      return challenge;
+    } else {
+      throw new BadRequestException('Webhook verification failed: Invalid token.');
+    }
+  }
+
+  /**
+   * HANDLE Webhook Events (POST)
+   */
+  async handleWebhookEvent(body: any) {
+    this.logger.debug(`Received Webhook: ${JSON.stringify(body)}`);
+
+    // Basic structure validation
+    if (body.object === 'whatsapp_business_account') {
+      for (const entry of body.entry || []) {
+        for (const change of entry.changes || []) {
+          const value = change.value;
+
+          // Handle Template Status Updates
+          if (change.field === 'message_template_status_update') {
+            await this.handleTemplateStatus(value);
+          }
+
+          // Future: Handle Incoming Messages (value.messages)
+        }
+      }
+    }
+    return 'EVENT_RECEIVED';
+  }
+
+  private async handleTemplateStatus(value: any) {
+    const { message_template_id, message_template_name, event, reason } = value;
+    this.logger.log(`Template Status Update: ${message_template_name} -> ${event}`);
+
+    // Find template by name (unique)
+    // We can also check WABA ID if needed, but uniqueness should hold per tenant ideally.
+    // However, uniqueName includes timestamp, so it is unique globaly in our system.
+
+    // Note: message_template_name in webhook is the name we sent (uniqueName).
+    const template = await this.templateRepo.findOne({
+      where: { name: message_template_name }
+    });
+
+    if (template) {
+      template.status = event; // APPROVED, REJECTED, PENDING
+      if (reason) {
+        template.rejectionReason = reason;
+      }
+      await this.templateRepo.save(template);
+      this.logger.log(`Updated Template ${template.name} status to ${event}`);
+    } else {
+      this.logger.warn(`Template ${message_template_name} not found in DB.`);
+    }
+  }
 
   async handleOAuthCallback(
     code: string,

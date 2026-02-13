@@ -1,9 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { MetaService } from './meta.service';
 
 @Controller('meta')
 export class MetaController {
-  constructor(private readonly metaService: MetaService) {}
+  constructor(private readonly metaService: MetaService) { }
 
   @Get('callback')
   async metaCallback(
@@ -19,5 +19,19 @@ export class MetaController {
       phoneNumberId,
     );
     return { success: true, message: 'WhatsApp Connected Successfully' };
+  }
+
+  @Get('webhook')
+  async verifyWebhook(
+    @Query('hub.mode') mode: string,
+    @Query('hub.verify_token') token: string,
+    @Query('hub.challenge') challenge: string,
+  ) {
+    return this.metaService.verifyWebhook(mode, token, challenge);
+  }
+
+  @Post('webhook')
+  async handleWebhook(@Body() body: any) {
+    return this.metaService.handleWebhookEvent(body);
   }
 }
