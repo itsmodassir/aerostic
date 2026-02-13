@@ -23,29 +23,76 @@ interface LibraryTemplate {
 }
 
 const LIBRARY_TEMPLATES: LibraryTemplate[] = [
+    // Marketing
     {
         name: 'welcome_message',
         category: 'MARKETING',
         body: 'Hello {{1}}, welcome to Aerostic! We are excited to have you on board.',
-        description: 'Standard welcome message for new customers.'
+        description: 'Warm welcome message for new customers.'
+    },
+    {
+        name: 'special_offer',
+        category: 'MARKETING',
+        body: 'Exclusive Deal! 🌟 Get {{1}}% off on all {{2}} products. Use code {{3}} at checkout. Offer valid until {{4}}.',
+        description: 'Promote a limited-time festive or seasonal offer.'
+    },
+    {
+        name: 'abandoned_cart_recovery',
+        category: 'MARKETING',
+        body: 'Hi {{1}}, we noticed you left some items in your cart. Complete your purchase now and get {{2}}% off! Click here: {{3}}',
+        description: 'Recover lost sales by modifying customers about their cart.'
+    },
+    {
+        name: 'event_invitation',
+        category: 'MARKETING',
+        body: 'You are invited! 📅 Join us for {{1}} on {{2}} at {{3}}. Register now to save your spot: {{4}}',
+        description: 'Invite customers to a webinar, launch, or physical event.'
+    },
+
+    // Utility
+    {
+        name: 'order_confirmation',
+        category: 'UTILITY',
+        body: 'Thank you for your order! 📦 Your order #{{1}} for {{2}} has been confirmed and will be shipped shortly.',
+        description: 'Confirm a new order purchase details.'
     },
     {
         name: 'shipping_update',
         category: 'UTILITY',
-        body: 'Hi {{1}}, your order #{{2}} has been shipped and is on its way to you!',
-        description: 'Notify customers about their order shipment.'
+        body: 'Good news! 🚚 Your order #{{1}} has been shipped. Track your package here: {{2}}',
+        description: 'Notify customers when their order is on the way.'
+    },
+    {
+        name: 'payment_confirmation',
+        category: 'UTILITY',
+        body: 'Payment received! ✅ We have received your payment of {{1}} for invoice #{{2}}. Thank you for your business.',
+        description: 'Confirm successful receipt of payment.'
     },
     {
         name: 'appointment_reminder',
         category: 'UTILITY',
-        body: 'Reminder: You have an appointment with us on {{1}} at {{2}}. See you there!',
-        description: 'Send reminders for upcoming appointments.'
+        body: 'Reminder: You have an appointment with us on {{1}} at {{2}}. Please reply YES to confirm or NO to reschedule.',
+        description: 'Remind customers of upcoming scheduled appointments.'
     },
     {
-        name: 'order_confirmation',
+        name: 'feedback_request',
         category: 'UTILITY',
-        body: 'Thank you for your order! Your order #{{1}} for {{2}} has been confirmed.',
-        description: 'Confirm new orders placed by customers.'
+        body: 'Hi {{1}}, we hope you enjoyed your {{2}}. Would you mind rating your experience? It takes just a moment: {{3}}',
+        description: 'Collect customer feedback after a service or purchase.'
+    },
+    {
+        name: 'issue_resolution',
+        category: 'UTILITY',
+        body: 'Hi {{1}}, your support ticket #{{2}} has been resolved. If you need further assistance, please reply to this message.',
+        description: 'Notify customers that their support request is closed.'
+    },
+
+    // Authentication
+    {
+        name: 'auth_code',
+        category: 'AUTHENTICATION',
+        body: '{{1}} is your verification code. For your security, do not share this code with anyone.',
+        description: 'Send a one-time password (OTP) for login or verification.'
     }
 ];
 
