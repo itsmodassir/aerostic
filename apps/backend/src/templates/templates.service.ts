@@ -61,9 +61,11 @@ export class TemplatesService {
     }
 
     // 1. Generate Unique Name (tenantId_name_timestamp) to avoid collisions
+    // Meta Rule: lowercase letters and underscores only. No hyphens!
     const timestamp = Date.now();
     const cleanName = createDto.name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    const uniqueName = `${tenantId}_${cleanName}_${timestamp}`;
+    const cleanTenantId = tenantId.replace(/[^a-z0-9]/g, ''); // Remove hyphens/etc from UUID
+    const uniqueName = `${cleanTenantId}_${cleanName}_${timestamp}`;
 
     // 2. Check Existence (Sanity check)
     const existing = await this.metaService.findTemplate(
