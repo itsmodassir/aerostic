@@ -15,7 +15,7 @@ import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(private readonly whatsappService: WhatsappService) { }
 
   @UseGuards(JwtAuthGuard)
   @Get('embedded/start')
@@ -68,5 +68,17 @@ export class WhatsappController {
   ) {
     // Verify logic
     return { status: 'connected', wabaId: 'new_waba_id' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('account-details')
+  async getAccountDetails(@UserTenant() tenantId: string) {
+    return this.whatsappService.getAccountDetails(tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sync-account')
+  async syncAccount(@UserTenant() tenantId: string) {
+    return this.whatsappService.syncAccountFromMeta(tenantId);
   }
 }

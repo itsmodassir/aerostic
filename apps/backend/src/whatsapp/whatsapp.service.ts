@@ -158,4 +158,100 @@ export class WhatsappService {
 
     return { success: true, message: 'Message enqueued for delivery' };
   }
+
+  async getAccountDetails(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+
+    if (!account) {
+      throw new BadRequestException('WhatsApp account not connected');
+    }
+
+    return {
+      businessId: account.businessId,
+      wabaId: account.wabaId,
+      phoneNumberId: account.phoneNumberId,
+      displayPhoneNumber: account.displayPhoneNumber,
+      verifiedName: account.verifiedName,
+      qualityRating: account.qualityRating || 'UNKNOWN',
+      messagingLimit: account.messagingLimit || 'UNKNOWN',
+      status: account.status,
+      webhookVerified: account.webhookVerified,
+      messageCount: account.messageCount,
+      lastSyncedAt: account.lastSyncedAt,
+      tokenExpiresAt: account.tokenExpiresAt,
+      mode: account.mode,
+      createdAt: account.createdAt,
+    };
+  }
+
+  async syncAccountFromMeta(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+
+    if (!account) {
+      throw new BadRequestException('WhatsApp account not connected');
+    }
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+
+    try {
+      // Fetch phone number details from Meta Graph API
+      const phoneResponse = await fetch(
+        `https://graph.facebook.com/v18.0/${account.phoneNumberId}?fields=verified_name,display_phone_number,quality_rating,messaging_limit_tier&access_token=${accessToken}`,
+      );
+
+      if (!phoneResponse.ok) {
+        throw new BadRequestException('Failed to fetch phone number details from Meta');
+      }
+
+      const phoneData = await phoneResponse.json();
+
+      // Fetch WABA details
+      const wabaResponse = await fetch(
+        `https://graph.facebook.com/v18.0/${account.wabaId}?fields=id,name,timezone_id,message_template_namespace,account_review_status&access_token=${accessToken}`,
+      );
+
+      if (!wabaResponse.ok) {
+        throw new BadRequestException('Failed to fetch WABA details from Meta');
+      }
+
+      const wabaData = await wabaResponse.json();
+
+      // Update account with fresh data
+      await this.whatsappAccountRepo.update(
+        { tenantId },
+        {
+          verifiedName: phoneData.verified_name,
+          displayPhoneNumber: phoneData.display_phone_number,
+          qualityRating: phoneData.quality_rating,
+          messagingLimit: phoneData.messaging_limit_tier,
+          lastSyncedAt: new Date(),
+        },
+      );
+
+      // Clear cache
+      await this.redisService.del(`whatsapp:token:${tenantId}`);
+
+      return {
+        success: true,
+        message: 'Account synced successfully',
+        data: {
+          verifiedName: phoneData.verified_name,
+          displayPhoneNumber: phoneData.display_phone_number,
+          qualityRating: phoneData.quality_rating,
+          messagingLimit: phoneData.messaging_limit_tier,
+          wabaName: wabaData.name,
+          accountReviewStatus: wabaData.account_review_status,
+        },
+      };
+    } catch (error) {
+      console.error('Error syncing account from Meta:', error);
+      throw new BadRequestException(
+        'Failed to sync account. Please check your connection and try again.',
+      );
+    }
+  }
 }

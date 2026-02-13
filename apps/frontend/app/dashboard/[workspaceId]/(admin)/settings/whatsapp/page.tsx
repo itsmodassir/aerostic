@@ -9,6 +9,11 @@ import {
     Clock, Mail, Phone, Building2, Send, RefreshCw
 } from 'lucide-react';
 import FacebookSDKLoader, { launchWhatsAppSignup } from '@/components/FacebookSDKLoader';
+import AccountDetailsCard from '@/components/whatsapp/AccountDetailsCard';
+import QualityRatingIndicator from '@/components/whatsapp/QualityRatingIndicator';
+import MessagingLimitsCard from '@/components/whatsapp/MessagingLimitsCard';
+import FeatureMatrixTable from '@/components/whatsapp/FeatureMatrixTable';
+import PaymentSetupCard from '@/components/whatsapp/PaymentSetupCard';
 
 const FALLBACK_APP_ID = '782076418251038';
 const FALLBACK_CONFIG_ID = '1093745902865717';
@@ -31,6 +36,11 @@ export default function WhatsappSettingsPage() {
     // Test Message State
     const [testNumber, setTestNumber] = useState('');
     const [sendingTest, setSendingTest] = useState(false);
+
+    // Account Details State
+    const [accountDetails, setAccountDetails] = useState<any>(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [syncing, setSyncing] = useState(false);
 
     // Meta Config
     const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string, redirectUri: string } | null>(null);
@@ -64,6 +74,8 @@ export default function WhatsappSettingsPage() {
                         const statusRes = await api.get(`/whatsapp/status?tenantId=${tId}`);
                         if (statusRes.data.connected) {
                             setConnectionStatus('connected');
+                            // Fetch account details if connected
+                            fetchAccountDetails(tId);
                         } else if (statusRes.data.mode === 'manual' && statusRes.data.status === 'pending') {
                             setConnectionStatus('pending');
                         } else {
@@ -259,6 +271,34 @@ export default function WhatsappSettingsPage() {
         }
     };
 
+    const fetchAccountDetails = async (tid: string) => {
+        setLoadingDetails(true);
+        try {
+            const res = await api.get(`/whatsapp/account-details?tenantId=${tid}`);
+            setAccountDetails(res.data);
+        } catch (e) {
+            console.error('Failed to fetch account details:', e);
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+    const handleSyncAccount = async () => {
+        if (!tenantId) return;
+        setSyncing(true);
+        try {
+            await api.post(`/whatsapp/sync-account?tenantId=${tenantId}`);
+            // Refresh account details after sync
+            await fetchAccountDetails(tenantId);
+            alert('Account synced successfully!');
+        } catch (e: any) {
+            console.error('Failed to sync account:', e);
+            alert('Failed to sync account: ' + (e.response?.data?.message || e.message));
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     return (
         <div className="max-w-4xl space-y-8">
             {metaConfig && <FacebookSDKLoader appId={metaConfig.appId} />}
@@ -294,13 +334,23 @@ export default function WhatsappSettingsPage() {
                         </div>
                     </div>
                     {connectionStatus === 'connected' && (
-                        <button
-                            onClick={handleDisconnect}
-                            disabled={loading}
-                            className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm disabled:opacity-50"
-                        >
-                            {loading ? 'Disconnecting...' : 'Disconnect'}
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSyncAccount}
+                                disabled={syncing}
+                                className="px-4 py-2 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-50 font-medium text-sm disabled:opacity-50 flex items-center gap-2"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                                {syncing ? 'Syncing...' : 'Sync Account'}
+                            </button>
+                            <button
+                                onClick={handleDisconnect}
+                                disabled={loading}
+                                className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm disabled:opacity-50"
+                            >
+                                {loading ? 'Disconnecting...' : 'Disconnect'}
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -343,6 +393,35 @@ export default function WhatsappSettingsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Account Details Section - Only show when connected */}
+            {connectionStatus === 'connected' && accountDetails && (
+                <>
+                    {/* Account Information */}
+                    <AccountDetailsCard
+                        businessId={accountDetails.businessId}
+                        wabaId={accountDetails.wabaId}
+                        phoneNumberId={accountDetails.phoneNumberId}
+                        displayPhoneNumber={accountDetails.displayPhoneNumber}
+                        verifiedName={accountDetails.verifiedName}
+                    />
+
+                    {/* Account Health - Quality Rating & Messaging Limits */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <QualityRatingIndicator rating={accountDetails.qualityRating} />
+                        <MessagingLimitsCard
+                            messagingLimit={accountDetails.messagingLimit}
+                            messageCount={accountDetails.messageCount}
+                        />
+                    </div>
+
+                    {/* Payment Setup */}
+                    <PaymentSetupCard />
+
+                    {/* Feature Availability */}
+                    <FeatureMatrixTable />
+                </>
+            )}
 
             {/* Connection Methods */}
             {connectionStatus === 'disconnected' && !requestSent && (
