@@ -210,15 +210,16 @@ export default function WhatsappSettingsPage() {
                     config_id: metaConfig.configId,
                     response_type: 'code',
                     override_default_response_type: true,
+                    redirect_uri: redirectUri,
                     extras: {
-                        session_info: { version: 'v2' },
+                        session_info: { version: 'v3' },
                         setup: {},
                         state: tenantId
                     }
                 });
-            } catch (err) {
+            } catch (err: any) {
                 console.error('[MetaDebug] FB.login CRASH:', err);
-                alert('An error occurred opening the Facebook login window.');
+                alert(`An error occurred opening the Facebook login window: ${err.message || 'Unknown error'}`);
             }
         } else {
             console.warn('[MetaDebug] SDK not initialized, falling back to URL redirect');
