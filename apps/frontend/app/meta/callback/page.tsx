@@ -18,8 +18,6 @@ function CallbackContent() {
             api.get(`/meta/callback?code=${code}&state=${state}`)
                 .then(() => {
                     setStatus('Success! WhatsApp Connected.');
-                    // Use a small delay then redirect back to where we came from
-                    // If we can't find a slug, we fallback to a safe path
                     setTimeout(() => {
                         router.push(`/dashboard/${state}/settings/whatsapp`);
                     }, 2000);
@@ -28,13 +26,14 @@ function CallbackContent() {
                     console.error('[MetaCallback] Exchange Failed:', err);
                     setStatus('Failed to connect WhatsApp. Please try again from settings.');
                     setTimeout(() => {
-                        router.push('/dashboard');
+                        router.push(`/dashboard/${state}/settings/whatsapp`);
                     }, 3000);
                 });
         } else {
-            setStatus('Invalid callback parameters. Redirecting...');
+            setStatus('Invalid parameters. Returning to dashboard...');
             setTimeout(() => {
-                router.push('/dashboard');
+                // Try to find a default workspace or go to login if everything fails
+                router.push('/dashboard/default');
             }, 2000);
         }
     }, [searchParams, router]);

@@ -53,7 +53,7 @@ export class MetaService {
       this.configService.get('META_REDIRECT_URI')?.trim() ||
       'http://localhost:3000/meta/callback';
 
-    this.logger.debug(`--- OAuth Callback Debug (v22.0) ---`);
+    this.logger.debug(`--- OAuth Callback Debug (v19.0) ---`);
     this.logger.debug(`App ID: ${appId}`);
     this.logger.debug(`Redirect URI: ${redirectUri}`);
     this.logger.debug(`Tenant ID: ${tenantId}`);
@@ -89,85 +89,106 @@ export class MetaService {
       );
 
       // Embedded Signup Fix: Get assigned WABA directly via debug_token
-      if (!providedWabaId) {
-        try {
-          const debugRes = await axios.get(
-            `https://graph.facebook.com/v19.0/debug_token`,
-            {
-              params: {
-                input_token: accessToken,
-                access_token: `${appId}|${appSecret}`,
-              },
+      let wabaId = providedWabaId || null;
+
+      try {
+        const debugRes = await axios.get(
+          `https://graph.facebook.com/v19.0/debug_token`,
+          {
+            params: {
+              input_token: accessToken,
+              access_token: `${appId}|${appSecret}`,
             },
+          },
+        );
+
+        const debugData = debugRes.data.data;
+        this.logger.debug(`Token Debug: ${JSON.stringify(debugData)}`);
+
+        // FALLBACK: Extract WABA ID from granular_scopes if not provided
+        if (!wabaId && debugData.granular_scopes) {
+          const wabaScope = debugData.granular_scopes.find(
+            (s: any) => s.scope === 'whatsapp_business_management',
           );
-
-          this.logger.debug(`Token Debug: ${JSON.stringify(debugRes.data)}`);
-
-          // Attempt to extract granular_scopes or other info if needed in future
-          // For now, just logging it as requested by the user to help debug "User" vs "System User" token issues
-        } catch (err) {
-          this.logger.warn(`Debug token failed: ${err.message}`);
+          if (wabaScope && wabaScope.target_ids?.length) {
+            wabaId = wabaScope.target_ids[0];
+            this.logger.debug(`Extracted WABA ID from granular_scopes: ${wabaId}`);
+          }
         }
+      } catch (err) {
+        this.logger.warn(`Debug token failed: ${err.message}`);
       }
 
       // 3. Fetch WABA (Production Ready for Aerostic Multi-Tenant)
 
-      // PRIORITY 1: Use Embedded Signup data if provided
-      let wabaId = providedWabaId || null;
+      // PRIORITY 1: Use Embedded Signup data or Fallback from debug token
       let waba = null;
       let businesses = [];
 
       if (!wabaId) {
         // Step 3a: Get Businesses
-        const businessesRes = await axios.get(
-          `https://graph.facebook.com/v19.0/me/businesses`,
-          {
-            params: { access_token: accessToken },
-          },
-        );
+        try {
+          const businessesRes = await axios.get(
+            `https://graph.facebook.com/v19.0/me/businesses`,
+            {
+              params: { access_token: accessToken },
+            },
+          );
 
-        businesses = businessesRes.data.data || [];
+          businesses = businessesRes.data.data || [];
+          this.logger.debug(`Businesses found: ${JSON.stringify(businesses)}`);
 
-        this.logger.debug(`Businesses found: ${JSON.stringify(businesses)}`);
+          // Step 3b: Search WABA in each business
+          for (const business of businesses) {
+            try {
+              // Try OWNED WABA first
+              let wabaRes = await axios.get(
+                `https://graph.facebook.com/v19.0/${business.id}/owned_whatsapp_business_accounts`,
+                {
+                  params: { access_token: accessToken },
+                },
+              );
 
-        // Step 3b: Search WABA in each business
-        for (const business of businesses) {
-          try {
-            // Try OWNED WABA first
-            let wabaRes = await axios.get(
-              `https://graph.facebook.com/v19.0/${business.id}/owned_whatsapp_business_accounts`,
-              {
-                params: { access_token: accessToken },
-              },
-            );
+              if (wabaRes.data.data?.length) {
+                waba = wabaRes.data.data[0];
+                wabaId = waba.id;
+                this.logger.debug(`Found OWNED WABA: ${wabaId}`);
+                break;
+              }
 
-            if (wabaRes.data.data?.length) {
-              waba = wabaRes.data.data[0];
-              wabaId = waba.id;
-              this.logger.debug(`Found OWNED WABA: ${wabaId}`);
-              break;
+              // Try CLIENT WABA fallback (VERY IMPORTANT)
+              wabaRes = await axios.get(
+                `https://graph.facebook.com/v19.0/${business.id}/client_whatsapp_business_accounts`,
+                {
+                  params: { access_token: accessToken },
+                },
+              );
+
+              if (wabaRes.data.data?.length) {
+                waba = wabaRes.data.data[0];
+                wabaId = waba.id;
+                this.logger.debug(`Found CLIENT WABA: ${wabaId}`);
+                break;
+              }
+            } catch (err) {
+              this.logger.warn(
+                `Business ${business.id} WABA fetch failed: ${err.response?.data?.error?.message || err.message}`,
+              );
             }
-
-            // Try CLIENT WABA fallback (VERY IMPORTANT)
-            wabaRes = await axios.get(
-              `https://graph.facebook.com/v19.0/${business.id}/client_whatsapp_business_accounts`,
-              {
-                params: { access_token: accessToken },
-              },
-            );
-
-            if (wabaRes.data.data?.length) {
-              waba = wabaRes.data.data[0];
-              wabaId = waba.id;
-              this.logger.debug(`Found CLIENT WABA: ${wabaId}`);
-              break;
-            }
-          } catch (err) {
-            this.logger.warn(
-              `Business ${business.id} WABA fetch failed: ${err.response?.data?.error?.message || err.message}`,
-            );
           }
+        } catch (err) {
+          this.logger.error(`Failed to fetch businesses: ${err.response?.data?.error?.message || err.message}`);
+          // If we reach here and still no WABA ID, we throw
         }
+      }
+
+      if (!wabaId) {
+        this.logger.error(
+          `Meta Response (businesses): ${JSON.stringify(businesses)}`,
+        );
+        throw new BadRequestException(
+          'No WhatsApp Business Account (WABA) found. Please ensure you have a WABA associated with your Facebook account.',
+        );
       }
 
       if (!wabaId) {
