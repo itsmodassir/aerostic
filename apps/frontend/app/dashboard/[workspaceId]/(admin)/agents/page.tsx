@@ -63,6 +63,8 @@ export default function AgentsPage() {
                     if (user.tenantId) {
                         setTenantId(user.tenantId);
                         fetchAgents(user.tenantId);
+                    } else {
+                        setLoading(false);
                     }
 
                     const userEmail = user.email || '';
@@ -71,8 +73,12 @@ export default function AgentsPage() {
                     } else if (userEmail.includes('@enterprise') || userEmail.includes('enterprise@')) {
                         setUserPlan('enterprise');
                     }
+                } else {
+                    setLoading(false);
                 }
-            } catch (e) { }
+            } catch (e) {
+                setLoading(false);
+            }
         };
         init();
     }, []);
