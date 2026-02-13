@@ -150,50 +150,53 @@ export default function WhatsappSettingsPage() {
 
         console.log('[MetaDebug] handleFacebookConnect triggered');
 
-        // Define the callback for FB.login
-        const fbLoginCallback = async (response: any) => {
+        // Define the callback for FB.login (Must be a regular function, not async)
+        const fbLoginCallback = (response: any) => {
             console.log('[MetaDebug] FB.login response:', response);
             if (response.authResponse) {
                 const code = response.authResponse.code;
                 console.log('[MetaDebug] FB Login Success, Code:', code);
 
-                // Race Condition Fix: Wait for Embedded Signup FINISH event
-                let attempts = 0;
-                let ids = embeddedIdsRef.current;
+                // Run async sequence inside the callback
+                (async () => {
+                    // Race Condition Fix: Wait for Embedded Signup FINISH event
+                    let attempts = 0;
+                    let ids = embeddedIdsRef.current;
 
-                if (!ids) {
-                    console.log('[MetaDebug] Waiting for Embedded Signup IDs...');
-                    while (!ids && attempts < 40) { // Wait up to 20 seconds
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        ids = embeddedIdsRef.current;
-                        attempts++;
-                    }
-                }
-
-                const wabaIdToPass = ids?.wabaId;
-                const phoneNumberIdToPass = ids?.phoneNumberId;
-
-                setLoading(true);
-                try {
-                    await api.get('/meta/callback', {
-                        params: {
-                            code,
-                            state: tenantId,
-                            wabaId: wabaIdToPass,
-                            phoneNumberId: phoneNumberIdToPass
+                    if (!ids) {
+                        console.log('[MetaDebug] Waiting for Embedded Signup IDs...');
+                        while (!ids && attempts < 40) { // Wait up to 20 seconds
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            ids = embeddedIdsRef.current;
+                            attempts++;
                         }
-                    });
+                    }
 
-                    setConnectionStatus('connected');
-                    alert('WhatsApp Connected Successfully!');
-                    window.location.reload();
+                    const wabaIdToPass = ids?.wabaId;
+                    const phoneNumberIdToPass = ids?.phoneNumberId;
 
-                } catch (err: any) {
-                    console.error('[MetaDebug] Backend Exchange Failed:', err);
-                    alert('Failed to connect WhatsApp: ' + (err.response?.data?.message || err.message));
-                } finally {
-                    setLoading(false);
-                }
+                    setLoading(true);
+                    try {
+                        await api.get('/meta/callback', {
+                            params: {
+                                code,
+                                state: tenantId,
+                                wabaId: wabaIdToPass,
+                                phoneNumberId: phoneNumberIdToPass
+                            }
+                        });
+
+                        setConnectionStatus('connected');
+                        alert('WhatsApp Connected Successfully!');
+                        window.location.reload();
+
+                    } catch (err: any) {
+                        console.error('[MetaDebug] Backend Exchange Failed:', err);
+                        alert('Failed to connect WhatsApp: ' + (err.response?.data?.message || err.message));
+                    } finally {
+                        setLoading(false);
+                    }
+                })();
 
             } else {
                 console.warn('[MetaDebug] FB Login cancelled/failed:', response);
