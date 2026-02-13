@@ -16,6 +16,8 @@ import { MessagesGateway } from './messages.gateway';
 import { AuditService } from '../audit/audit.service';
 import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
 
+import { EncryptionService } from '../common/encryption.service';
+
 @Injectable()
 export class MessagesService {
   constructor(
@@ -31,7 +33,8 @@ export class MessagesService {
     private conversationRepo: Repository<Conversation>,
     private messagesGateway: MessagesGateway,
     private auditService: AuditService,
-  ) {}
+    private encryptionService: EncryptionService,
+  ) { }
 
   async send(dto: SendMessageDto) {
     // 1. Resolve Tenant's WhatsApp Account
@@ -86,7 +89,7 @@ export class MessagesService {
       );
     }
 
-    const token = tokenRecord.encryptedToken; // TODO: Decrypt here
+    const token = this.encryptionService.decrypt(tokenRecord.encryptedToken);
 
     // 4. Construct Meta Graph API Payload
     const url = `https://graph.facebook.com/v18.0/${account.phoneNumberId}/messages`;

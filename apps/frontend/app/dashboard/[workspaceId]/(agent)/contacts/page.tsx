@@ -36,9 +36,12 @@ export default function ContactsPage() {
                     const tid = activeMembership.tenant.id;
                     setTenantId(tid);
                     fetchContacts(tid);
+                } else {
+                    setLoading(false);
                 }
             } catch (e) {
                 console.error('Failed to resolve tenant');
+                setLoading(false);
             }
         };
 
