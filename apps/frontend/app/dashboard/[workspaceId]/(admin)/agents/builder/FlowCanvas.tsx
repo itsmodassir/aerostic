@@ -11,6 +11,10 @@ import {
     Background,
     MiniMap,
     Panel,
+    Node,
+    Edge,
+    ReactFlowInstance,
+    Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -25,7 +29,7 @@ const nodeTypes = {
     ConditionNode,
 };
 
-const initialNodes = [
+const initialNodes: Node[] = [
     {
         id: 'trigger-1',
         type: 'TriggerNode',
@@ -39,23 +43,27 @@ const getId = () => `dndnode_${id++}`;
 
 export default function FlowCanvas() {
     const reactFlowWrapper = useRef(null);
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-    const [reactFlowInstance, setReactFlowInstance] = useState(null);
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
 
     const onConnect = useCallback(
-        (params) => setEdges((eds) => addEdge(params, eds)),
+        (params: Connection) => setEdges((eds) => addEdge(params, eds)),
         [],
     );
 
-    const onDragOver = useCallback((event) => {
+    const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
     const onDrop = useCallback(
-        (event) => {
+        (event: React.DragEvent) => {
             event.preventDefault();
+
+            if (!reactFlowInstance) {
+                return;
+            }
 
             const type = event.dataTransfer.getData('application/reactflow');
 
