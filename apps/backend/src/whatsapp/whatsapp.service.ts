@@ -50,7 +50,7 @@ export class WhatsappService {
       state: tenantId,
     });
 
-    return `https://www.facebook.com/v22.0/dialog/oauth?${params}`;
+    return `https://www.facebook.com/v19.0/dialog/oauth?${params}`;
   }
   async getCredentials(tenantId: string) {
     const cacheKey = `whatsapp:token:${tenantId}`;

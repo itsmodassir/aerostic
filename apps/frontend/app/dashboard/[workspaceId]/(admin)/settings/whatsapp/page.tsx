@@ -150,89 +150,54 @@ export default function WhatsappSettingsPage() {
 
         console.log('[MetaDebug] handleFacebookConnect triggered');
 
-        // Define the callback for FB.login (Must be a regular function, not async)
-        const fbLoginCallback = (response: any) => {
-            console.log('[MetaDebug] FB.login response:', response);
-            if (response.authResponse) {
-                const code = response.authResponse.code;
-                console.log('[MetaDebug] FB Login Success, Code:', code);
+        // Explicitly define the redirect URI for the manual OAuth flow
+        // Fallback or use what's in config
+        const redirectUri = metaConfig.redirectUri || 'https://app.aerostic.com/meta/callback';
+        const state = tenantId;
 
-                // Run async sequence inside the callback
-                (async () => {
-                    // Race Condition Fix: Wait for Embedded Signup FINISH event
-                    let attempts = 0;
-                    let ids = embeddedIdsRef.current;
+        console.log('[MetaDebug] Launching Manual OAuth Popup', { configId: metaConfig.configId, redirectUri });
 
-                    if (!ids) {
-                        console.log('[MetaDebug] Waiting for Embedded Signup IDs...');
-                        while (!ids && attempts < 40) { // Wait up to 20 seconds
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                            ids = embeddedIdsRef.current;
-                            attempts++;
-                        }
-                    }
+        const fbUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
+            `client_id=${metaConfig.appId}` +
+            `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+            `&response_type=code` +
+            `&config_id=${metaConfig.configId}` +
+            `&state=${state}`;
 
-                    const wabaIdToPass = ids?.wabaId;
-                    const phoneNumberIdToPass = ids?.phoneNumberId;
+        // Feature string for centering the popup
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width / 2) - (width / 2);
+        const top = (window.screen.height / 2) - (height / 2);
 
-                    setLoading(true);
-                    try {
-                        await api.get('/meta/callback', {
-                            params: {
-                                code,
-                                state: tenantId,
-                                wabaId: wabaIdToPass,
-                                phoneNumberId: phoneNumberIdToPass
-                            }
-                        });
+        const popup = window.open(
+            fbUrl,
+            'facebook-login',
+            `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,toolbar=no,menubar=no,scrollbars=yes`
+        );
 
-                        setConnectionStatus('connected');
-                        alert('WhatsApp Connected Successfully!');
-                        window.location.reload();
-
-                    } catch (err: any) {
-                        console.error('[MetaDebug] Backend Exchange Failed:', err);
-                        alert('Failed to connect WhatsApp: ' + (err.response?.data?.message || err.message));
-                    } finally {
-                        setLoading(false);
-                    }
-                })();
-
-            } else {
-                console.warn('[MetaDebug] FB Login cancelled/failed:', response);
-            }
-        };
-
-        // Launch via SDK
-        if (window.FB && window._fbInitialized) {
-            const redirectUri = metaConfig.redirectUri || 'https://app.aerostic.com/meta/callback';
-            console.log('[MetaDebug] Launching FB.login (SDK)', { configId: metaConfig.configId, redirectUri });
-
-            try {
-                window.FB.login(fbLoginCallback, {
-                    config_id: metaConfig.configId,
-                    response_type: 'code',
-                    override_default_response_type: true,
-                    extras: {
-                        session_info: { version: 'v3' },
-                        setup: {},
-                        state: tenantId
-                    }
-                });
-            } catch (err: any) {
-                console.error('[MetaDebug] FB.login CRASH:', err);
-                alert(`An error occurred opening the Facebook login window: ${err.message || 'Unknown error'}`);
-            }
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            console.error('[MetaDebug] Popup Blocked');
+            alert('Popup was blocked. Please enable popups for this site and try again.');
         } else {
-            console.warn('[MetaDebug] SDK not initialized, falling back to URL redirect');
-            const state = tenantId;
-            const fbUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
-                `client_id=${metaConfig.appId}` +
-                `&redirect_uri=${encodeURIComponent(metaConfig.redirectUri)}` +
-                `&response_type=code` +
-                `&config_id=${metaConfig.configId}` +
-                `&state=${state}`;
-            window.location.href = fbUrl;
+            // Monitor the popup
+            const timer = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(timer);
+                    console.log('[MetaDebug] Popup closed by user');
+                }
+
+                try {
+                    // Check if redirect happened to our domain
+                    if (popup.location.href.includes('/meta/callback')) {
+                        console.log('[MetaDebug] Redirect detected in popup');
+                        // The callback page handles the backend call and redirects the parent
+                        // But for better UX, we can just let it finish.
+                    }
+                } catch (e) {
+                    // Ignore Cross-Origin error when popup is on facebook.com
+                }
+            }, 1000);
         }
     };
 

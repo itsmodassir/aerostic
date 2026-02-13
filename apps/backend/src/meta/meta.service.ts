@@ -64,7 +64,7 @@ export class MetaService {
     // 1. Exchange auth code for short-lived access token
     try {
       const tokenRes = await axios.get(
-        'https://graph.facebook.com/v22.0/oauth/access_token',
+        'https://graph.facebook.com/v19.0/oauth/access_token',
         {
           params: {
             client_id: appId,
@@ -92,7 +92,7 @@ export class MetaService {
       if (!providedWabaId) {
         try {
           const debugRes = await axios.get(
-            `https://graph.facebook.com/v22.0/debug_token`,
+            `https://graph.facebook.com/v19.0/debug_token`,
             {
               params: {
                 input_token: accessToken,
@@ -120,7 +120,7 @@ export class MetaService {
       if (!wabaId) {
         // Step 3a: Get Businesses
         const businessesRes = await axios.get(
-          `https://graph.facebook.com/v22.0/me/businesses`,
+          `https://graph.facebook.com/v19.0/me/businesses`,
           {
             params: { access_token: accessToken },
           },
@@ -135,7 +135,7 @@ export class MetaService {
           try {
             // Try OWNED WABA first
             let wabaRes = await axios.get(
-              `https://graph.facebook.com/v22.0/${business.id}/owned_whatsapp_business_accounts`,
+              `https://graph.facebook.com/v19.0/${business.id}/owned_whatsapp_business_accounts`,
               {
                 params: { access_token: accessToken },
               },
@@ -150,7 +150,7 @@ export class MetaService {
 
             // Try CLIENT WABA fallback (VERY IMPORTANT)
             wabaRes = await axios.get(
-              `https://graph.facebook.com/v22.0/${business.id}/client_whatsapp_business_accounts`,
+              `https://graph.facebook.com/v19.0/${business.id}/client_whatsapp_business_accounts`,
               {
                 params: { access_token: accessToken },
               },
@@ -181,7 +181,7 @@ export class MetaService {
 
       // 4. Fetch Phone Number
       const phoneRes = await axios.get(
-        `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`,
+        `https://graph.facebook.com/v19.0/${wabaId}/phone_numbers`,
         {
           params: { access_token: accessToken },
         },
@@ -243,7 +243,7 @@ export class MetaService {
 
   async getTemplates(wabaId: string, accessToken: string) {
     try {
-      const url = `https://graph.facebook.com/v22.0/${wabaId}/message_templates`;
+      const url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates`;
       const { data } = await axios.get(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: { limit: 100 },
