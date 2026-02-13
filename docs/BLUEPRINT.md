@@ -106,6 +106,7 @@ aerostic/
 ### Core Entities
 - **Tenants**: ID, Name, Plan, Status.
 - **WhatsappAccount**: Encrypted `accessToken`, `wabaId`, `phoneNumberId`, `status`.
+- **Template**: Name, Category, Language, Components, Status (`PENDING`, `APPROVED`, `REJECTED`), and `rejectionReason`.
 - **Message**: Unique `meta_message_id` (Idempotency), Direction, Content, Type.
 - **SystemConfig**: Encrypted platform secrets (AI Keys, Meta Secrets).
 
