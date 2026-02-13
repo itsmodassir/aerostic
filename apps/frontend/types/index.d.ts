@@ -4,6 +4,6 @@ declare global {
     interface Window {
         fbAsyncInit: () => void;
         FB: any;
-        _fbInitialized?: boolean;
+        _fbInitialized?: string | boolean;
     }
 }

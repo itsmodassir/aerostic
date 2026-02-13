@@ -11,18 +11,19 @@ interface FacebookSDKLoaderProps {
 
 export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
     useEffect(() => {
-        if (window.FB && window._fbInitialized) {
-            console.log('[MetaSDK] SDK already initialized');
-            return;
-        }
-
+        // Only run initialization if we have a valid appId and it's not already initialized with this ID
         const cleanAppId = appId?.trim();
         if (!cleanAppId) {
             console.warn('[MetaSDK] No AppID provided to FacebookSDKLoader');
             return;
         }
 
-        console.log('[MetaSDK] Initializing SDK with AppId:', cleanAppId);
+        if (window.FB && window._fbInitialized === cleanAppId) {
+            console.log('[MetaSDK] SDK already initialized for AppId:', cleanAppId);
+            return;
+        }
+
+        console.log('[MetaSDK] Initializing/Updating SDK with AppId:', cleanAppId);
 
         window.fbAsyncInit = function () {
             if (window.FB) {
@@ -31,15 +32,15 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
                     autoLogAppEvents: true,
                     cookie: true,
                     xfbml: true,
-                    version: 'v22.0'
+                    version: 'v19.0'
                 });
-                window._fbInitialized = true;
-                console.log('[MetaSDK] FB.init complete');
+                window._fbInitialized = cleanAppId;
+                console.log('[MetaSDK] FB.init complete for:', cleanAppId);
             }
         };
 
-        // If the script is already loaded but fbAsyncInit hasn't run
-        if (window.FB && !window._fbInitialized) {
+        // If the script is already loaded, run init immediately
+        if (window.FB) {
             window.fbAsyncInit();
         }
     }, [appId]);

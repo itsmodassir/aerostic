@@ -33,13 +33,8 @@ export default function WhatsappSettingsPage() {
     const [sendingTest, setSendingTest] = useState(false);
 
     // Meta Config
-    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string, redirectUri: string } | null>(
-        typeof window !== 'undefined' ? {
-            appId: process.env.NEXT_PUBLIC_META_APP_ID || FALLBACK_APP_ID,
-            configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || FALLBACK_CONFIG_ID,
-            redirectUri: process.env.NEXT_PUBLIC_META_REDIRECT_URI || 'https://app.aerostic.com/meta/callback'
-        } : null
-    );
+    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string, redirectUri: string } | null>(null);
+
     const [embeddedIds, setEmbeddedIds] = useState<{ phoneNumberId: string, wabaId: string } | null>(null);
     const embeddedIdsRef = useRef<{ phoneNumberId: string, wabaId: string } | null>(null);
 
@@ -81,9 +76,18 @@ export default function WhatsappSettingsPage() {
                     // Fetch Meta Public Config
                     try {
                         const configRes = await api.get('/whatsapp/public-config');
+                        console.log('[MetaDebug] Fetched Config:', configRes.data);
                         setMetaConfig(configRes.data);
                     } catch (e) {
                         console.error('Failed to fetch meta config');
+                        // Fallback only if fetch fails and env vars exist
+                        if (process.env.NEXT_PUBLIC_META_APP_ID) {
+                            setMetaConfig({
+                                appId: process.env.NEXT_PUBLIC_META_APP_ID || FALLBACK_APP_ID,
+                                configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || FALLBACK_CONFIG_ID,
+                                redirectUri: process.env.NEXT_PUBLIC_META_REDIRECT_URI || 'https://app.aerostic.com/meta/callback'
+                            });
+                        }
                     }
                 }
             } catch (e) {
@@ -95,8 +99,7 @@ export default function WhatsappSettingsPage() {
     }, [params.workspaceId]);
 
     useEffect(() => {
-        console.log('[MetaDebug] Current metaConfig:', metaConfig);
-        console.log('[MetaDebug] Env Var:', process.env.NEXT_PUBLIC_META_APP_ID);
+        console.log('[MetaDebug] Current metaConfig state:', metaConfig);
     }, [metaConfig]);
 
     // Embedded Signup Event Listener
@@ -106,7 +109,7 @@ export default function WhatsappSettingsPage() {
                 setSdkLoaded(true);
                 clearInterval(checkSdk);
             }
-        }, 500);
+        }, 1000);
 
         const handler = (event: MessageEvent) => {
             if (event.origin !== "https://www.facebook.com" && event.origin !== "https://web.facebook.com") {
@@ -138,16 +141,18 @@ export default function WhatsappSettingsPage() {
         };
     }, []);
 
-
-
     const handleFacebookConnect = () => {
         if (!metaConfig?.appId || !metaConfig?.configId) {
-            alert('Configuration missing (App ID or Config ID)');
+            console.error('[MetaDebug] Missing config:', metaConfig);
+            alert('Configuration is still loading. Please wait a moment.');
             return;
         }
 
+        console.log('[MetaDebug] handleFacebookConnect triggered');
+
         // Define the callback for FB.login
         const fbLoginCallback = async (response: any) => {
+            console.log('[MetaDebug] FB.login response:', response);
             if (response.authResponse) {
                 const code = response.authResponse.code;
                 console.log('[MetaDebug] FB Login Success, Code:', code);
@@ -158,18 +163,11 @@ export default function WhatsappSettingsPage() {
 
                 if (!ids) {
                     console.log('[MetaDebug] Waiting for Embedded Signup IDs...');
-                    while (!ids && attempts < 40) { // Wait up to 20 seconds (40 * 500ms)
+                    while (!ids && attempts < 40) { // Wait up to 20 seconds
                         await new Promise(resolve => setTimeout(resolve, 500));
                         ids = embeddedIdsRef.current;
                         attempts++;
-                        console.log(`[MetaDebug] Attempt ${attempts}: IDs =`, ids);
                     }
-                }
-
-                if (ids) {
-                    console.log("Captured Embedded IDs:", ids);
-                } else {
-                    console.warn('Timeout waiting for Embedded Signup IDs. Proceeding with fallback lookup.');
                 }
 
                 const wabaIdToPass = ids?.wabaId;
@@ -177,7 +175,6 @@ export default function WhatsappSettingsPage() {
 
                 setLoading(true);
                 try {
-                    console.log('[MetaDebug] Calling backend with code:', code);
                     await api.get('/meta/callback', {
                         params: {
                             code,
@@ -187,7 +184,6 @@ export default function WhatsappSettingsPage() {
                         }
                     });
 
-                    console.log('[MetaDebug] Backend success');
                     setConnectionStatus('connected');
                     alert('WhatsApp Connected Successfully!');
                     window.location.reload();
@@ -200,39 +196,36 @@ export default function WhatsappSettingsPage() {
                 }
 
             } else {
-                console.error('User cancelled login or did not fully authorize.');
+                console.warn('[MetaDebug] FB Login cancelled/failed:', response);
             }
         };
 
         // Launch via SDK
-        if (window.FB) {
+        if (window.FB && window._fbInitialized) {
             const redirectUri = metaConfig.redirectUri || 'https://app.aerostic.com/meta/callback';
-            console.log('[MetaDebug] Launching FB.login', { configId: metaConfig.configId, redirectUri });
+            console.log('[MetaDebug] Launching FB.login (SDK)', { configId: metaConfig.configId, redirectUri });
 
-            window.FB.login(fbLoginCallback, {
-                config_id: metaConfig.configId,
-                response_type: 'code',
-                override_default_response_type: true,
-                redirect_uri: redirectUri,
-                extras: {
-                    version: 'v3',
-                    session_info: {
-                        version: 'v3'
-                    },
-                    setup: {
-                        // Optional setup params
-                    },
-                    state: tenantId
-                }
-            });
+            try {
+                window.FB.login(fbLoginCallback, {
+                    config_id: metaConfig.configId,
+                    response_type: 'code',
+                    override_default_response_type: true,
+                    extras: {
+                        session_info: { version: 'v2' },
+                        setup: {},
+                        state: tenantId
+                    }
+                });
+            } catch (err) {
+                console.error('[MetaDebug] FB.login CRASH:', err);
+                alert('An error occurred opening the Facebook login window.');
+            }
         } else {
-            console.warn('Facebook SDK not loaded, falling back to redirect (NOT RECOMMENDED)');
-            // Fallback (Logic from before, just in case)
-            const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/meta/callback` : 'https://app.aerostic.com/meta/callback';
+            console.warn('[MetaDebug] SDK not initialized, falling back to URL redirect');
             const state = tenantId;
-            const fbUrl = `https://www.facebook.com/v22.0/dialog/oauth?` +
+            const fbUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
                 `client_id=${metaConfig.appId}` +
-                `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+                `&redirect_uri=${encodeURIComponent(metaConfig.redirectUri)}` +
                 `&response_type=code` +
                 `&config_id=${metaConfig.configId}` +
                 `&state=${state}`;
