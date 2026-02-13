@@ -68,23 +68,7 @@ export class TemplatesService {
     const uniqueName = `${cleanTenantId}_${cleanName}_${timestamp}`;
 
     // Transform components to include 'example' data for variables (Meta Requirement)
-    const components = createDto.components.map((component: any) => {
-      if (component.type === 'BODY') {
-        const matches = component.text.match(/\{\{\d+\}\}/g) || [];
-        const variableCount = matches.length;
-
-        if (variableCount > 0) {
-          return {
-            type: 'BODY',
-            text: component.text,
-            example: {
-              body_text: [Array(variableCount).fill('example')]
-            }
-          };
-        }
-      }
-      return component;
-    });
+    const normalizedComponents = this.normalizeComponents(createDto.components);
 
     // 2. Check Existence (Sanity check)
     const existing = await this.metaService.findTemplate(
@@ -115,8 +99,8 @@ export class TemplatesService {
         {
           name: uniqueName,
           language: createDto.language,
-          category: createDto.category,
-          components, // Use the transformed components with examples
+          category: createDto.category.toUpperCase(), // Ensure uppercase category
+          components: normalizedComponents,
         },
       );
 
@@ -125,8 +109,8 @@ export class TemplatesService {
         tenantId,
         name: uniqueName,
         language: createDto.language,
-        category: createDto.category,
-        components, // Save the components with examples (or original? Meta returns strict format, better save what we sent)
+        category: createDto.category.toUpperCase(),
+        components: normalizedComponents,
         status: 'PENDING',
       });
 
@@ -135,5 +119,31 @@ export class TemplatesService {
       // If unique name somehow fails, throw it up
       throw error;
     }
+  }
+
+  private normalizeComponents(components: any[]) {
+    return components.map(component => {
+      if (component.type === 'BODY') {
+        // detect variables {{1}}, {{2}}, etc.
+        const matches = component.text.match(/\{\{\d+\}\}/g) || [];
+        const variableCount = matches.length;
+
+        if (variableCount > 0) {
+          // generate example array dynamically
+          const exampleValues = Array(variableCount)
+            .fill(0)
+            .map((_, i) => `example${i + 1}`);
+
+          return {
+            type: 'BODY',
+            text: component.text,
+            example: {
+              body_text: [exampleValues]
+            }
+          };
+        }
+      }
+      return component;
+    });
   }
 }
