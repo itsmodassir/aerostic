@@ -62,7 +62,11 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenant
             onSuccess();
             onClose();
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create template. Ensure name is unique and follows Meta guidelines.');
+            const serverMessage = err.response?.data?.message;
+            const detailedError = typeof serverMessage === 'string' ? serverMessage :
+                Array.isArray(serverMessage) ? serverMessage[0] :
+                    'Failed to create template. Ensure name is unique and follows Meta guidelines.';
+            setError(detailedError);
         } finally {
             setLoading(false);
         }

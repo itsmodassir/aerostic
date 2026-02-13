@@ -37,18 +37,15 @@ export class TemplatesService {
     );
 
     // 3. Upsert into DB
-    const entities = metaTemplates.map((t: any) => {
-      console.log(`DEBUG: Template ${t.name} from Meta:`, JSON.stringify(t));
-      return {
-        tenantId,
-        name: t.name,
-        language: t.language,
-        status: t.status,
-        category: t.category,
-        components: t.components,
-        rejectionReason: t.rejected_reason, // Map Meta's field to our entity
-      };
-    });
+    const entities = metaTemplates.map((t: any) => ({
+      tenantId,
+      name: t.name,
+      language: t.language,
+      status: t.status,
+      category: t.category,
+      components: t.components,
+      rejectionReason: t.rejected_reason, // Map Meta's field to our entity
+    }));
 
     // Naive upsert: Delete all for tenant and re-insert (easiest for sync)
     // Or iterating upsert. Let's do iteration to preserve IDs if we had them (but we regenerate UUIDs here so delete-insert is cleaner for MVP sync)

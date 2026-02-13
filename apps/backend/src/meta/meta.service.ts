@@ -267,7 +267,10 @@ export class MetaService {
       const url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates`;
       const { data } = await axios.get(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
-        params: { limit: 100 },
+        params: {
+          limit: 100,
+          fields: 'name,status,category,language,components,rejected_reason'
+        },
       });
       return data.data;
     } catch (error: any) {
