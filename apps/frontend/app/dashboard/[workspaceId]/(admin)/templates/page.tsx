@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { RefreshCw, Search, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
+import { RefreshCw, Search, CheckCircle, XCircle, Clock, Plus, AlertCircle } from 'lucide-react';
 import CreateTemplateModal from './CreateTemplateModal';
 
 interface Template {
@@ -12,6 +12,7 @@ interface Template {
     category: string;
     language: string;
     components: any[];
+    rejectionReason?: string;
 }
 
 interface LibraryTemplate {
@@ -184,10 +185,16 @@ export default function TemplatesPage() {
                                     </div>
                                     <StatusBadge status={tpl.status} />
                                 </div>
-                                <div className="p-4 bg-gray-50 flex-1 text-sm text-gray-600">
+                                <div className="p-4 bg-gray-50 flex-1 text-sm text-gray-600 space-y-3">
                                     <p className="line-clamp-4 italic border-l-2 border-gray-300 pl-3 py-1">
                                         {tpl.components?.find((c: any) => c.type === 'BODY')?.text || 'No preview available'}
                                     </p>
+                                    {tpl.status === 'REJECTED' && tpl.rejectionReason && (
+                                        <div className="p-2 bg-red-50 border border-red-100 rounded text-[11px] text-red-600 flex items-start gap-1.5">
+                                            <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                                            <span><strong>Reason:</strong> {tpl.rejectionReason}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

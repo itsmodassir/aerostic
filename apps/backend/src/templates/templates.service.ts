@@ -44,6 +44,7 @@ export class TemplatesService {
       status: t.status,
       category: t.category,
       components: t.components,
+      rejectionReason: t.rejected_reason, // Map Meta's field to our entity
     }));
 
     // Naive upsert: Delete all for tenant and re-insert (easiest for sync)

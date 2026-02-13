@@ -37,6 +37,9 @@ export class Template {
   @Column({ nullable: true })
   category: string; // MARKETING, UTILITY
 
+  @Column({ name: 'rejection_reason', nullable: true })
+  rejectionReason: string;
+
   @UpdateDateColumn()
   lastSyncedAt: Date;
 }
