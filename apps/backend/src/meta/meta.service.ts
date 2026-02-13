@@ -281,6 +281,24 @@ export class MetaService {
     }
   }
 
+  async findTemplate(wabaId: string, accessToken: string, name: string) {
+    try {
+      const url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates`;
+      const { data } = await axios.get(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: {
+          name: name,
+          limit: 1,
+          fields: 'name,status,category,language,components,rejected_reason'
+        },
+      });
+      return data.data?.[0] || null;
+    } catch (error: any) {
+      // Just return null if not found or error, to allow creation to proceed (or fail downstream with better error)
+      return null;
+    }
+  }
+
   async createTemplate(wabaId: string, accessToken: string, templateData: any) {
     try {
       const url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates`;

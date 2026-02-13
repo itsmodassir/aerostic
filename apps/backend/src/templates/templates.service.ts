@@ -60,28 +60,59 @@ export class TemplatesService {
       throw new Error('WhatsApp not connected');
     }
 
-    // 1. Submit to Meta
-    const metaResponse = await this.metaService.createTemplate(
+    // 1. Generate Unique Name (tenantId_name_timestamp) to avoid collisions
+    const timestamp = Date.now();
+    const cleanName = createDto.name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    const uniqueName = `${tenantId}_${cleanName}_${timestamp}`;
+
+    // 2. Check Existence (Sanity check)
+    const existing = await this.metaService.findTemplate(
       creds.wabaId,
       creds.accessToken,
-      {
-        name: createDto.name,
+      uniqueName,
+    );
+
+    if (existing) {
+      // If it exists (unlikely with timestamp, but good practice), reuse it
+      const template = this.templateRepo.create({
+        tenantId,
+        name: existing.name,
+        language: existing.language,
+        category: existing.category,
+        status: existing.status,
+        components: existing.components,
+        rejectionReason: existing.rejected_reason
+      });
+      return this.templateRepo.save(template);
+    }
+
+    // 3. Submit to Meta
+    try {
+      await this.metaService.createTemplate(
+        creds.wabaId,
+        creds.accessToken,
+        {
+          name: uniqueName,
+          language: createDto.language,
+          category: createDto.category,
+          components: createDto.components,
+        },
+      );
+
+      // 4. Save locally
+      const template = this.templateRepo.create({
+        tenantId,
+        name: uniqueName,
         language: createDto.language,
         category: createDto.category,
         components: createDto.components,
-      },
-    );
+        status: 'PENDING',
+      });
 
-    // 2. Save locally
-    const template = this.templateRepo.create({
-      tenantId,
-      name: createDto.name,
-      language: createDto.language,
-      category: createDto.category,
-      components: createDto.components,
-      status: 'PENDING', // Meta usually takes templates as PENDING initially
-    });
-
-    return this.templateRepo.save(template);
+      return this.templateRepo.save(template);
+    } catch (error: any) {
+      // If unique name somehow fails, throw it up
+      throw error;
+    }
   }
 }
