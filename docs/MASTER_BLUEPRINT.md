@@ -109,11 +109,13 @@ Facebook Login for Business
 Webhooks
 ```
 
-Add redirect URI:
+Add redirect URI (Production):
 
 ```
-https://api.aerostic.com/meta/callback
+https://app.aerostic.com/meta/callback
 ```
+
+*Note: Use Manual OAuth Popup flow (v19.0) to ensure redirect_uri consistency.*
 
 ---
 
@@ -346,6 +348,7 @@ Webhook verification
 HTTPS everywhere
 Token encryption
 Admin role checks
+WABA Granular Scope Fallback Check
 ```
 
 ---

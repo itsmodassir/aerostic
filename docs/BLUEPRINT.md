@@ -88,9 +88,10 @@ aerostic/
 ## 4️⃣ CORE SECURITY FEATURES
 
 ### 🔒 Data Security
-- **Encryption at Rest**: Sensitive tokens (`accessToken`, `appSecret`) are encrypted using **AES-256-CBC**.
 - **HMAC Verification**: All Meta webhooks verified via `X-Hub-Signature-256`.
-- **Database Safety**: `synchronize: false` in production; managed via versioned **TypeORM Migrations**.
+- **Granular Scopes Fallback**: `MetaService` extracts WABA IDs from `granular_scopes` inside the debug token to bypass restricted business listing permissions.
+- **Manual Popup Security**: Switched from SDK-implicit login to manual OAuth popups for 100% control over the `redirect_uri` to prevent mismatch attacks and errors.
+- **Database Safety**: `synchronize: false` in production; managed via versioned **TypeORM Migrations**. Fixed circular dependencies using string-based entity decoupling.
 
 ### 🛡️ Infrastructure (Hardened Nginx)
 - **Cloudflare Trusted**: Trusts Cloudflare IP ranges; uses `CF-Connecting-IP` for real visitor tracing.
@@ -122,5 +123,6 @@ aerostic/
 
 ## 7️⃣ INFRASTRUCTURE & DEPLOYMENT
 - **Runtime**: Node 22 (Backend), Standalone build (Frontend).
+- **Meta API Version**: Hardcoded to **v19.0** across all services for stability and predictable behavior during Embedded Signup.
 - **Orchestration**: Docker Compose with bridge networking.
 - **Monitoring**: Health endpoints with consistent `text/plain` responses on all subdomains.
