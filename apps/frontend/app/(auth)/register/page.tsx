@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     MessageSquare, ArrowRight, Building2, User, Mail, Lock,
-    Eye, EyeOff, CheckCircle, Sparkles, Shield, Zap, Star, Rocket
+    Eye, EyeOff, CheckCircle, Sparkles, Shield, Zap, Star, Rocket, Phone
 } from 'lucide-react';
 
 export default function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [tenantName, setTenantName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,7 @@ export default function RegisterPage() {
             await api.post('/auth/register/initiate', {
                 name,
                 email,
+                phone,
                 password,
                 workspace: tenantName
             });
@@ -49,6 +51,7 @@ export default function RegisterPage() {
             await api.post('/auth/register', {
                 name,
                 email,
+                phone,
                 password,
                 workspace: tenantName,
                 otp
@@ -259,6 +262,32 @@ export default function RegisterPage() {
                                             <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
                                         )}
                                     </div>
+                                </div>
+
+                                {/* Phone Number */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Phone Number
+                                    </label>
+                                    <div className={`relative transition-all duration-300 ${focusedField === 'phone' ? 'transform scale-[1.02]' : ''}`}>
+                                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${focusedField === 'phone' ? 'text-purple-600' : 'text-gray-400'}`} />
+                                        <input
+                                            type="tel"
+                                            required
+                                            className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-500/10 transition-all outline-none text-gray-900"
+                                            placeholder="+91 9999999999"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            onFocus={() => setFocusedField('phone')}
+                                            onBlur={() => setFocusedField(null)}
+                                        />
+                                        {phone && phone.match(/^\+?[1-9]\d{1,14}$/) && (
+                                            <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                                        )}
+                                    </div>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Include country code (e.g., +91 for India, +1 for US)
+                                    </p>
                                 </div>
 
                                 {/* Password */}

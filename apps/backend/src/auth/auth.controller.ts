@@ -14,7 +14,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import { AuditService } from '../audit/audit.service';
 import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
 import { MailService } from '../common/mail.service';
-import { IsNotEmpty, IsEmail } from 'class-validator';
+import { IsNotEmpty, IsEmail, Matches } from 'class-validator';
 import {
   TenantMembership,
   TenantRole,
@@ -60,6 +60,12 @@ class RegisterDto {
 
   @IsNotEmpty()
   workspace: string;
+
+  @IsNotEmpty()
+  @Matches(/^\+?[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in valid international format (e.g., +919999999999)',
+  })
+  phone: string;
 
   otp?: string; // Optional for initiation, required for finalization
 }
@@ -253,6 +259,7 @@ export class AuthController {
           email: registerDto.email,
           passwordHash,
           name: registerDto.name,
+          phone: registerDto.phone,
           role: UserRole.USER,
           isActive: true,
           apiAccessEnabled: false,
