@@ -53,9 +53,12 @@ export class MetaService {
       this.configService.get('META_REDIRECT_URI')?.trim() ||
       'http://localhost:3000/meta/callback';
 
-    this.logger.debug('--- OAuth Debug (v22.0) ---');
+    this.logger.debug(`--- OAuth Callback Debug (v22.0) ---`);
     this.logger.debug(`App ID: ${appId}`);
     this.logger.debug(`Redirect URI: ${redirectUri}`);
+    this.logger.debug(`Tenant ID: ${tenantId}`);
+    this.logger.debug(`Provided WABA: ${providedWabaId || 'None'}`);
+    this.logger.debug(`Provided Phone: ${providedPhoneNumberId || 'None'}`);
     this.logger.debug('-------------------');
 
     // 1. Exchange auth code for short-lived access token

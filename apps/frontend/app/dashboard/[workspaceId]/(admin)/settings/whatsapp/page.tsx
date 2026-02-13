@@ -33,10 +33,11 @@ export default function WhatsappSettingsPage() {
     const [sendingTest, setSendingTest] = useState(false);
 
     // Meta Config
-    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string } | null>(
+    const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string, redirectUri: string } | null>(
         typeof window !== 'undefined' ? {
             appId: process.env.NEXT_PUBLIC_META_APP_ID || FALLBACK_APP_ID,
-            configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || FALLBACK_CONFIG_ID
+            configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || FALLBACK_CONFIG_ID,
+            redirectUri: process.env.NEXT_PUBLIC_META_REDIRECT_URI || 'https://app.aerostic.com/meta/callback'
         } : null
     );
     const [embeddedIds, setEmbeddedIds] = useState<{ phoneNumberId: string, wabaId: string } | null>(null);
@@ -149,7 +150,7 @@ export default function WhatsappSettingsPage() {
         const fbLoginCallback = async (response: any) => {
             if (response.authResponse) {
                 const code = response.authResponse.code;
-                console.log('FB Login Success, Code:', code);
+                console.log('[MetaDebug] FB Login Success, Code:', code);
 
                 // Race Condition Fix: Wait for Embedded Signup FINISH event
                 let attempts = 0;
@@ -157,7 +158,7 @@ export default function WhatsappSettingsPage() {
 
                 if (!ids) {
                     console.log('[MetaDebug] Waiting for Embedded Signup IDs...');
-                    while (!ids && attempts < 20) { // Wait up to 10 seconds (20 * 500ms)
+                    while (!ids && attempts < 40) { // Wait up to 20 seconds (40 * 500ms)
                         await new Promise(resolve => setTimeout(resolve, 500));
                         ids = embeddedIdsRef.current;
                         attempts++;
@@ -205,8 +206,8 @@ export default function WhatsappSettingsPage() {
 
         // Launch via SDK
         if (window.FB) {
-            const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/meta/callback` : 'https://app.aerostic.com/meta/callback';
-            console.log('Launching FB.login with config_id:', metaConfig.configId, 'redirect_uri:', redirectUri);
+            const redirectUri = metaConfig.redirectUri || 'https://app.aerostic.com/meta/callback';
+            console.log('[MetaDebug] Launching FB.login', { configId: metaConfig.configId, redirectUri });
 
             window.FB.login(fbLoginCallback, {
                 config_id: metaConfig.configId,

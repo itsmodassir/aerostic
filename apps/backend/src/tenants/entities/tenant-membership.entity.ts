@@ -11,7 +11,8 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
-import { Role } from './role.entity';
+// Use string reference or deferred import to avoid circular dependency
+import type { Role } from './role.entity';
 
 export enum TenantRole {
   OWNER = 'owner',
@@ -45,7 +46,7 @@ export class TenantMembership {
   @Column({ name: 'role_id', type: 'uuid', nullable: true })
   roleId: string;
 
-  @ManyToOne(() => Role, (role) => role.memberships)
+  @ManyToOne('Role', (role: any) => role.memberships)
   @JoinColumn({ name: 'role_id' })
   roleEntity: Role;
 
