@@ -68,7 +68,23 @@ export class TemplatesService {
     const uniqueName = `${cleanTenantId}_${cleanName}_${timestamp}`;
 
     // Transform components to include 'example' data for variables (Meta Requirement)
-    const normalizedComponents = this.normalizeComponents(createDto.components);
+    let normalizedComponents = this.normalizeComponents(createDto.components);
+
+    // Special Handling for AUTHENTICATION: Must have COPY_CODE button
+    if (createDto.category.toUpperCase() === 'AUTHENTICATION') {
+      const hasButton = normalizedComponents.some(c => c.type === 'BUTTONS');
+      if (!hasButton) {
+        normalizedComponents.push({
+          type: 'BUTTONS',
+          buttons: [
+            {
+              type: 'COPY_CODE',
+              example: '123456' // Requirement for Auth templates
+            }
+          ]
+        });
+      }
+    }
 
     // 2. Check Existence (Sanity check)
     const existing = await this.metaService.findTemplate(
@@ -130,9 +146,10 @@ export class TemplatesService {
 
         if (variableCount > 0) {
           // generate example array dynamically
+          // Use realistic examples to avoid "Invalid Format"
           const exampleValues = Array(variableCount)
             .fill(0)
-            .map((_, i) => `example${i + 1}`);
+            .map((_, i) => i === 0 ? '123456' : `example${i + 1}`);
 
           return {
             type: 'BODY',
