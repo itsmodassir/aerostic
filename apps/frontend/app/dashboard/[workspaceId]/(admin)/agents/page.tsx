@@ -34,11 +34,18 @@ const AGENT_TYPES = [
     { id: 'faq', name: 'FAQ Bot', icon: HelpCircle, color: 'amber', description: 'Answer frequently asked questions' },
 ];
 
+import { useParams, useRouter } from 'next/navigation';
+
 export default function AgentsPage() {
+    const params = useParams();
+    const router = useRouter();
+    const workspaceId = params.workspaceId as string;
+
     const [agents, setAgents] = useState<Agent[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
+    const [tenantId, setTenantId] = useState<string>('');
 
     // Form state
     const [newAgentName, setNewAgentName] = useState('');
@@ -53,6 +60,11 @@ export default function AgentsPage() {
                 const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
                 if (res.ok) {
                     const user = await res.json();
+                    if (user.tenantId) {
+                        setTenantId(user.tenantId);
+                        fetchAgents(user.tenantId);
+                    }
+
                     const userEmail = user.email || '';
                     if (userEmail === 'md@modassir.info') {
                         setUserPlan('growth');
@@ -61,18 +73,16 @@ export default function AgentsPage() {
                     }
                 }
             } catch (e) { }
-            fetchAgents();
         };
         init();
     }, []);
 
-    const fetchAgents = async () => {
+    const fetchAgents = async (tid: string) => {
         try {
-            const res = await fetch('/api/v1/ai/agents');
+            const res = await fetch(`/api/v1/agents?tenantId=${tid}`);
             if (res.ok) {
                 setAgents(await res.json());
             } else {
-                // Use demo agents for display
                 setAgents([]);
             }
         } catch (error) {
@@ -89,12 +99,12 @@ export default function AgentsPage() {
 
     const toggleAgent = async (id: string, isActive: boolean) => {
         try {
-            await fetch(`/api/v1/ai/agents/${id}/toggle`, {
+            await fetch(`/api/v1/agents/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ isActive: !isActive }),
+                body: JSON.stringify({ isActive: !isActive, tenantId }),
             });
-            fetchAgents();
+            fetchAgents(tenantId);
         } catch (error) {
             console.error('Failed to toggle agent', error);
         }
@@ -108,21 +118,27 @@ export default function AgentsPage() {
 
         setCreating(true);
         try {
-            // In real implementation, this would call the API
-            const newAgent: Agent = {
-                id: `agent_${Date.now()}`,
-                name: newAgentName,
-                type: newAgentType,
-                description: newAgentDescription,
-                systemPrompt: newAgentPrompt,
-                isActive: true,
-                totalConversations: 0,
-                successfulResolutions: 0,
-                handoffsTriggered: 0,
-            };
-            setAgents([...agents, newAgent]);
-            setShowCreateModal(false);
-            resetForm();
+            const res = await fetch('/api/v1/agents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newAgentName,
+                    type: newAgentType,
+                    description: newAgentDescription,
+                    systemPrompt: newAgentPrompt,
+                    tenantId,
+                    isActive: true,
+                }),
+            });
+
+            if (res.ok) {
+                const newAgent = await res.json();
+                setAgents([...agents, newAgent]);
+                setShowCreateModal(false);
+                resetForm();
+            } else {
+                alert('Failed to create agent');
+            }
         } catch (error) {
             console.error('Failed to create agent', error);
         } finally {
@@ -343,10 +359,13 @@ export default function AgentsPage() {
                             </div>
 
                             <div className="flex gap-2">
-                                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium">
+                                <Link
+                                    href={`/dashboard/${workspaceId}/agents/${agent.id}/builder`}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                                >
                                     <Settings className="w-4 h-4" />
                                     Configure
-                                </button>
+                                </Link>
                                 <button
                                     onClick={() => handleDeleteAgent(agent.id)}
                                     className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"

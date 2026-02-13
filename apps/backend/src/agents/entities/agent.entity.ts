@@ -23,6 +23,12 @@ export class Agent {
     @Column()
     name: string;
 
+    @Column({ nullable: true })
+    description: string;
+
+    @Column({ type: 'text', nullable: true })
+    systemPrompt: string;
+
     @Column({ type: 'enum', enum: AgentType, default: AgentType.CUSTOM })
     type: AgentType;
 
@@ -31,6 +37,15 @@ export class Agent {
 
     @Column({ type: 'boolean', default: false })
     isActive: boolean;
+
+    @Column({ type: 'int', default: 0 })
+    totalConversations: number;
+
+    @Column({ type: 'int', default: 0 })
+    successfulResolutions: number;
+
+    @Column({ type: 'int', default: 0 })
+    handoffsTriggered: number;
 
     @Column('jsonb', { default: {} })
     flowConfig: any; // Stores the ReactFlow JSON configuration

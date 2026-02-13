@@ -25,6 +25,7 @@ import { AuditModule } from './audit/audit.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CommonModule } from './common/common.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { AgentsModule } from './agents/agents.module';
 
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
         type: 'postgres',
         url: configService.get('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: false, // 🔒 Disabled for production safety
+        synchronize: true, // Enabled for Agent table creation
         logging:
           configService.get('NODE_ENV') === 'development'
             ? ['error', 'warn', 'query']
@@ -88,6 +89,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AuthModule,
     AnalyticsModule,
     AuditModule,
+    AgentsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -98,4 +100,4 @@ import { ThrottlerModule } from '@nestjs/throttler';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
