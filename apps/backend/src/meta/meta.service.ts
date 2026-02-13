@@ -278,6 +278,23 @@ export class MetaService {
     }
   }
 
+  async createTemplate(wabaId: string, accessToken: string, templateData: any) {
+    try {
+      const url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates`;
+      const { data } = await axios.post(url, templateData, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return data;
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to create template on Meta: ${JSON.stringify(error.response?.data || error.message)}`,
+      );
+      throw new BadRequestException(
+        error.response?.data?.error?.message || 'Failed to create WhatsApp template',
+      );
+    }
+  }
+
   async exchangeForLongLivedToken(
     shortToken: string,
     appId: string,

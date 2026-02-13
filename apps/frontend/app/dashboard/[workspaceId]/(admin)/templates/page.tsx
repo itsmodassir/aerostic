@@ -1,8 +1,7 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { RefreshCw, Search, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { RefreshCw, Search, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
+import CreateTemplateModal from './CreateTemplateModal';
 
 interface Template {
     id: string;
@@ -18,6 +17,7 @@ export default function TemplatesPage() {
     const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [tenantId, setTenantId] = useState('');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     useEffect(() => {
         const init = async () => {
@@ -65,15 +65,31 @@ export default function TemplatesPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Message Templates</h1>
                     <p className="text-sm text-gray-500">Manage your WhatsApp approved templates.</p>
                 </div>
-                <button
-                    onClick={handleSync}
-                    disabled={syncing}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto"
-                >
-                    <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
-                    {syncing ? 'Syncing...' : 'Sync with Meta'}
-                </button>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto shadow-sm"
+                    >
+                        <Plus size={18} />
+                        Create Template
+                    </button>
+                    <button
+                        onClick={handleSync}
+                        disabled={syncing}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto"
+                    >
+                        <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
+                        {syncing ? 'Syncing...' : 'Sync with Meta'}
+                    </button>
+                </div>
             </div>
+
+            <CreateTemplateModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={() => fetchTemplates(tenantId)}
+                tenantId={tenantId}
+            />
 
             {loading ? (
                 <div>Loading templates...</div>

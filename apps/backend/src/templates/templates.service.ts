@@ -12,7 +12,7 @@ export class TemplatesService {
     private templateRepo: Repository<Template>,
     private metaService: MetaService,
     private whatsappService: WhatsappService,
-  ) {}
+  ) { }
 
   async findAll(tenantId: string) {
     return this.templateRepo.find({ where: { tenantId } });
@@ -51,5 +51,36 @@ export class TemplatesService {
 
     await this.templateRepo.delete({ tenantId });
     return this.templateRepo.save(entities);
+  }
+
+  async create(tenantId: string, createDto: any) {
+    const creds = await this.whatsappService.getCredentials(tenantId);
+    if (!creds || !creds.wabaId || !creds.accessToken) {
+      throw new Error('WhatsApp not connected');
+    }
+
+    // 1. Submit to Meta
+    const metaResponse = await this.metaService.createTemplate(
+      creds.wabaId,
+      creds.accessToken,
+      {
+        name: createDto.name,
+        language: createDto.language,
+        category: createDto.category,
+        components: createDto.components,
+      },
+    );
+
+    // 2. Save locally
+    const template = this.templateRepo.create({
+      tenantId,
+      name: createDto.name,
+      language: createDto.language,
+      category: createDto.category,
+      components: createDto.components,
+      status: 'PENDING', // Meta usually takes templates as PENDING initially
+    });
+
+    return this.templateRepo.save(template);
   }
 }
