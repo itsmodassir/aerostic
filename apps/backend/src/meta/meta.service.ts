@@ -303,7 +303,10 @@ export class MetaService {
     try {
       const url = `https://graph.facebook.com/v19.0/${wabaId}/message_templates`;
       const { data } = await axios.post(url, templateData, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
       });
       return data;
     } catch (error: any) {

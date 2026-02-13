@@ -67,6 +67,25 @@ export class TemplatesService {
     const cleanTenantId = tenantId.replace(/[^a-z0-9]/g, ''); // Remove hyphens/etc from UUID
     const uniqueName = `${cleanTenantId}_${cleanName}_${timestamp}`;
 
+    // Transform components to include 'example' data for variables (Meta Requirement)
+    const components = createDto.components.map((component: any) => {
+      if (component.type === 'BODY') {
+        const matches = component.text.match(/\{\{\d+\}\}/g) || [];
+        const variableCount = matches.length;
+
+        if (variableCount > 0) {
+          return {
+            type: 'BODY',
+            text: component.text,
+            example: {
+              body_text: [Array(variableCount).fill('example')]
+            }
+          };
+        }
+      }
+      return component;
+    });
+
     // 2. Check Existence (Sanity check)
     const existing = await this.metaService.findTemplate(
       creds.wabaId,
@@ -97,7 +116,7 @@ export class TemplatesService {
           name: uniqueName,
           language: createDto.language,
           category: createDto.category,
-          components: createDto.components,
+          components, // Use the transformed components with examples
         },
       );
 
@@ -107,7 +126,7 @@ export class TemplatesService {
         name: uniqueName,
         language: createDto.language,
         category: createDto.category,
-        components: createDto.components,
+        components, // Save the components with examples (or original? Meta returns strict format, better save what we sent)
         status: 'PENDING',
       });
 
