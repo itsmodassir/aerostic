@@ -47,7 +47,13 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-requested-with',
+      'x-tenant-id',
+      'x-workspace-id',
+    ],
     maxAge: 3600,
   });
 

@@ -22,7 +22,7 @@ export class WhatsappService {
     private messageQueue: Queue,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
-  ) {}
+  ) { }
 
   async getEmbeddedSignupUrl(tenantId: string) {
     // Fetch config from DB first, fallback to env
@@ -94,7 +94,11 @@ export class WhatsappService {
 
   async getPublicConfig() {
     const dbConfigs = await this.configRepo.find({
-      where: [{ key: 'meta.app_id' }, { key: 'meta.config_id' }],
+      where: [
+        { key: 'meta.app_id' },
+        { key: 'meta.config_id' },
+        { key: 'meta.redirect_uri' },
+      ],
     });
 
     return {
