@@ -213,7 +213,6 @@ export default function WhatsappSettingsPage() {
                     config_id: metaConfig.configId,
                     response_type: 'code',
                     override_default_response_type: true,
-                    redirect_uri: redirectUri,
                     extras: {
                         session_info: { version: 'v3' },
                         setup: {},
