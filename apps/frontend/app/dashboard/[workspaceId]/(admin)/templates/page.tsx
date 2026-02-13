@@ -14,12 +14,48 @@ interface Template {
     components: any[];
 }
 
+interface LibraryTemplate {
+    name: string;
+    category: string;
+    body: string;
+    description: string;
+}
+
+const LIBRARY_TEMPLATES: LibraryTemplate[] = [
+    {
+        name: 'welcome_message',
+        category: 'MARKETING',
+        body: 'Hello {{1}}, welcome to Aerostic! We are excited to have you on board.',
+        description: 'Standard welcome message for new customers.'
+    },
+    {
+        name: 'shipping_update',
+        category: 'UTILITY',
+        body: 'Hi {{1}}, your order #{{2}} has been shipped and is on its way to you!',
+        description: 'Notify customers about their order shipment.'
+    },
+    {
+        name: 'appointment_reminder',
+        category: 'UTILITY',
+        body: 'Reminder: You have an appointment with us on {{1}} at {{2}}. See you there!',
+        description: 'Send reminders for upcoming appointments.'
+    },
+    {
+        name: 'order_confirmation',
+        category: 'UTILITY',
+        body: 'Thank you for your order! Your order #{{1}} for {{2}} has been confirmed.',
+        description: 'Confirm new orders placed by customers.'
+    }
+];
+
 export default function TemplatesPage() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [tenantId, setTenantId] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [view, setView] = useState<'mine' | 'library'>('mine');
+    const [selectedLibraryTemplate, setSelectedLibraryTemplate] = useState<any>(null);
 
     useEffect(() => {
         const init = async () => {
@@ -60,6 +96,21 @@ export default function TemplatesPage() {
         }
     };
 
+    const handleUseLibraryTemplate = (tpl: LibraryTemplate) => {
+        setSelectedLibraryTemplate({
+            name: tpl.name,
+            category: tpl.category,
+            body: tpl.body,
+            language: 'en_US'
+        });
+        setIsCreateModalOpen(true);
+    };
+
+    const handleOpenCreateModal = () => {
+        setSelectedLibraryTemplate(null);
+        setIsCreateModalOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -69,7 +120,7 @@ export default function TemplatesPage() {
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <button
-                        onClick={() => setIsCreateModalOpen(true)}
+                        onClick={handleOpenCreateModal}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto shadow-sm"
                     >
                         <Plus size={18} />
@@ -86,37 +137,83 @@ export default function TemplatesPage() {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200">
+                <button
+                    onClick={() => setView('mine')}
+                    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${view === 'mine' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    My Templates
+                </button>
+                <button
+                    onClick={() => setView('library')}
+                    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${view === 'library' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    Template Library
+                </button>
+            </div>
+
             <CreateTemplateModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={() => fetchTemplates(tenantId)}
+                onSuccess={() => {
+                    setView('mine');
+                    fetchTemplates(tenantId);
+                }}
                 tenantId={tenantId}
+                initialData={selectedLibraryTemplate}
             />
 
-            {loading ? (
-                <div>Loading templates...</div>
-            ) : templates.length === 0 ? (
-                <div className="p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                    <Search className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <h3 className="text-sm font-medium text-gray-900">No templates found</h3>
-                    <p className="mt-1 text-sm text-gray-500">Click "Sync with Meta" to fetch your approved templates.</p>
-                </div>
+            {view === 'mine' ? (
+                loading ? (
+                    <div>Loading templates...</div>
+                ) : templates.length === 0 ? (
+                    <div className="p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                        <Search className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                        <h3 className="text-sm font-medium text-gray-900">No templates found</h3>
+                        <p className="mt-1 text-sm text-gray-500">Click "Sync with Meta" or use the Library to get started.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {templates.map((tpl) => (
+                            <div key={tpl.id} className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                                <div className="p-4 border-b flex justify-between items-start">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-gray-900 truncate pr-2" title={tpl.name}>{tpl.name}</h3>
+                                        <p className="text-xs text-gray-500 uppercase">{tpl.language} • {tpl.category}</p>
+                                    </div>
+                                    <StatusBadge status={tpl.status} />
+                                </div>
+                                <div className="p-4 bg-gray-50 flex-1 text-sm text-gray-600">
+                                    <p className="line-clamp-4 italic border-l-2 border-gray-300 pl-3 py-1">
+                                        {tpl.components?.find((c: any) => c.type === 'BODY')?.text || 'No preview available'}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {templates.map((tpl) => (
-                        <div key={tpl.id} className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col">
-                            <div className="p-4 border-b flex justify-between items-start">
-                                <div>
-                                    <h3 className="font-semibold text-gray-900 truncate pr-2" title={tpl.name}>{tpl.name}</h3>
-                                    <p className="text-xs text-gray-500 uppercase">{tpl.language} • {tpl.category}</p>
-                                </div>
-                                <StatusBadge status={tpl.status} />
+                    {LIBRARY_TEMPLATES.map((tpl) => (
+                        <div key={tpl.name} className="bg-white rounded-xl shadow-sm border overflow-hidden flex flex-col hover:border-blue-200 transition-colors">
+                            <div className="p-4 border-b">
+                                <h3 className="font-semibold text-gray-900">{tpl.name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h3>
+                                <p className="text-xs text-gray-500 uppercase">{tpl.category}</p>
                             </div>
-                            <div className="p-4 bg-gray-50 flex-1 text-sm text-gray-600 space-y-2">
-                                {/* Simplified Preview: Find BODY component */}
-                                <p className="line-clamp-4">
-                                    {tpl.components?.find((c: any) => c.type === 'BODY')?.text || 'No preview available'}
-                                </p>
+                            <div className="p-4 flex-1 space-y-3">
+                                <p className="text-xs text-gray-500 line-clamp-2">{tpl.description}</p>
+                                <div className="bg-blue-50/50 rounded-lg p-3 text-sm text-gray-600 border border-blue-100/50">
+                                    <p className="line-clamp-3">"{tpl.body}"</p>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t bg-gray-50/50">
+                                <button
+                                    onClick={() => handleUseLibraryTemplate(tpl)}
+                                    className="w-full py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                >
+                                    Use & Customize
+                                </button>
                             </div>
                         </div>
                     ))}

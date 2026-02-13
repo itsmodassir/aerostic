@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { X, Send, AlertCircle } from 'lucide-react';
 
@@ -9,15 +9,37 @@ interface CreateTemplateModalProps {
     onClose: () => void;
     onSuccess: () => void;
     tenantId: string;
+    initialData?: {
+        name?: string;
+        category?: string;
+        language?: string;
+        body?: string;
+    } | null;
 }
 
-export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenantId }: CreateTemplateModalProps) {
+export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenantId, initialData }: CreateTemplateModalProps) {
     const [name, setName] = useState('');
     const [category, setCategory] = useState('MARKETING');
     const [language, setLanguage] = useState('en_US');
     const [body, setBody] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Sync form with initialData when it changes or modal opens
+    useEffect(() => {
+        if (initialData) {
+            setName(initialData.name || '');
+            setCategory(initialData.category || 'MARKETING');
+            setLanguage(initialData.language || 'en_US');
+            setBody(initialData.body || '');
+        } else {
+            // Clear form if no initial data (normal create)
+            setName('');
+            setCategory('MARKETING');
+            setLanguage('en_US');
+            setBody('');
+        }
+    }, [initialData, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
