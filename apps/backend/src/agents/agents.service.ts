@@ -19,7 +19,15 @@ export class AgentsService {
     }
 
     async findAll(tenantId: string) {
-        return this.agentRepo.find({ where: { tenantId } });
+        return this.agentRepo.find({
+            where: { tenantId },
+            select: [
+                'id', 'name', 'description', 'type', 'isActive',
+                'totalConversations', 'successfulResolutions', 'handoffsTriggered',
+                'createdAt', 'updatedAt' // Exclude flowConfig and systemPrompt
+            ],
+            order: { createdAt: 'DESC' }
+        });
     }
 
     async findOne(id: string, tenantId: string) {
