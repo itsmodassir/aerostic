@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import {
     MessageSquare, Book, Rocket, Code, Webhook, Bot,
-    ChevronRight, Search, ExternalLink, Copy, Check
+    ChevronRight, Search, ExternalLink, Copy, Check, AlertTriangle
 } from 'lucide-react';
 
 export default function DocsPage() {
@@ -46,9 +46,17 @@ export default function DocsPage() {
             icon: <Bot className="w-6 h-6" />,
             title: 'AI Agents',
             description: 'Build and deploy intelligent chatbots',
-            href: '/docs/ai-agents',
             color: 'from-amber-500 to-orange-600',
+            href: '/docs/ai-agents',
             topics: ['Agent Types', 'System Prompts', 'Handoff Rules', 'Analytics']
+        },
+        {
+            icon: <AlertTriangle className="w-6 h-6" />,
+            title: 'Troubleshooting',
+            description: 'Common issues and their technical resolutions',
+            href: '/docs/troubleshooting',
+            color: 'from-red-500 to-pink-600',
+            topics: ['Meta OAuth', 'Permission Errors', 'Redirect 404s', 'Backend Crashes']
         },
     ];
 
@@ -165,8 +173,8 @@ export default function DocsPage() {
                                 <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-800/50 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <span className={`px-2 py-1 text-xs font-mono font-bold rounded ${endpoint.method === 'POST' ? 'bg-green-500/20 text-green-400' :
-                                                endpoint.method === 'GET' ? 'bg-blue-500/20 text-blue-400' :
-                                                    'bg-amber-500/20 text-amber-400'
+                                            endpoint.method === 'GET' ? 'bg-blue-500/20 text-blue-400' :
+                                                'bg-amber-500/20 text-amber-400'
                                             }`}>
                                             {endpoint.method}
                                         </span>
@@ -194,8 +202,8 @@ export default function DocsPage() {
                                 <div className="flex items-center justify-between mb-2">
                                     <h4 className="font-bold text-gray-900">{sdk.name}</h4>
                                     <span className={`px-2 py-0.5 text-xs rounded ${sdk.status === 'stable' ? 'bg-green-100 text-green-700' :
-                                            sdk.status === 'beta' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-amber-100 text-amber-700'
+                                        sdk.status === 'beta' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-amber-100 text-amber-700'
                                         }`}>
                                         {sdk.status}
                                     </span>
