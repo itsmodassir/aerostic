@@ -35,17 +35,30 @@ export class Campaign {
   @Column({ name: 'scheduled_at', nullable: true })
   scheduledAt: Date;
 
-  @Column({ default: 'draft' }) // draft, sending, completed
-  status: string;
-
-  @Column({ default: 0 })
-  totalContacts: number;
+  @Column({ default: 'draft' })
+  status: string; // draft, sending, completed, failed
 
   @Column({ default: 0 })
   sentCount: number;
 
   @Column({ default: 0 })
   failedCount: number;
+
+  @Column({ default: 0 })
+  totalContacts: number;
+
+  // New Fields for Advanced Targeting
+  @Column({ nullable: true })
+  templateName: string;
+
+  @Column({ nullable: true })
+  templateLanguage: string; // e.g. en_US
+
+  @Column({ default: 'ALL' })
+  recipientType: string; // ALL, CSV, MANUAL
+
+  @Column('jsonb', { nullable: true })
+  recipients: any[]; // Stores array of { name, phoneNumber } if CSV/MANUAL
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

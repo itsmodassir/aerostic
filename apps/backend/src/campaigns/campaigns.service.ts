@@ -19,13 +19,16 @@ export class CampaignsService {
     private messagesService: MessagesService,
     @InjectQueue('campaign-queue') private campaignQueue: Queue,
     private auditService: AuditService,
-  ) {}
+  ) { }
 
-  async create(tenantId: string, name: string) {
-    // Simplified
+  async create(tenantId: string, data: any) {
     const campaign = this.campaignRepo.create({
       tenantId,
-      name,
+      name: data.name,
+      templateName: data.templateName,
+      templateLanguage: data.templateLanguage,
+      recipientType: data.recipientType || 'ALL',
+      recipients: data.recipients || [],
       status: 'draft',
     });
     return this.campaignRepo.save(campaign);
@@ -45,8 +48,25 @@ export class CampaignsService {
     });
     if (!campaign) throw new Error('Campaign not found');
 
-    // 1. Get All Contacts
-    const contacts = await this.contactsService.findAll(tenantId);
+    // 1. Determine Target Audience
+    let contacts: any[] = [];
+
+    if (campaign.recipientType === 'ALL') {
+      const allContacts = await this.contactsService.findAll(tenantId);
+      contacts = allContacts.map(c => ({
+        phoneNumber: c.phoneNumber,
+        name: c.name
+      }));
+    } else if (['CSV', 'MANUAL'].includes(campaign.recipientType)) {
+      // Use stored recipients from JSONB
+      // Expected format: [{ name, phoneNumber }, ...]
+      contacts = campaign.recipients || [];
+    }
+
+    if (contacts.length === 0) {
+      throw new Error('No contacts found for this campaign');
+    }
+
     campaign.totalContacts = contacts.length;
     campaign.status = 'sending';
     await this.campaignRepo.save(campaign);
@@ -60,8 +80,16 @@ export class CampaignsService {
         to: contact.phoneNumber,
         type: 'template',
         payload: {
-          name: 'hello_world',
-          language: { code: 'en_US' },
+          name: campaign.templateName || 'hello_world',
+          language: { code: campaign.templateLanguage || 'en_US' },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                { type: 'text', text: contact.name || 'Valued Customer' } // Example param 1
+              ]
+            }
+          ]
         },
       },
     }));
