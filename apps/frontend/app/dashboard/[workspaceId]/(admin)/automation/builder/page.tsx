@@ -1163,8 +1163,8 @@ function WorkflowBuilder() {
             </div>
         </div>
     )}
-        </div >
-    </div >
+        </div>
+    </div>
     );
 }
 
