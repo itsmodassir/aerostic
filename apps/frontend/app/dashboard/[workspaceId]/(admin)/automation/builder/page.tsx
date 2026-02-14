@@ -18,7 +18,8 @@ import {
     OnConnect,
     Connection,
     ReactFlowProvider,
-    useReactFlow
+    useReactFlow,
+    MarkerType
 } from '@xyflow/react';
 
 export type WorkflowUIFlowNode<D extends Record<string, any> = Record<string, any>, T extends string = string> = Node<D, T>;
@@ -169,10 +170,40 @@ const BroadcastNode = ({ data }: NodeProps<WorkflowUIFlowNode<BroadcastTriggerNo
     </div>
 );
 
+const KnowledgeNode = ({ data }: NodeProps<WorkflowUIFlowNode>) => (
+    <div className="bg-white border-2 border-cyan-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
+        <Handle type="target" position={Position.Left} className="w-3 h-3 bg-cyan-500" />
+        <div className="bg-cyan-500 p-2 flex items-center gap-2 text-white">
+            <Globe size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Knowledge Query</span>
+        </div>
+        <div className="p-4">
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
+            <p className="text-[10px] text-gray-500 mt-1">Search documentation/KB</p>
+        </div>
+        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-cyan-500" />
+    </div>
+);
+
+const MemoryNode = ({ data }: NodeProps<WorkflowUIFlowNode>) => (
+    <div className="bg-white border-2 border-indigo-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
+        <Handle type="target" position={Position.Left} className="w-3 h-3 bg-indigo-500" />
+        <div className="bg-indigo-500 p-2 flex items-center gap-2 text-white">
+            <Cpu size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Memory</span>
+        </div>
+        <div className="p-4">
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
+            <p className="text-[10px] text-gray-500 mt-1">Get/Set user variables</p>
+        </div>
+        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-indigo-500" />
+    </div>
+);
+
 const nodeTypes = {
     trigger: TriggerNode,
     action: ActionNode,
-    ai_agent: AiAgentNode, // Replaces old AiNode
+    ai_agent: AiAgentNode,
     condition: ConditionNode,
     lead_update: LeadNode,
     broadcast_trigger: BroadcastNode,
@@ -186,6 +217,8 @@ const nodeTypes = {
     google_drive: GoogleDriveNode,
     openai_model: OpenAiModelNode,
     gemini_model: GeminiModelNode,
+    knowledge_query: KnowledgeNode,
+    memory: MemoryNode,
 };
 
 // --- Main Builder Component ---
@@ -201,61 +234,129 @@ function WorkflowBuilder() {
     const [edges, setEdges] = useState<Edge[]>([]);
     const [name, setName] = useState('New Automation');
     const [loading, setLoading] = useState(false);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [hasChanges, setHasChanges] = useState(false);
     const [selectedNode, setSelectedNode] = useState<WorkflowUIFlowNode | null>(null);
     const [showTestPanel, setShowTestPanel] = useState(false);
 
-    // Initialize with dummy data or fetch if editing
+    // Fetch existing workflow if editing
     useEffect(() => {
-        if (template === 'ai-sales') {
-            setName('AI Sales Assistant');
-            setNodes([
-                { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 100 } },
-                { id: '2', type: 'ai_agent', data: { label: 'AI Assistant', persona: 'Proactive Sales Expert' }, position: { x: 400, y: 100 } },
-                { id: '3', type: 'lead_update', data: { label: 'Update Status: Warm', status: 'warm' }, position: { x: 700, y: 100 } },
-            ] as WorkflowUIFlowNode[]);
-            setEdges([
-                { id: 'e1-2', source: '1', target: '2' },
-                { id: 'e2-3', source: '2', target: '3' },
-            ]);
-        } else if (template === 'auto-welcome') {
-            setName('Auto-Welcome');
-            setNodes([
-                { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 150 } },
-                { id: '2', type: 'action', data: { label: 'Welcome Reply', message: 'Hi there! Thanks for reaching out. An agent will be with you shortly.' }, position: { x: 400, y: 150 } },
-            ] as WorkflowUIFlowNode[]);
-            setEdges([{ id: 'e1-2', source: '1', target: '2' }]);
-        } else if (template === 'keyword-router') {
-            setName('Keyword Router: Pricing');
-            setNodes([
-                { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 200 } },
-                { id: '2', type: 'condition', data: { label: 'Check "Price"', keyword: 'price', operator: 'contains' }, position: { x: 400, y: 200 } },
-                { id: '3', type: 'action', data: { label: 'Send Pricing PDF', message: 'Here is our pricing structure: [Link]' }, position: { x: 750, y: 150 } },
-            ] as WorkflowUIFlowNode[]);
-            setEdges([{ id: 'e1-2', source: '1', target: '2' }, { id: 'e2-3', source: '2', target: '3', sourceHandle: 'true' }]);
-        } else {
-            setNodes([
-                {
-                    id: '1',
-                    type: 'trigger',
-                    data: { label: 'New Message', triggerType: 'new_message' },
-                    position: { x: 100, y: 100 },
-                },
-            ] as WorkflowUIFlowNode[]);
+        const fetchWorkflow = async () => {
+            const workflowId = params.workflowId as string;
+            if (workflowId && workflowId !== 'new') {
+                try {
+                    const res = await api.get(`/workflows/${workflowId}`);
+                    if (res.data) {
+                        setName(res.data.name);
+                        setNodes(res.data.nodes || []);
+                        setEdges(res.data.edges || []);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch workflow:', err);
+                    toast.error('Failed to load workflow data');
+                }
+            }
+        };
+        fetchWorkflow();
+    }, [params.workflowId]);
+
+    // Initialize with templates
+    useEffect(() => {
+        const workflowId = params.workflowId as string;
+        if (!workflowId || workflowId === 'new') {
+            if (template === 'ai-sales') {
+                setName('AI Sales Assistant');
+                setNodes([
+                    { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 100 } },
+                    { id: '2', type: 'ai_agent', data: { label: 'AI Assistant', persona: 'Proactive Sales Expert' }, position: { x: 400, y: 100 } },
+                    { id: '3', type: 'lead_update', data: { label: 'Update Status: Warm', status: 'warm' }, position: { x: 700, y: 100 } },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([
+                    { id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } },
+                    { id: 'e2-3', source: '2', target: '3', markerEnd: { type: MarkerType.ArrowClosed } },
+                ]);
+            } else if (template === 'broadcast') {
+                setName('Broadcasting Workflow');
+                setNodes([
+                    { id: '1', type: 'broadcast_trigger', data: { label: 'Campaign Sent' }, position: { x: 100, y: 150 } },
+                    { id: '2', type: 'template', data: { label: 'Send Welcome Template', templateName: 'welcome_template' }, position: { x: 450, y: 150 } },
+                    { id: '3', type: 'lead_update', data: { label: 'Status: Contacted', status: 'warm' }, position: { x: 800, y: 150 } },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([
+                    { id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } },
+                    { id: 'e2-3', source: '2', target: '3', markerEnd: { type: MarkerType.ArrowClosed } },
+                ]);
+            } else if (template === 'support') {
+                setName('AI Support Assistant');
+                setNodes([
+                    { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 200 } },
+                    { id: '2', type: 'knowledge_query', data: { label: 'Search Handbook', knowledgeBaseId: 'kb_default' }, position: { x: 400, y: 200 } },
+                    { id: '3', type: 'ai_agent', data: { label: 'Support AI', persona: 'Friendly Support Bot' }, position: { x: 750, y: 200 } },
+                    { id: '4', type: 'condition', data: { label: 'Can Answer?', keyword: 'not_found', operator: 'contains' }, position: { x: 1100, y: 200 } },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([
+                    { id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } },
+                    { id: 'e2-3', source: '2', target: '3', markerEnd: { type: MarkerType.ArrowClosed } },
+                    { id: 'e3-4', source: '3', target: '4', markerEnd: { type: MarkerType.ArrowClosed } },
+                ]);
+            } else if (template === 'auto-welcome') {
+                setName('Auto-Welcome');
+                setNodes([
+                    { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 150 } },
+                    { id: '2', type: 'action', data: { label: 'Welcome Reply', message: 'Hi there! Thanks for reaching out. An agent will be with you shortly.' }, position: { x: 400, y: 150 } },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([{ id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } }]);
+            } else if (template === 'keyword-router') {
+                setName('Keyword Router: Pricing');
+                setNodes([
+                    { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 200 } },
+                    { id: '2', type: 'condition', data: { label: 'Check "Price"', keyword: 'price', operator: 'contains' }, position: { x: 400, y: 200 } },
+                    { id: '3', type: 'action', data: { label: 'Send Pricing PDF', message: 'Here is our pricing structure: [Link]' }, position: { x: 750, y: 150 } },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([{ id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } }, { id: 'e2-3', source: '2', target: '3', sourceHandle: 'true', markerEnd: { type: MarkerType.ArrowClosed } }]);
+            } else {
+                setNodes([
+                    {
+                        id: '1',
+                        type: 'trigger',
+                        data: { label: 'New Message', triggerType: 'new_message' },
+                        position: { x: 100, y: 100 },
+                    },
+                ] as WorkflowUIFlowNode[]);
+            }
         }
-    }, [template]);
+    }, [template, params.workflowId]);
+
+    // Auto-save logic
+    useEffect(() => {
+        if (!hasChanges) return;
+        const timeout = setTimeout(() => {
+            saveWorkflow(true);
+        }, 30000); // 30 seconds
+        return () => clearTimeout(timeout);
+    }, [nodes, edges, name, hasChanges]);
 
     const onNodesChange = useCallback(
-        (changes: any) => setNodes((nds: WorkflowUIFlowNode[]) => applyNodeChanges(changes, nds) as any as WorkflowUIFlowNode[]),
+        (changes: any) => {
+            setNodes((nds: WorkflowUIFlowNode[]) => applyNodeChanges(changes, nds) as any as WorkflowUIFlowNode[]);
+            setHasChanges(true);
+        },
         []
     );
 
     const onEdgesChange = useCallback(
-        (changes: any) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+        (changes: any) => {
+            setEdges((eds) => applyEdgeChanges(changes, eds));
+            setHasChanges(true);
+        },
         []
     );
 
     const onConnect: OnConnect = useCallback(
-        (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+        (params: Connection) => {
+            setEdges((eds) => addEdge({ ...params, markerEnd: { type: MarkerType.ArrowClosed } }, eds));
+            setHasChanges(true);
+        },
         []
     );
 
@@ -275,8 +376,11 @@ function WorkflowBuilder() {
             case 'webhook': label = 'Webhook Trigger'; break;
             case 'api_request': label = 'HTTP Request'; break;
             case 'google_drive': label = 'Google Drive'; break;
+            case 'knowledge_query': label = 'Knowledge Query'; break;
+            case 'memory': label = 'Memory'; break;
             default: label = 'New Node';
         }
+
         const newNode: WorkflowUIFlowNode = {
             id,
             type,
@@ -297,9 +401,11 @@ function WorkflowBuilder() {
                 ...(type === 'webhook' && { label: 'Webhook Trigger', workflowId: params.workflowId || 'NEW' }),
                 ...(type === 'api_request' && { method: 'GET', url: 'https://', headers: '{}', body: '{}', variableName: 'apiResponse' }),
                 ...(type === 'google_drive' && { operation: 'list', variableName: 'driveResult' }),
+                ...(type === 'knowledge_query' && { knowledgeBaseId: 'default' }),
             },
         };
         setNodes((nds) => nds.concat(newNode));
+        setHasChanges(true);
     };
 
     const onNodeClick = useCallback((event: React.MouseEvent, node: WorkflowUIFlowNode) => {
@@ -317,6 +423,7 @@ function WorkflowBuilder() {
             })
         );
         setSelectedNode({ ...selectedNode, data: { ...selectedNode?.data, ...newData } });
+        setHasChanges(true);
     };
 
     const isValidConnection = useCallback(
@@ -366,27 +473,50 @@ function WorkflowBuilder() {
         [nodes]
     );
 
-    const saveWorkflow = async () => {
-        const hasTrigger = nodes.some(n => n.type === 'trigger');
-        if (!hasTrigger) {
+    const exportWorkflow = () => {
+        const dataStr = JSON.stringify({ name, nodes, edges }, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const exportFileDefaultName = `${name.toLowerCase().replace(/\s+/g, '_')}_workflow.json`;
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    };
+
+    const saveWorkflow = async (isAutoSave = false) => {
+        const hasTrigger = nodes.some(n => n.type === 'trigger' || n.type === 'webhook' || n.type === 'broadcast_trigger');
+        if (!hasTrigger && !isAutoSave) {
             toast.error('Workflow must have at least one trigger node');
             return;
         }
 
-        setLoading(true);
+        if (!isAutoSave) setLoading(true);
         try {
-            await api.post('/workflows', {
-                name,
-                nodes,
-                edges,
-                isActive: true,
-            });
-            toast.success('Workflow saved successfully!');
-            router.push(`/dashboard/${workspaceId}/automation`);
+            const workflowId = params.workflowId as string;
+            if (workflowId && workflowId !== 'new') {
+                await api.patch(`/workflows/${workflowId}`, {
+                    name,
+                    nodes,
+                    edges,
+                });
+            } else {
+                const res = await api.post('/workflows', {
+                    name,
+                    nodes,
+                    edges,
+                    isActive: true,
+                });
+                if (res.data?.id) {
+                    router.replace(`/dashboard/${workspaceId}/automation/builder/${res.data.id}`);
+                }
+            }
+            if (!isAutoSave) toast.success('Workflow saved successfully!');
+            setLastSaved(new Date());
+            setHasChanges(false);
         } catch (err) {
-            toast.error('Failed to save workflow');
+            if (!isAutoSave) toast.error('Failed to save workflow');
         } finally {
-            setLoading(false);
+            if (!isAutoSave) setLoading(false);
         }
     };
 
@@ -411,6 +541,13 @@ function WorkflowBuilder() {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={exportWorkflow}
+                        className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors flex items-center gap-2"
+                    >
+                        <Save size={18} />
+                        Export JSON
+                    </button>
+                    <button
                         onClick={() => setShowTestPanel(!showTestPanel)}
                         className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2 ${showTestPanel ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
@@ -418,12 +555,12 @@ function WorkflowBuilder() {
                         Test Bot
                     </button>
                     <button
-                        onClick={saveWorkflow}
+                        onClick={() => saveWorkflow(false)}
                         disabled={loading}
                         className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 disabled:opacity-50 transition-all hover:scale-105"
                     >
                         {loading ? <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full" /> : <Save size={18} />}
-                        Save Workflow
+                        {hasChanges ? 'Save Changes' : 'Saved'}
                     </button>
                 </div>
             </div>
@@ -476,21 +613,21 @@ function WorkflowBuilder() {
                     <Controls />
                     <MiniMap />
 
-                    <Panel position="top-right" className="bg-white p-2 rounded-2xl shadow-xl border flex flex-col gap-2">
+                    <Panel position="top-right" className="bg-white p-2 rounded-2xl shadow-xl border flex flex-col gap-2 max-h-[85vh] overflow-y-auto">
                         <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b mb-1">Add Elements</div>
-                        <button onClick={() => addNode('action')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('action')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <MessageSquare size={20} />
                             <span className="text-sm font-bold">Reply Action</span>
                         </button>
-                        <button onClick={() => addNode('condition')} className="p-3 hover:bg-amber-50 text-amber-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('condition')} className="p-3 hover:bg-amber-50 text-amber-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Settings2 size={20} />
                             <span className="text-sm font-bold">Condition</span>
                         </button>
-                        <button onClick={() => addNode('webhook')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('webhook')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Zap size={20} />
                             <span className="text-sm font-bold">Webhook Trigger</span>
                         </button>
-                        <button onClick={() => addNode('api_request')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('api_request')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Globe size={20} />
                             <span className="text-sm font-bold">HTTP Request</span>
                         </button>
@@ -506,39 +643,39 @@ function WorkflowBuilder() {
                             <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Sparkles size={18} className="text-blue-600" /></div>
                             <div><div className="font-bold text-sm">Gemini Model</div><div className="text-[10px] opacity-70">Gemini Pro Config</div></div>
                         </button>
-                        <button onClick={() => addNode('lead_update')} className="p-3 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('lead_update')} className="p-3 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Users size={20} />
                             <span className="text-sm font-bold">Update Lead</span>
                         </button>
-                        <button onClick={() => addNode('broadcast_trigger')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('broadcast_trigger')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Megaphone size={20} />
                             <span className="text-sm font-bold">Broadcast</span>
                         </button>
-                        <button onClick={() => addNode('google_sheets')} className="p-3 hover:bg-green-50 text-green-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('google_sheets')} className="p-3 hover:bg-green-50 text-green-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <FileSpreadsheet size={20} />
                             <span className="text-sm font-bold">Google Sheets</span>
                         </button>
-                        <button onClick={() => addNode('contact')} className="p-3 hover:bg-purple-50 text-purple-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('contact')} className="p-3 hover:bg-purple-50 text-purple-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Users size={20} />
                             <span className="text-sm font-bold">Contact</span>
                         </button>
-                        <button onClick={() => addNode('template')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('template')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Zap size={20} />
                             <span className="text-sm font-bold">Send Template</span>
                         </button>
-                        <button onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Mail size={20} />
                             <span className="text-sm font-bold">Send Email</span>
                         </button>
-                        <button onClick={() => addNode('chat')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('chat')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <MessageSquare size={20} />
                             <span className="text-sm font-bold">Agent Handoff</span>
                         </button>
-                        <button onClick={() => addNode('memory')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('memory')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Cpu size={20} />
                             <span className="text-sm font-bold">Memory</span>
                         </button>
-                        <button onClick={() => addNode('knowledge_query')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3">
+                        <button onClick={() => addNode('knowledge_query')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Globe size={20} />
                             <span className="text-sm font-bold">Knowledge Query</span>
                         </button>
