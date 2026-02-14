@@ -434,17 +434,20 @@ function WorkflowBuilder() {
                     workspaceId={workspaceId}
                     workflowId={params.workflowId as string}
                     onClose={() => setShowTestPanel(false)}
-                    onDebugEvent={(event) => {
-                        console.log('Received Debug Event in Page:', event);
+                    onDebugEvent={(eventData) => {
+                        console.log('Received Debug Event in Page:', eventData);
+                        const { event, data } = eventData;
+                        const nodeId = data.nodeId;
+
                         setNodes((nds) => nds.map((node) => {
-                            if (node.id === event.nodeId) {
+                            if (node.id === nodeId) {
                                 // Apply Visual Styles based on status
                                 let style = {};
-                                if (event.status === 'processing') {
+                                if (event === 'node_started') {
                                     style = { border: '2px solid #3b82f6', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }; // Blue
-                                } else if (event.status === 'completed') {
+                                } else if (event === 'node_completed') {
                                     style = { border: '2px solid #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.4)' }; // Green
-                                } else if (event.status === 'failed') {
+                                } else if (event === 'node_failed') {
                                     style = { border: '2px solid #ef4444', boxShadow: '0 0 15px rgba(239, 68, 68, 0.6)' }; // Red
                                 }
                                 return { ...node, style: { ...node.style, ...style } };

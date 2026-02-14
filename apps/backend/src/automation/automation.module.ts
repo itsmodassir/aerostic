@@ -27,6 +27,7 @@ import { GeminiExecutor } from './executors/gemini.executor';
 import { LeadUpdateExecutor } from './executors/lead-update.executor';
 import { MemoryExecutor } from './executors/memory.executor';
 import { KnowledgeExecutor } from './executors/knowledge.executor';
+import { AutomationGateway } from './automation.gateway';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { KnowledgeExecutor } from './executors/knowledge.executor';
     DAGTraversalService,
     MemoryExecutor,
     KnowledgeExecutor,
+    AutomationGateway,
   ],
   exports: [
     AutomationService,
@@ -68,6 +70,7 @@ import { KnowledgeExecutor } from './executors/knowledge.executor';
     DAGTraversalService,
     MemoryExecutor,
     KnowledgeExecutor,
+    AutomationGateway,
   ],
 })
 export class AutomationModule { }

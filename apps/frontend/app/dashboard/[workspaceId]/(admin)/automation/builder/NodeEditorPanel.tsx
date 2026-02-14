@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, ChevronRight, Info, Zap, Settings2, MessageSquare, Globe, Bot, Cpu, Sparkles, Users, FileSpreadsheet, Mail, Megaphone, Braces, Plus } from 'lucide-react';
 import { WorkflowUIFlowNode } from './page';
-import { VariableSelector } from './VariableSelector';
+import { VariableInput } from './VariableInput';
 
 interface NodeEditorPanelProps {
     node: WorkflowUIFlowNode;
@@ -14,7 +14,6 @@ interface NodeEditorPanelProps {
 
 export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, onUpdate, onClose }) => {
     const [localData, setLocalData] = useState(node.data);
-    const [activeVarField, setActiveVarField] = useState<string | null>(null);
 
     useEffect(() => {
         setLocalData(node.data);
@@ -25,32 +24,6 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
         setLocalData(newData);
         onUpdate(node.id, newData);
     };
-
-    const handleVariableSelect = (variable: string) => {
-        if (!activeVarField) return;
-        const currentValue = localData[activeVarField] || '';
-        handleChange(activeVarField, currentValue + variable);
-        setActiveVarField(null);
-    };
-
-    const VariableTrigger = ({ field }: { field: string }) => (
-        <div className="relative inline-block ml-2">
-            <button
-                onClick={() => setActiveVarField(activeVarField === field ? null : field)}
-                className={`p-1 rounded-md transition-colors ${activeVarField === field ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
-                title="Insert Variable"
-            >
-                <Braces size={14} />
-            </button>
-            {activeVarField === field && (
-                <VariableSelector
-                    nodes={nodes}
-                    onSelect={handleVariableSelect}
-                    onClose={() => setActiveVarField(null)}
-                />
-            )}
-        </div>
-    );
 
     const renderMemoryConfig = () => (
         <div className="space-y-4">
@@ -67,27 +40,23 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 </select>
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Memory Key</label>
-                    <VariableTrigger field="key" />
-                </div>
-                <input
-                    type="text"
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Memory Key</label>
+                <VariableInput
                     value={localData.key || ''}
-                    onChange={(e) => handleChange('key', e.target.value)}
+                    onChange={(v) => handleChange('key', v)}
+                    nodes={nodes}
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                     placeholder="e.g. user_intent or lead_score"
                 />
             </div>
             {(localData.operation === 'SET') && (
                 <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Value to Save</label>
-                        <VariableTrigger field="value" />
-                    </div>
-                    <textarea
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Value to Save</label>
+                    <VariableInput
                         value={localData.value || ''}
-                        onChange={(e) => handleChange('value', e.target.value)}
+                        onChange={(v) => handleChange('value', v)}
+                        nodes={nodes}
+                        textarea
                         className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none"
                         placeholder="Static text or {{variable}}"
                     />
@@ -126,13 +95,12 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 <p className="mt-1 text-[10px] text-gray-400">Choose the document source to query.</p>
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Search Query Template</label>
-                    <VariableTrigger field="queryTemplate" />
-                </div>
-                <textarea
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Search Query Template</label>
+                <VariableInput
                     value={localData.queryTemplate || ''}
-                    onChange={(e) => handleChange('queryTemplate', e.target.value)}
+                    onChange={(v) => handleChange('queryTemplate', v)}
+                    nodes={nodes}
+                    textarea
                     className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none"
                     placeholder="e.g. Find pricing for {{trigger.body}}"
                 />
@@ -167,13 +135,12 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
     const renderActionConfig = () => (
         <div className="space-y-4">
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Message Text</label>
-                    <VariableTrigger field="message" />
-                </div>
-                <textarea
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Message Text</label>
+                <VariableInput
                     value={localData.message || ''}
-                    onChange={(e) => handleChange('message', e.target.value)}
+                    onChange={(v) => handleChange('message', v)}
+                    nodes={nodes}
+                    textarea
                     className="w-full min-h-[120px] p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none"
                     placeholder="Enter message to send..."
                 />
@@ -185,22 +152,17 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
     const renderConditionConfig = () => (
         <div className="space-y-4">
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Input Source</label>
-                    <VariableTrigger field="input" />
-                </div>
-                <input
-                    type="text"
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Input Source</label>
+                <VariableInput
                     value={localData.input || ''}
-                    onChange={(e) => handleChange('input', e.target.value)}
+                    onChange={(v) => handleChange('input', v)}
+                    nodes={nodes}
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                     placeholder="{{trigger.body}}"
                 />
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Operator</label>
-                </div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Operator</label>
                 <select
                     value={localData.operator || 'contains'}
                     onChange={(e) => handleChange('operator', e.target.value)}
@@ -213,14 +175,11 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 </select>
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Keyword / Value</label>
-                    <VariableTrigger field="keyword" />
-                </div>
-                <input
-                    type="text"
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Keyword / Value</label>
+                <VariableInput
                     value={localData.keyword || ''}
-                    onChange={(e) => handleChange('keyword', e.target.value)}
+                    onChange={(v) => handleChange('keyword', v)}
+                    nodes={nodes}
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                     placeholder="e.g. price"
                 />
@@ -246,40 +205,35 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     </select>
                 </div>
                 <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">URL</label>
-                        <VariableTrigger field="url" />
-                    </div>
-                    <input
-                        type="text"
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">URL</label>
+                    <VariableInput
                         value={localData.url || ''}
-                        onChange={(e) => handleChange('url', e.target.value)}
+                        onChange={(v) => handleChange('url', v)}
+                        nodes={nodes}
                         className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                         placeholder="https://api.example.com"
                     />
                 </div>
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Headers (JSON)</label>
-                    <VariableTrigger field="headers" />
-                </div>
-                <textarea
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Headers (JSON)</label>
+                <VariableInput
                     value={localData.headers || '{}'}
-                    onChange={(e) => handleChange('headers', e.target.value)}
+                    onChange={(v) => handleChange('headers', v)}
+                    nodes={nodes}
+                    textarea
                     className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-mono resize-none"
                     placeholder='{"Content-Type": "application/json"}'
                 />
             </div>
             {(localData.method !== 'GET' && localData.method !== 'DELETE') && (
                 <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Body (JSON)</label>
-                        <VariableTrigger field="body" />
-                    </div>
-                    <textarea
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Body (JSON)</label>
+                    <VariableInput
                         value={localData.body || '{}'}
-                        onChange={(e) => handleChange('body', e.target.value)}
+                        onChange={(v) => handleChange('body', v)}
+                        nodes={nodes}
+                        textarea
                         className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-mono resize-none"
                         placeholder='{"key": "value"}'
                     />
@@ -316,25 +270,23 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 </select>
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">System Prompt</label>
-                    <VariableTrigger field="systemPrompt" />
-                </div>
-                <textarea
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">System Prompt</label>
+                <VariableInput
                     value={localData.systemPrompt || ''}
-                    onChange={(e) => handleChange('systemPrompt', e.target.value)}
+                    onChange={(v) => handleChange('systemPrompt', v)}
+                    nodes={nodes}
+                    textarea
                     className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none"
                     placeholder="You are a helpful assistant..."
                 />
             </div>
             <div>
-                <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">User Prompt / Input</label>
-                    <VariableTrigger field="userPrompt" />
-                </div>
-                <textarea
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">User Prompt / Input</label>
+                <VariableInput
                     value={localData.userPrompt || ''}
-                    onChange={(e) => handleChange('userPrompt', e.target.value)}
+                    onChange={(v) => handleChange('userPrompt', v)}
+                    nodes={nodes}
+                    textarea
                     className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm resize-none"
                     placeholder="Use {{trigger.body}} to reference the message."
                 />
@@ -455,7 +407,7 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     {node.type === 'action' && renderActionConfig()}
                     {node.type === 'condition' && renderConditionConfig()}
                     {node.type === 'api_request' && renderApiConfig()}
-                    {node.type === 'ai_agent' || node.type === 'gemini_model' ? renderAiConfig() : null}
+                    {(node.type === 'ai_agent' || node.type === 'gemini_model') && renderAiConfig()}
                     {node.type === 'lead_update' && renderLeadConfig()}
                     {node.type === 'memory' && renderMemoryConfig()}
                     {node.type === 'knowledge_query' && renderKnowledgeConfig()}

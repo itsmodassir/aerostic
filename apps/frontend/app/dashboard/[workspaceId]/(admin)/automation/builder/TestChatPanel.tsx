@@ -5,6 +5,9 @@ import { Send, X, Play, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { socket } from '@/lib/socket';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { io, Socket } from 'socket.io-client';
+
+const URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface TestChatPanelProps {
     workspaceId: string;
@@ -27,12 +30,38 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
     const [input, setInput] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const automationSocketRef = useRef<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        // Connect to Tenant Room
+        // Connect to Main Socket for Bot Replies
+        socket.connect();
         socket.emit('joinTenant', workspaceId);
         setIsConnected(true);
+
+        // Connect to Automation Gateway for Tracing
+        const automationSocket = io(`${URL}/automation`, {
+            transports: ['websocket'],
+        });
+        automationSocketRef.current = automationSocket;
+
+        automationSocket.on('connect', () => {
+            console.log('Connected to automation tracing');
+        });
+
+        automationSocket.on('execution_event', (data: any) => {
+            console.log('Automation Event:', data);
+            onDebugEvent(data); // Highlight nodes
+
+            if (data.event === 'node_failed') {
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'system',
+                    content: `❌ Error in node ${data.data.nodeId}: ${data.data.error}`,
+                    timestamp: new Date()
+                }]);
+            }
+        });
 
         // Listen for Bot Replies (from standard messages gateway)
         socket.on('newMessage', (data: any) => {
@@ -46,27 +75,10 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
             }
         });
 
-        // Listen for Debug Events
-        socket.on('workflowDebug', (data: any) => {
-            console.log('Debug Event:', data);
-            if (data.workflowId === workflowId) {
-                onDebugEvent(data); // Pass to parent to style nodes
-
-                if (data.status === 'failed') {
-                    setMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        role: 'system',
-                        content: `❌ Error in node ${data.nodeId}: ${data.error}`,
-                        timestamp: new Date()
-                    }]);
-                }
-            }
-        });
-
         return () => {
             socket.off('newMessage');
-            socket.off('workflowDebug');
-            // socket.emit('leaveTenant', workspaceId); // Optional, depending on app logic
+            automationSocket.disconnect();
+            socket.disconnect();
         };
     }, [workspaceId, workflowId, onDebugEvent]);
 
@@ -79,12 +91,19 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
 
         setIsLoading(true);
         try {
-            await api.post(`/workflows/${workflowId}/execute`, {
+            const response = await api.post(`/workflows/${workflowId}/execute`, {
                 triggerData: {
                     body: input,
                     from: 'TEST_USER'
                 }
             });
+
+            const executionId = response.data.id;
+            if (executionId && automationSocketRef.current) {
+                automationSocketRef.current.emit('subscribe_execution', executionId);
+                console.log('Subscribed to execution:', executionId);
+            }
+
         } catch (e: any) {
             toast.error('Failed to trigger workflow: ' + e.message);
             setMessages(prev => [...prev, {

@@ -7,7 +7,7 @@ import { WorkflowExecutionLog, NodeExecutionStatus } from './entities/workflow-e
 import { WorkflowMemory } from './entities/workflow-memory.entity';
 import { VariableResolverService } from './variable-resolver.service';
 import { MessagesService } from '../messages/messages.service';
-import { MessagesGateway } from '../messages/messages.gateway';
+import { AutomationGateway } from './automation.gateway';
 import { ApiRequestExecutor } from './executors/api-request.executor';
 import { ActionExecutor } from './executors/action.executor';
 import { ConditionExecutor } from './executors/condition.executor';
@@ -32,7 +32,7 @@ export class WorkflowRunnerService {
         private memoryRepo: Repository<WorkflowMemory>,
         private variableResolver: VariableResolverService,
         private messagesService: MessagesService,
-        private messagesGateway: MessagesGateway,
+        private automationGateway: AutomationGateway,
         private apiExecutor: ApiRequestExecutor,
         private actionExecutor: ActionExecutor,
         private conditionExecutor: ConditionExecutor,
@@ -130,10 +130,9 @@ export class WorkflowRunnerService {
             this.logger.log(`Executing node ${node.id} (${node.type})`);
 
             // Emit Progress Event
-            this.messagesGateway.emitWorkflowDebug(workflow.tenantId, {
-                workflowId: workflow.id,
+            this.automationGateway.emitExecutionEvent(execution.id, 'node_started', {
                 nodeId: node.id,
-                status: 'processing',
+                nodeType: node.type,
             });
 
             // 2. Delegate to specific executor
@@ -146,10 +145,8 @@ export class WorkflowRunnerService {
             await this.logRepo.save(log);
 
             // Emit Success Event
-            this.messagesGateway.emitWorkflowDebug(workflow.tenantId, {
-                workflowId: workflow.id,
+            this.automationGateway.emitExecutionEvent(execution.id, 'node_completed', {
                 nodeId: node.id,
-                status: 'completed',
                 result: result,
             });
 
@@ -190,10 +187,8 @@ export class WorkflowRunnerService {
             await this.logRepo.save(log);
 
             // Emit Failure Event
-            this.messagesGateway.emitWorkflowDebug(workflow.tenantId, {
-                workflowId: workflow.id,
+            this.automationGateway.emitExecutionEvent(execution.id, 'node_failed', {
                 nodeId: node.id,
-                status: 'failed',
                 error: error.message,
             });
 
