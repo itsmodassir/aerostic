@@ -1167,6 +1167,7 @@ function WorkflowBuilder() {
         </div >
     </div >
     );
+}
 
 export default function BuilderPage() {
     return (
