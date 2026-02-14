@@ -7,7 +7,7 @@ import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import {
     LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut, Bell,
     Megaphone, FileText, Bot, Shield, User, CreditCard, HelpCircle,
-    ChevronDown, Crown, Check, Menu
+    ChevronDown, Crown, Check, Menu, BarChart2, Calendar, Gift, Target
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
@@ -28,13 +28,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const navigation = [
         { name: 'Dashboard', href: `/dashboard/${workspaceId}`, icon: LayoutDashboard },
-        { name: 'Inbox', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
         { name: 'Contacts', href: `/dashboard/${workspaceId}/contacts`, icon: Users2, permission: 'contacts:read' },
-        { name: 'Broadcasts', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
+        { name: 'Messages', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
+        { name: 'Campaigns', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
         { name: 'Templates', href: `/dashboard/${workspaceId}/templates`, icon: FileText, permission: 'campaigns:read' },
+        { name: 'Leads', href: `/dashboard/${workspaceId}/leads`, icon: Target },
+        { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
         { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
-        { name: 'AI Agent', href: `/dashboard/${workspaceId}/agents`, icon: Bot, permission: 'automation:create' },
+        { name: 'Scheduler', href: `/dashboard/${workspaceId}/scheduler`, icon: Calendar },
         { name: 'Settings', href: `/dashboard/${workspaceId}/settings/whatsapp`, icon: Settings, permission: 'billing:manage' },
+        { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals`, icon: Gift },
         // Platform Admin - only for super_admin or specific platform admins
         { name: 'Platform Admin', href: `/dashboard/${workspaceId}/admin`, icon: Shield, adminOnly: true },
     ];
