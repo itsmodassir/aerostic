@@ -197,21 +197,26 @@ export class PlansService {
         ];
 
         for (const planData of plans) {
-            const slug = this.generateSlug(planData.name);
-            const existing = await this.planRepo.findOneBy({ slug });
+            try {
+                const slug = this.generateSlug(planData.name);
+                const existing = await this.planRepo.findOneBy({ slug });
 
-            if (!existing) {
-                console.log(`Seeding Plan: ${planData.name}`);
-                await this.create({ ...planData, slug });
-            } else {
-                console.log(`Updating Plan: ${planData.name}`);
-                // Update existing plans to match new pricing
-                existing.name = planData.name;
-                existing.price = planData.price;
-                existing.setupFee = planData.setupFee;
-                existing.limits = planData.limits;
-                existing.features = planData.features;
-                await this.planRepo.save(existing);
+                if (!existing) {
+                    console.log(`Seeding Plan: ${planData.name}`);
+                    await this.create({ ...planData, slug });
+                } else {
+                    console.log(`Updating Plan: ${planData.name}`);
+                    // Update existing plans to match new pricing
+                    existing.name = planData.name;
+                    existing.price = planData.price;
+                    existing.setupFee = planData.setupFee;
+                    existing.limits = planData.limits;
+                    existing.features = planData.features;
+                    await this.planRepo.save(existing);
+                }
+            } catch (error) {
+                console.error(`Failed to seed/update plan ${planData.name}`, error);
+                // Continue to next plan, do not crash startup
             }
         }
     }
