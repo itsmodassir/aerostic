@@ -13,14 +13,14 @@ const ApiNode = ({ data, id }: NodeProps) => {
             <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded text-white ${data.method === 'GET' ? 'bg-blue-500' :
-                            data.method === 'POST' ? 'bg-green-500' :
-                                data.method === 'PUT' ? 'bg-orange-500' :
-                                    'bg-red-500'
+                        data.method === 'POST' ? 'bg-green-500' :
+                            data.method === 'PUT' ? 'bg-orange-500' :
+                                'bg-red-500'
                         }`}>
-                        {data.method || 'GET'}
+                        {(data.method as string) || 'GET'}
                     </span>
                     <span className="text-xs font-mono truncate max-w-[200px]" title={data.url as string}>
-                        {data.url || 'https://api.example.com'}
+                        {(data.url as string) || 'https://api.example.com'}
                     </span>
                 </div>
                 <p className="text-[10px] text-gray-500">
