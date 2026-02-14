@@ -189,7 +189,7 @@ function WorkflowBuilder() {
     };
 
     const isValidConnection = useCallback(
-        (connection: Connection) => {
+        (connection: any) => {
             // Prevent self-connections
             if (connection.source === connection.target) return false;
 
