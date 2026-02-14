@@ -14,7 +14,9 @@ import {
     Bot,
     Users,
     Code,
-    Webhook
+    Webhook,
+    LayoutDashboard,
+    GitPullRequest
 } from 'lucide-react';
 
 interface Plan {
@@ -42,6 +44,11 @@ const AVAILABLE_FEATURES = [
     { id: 'templates', label: 'Templates Management', icon: List },
     { id: 'api_access', label: 'API Access', icon: Code },
     { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+    { id: 'human_takeover', label: 'Human Takeover', icon: Users },
+    { id: 'unlimited_broadcasts', label: 'Unlimited Broadcasts', icon: MessageSquare },
+    { id: 'multi_client_dashboard', label: 'Multi-Client Dashboard', icon: LayoutDashboard },
+    { id: 'lead_pipeline', label: 'Lead Pipeline', icon: GitPullRequest },
+    { id: 'ai_classification', label: 'AI Classification', icon: Bot },
 ];
 
 export default function PlansPage() {
@@ -215,23 +222,23 @@ export default function PlansPage() {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Monthly Messages</span>
-                                        <span className="font-medium">{plan.limits.monthly_messages.toLocaleString()}</span>
+                                        <span className="font-medium">{plan.limits.monthly_messages === -1 ? 'Unlimited' : plan.limits.monthly_messages.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">AI Credits</span>
-                                        <span className="font-medium">{plan.limits.ai_credits.toLocaleString()}</span>
+                                        <span className="font-medium">{plan.limits.ai_credits === -1 ? 'Unlimited' : plan.limits.ai_credits.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Max Agents</span>
-                                        <span className="font-medium">{plan.limits.max_agents}</span>
+                                        <span className="font-medium">{plan.limits.max_agents === -1 ? 'Unlimited' : plan.limits.max_agents}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">WhatsApp Numbers</span>
-                                        <span className="font-medium">{plan.limits.max_phone_numbers || 1}</span>
+                                        <span className="font-medium">{plan.limits.max_phone_numbers === -1 ? 'Unlimited' : (plan.limits.max_phone_numbers || 1)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Bots</span>
-                                        <span className="font-medium">{plan.limits.max_bots || 1}</span>
+                                        <span className="font-medium">{plan.limits.max_bots === -1 ? 'Unlimited' : (plan.limits.max_bots || 1)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Broadcasts</span>
@@ -330,125 +337,101 @@ export default function PlansPage() {
 
                             {/* Limits */}
                             <div>
-                                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Usage Limits</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Messages / Month</label>
-                                        <input
-                                            type="number"
-                                            value={formData.limits.monthly_messages}
-                                            onChange={e => setFormData(prev => ({
-                                                ...prev,
-                                                limits: { ...prev.limits, monthly_messages: Number(e.target.value) }
-                                            }))}
-                                            className="w-full px-3 py-2 border rounded-lg outline-none"
-                                        />
+                                {/* Limits */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Usage Limits</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {[
+                                            { key: 'monthly_messages', label: 'Messages / Month' },
+                                            { key: 'ai_credits', label: 'AI Credits' },
+                                            { key: 'max_agents', label: 'Max Agents' },
+                                            { key: 'max_phone_numbers', label: 'Phone Numbers' },
+                                            { key: 'max_bots', label: 'Max Bots' },
+                                            { key: 'monthly_broadcasts', label: 'Monthly Broadcasts' },
+                                        ].map((limit) => {
+                                            const isUnlimited = formData.limits[limit.key as keyof typeof formData.limits] === -1;
+                                            return (
+                                                <div key={limit.key} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <label className="text-xs font-semibold text-gray-700">{limit.label}</label>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`unlimited-${limit.key}`}
+                                                                checked={isUnlimited}
+                                                                onChange={(e) => {
+                                                                    const checked = e.target.checked;
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        limits: {
+                                                                            ...prev.limits,
+                                                                            [limit.key]: checked ? -1 : 0
+                                                                        }
+                                                                    }));
+                                                                }}
+                                                                className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                            />
+                                                            <label htmlFor={`unlimited-${limit.key}`} className="text-xs text-gray-500 cursor-pointer select-none">Unlimited</label>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value={isUnlimited ? '' : formData.limits[limit.key as keyof typeof formData.limits]}
+                                                        disabled={isUnlimited}
+                                                        onChange={e => setFormData(prev => ({
+                                                            ...prev,
+                                                            limits: { ...prev.limits, [limit.key]: Number(e.target.value) }
+                                                        }))}
+                                                        placeholder={isUnlimited ? "Unlimited" : "0"}
+                                                        className="w-full px-3 py-2 border rounded-lg outline-none bg-white disabled:bg-gray-100 disabled:text-gray-400 text-sm transition-colors"
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">AI Credits</label>
-                                        <input
-                                            type="number"
-                                            value={formData.limits.ai_credits}
-                                            onChange={e => setFormData(prev => ({
-                                                ...prev,
-                                                limits: { ...prev.limits, ai_credits: Number(e.target.value) }
-                                            }))}
-                                            className="w-full px-3 py-2 border rounded-lg outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Max Agents</label>
-                                        <input
-                                            type="number"
-                                            value={formData.limits.max_agents}
-                                            onChange={e => setFormData(prev => ({
-                                                ...prev,
-                                                limits: { ...prev.limits, max_agents: Number(e.target.value) }
-                                            }))}
-                                            className="w-full px-3 py-2 border rounded-lg outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Phone Numbers</label>
-                                        <input
-                                            type="number"
-                                            value={formData.limits.max_phone_numbers}
-                                            onChange={e => setFormData(prev => ({
-                                                ...prev,
-                                                limits: { ...prev.limits, max_phone_numbers: Number(e.target.value) }
-                                            }))}
-                                            className="w-full px-3 py-2 border rounded-lg outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Max Bots</label>
-                                        <input
-                                            type="number"
-                                            value={formData.limits.max_bots}
-                                            onChange={e => setFormData(prev => ({
-                                                ...prev,
-                                                limits: { ...prev.limits, max_bots: Number(e.target.value) }
-                                            }))}
-                                            className="w-full px-3 py-2 border rounded-lg outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Monthly Broadcasts</label>
-                                        <input
-                                            type="number"
-                                            value={formData.limits.monthly_broadcasts}
-                                            onChange={e => setFormData(prev => ({
-                                                ...prev,
-                                                limits: { ...prev.limits, monthly_broadcasts: Number(e.target.value) }
-                                            }))}
-                                            placeholder="-1 for Unlimited"
-                                            className="w-full px-3 py-2 border rounded-lg outline-none"
-                                        />
-                                        <span className="text-[10px] text-gray-400">-1 for Unlimited</span>
+                                </div>
+
+                                {/* Features */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Feature Entitlements</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {AVAILABLE_FEATURES.map(feature => (
+                                            <button
+                                                key={feature.id}
+                                                onClick={() => toggleFeature(feature.id)}
+                                                className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${formData.features.includes(feature.id)
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                    : 'border-gray-200 hover:border-blue-300'
+                                                    }`}
+                                            >
+                                                <div className={`p-2 rounded-lg ${formData.features.includes(feature.id) ? 'bg-blue-200' : 'bg-gray-100'
+                                                    }`}>
+                                                    <feature.icon className="w-4 h-4" />
+                                                </div>
+                                                <span className="font-medium text-sm">{feature.label}</span>
+                                                {formData.features.includes(feature.id) && <Check className="w-4 h-4 ml-auto" />}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Features */}
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Feature Entitlements</h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {AVAILABLE_FEATURES.map(feature => (
-                                        <button
-                                            key={feature.id}
-                                            onClick={() => toggleFeature(feature.id)}
-                                            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${formData.features.includes(feature.id)
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                                : 'border-gray-200 hover:border-blue-300'
-                                                }`}
-                                        >
-                                            <div className={`p-2 rounded-lg ${formData.features.includes(feature.id) ? 'bg-blue-200' : 'bg-gray-100'
-                                                }`}>
-                                                <feature.icon className="w-4 h-4" />
-                                            </div>
-                                            <span className="font-medium text-sm">{feature.label}</span>
-                                            {formData.features.includes(feature.id) && <Check className="w-4 h-4 ml-auto" />}
-                                        </button>
-                                    ))}
-                                </div>
+                            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2"
+                                >
+                                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Save Plan
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2"
-                            >
-                                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                Save Plan
-                            </button>
                         </div>
                     </div>
                 </div>
