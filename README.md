@@ -8,9 +8,10 @@
 
 *   **Multi-tenant Architecture**: Isolated workspaces for every user.
 *   **Official Meta Integration**: Supports both **Cloud API** (New Numbers) and **Embedded Signup** (Existing Business Numbers).
-*   **Advanced Automation Builder**: n8n-style visual workflow editor with drag-and-drop nodes.
+*   **Advanced Automation Builder**: n8n-style visual workflow editor with **auto-save (30s)**, **directional flow arrows**, and **scrollable sidebars**.
+*   **Workflow Persistence**: Load existing workflows by ID and **Export to JSON** for backups.
+*   **Pre-configured Templates**: Instant setup for **Broadcasting** and **Support Assistant** workflows.
 *   **External Integrations**: Connect any API via **HTTP Request Node** and manage files with **Google Drive Node**.
-*   **Webhook Triggers**: Trigger workflows effortlessly from external apps (Zapier, Stripe, custom backends).
 *   **Visual Debugging**: Real-time "Test Bot" with green/red execution tracing and error logs.
 *   **Google Sheets Integration**: Read and write data directly from spreadsheets in your flows.
 *   **Smart AI Agents**: Google Gemini-powered chatbots with **custom system prompts** and variable support.

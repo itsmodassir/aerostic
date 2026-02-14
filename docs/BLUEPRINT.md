@@ -102,6 +102,7 @@ aerostic/
 ### 🛡️ System Hardening & AI Security
 - **Strict Node Validation**: Workflow builder enforces type-safe connections (e.g., Models can only connect to Agent Model inputs).
 - **Recursive Execution Safety**: AI Agents use a `MAX_TURNS` limit (10) to prevent infinite loops during tool execution.
+- **Workflow Persistence**: State is persisted with **30s Auto-save** intervals; supports **JSON Export/Import** for portability.
 - **Encrypted Tokens**: Google OAuth refresh tokens are stored using AES-256-CBC encryption.
 
 ### 🛡️ Infrastructure (Hardened Nginx)
@@ -135,7 +136,7 @@ aerostic/
 
 ## 7️⃣ INFRASTRUCTURE & DEPLOYMENT
 - **Runtime**: Node 22 (Backend), Standalone build (Frontend).
-- **Meta API Version**: Hardcoded to **v19.0** across all services for stability and predictable behavior during Embedded Signup.
+- **Meta API Version**: Hardcoded to **v21.0** across all services for stability and latest feature access.
 - **Orchestration**: Docker Compose with bridge networking.
 - **Monitoring**: Health endpoints with consistent `text/plain` responses on all subdomains.
 
