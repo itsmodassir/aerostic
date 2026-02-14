@@ -133,7 +133,7 @@ export class BillingService {
 
   async createTrialSubscription(tenantId: string): Promise<Subscription> {
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14-day trial
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7-day trial
 
     const subscription = this.subscriptionRepo.create({
       tenantId,

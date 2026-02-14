@@ -16,64 +16,39 @@ import {
     Crown,
     Star,
     LayoutDashboard,
-    Clock
+    Clock,
+    List,
+    Code,
+    Webhook,
+    GitPullRequest
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
-const PLANS = [
-    {
-        id: 'free_trial',
-        name: 'Free Trial',
-        description: 'Perfect for exploring the platform',
-        price: '0',
-        duration: '14 days',
-        features: [
-            '1,000 Messages',
-            '100 AI Credits',
-            '1 AI Agent',
-            'Basic Automation',
-            'Community Support'
-        ],
-        cta: 'Start 14-Day Trial',
-        highlight: false,
-        icon: <Clock className="w-6 h-6 text-gray-500" />
-    },
-    {
-        id: 'plan_starter',
-        name: 'Starter Pro',
-        description: 'Best for growing businesses',
-        price: '1,999',
-        duration: 'monthly',
-        features: [
-            '10,000 Messages/mo',
-            '1,000 AI Credits/mo',
-            '1 AI Agent',
-            'Advanced Automation',
-            'Email Support'
-        ],
-        cta: 'Choose Starter Pro',
-        highlight: true,
-        icon: <Crown className="w-6 h-6 text-blue-600" />
-    },
-    {
-        id: 'plan_growth',
-        name: 'Growth Hero',
-        description: 'For high-volume operations',
-        price: '4,999',
-        duration: 'monthly',
-        features: [
-            '50,000 Messages/mo',
-            '5,000 AI Credits/mo',
-            '5 AI Agents',
-            'Priority Automation',
-            'Priority Support',
-            'API Access'
-        ],
-        cta: 'Choose Growth Hero',
-        highlight: false,
-        icon: <Zap className="w-6 h-6 text-purple-600" />
-    }
-];
+// Feature mapping matching Admin Panel
+const FEATURE_MAP: Record<string, { label: string; icon: any }> = {
+    'whatsapp_embedded': { label: 'WhatsApp Embedded Signup', icon: MessageSquare },
+    'whatsapp_marketing': { label: 'WhatsApp Marketing', icon: MessageSquare },
+    'ai_features': { label: 'AI Features', icon: Bot },
+    'templates': { label: 'Templates Management', icon: List },
+    'api_access': { label: 'API Access', icon: Code },
+    'webhooks': { label: 'Webhooks', icon: Webhook },
+    'human_takeover': { label: 'Human Takeover', icon: Users },
+    'unlimited_broadcasts': { label: 'Unlimited Broadcasts', icon: MessageSquare },
+    'multi_client_dashboard': { label: 'Multi-Client Dashboard', icon: LayoutDashboard },
+    'lead_pipeline': { label: 'Lead Pipeline', icon: GitPullRequest },
+    'ai_classification': { label: 'AI Classification', icon: Bot },
+};
+
+interface Plan {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    setupFee: number;
+    features: string[];
+    limits: any;
+    slug: string;
+}
 
 export default function OnboardingPage() {
     const { user, loading: authLoading } = useAuth();
@@ -81,6 +56,8 @@ export default function OnboardingPage() {
     const [selectedPlan, setSelectedPlan] = useState<string>('plan_starter');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [plansLoading, setPlansLoading] = useState(true);
 
     useEffect(() => {
         // Load Razorpay script
@@ -88,20 +65,39 @@ export default function OnboardingPage() {
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.async = true;
         document.body.appendChild(script);
+
+        fetchPlans();
+
         return () => {
-            document.body.removeChild(script);
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
         };
     }, []);
+
+    const fetchPlans = async () => {
+        try {
+            const res = await api.get('/billing/available-plans');
+            setPlans(res.data);
+        } catch (err) {
+            console.error('Failed to fetch plans', err);
+            setError('Failed to load plans. Please refresh.');
+        } finally {
+            setPlansLoading(false);
+        }
+    };
 
     const handlePlanAction = async (planId: string) => {
         setLoading(true);
         setError(null);
+        setSelectedPlan(planId);
 
         try {
             if (planId === 'free_trial') {
                 // Activate trial
                 await api.post('/billing/trial');
-                router.push('/dashboard');
+                // Force reload to update auth state/subscription check
+                window.location.href = '/dashboard';
                 return;
             }
 
@@ -117,7 +113,8 @@ export default function OnboardingPage() {
                 image: '/logo.png',
                 handler: function (response: any) {
                     console.log('Payment successful:', response);
-                    router.push('/dashboard?status=success');
+                    // Force reload to update auth state/subscription check
+                    window.location.href = '/dashboard?status=success';
                 },
                 prefill: {
                     name: user?.name,
@@ -133,12 +130,40 @@ export default function OnboardingPage() {
         } catch (err: any) {
             console.error('Plan selection error:', err);
             setError(err.response?.data?.message || 'Something went wrong. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
 
-    if (authLoading) return null;
+    if (authLoading || plansLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    // Combine Free Trial with fetched plans
+    const allPlans = [
+        {
+            id: 'free_trial',
+            name: 'Free Trial',
+            description: 'Perfect for exploring the platform',
+            price: 0,
+            duration: '7 days',
+            setupFee: 0,
+            features: ['1,000 Messages', '100 AI Credits', '1 AI Agent', 'Basic Automation'],
+            isStatic: true,
+            highlight: false,
+            icon: <Clock className="w-6 h-6 text-gray-500" />
+        },
+        ...plans.map(p => ({
+            ...p,
+            duration: 'monthly',
+            isStatic: false,
+            highlight: p.name.includes('Starter 2') || p.name.includes('Growth'), // Auto-highlight popular plans
+            icon: p.price > 4000 ? <Zap className="w-6 h-6 text-purple-600" /> : <Crown className="w-6 h-6 text-blue-600" />
+        }))
+    ];
 
     return (
         <div className="min-h-screen bg-gray-50/50 flex flex-col">
@@ -174,7 +199,7 @@ export default function OnboardingPage() {
                         </span>
                     </h1>
                     <p className="text-xl text-gray-600">
-                        Start your 14-day free trial or unlock full potential with our Pro plans.
+                        Start your 7-day free trial or unlock full potential with our Pro plans.
                         Scale your customer engagement with AI.
                     </p>
                 </div>
@@ -185,68 +210,99 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-                    {PLANS.map((plan) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 items-stretch">
+                    {allPlans.map((plan) => (
                         <div
                             key={plan.id}
                             className={clsx(
-                                "flex flex-col p-8 rounded-3xl border-2 transition-all duration-300 relative group",
+                                "flex flex-col p-6 rounded-3xl border-2 transition-all duration-300 relative group",
                                 plan.highlight
-                                    ? "bg-white border-blue-500 shadow-2xl scale-105 z-10"
-                                    : "bg-white border-gray-100 shadow-xl hover:border-gray-200"
+                                    ? "bg-white border-blue-500 shadow-xl scale-105 z-10"
+                                    : "bg-white border-gray-100 shadow-lg hover:border-gray-200"
                             )}
                         >
                             {plan.highlight && (
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg tracking-wider">
                                     MOST POPULAR
                                 </div>
                             )}
 
-                            <div className="mb-8">
+                            <div className="mb-6">
                                 <div className={clsx(
-                                    "w-12 h-12 rounded-2xl flex items-center justify-center mb-6",
+                                    "w-10 h-10 rounded-xl flex items-center justify-center mb-4",
                                     plan.highlight ? "bg-blue-50" : "bg-gray-50"
                                 )}>
                                     {plan.icon}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                                <p className="text-gray-500 text-sm">{plan.description}</p>
+                                <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>
+                                <p className="text-gray-500 text-xs line-clamp-2 h-8">
+                                    {plan.description || (plan.price > 0 ? 'Full featured pro plan' : 'Trial plan')}
+                                </p>
                             </div>
 
-                            <div className="mb-8">
+                            <div className="mb-6">
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-extrabold text-gray-900">₹{plan.price}</span>
-                                    <span className="text-gray-500 text-sm font-medium">/{plan.duration}</span>
+                                    <span className="text-3xl font-extrabold text-gray-900">₹{plan.price.toLocaleString()}</span>
+                                    <span className="text-gray-500 text-xs font-medium">/{plan.duration}</span>
                                 </div>
+                                {plan.setupFee > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">+ ₹{plan.setupFee.toLocaleString()} setup fee</p>
+                                )}
                             </div>
 
-                            <ul className="flex-1 space-y-4 mb-10">
-                                {plan.features.map((feature, idx) => (
-                                    <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
-                                        <div className="mt-0.5 w-5 h-5 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
-                                            <Check className="w-3 h-3 text-green-600" />
-                                        </div>
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="flex-1 mb-8">
+                                <ul className="space-y-3">
+                                    {/* Limits Display for DB Plans */}
+                                    {!plan.isStatic && plan.limits && (
+                                        <>
+                                            <li className="flex items-start gap-2 text-xs text-gray-600">
+                                                <Check className="w-3.5 h-3.5 text-green-600 mt-0.5" />
+                                                <span className="font-medium">{plan.limits.monthly_messages === -1 ? 'Unlimited' : plan.limits.monthly_messages.toLocaleString()}</span> Messages
+                                            </li>
+                                            <li className="flex items-start gap-2 text-xs text-gray-600">
+                                                <Check className="w-3.5 h-3.5 text-green-600 mt-0.5" />
+                                                <span className="font-medium">{plan.limits.ai_credits === -1 ? 'Unlimited' : plan.limits.ai_credits.toLocaleString()}</span> AI Credits
+                                            </li>
+                                        </>
+                                    )}
+
+                                    {/* Features Display */}
+                                    {plan.features.map((feature, idx) => {
+                                        // For static plans (trial), feature is just a string
+                                        // For DB plans, it's a feature code that needs mapping
+                                        let label = feature;
+                                        if (!plan.isStatic) {
+                                            const mapped = FEATURE_MAP[feature];
+                                            if (!mapped) return null; // Skip unknown features
+                                            label = mapped.label;
+                                        }
+
+                                        return (
+                                            <li key={idx} className="flex items-start gap-2 text-xs text-gray-600">
+                                                <Check className="w-3.5 h-3.5 text-green-600 mt-0.5" />
+                                                {label}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
 
                             <button
                                 onClick={() => handlePlanAction(plan.id)}
                                 disabled={loading}
                                 className={clsx(
-                                    "w-full py-4 px-6 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 group",
+                                    "w-full py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 group",
                                     plan.highlight
                                         ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/25"
                                         : "bg-gray-900 text-white hover:bg-black"
                                 )}
                             >
                                 {loading && selectedPlan === plan.id ? (
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     <>
-                                        {plan.cta}
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        {plan.price === 0 ? 'Start Trial' : `Choose ${plan.name}`}
+                                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>

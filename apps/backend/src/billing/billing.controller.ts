@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { RazorpayService } from './razorpay.service';
 import { BillingService } from './billing.service';
+import { PlansService } from './plans.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserTenant } from '../auth/decorators/user-tenant.decorator';
 
@@ -21,13 +22,19 @@ export class BillingController {
   constructor(
     private razorpayService: RazorpayService,
     private billingService: BillingService,
-  ) {}
+    private plansService: PlansService,
+  ) { }
 
   // ============ PLANS ============
 
   @Get('plans')
   getPlans() {
     return this.razorpayService.getPlans();
+  }
+
+  @Get('available-plans')
+  getAvailablePlans() {
+    return this.plansService.findAll();
   }
 
   // ============ SUBSCRIPTION ============
