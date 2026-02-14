@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy only package files first (better cache)
 COPY apps/frontend/package*.json ./apps/frontend/
 WORKDIR /app/apps/frontend
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copy rest of the code
 WORKDIR /app
