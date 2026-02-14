@@ -96,7 +96,14 @@ export default function PlansPage() {
                 name: plan.name,
                 price: plan.price,
                 setupFee: plan.setupFee || 0,
-                limits: plan.limits,
+                limits: {
+                    monthly_messages: plan.limits.monthly_messages,
+                    ai_credits: plan.limits.ai_credits,
+                    max_agents: plan.limits.max_agents,
+                    max_phone_numbers: plan.limits.max_phone_numbers || 1,
+                    max_bots: plan.limits.max_bots || 1,
+                    monthly_broadcasts: plan.limits.monthly_broadcasts ?? 0
+                },
                 features: plan.features,
             });
         } else {
