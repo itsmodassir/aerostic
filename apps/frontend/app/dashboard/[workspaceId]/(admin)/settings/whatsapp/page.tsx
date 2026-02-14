@@ -59,14 +59,25 @@ export default function WhatsappSettingsPage() {
             const workspaceSlug = params.workspaceId as string;
             if (!workspaceSlug) return;
 
+            // Auto-redirect if URL is malformed (e.g. 'billing' treated as workspace)
+            if (workspaceSlug === 'billing' || workspaceSlug === 'settings') {
+                console.warn('Malformed URL detected, redirecting to default workspace');
+                window.location.href = '/dashboard/default/settings/whatsapp';
+                return;
+            }
+
             try {
                 // Resolve tenant
+                console.log('[Debug] Fetching workspaces for slug:', workspaceSlug);
                 const res = await api.get('/auth/workspaces');
                 const memberships = res.data;
+                console.log('[Debug] Memberships:', memberships);
+
                 const activeMembership = memberships.find((m: any) => m.tenant?.slug === workspaceSlug || m.tenant?.id === workspaceSlug);
 
                 if (activeMembership && activeMembership.tenant?.id) {
                     const tId = activeMembership.tenant.id;
+                    console.log('[Debug] Found Tenant ID:', tId);
                     setTenantId(tId);
 
                     // Fetch connection status
@@ -101,13 +112,27 @@ export default function WhatsappSettingsPage() {
                             });
                         }
                     }
+                } else {
+                    console.error('[Debug] Tenant not found for slug:', workspaceSlug);
+                    // alert(`Could not find tenant for workspace: ${workspaceSlug}`);
                 }
             } catch (e) {
-                console.error('Failed to init settings');
+                console.error('Failed to init settings', e);
             }
         };
 
+        const checkTenant = async () => {
+            // Fallback: If tenantId is not set after 2 seconds, warn
+            setTimeout(() => {
+                setLoading((prev) => {
+                    if (!tenantId) console.warn('[Debug] Tenant ID still null after timeout');
+                    return prev;
+                });
+            }, 2000);
+        }
+
         initSettings();
+        checkTenant();
     }, [params.workspaceId]);
 
     useEffect(() => {
