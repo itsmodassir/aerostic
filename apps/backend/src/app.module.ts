@@ -16,6 +16,8 @@ import { AutomationModule } from './automation/automation.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MetaModule } from './meta/meta.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
+import { ReferralsModule } from './referrals/referrals.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
@@ -85,6 +87,8 @@ import { AgentsModule } from './agents/agents.module';
     AdminModule,
     BillingModule,
     MetaModule,
+    SchedulerModule,
+    ReferralsModule,
     ContactsModule,
     AuthModule,
     AnalyticsModule,

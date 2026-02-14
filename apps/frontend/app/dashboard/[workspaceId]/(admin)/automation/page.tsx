@@ -19,6 +19,8 @@ export default function AutomationPage() {
     const [rules, setRules] = useState<AutomationRule[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [tenantId, setTenantId] = useState<string>('');
+    const [aiAgent, setAiAgent] = useState({ systemPrompt: '', active: false });
+    const [isAiLoading, setIsAiLoading] = useState(true);
 
     const [newRule, setNewRule] = useState({
         name: '',
@@ -36,6 +38,7 @@ export default function AutomationPage() {
                 if (res.data && res.data.tenantId) {
                     setTenantId(res.data.tenantId);
                     fetchRules(res.data.tenantId);
+                    fetchAiAgent();
                 }
             } catch (e) {
                 console.error('Auth failed', e);
@@ -43,6 +46,34 @@ export default function AutomationPage() {
         };
         init();
     }, []);
+
+    const fetchAiAgent = async () => {
+        try {
+            const res = await api.get('/ai/agent');
+            setAiAgent({
+                systemPrompt: res.data.systemPrompt,
+                active: res.data.isActive ?? res.data.active
+            });
+        } catch (e) {
+            console.error('Failed to fetch AI agent', e);
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
+    const handleToggleAiAgent = async () => {
+        const newState = !aiAgent.active;
+        setAiAgent({ ...aiAgent, active: newState });
+        try {
+            await api.post('/ai/agent', {
+                systemPrompt: aiAgent.systemPrompt || 'You are a helpful customer support agent.',
+                active: newState
+            });
+        } catch (e) {
+            console.error('Failed to update AI agent', e);
+            setAiAgent({ ...aiAgent, active: !newState }); // Rollback
+        }
+    };
 
     const fetchRules = async (tid: string) => {
         try {
@@ -102,9 +133,15 @@ export default function AutomationPage() {
                     </div>
                 </div>
                 <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-0 pt-4 sm:pt-0">
-                    <span className="text-sm font-medium text-gray-700">Disabled (Stub)</span>
-                    <button className="w-12 h-6 bg-gray-200 rounded-full relative transition-colors">
-                        <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 shadow-sm"></div>
+                    <span className="text-sm font-medium text-gray-700">
+                        {isAiLoading ? 'Loading...' : aiAgent.active ? 'Enabled' : 'Disabled'}
+                    </span>
+                    <button
+                        onClick={handleToggleAiAgent}
+                        disabled={isAiLoading}
+                        className={`w-12 h-6 rounded-full relative transition-colors ${aiAgent.active ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-all ${aiAgent.active ? 'left-6' : 'left-0.5'}`}></div>
                     </button>
                 </div>
             </div>

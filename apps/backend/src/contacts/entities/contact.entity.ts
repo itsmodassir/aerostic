@@ -9,6 +9,16 @@ import {
   Index,
 } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
+import { User } from '../../users/entities/user.entity';
+
+export enum ContactStatus {
+  NEW = 'NEW',
+  CONTACTED = 'CONTACTED',
+  QUALIFIED = 'QUALIFIED',
+  PROPOSAL = 'PROPOSAL',
+  WON = 'WON',
+  LOST = 'LOST',
+}
 
 @Entity('contacts')
 @Index(['tenantId', 'phoneNumber'], { unique: true })
@@ -33,6 +43,24 @@ export class Contact {
 
   @Column({ nullable: true })
   email: string;
+
+  @Column({
+    type: 'enum',
+    enum: ContactStatus,
+    default: ContactStatus.NEW,
+  })
+  @Index()
+  status: ContactStatus;
+
+  @Column({ type: 'int', default: 0 })
+  score: number;
+
+  @Column({ name: 'assigned_to', nullable: true, type: 'uuid' })
+  assignedToId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'assigned_to' })
+  assignedTo: User;
 
   @Column({ type: 'jsonb', default: {} })
   attributes: Record<string, any>;

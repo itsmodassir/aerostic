@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contact } from './entities/contact.entity';
@@ -12,7 +12,7 @@ export class ContactsService {
     @InjectRepository(Contact)
     private contactsRepository: Repository<Contact>,
     private auditService: AuditService,
-  ) {}
+  ) { }
 
   async create(createContactDto: CreateContactDto): Promise<Contact> {
     const existing = await this.contactsRepository.findOneBy({
@@ -49,7 +49,30 @@ export class ContactsService {
   async findAll(tenantId: string): Promise<Contact[]> {
     return this.contactsRepository.find({
       where: { tenantId },
-      order: { name: 'ASC' },
+      order: { updatedAt: 'DESC' },
+      relations: ['assignedTo'],
     });
+  }
+
+  async findOne(id: string, tenantId: string): Promise<Contact> {
+    const contact = await this.contactsRepository.findOne({
+      where: { id, tenantId },
+      relations: ['assignedTo'],
+    });
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+    return contact;
+  }
+
+  async update(id: string, tenantId: string, updateData: Partial<Contact>): Promise<Contact> {
+    const contact = await this.findOne(id, tenantId);
+    Object.assign(contact, updateData);
+    return this.contactsRepository.save(contact);
+  }
+
+  async delete(id: string, tenantId: string): Promise<void> {
+    const contact = await this.findOne(id, tenantId);
+    await this.contactsRepository.remove(contact);
   }
 }
