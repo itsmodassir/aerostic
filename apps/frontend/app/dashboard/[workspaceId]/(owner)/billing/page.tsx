@@ -1,403 +1,295 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
-    Check, Zap, Building, Crown, CreditCard, AlertCircle,
-    MessageSquare, Bot, Users, FileText, ArrowRight, Clock,
-    TrendingUp, Shield, Sparkles
+    CheckCircle, XCircle, CreditCard, Calendar,
+    Shield, Zap, MessageSquare, Bot, ArrowRight,
+    Loader2, AlertTriangle, FileText, Download
 } from 'lucide-react';
 import api from '@/lib/api';
+import { useParams } from 'next/navigation';
 
 const PLANS = [
     {
         id: 'starter',
         name: 'Starter',
-        price: 1999,
-        description: 'Perfect for small businesses getting started',
-        color: 'gray',
+        price: '₹1,999',
+        description: 'Perfect for small businesses just getting started.',
         features: [
-            '10,000 messages/month',
-            '1 AI Agent',
-            'Basic templates',
-            'Email support',
-            '1,000 AI credits',
-        ],
-        limits: {
-            messages: 10000,
-            agents: 1,
-            aiCredits: 1000,
-        }
+            { name: '10,000 Messages/mo', included: true },
+            { name: '1 AI Agent', included: true },
+            { name: '1,000 AI Credits', included: true },
+            { name: 'Basic Templates', included: true },
+            { name: 'Email Support', included: true },
+            { name: 'API Access', included: false },
+            { name: 'Webhooks', included: false },
+            { name: 'Team Collaboration', included: false },
+        ]
     },
     {
         id: 'growth',
         name: 'Growth',
-        price: 4999,
-        description: 'For growing teams and businesses',
-        color: 'blue',
+        price: '₹4,999',
         popular: true,
+        description: 'For growing teams that need more power and flexibility.',
         features: [
-            '50,000 messages/month',
-            '5 AI Agents',
-            'Custom templates',
-            'Priority support',
-            'API access',
-            'Team collaboration',
-            'Webhooks',
-            '5,000 AI credits',
-        ],
-        limits: {
-            messages: 50000,
-            agents: 5,
-            aiCredits: 5000,
-        }
+            { name: '50,000 Messages/mo', included: true },
+            { name: '5 AI Agents', included: true },
+            { name: '5,000 AI Credits', included: true },
+            { name: 'Custom Templates', included: true },
+            { name: 'Priority Support', included: true },
+            { name: 'API Access', included: true },
+            { name: 'Webhooks', included: true },
+            { name: 'Team Collaboration', included: true },
+        ]
     },
     {
         id: 'enterprise',
         name: 'Enterprise',
-        price: 14999,
-        description: 'For large organizations with custom needs',
-        color: 'purple',
+        price: '₹14,999',
+        description: 'Advanced features and dedicated support for large scale.',
         features: [
-            'Unlimited messages',
-            'Unlimited AI Agents',
-            'White-label branding',
-            'Dedicated support',
-            'Custom integrations',
-            'SLA guarantee',
-            'On-premise option',
-            'Unlimited AI credits',
-        ],
-        limits: {
-            messages: -1,
-            agents: -1,
-            aiCredits: -1,
-        }
-    },
+            { name: 'Unlimited Messages', included: true },
+            { name: 'Unlimited AI Agents', included: true },
+            { name: 'Unlimited AI Credits', included: true },
+            { name: 'Custom Integrations', included: true },
+            { name: 'Dedicated Support', included: true },
+            { name: 'SLA Guarantee', included: true },
+            { name: 'On-premise Deployment', included: true },
+            { name: 'White Labeling', included: true },
+        ]
+    }
 ];
 
 export default function BillingPage() {
-    const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
     const [subscription, setSubscription] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-
-    // Usage data
-    const [usage, setUsage] = useState({
-        messagesUsed: 0,
-        aiCreditsUsed: 0,
-        agentsCreated: 0,
-    });
+    const [upgrading, setUpgrading] = useState<string | null>(null);
+    const [invoices, setInvoices] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchData();
+        fetchSubscription();
     }, []);
 
-    const fetchData = async () => {
+    const fetchSubscription = async () => {
         try {
-            const [subscriptionRes, analyticsRes] = await Promise.all([
-                api.get('/billing/subscription'),
-                api.get('/analytics/overview')
+            const res = await api.get('/billing/subscription');
+            if (res.data) {
+                setSubscription(res.data);
+            }
+            // Mock invoices corresponding to subscription
+            setInvoices([
+                { id: 'INV-001', date: '2025-05-01', amount: '₹1,999', status: 'paid' },
+                { id: 'INV-002', date: '2025-04-01', amount: '₹1,999', status: 'paid' },
+                { id: 'INV-003', date: '2025-03-01', amount: '₹1,999', status: 'paid' },
             ]);
-
-            if (subscriptionRes.data) {
-                const sub = subscriptionRes.data;
-                setSubscription(sub);
-                setUserPlan(sub.plan?.toLowerCase() || 'starter');
-            }
-
-            if (analyticsRes.data && analyticsRes.data.stats) {
-                const stats = analyticsRes.data.stats;
-                setUsage({
-                    messagesUsed: stats.totalSent || 0,
-                    aiCreditsUsed: stats.aiCreditsUsed || 0,
-                    agentsCreated: stats.totalAgents || 0,
-                });
-            }
         } catch (error) {
-            console.error('Failed to fetch billing data', error);
+            console.error('Failed to fetch subscription', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const currentPlan = PLANS.find(p => p.id === userPlan) || PLANS[0];
-    const annualDiscount = 0.2; // 20% off
-
-    const getPrice = (plan: typeof PLANS[0]) => {
-        if (billingCycle === 'annual') {
-            return Math.round(plan.price * (1 - annualDiscount));
+    const handleUpgrade = async (planId: string) => {
+        setUpgrading(planId);
+        try {
+            const res = await api.post('/billing/subscription/subscribe', { planId: `plan_${planId}` });
+            if (res.data && res.data.short_url) {
+                window.location.href = res.data.short_url; // Redirect to Razorpay payment page
+            } else {
+                alert('Failed to initiate upgrade. Please try again.');
+            }
+        } catch (error) {
+            console.error('Upgrade failed', error);
+            alert('Something went wrong. Please try again.');
+        } finally {
+            setUpgrading(null);
         }
-        return plan.price;
-    };
-
-    const getUsagePercent = (used: number, limit: number) => {
-        if (limit === -1) return 0;
-        return Math.min((used / limit) * 100, 100);
-    };
-
-    const getPlanIcon = (planId: string) => {
-        switch (planId) {
-            case 'starter': return <Zap className="w-6 h-6" />;
-            case 'growth': return <Building className="w-6 h-6" />;
-            case 'enterprise': return <Crown className="w-6 h-6" />;
-            default: return <CreditCard className="w-6 h-6" />;
-        }
-    };
-
-    const handleUpgrade = (planId: string) => {
-        // In real app, redirect to Razorpay
-        alert(`Upgrading to ${planId} plan. This would redirect to payment.`);
-    };
-
-    const handleRequestUpgrade = (planId: string) => {
-        alert(`Upgrade request sent to admin for ${planId} plan.`);
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            <div className="flex items-center justify-center min-h-[600px]">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
         );
     }
 
+    const currentPlanId = subscription?.plan || 'starter';
+
     return (
-        <div className="max-w-6xl mx-auto space-y-8">
-            {/* Header */}
+        <div className="max-w-7xl mx-auto space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Billing & Plans</h1>
-                <p className="text-gray-600 mt-1">Manage your subscription and usage</p>
+                <h1 className="text-3xl font-bold text-gray-900">Billing & Subscription</h1>
+                <p className="text-gray-500 mt-2">Manage your plan, billing details, and invoices</p>
             </div>
 
-            {/* Current Plan Card */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32" />
-
-                <div className="relative flex items-start justify-between">
-                    <div>
-                        <p className="text-blue-100 text-sm">Current Plan</p>
-                        <h2 className="text-3xl font-bold mt-1 flex items-center gap-3">
-                            {getPlanIcon(userPlan)}
-                            {currentPlan.name}
-                        </h2>
-                        <p className="text-blue-100 mt-2">{currentPlan.description}</p>
-
-                        <div className="flex items-center gap-4 mt-4">
-                            <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
-                                Active
-                            </span>
-                            <span className="text-sm text-blue-100">
-                                <Clock className="w-4 h-4 inline mr-1" />
-                                {subscription?.currentPeriodEnd
-                                    ? `Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                                    : 'Trial ends soon'}
-                            </span>
+            {/* Current Plan Overview */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+                <div className="flex flex-col md:flex-row justify-between gap-8">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <Shield className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Current Plan</h2>
+                                <p className="text-3xl font-extrabold text-blue-600 capitalize">{currentPlanId}</p>
+                            </div>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            Your plan renews on <span className="font-semibold text-gray-900">{new Date(subscription?.currentPeriodEnd || Date.now()).toLocaleDateString()}</span>
+                        </p>
+                        <div className="flex gap-3">
+                            {subscription?.status === 'active' ? (
+                                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" /> Active
+                                </span>
+                            ) : (
+                                <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4" /> {subscription?.status || 'Inactive'}
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    <div className="text-right">
-                        <p className="text-4xl font-bold">₹{currentPlan.price.toLocaleString()}</p>
-                        <p className="text-blue-100">/month</p>
-                    </div>
-                </div>
+                    {/* Usage Statistics */}
+                    <div className="flex-1 space-y-4">
+                        <h3 className="font-semibold text-gray-900 mb-2">Plan Usage</h3>
 
-                {/* Usage Bars */}
-                <div className="grid grid-cols-3 gap-6 mt-8 relative">
-                    <div>
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="flex items-center gap-1">
-                                <MessageSquare className="w-4 h-4" />
-                                Messages
-                            </span>
-                            <span>
-                                {usage.messagesUsed.toLocaleString()} / {currentPlan.limits.messages === -1 ? '∞' : currentPlan.limits.messages.toLocaleString()}
-                            </span>
+                        {/* Messages */}
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600 flex items-center gap-2"><MessageSquare className="w-4 h-4" /> Messages</span>
+                                <span className="font-medium">{subscription?.monthlyMessages?.toLocaleString() || 1000} / {PLANS.find(p => p.id === currentPlanId)?.features[0].name.split(' ')[0] || '10,000'}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                <div className="bg-blue-600 h-full rounded-full" style={{ width: '45%' }}></div>
+                            </div>
                         </div>
-                        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-white rounded-full transition-all"
-                                style={{ width: `${getUsagePercent(usage.messagesUsed, currentPlan.limits.messages)}%` }}
-                            />
-                        </div>
-                    </div>
 
-                    <div>
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="flex items-center gap-1">
-                                <Sparkles className="w-4 h-4" />
-                                AI Credits
-                            </span>
-                            <span>
-                                {usage.aiCreditsUsed.toLocaleString()} / {currentPlan.limits.aiCredits === -1 ? '∞' : currentPlan.limits.aiCredits.toLocaleString()}
-                            </span>
+                        {/* AI Credits */}
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600 flex items-center gap-2"><Zap className="w-4 h-4" /> AI Credits</span>
+                                <span className="font-medium">{subscription?.aiCredits?.toLocaleString() || 500} / {PLANS.find(p => p.id === currentPlanId)?.features[2].name.split(' ')[0] || '1,000'}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                <div className="bg-purple-600 h-full rounded-full" style={{ width: '25%' }}></div>
+                            </div>
                         </div>
-                        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-white rounded-full transition-all"
-                                style={{ width: `${getUsagePercent(usage.aiCreditsUsed, currentPlan.limits.aiCredits)}%` }}
-                            />
-                        </div>
-                    </div>
 
-                    <div>
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="flex items-center gap-1">
-                                <Bot className="w-4 h-4" />
-                                AI Agents
-                            </span>
-                            <span>
-                                {usage.agentsCreated} / {currentPlan.limits.agents === -1 ? '∞' : currentPlan.limits.agents}
-                            </span>
-                        </div>
-                        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-white rounded-full transition-all"
-                                style={{ width: `${getUsagePercent(usage.agentsCreated, currentPlan.limits.agents)}%` }}
-                            />
+                        {/* Agents */}
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600 flex items-center gap-2"><Bot className="w-4 h-4" /> Active Agents</span>
+                                <span className="font-medium">1 / {subscription?.maxAgents || 1}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                <div className="bg-green-600 h-full rounded-full" style={{ width: '10%' }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {/* Billing Cycle Toggle */}
-            <div className="flex items-center justify-center gap-4">
-                <span className={`text-sm ${billingCycle === 'monthly' ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
-                    Monthly
-                </span>
-                <button
-                    onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-                    className={`relative w-14 h-7 rounded-full transition-colors ${billingCycle === 'annual' ? 'bg-blue-600' : 'bg-gray-300'}`}
-                >
-                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${billingCycle === 'annual' ? 'translate-x-8' : 'translate-x-1'}`} />
-                </button>
-                <span className={`text-sm ${billingCycle === 'annual' ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
-                    Annual
-                </span>
-                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                    Save 20%
-                </span>
             </div>
 
             {/* Plans Grid */}
-            <div className="grid md:grid-cols-3 gap-6">
-                {PLANS.map((plan) => {
-                    const isCurrentPlan = plan.id === userPlan;
-                    const isUpgrade = PLANS.findIndex(p => p.id === plan.id) > PLANS.findIndex(p => p.id === userPlan);
-                    const isDowngrade = PLANS.findIndex(p => p.id === plan.id) < PLANS.findIndex(p => p.id === userPlan);
-
-                    return (
+            <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Upgrade your plan</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {PLANS.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative rounded-2xl border-2 p-6 transition-all ${isCurrentPlan
-                                ? 'border-blue-500 bg-blue-50'
-                                : plan.popular
-                                    ? 'border-purple-300 bg-purple-50/50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                            className={`bg-white rounded-2xl border p-6 flex flex-col transition-all ${currentPlanId === plan.id
+                                    ? 'border-blue-600 ring-2 ring-blue-600 ring-opacity-20 shadow-lg scale-[1.02]'
+                                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
                                 }`}
                         >
-                            {plan.popular && !isCurrentPlan && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
-                                    Popular
+                            {plan.popular && (
+                                <div className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-bold rounded-full w-fit mb-4">
+                                    MOST POPULAR
                                 </div>
                             )}
-
-                            {isCurrentPlan && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
-                                    Current Plan
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className={`p-2 rounded-xl ${plan.id === 'starter' ? 'bg-gray-100 text-gray-600' :
-                                    plan.id === 'growth' ? 'bg-blue-100 text-blue-600' :
-                                        'bg-purple-100 text-purple-600'
-                                    }`}>
-                                    {getPlanIcon(plan.id)}
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                                    <p className="text-sm text-gray-500">{plan.description}</p>
-                                </div>
-                            </div>
-
-                            <div className="mb-6">
-                                <span className="text-4xl font-bold text-gray-900">
-                                    ₹{getPrice(plan).toLocaleString()}
-                                </span>
+                            <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                            <div className="mt-2 mb-4">
+                                <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
                                 <span className="text-gray-500">/month</span>
-                                {billingCycle === 'annual' && (
-                                    <p className="text-sm text-green-600 mt-1">
-                                        Save ₹{(plan.price * 12 * annualDiscount).toLocaleString()}/year
-                                    </p>
-                                )}
                             </div>
+                            <p className="text-gray-500 text-sm mb-6">{plan.description}</p>
 
-                            <ul className="space-y-3 mb-6">
+                            <button
+                                onClick={() => handleUpgrade(plan.id)}
+                                disabled={currentPlanId === plan.id || upgrading !== null}
+                                className={`w-full py-2.5 rounded-xl font-medium transition-colors mb-6 flex items-center justify-center gap-2 ${currentPlanId === plan.id
+                                        ? 'bg-gray-100 text-gray-500 cursor-default'
+                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                            >
+                                {upgrading === plan.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {currentPlanId === plan.id ? 'Current Plan' : 'Upgrade Now'}
+                            </button>
+
+                            <div className="space-y-3 flex-1">
                                 {plan.features.map((feature, i) => (
-                                    <li key={i} className="flex items-start gap-2">
-                                        <Check className="w-5 h-5 text-green-500 shrink-0" />
-                                        <span className="text-gray-700 text-sm">{feature}</span>
-                                    </li>
+                                    <div key={i} className="flex items-center gap-3 text-sm">
+                                        {feature.included ? (
+                                            <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                                        ) : (
+                                            <XCircle className="w-5 h-5 text-gray-300 shrink-0" />
+                                        )}
+                                        <span className={feature.included ? 'text-gray-700' : 'text-gray-400'}>
+                                            {feature.name}
+                                        </span>
+                                    </div>
                                 ))}
-                            </ul>
-
-                            {isCurrentPlan ? (
-                                <button
-                                    disabled
-                                    className="w-full py-3 rounded-xl font-medium bg-gray-100 text-gray-400 cursor-not-allowed"
-                                >
-                                    Current Plan
-                                </button>
-                            ) : isUpgrade ? (
-                                <button
-                                    onClick={() => handleUpgrade(plan.id)}
-                                    className="w-full py-3 rounded-xl font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                                >
-                                    Upgrade <ArrowRight className="w-4 h-4" />
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleRequestUpgrade(plan.id)}
-                                    className="w-full py-3 rounded-xl font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
-                                >
-                                    Request Downgrade
-                                </button>
-                            )}
+                            </div>
                         </div>
-                    );
-                })}
-            </div>
-
-            {/* Payment Methods */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <CreditCard className="w-5 h-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Payment Methods</h3>
-                </div>
-                <p className="text-gray-600 mb-4">
-                    We accept all major payment methods via Razorpay: Credit/Debit Cards, UPI, Net Banking, Wallets.
-                </p>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <Shield className="w-5 h-5 text-green-500" />
-                    <span>Secure payments powered by Razorpay</span>
+                    ))}
                 </div>
             </div>
 
-            {/* Enterprise Banner */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white flex items-center justify-between">
-                <div>
-                    <h3 className="text-xl font-bold mb-2">Need a custom plan?</h3>
-                    <p className="text-purple-100">
-                        Contact us for enterprise pricing, custom integrations, and dedicated support.
-                    </p>
+            {/* Invoices */}
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-gray-500" />
+                        Billing History
+                    </h3>
                 </div>
-                <a
-                    href="mailto:support@aerostic.com"
-                    className="px-6 py-3 bg-white text-purple-600 rounded-xl font-medium hover:bg-purple-50 transition-colors"
-                >
-                    Contact Sales
-                </a>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 text-gray-500 font-medium">
+                            <tr>
+                                <th className="px-6 py-4">Invoice ID</th>
+                                <th className="px-6 py-4">Date</th>
+                                <th className="px-6 py-4">Amount</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {invoices.map((inv, i) => (
+                                <tr key={i} className="hover:bg-gray-50/50">
+                                    <td className="px-6 py-4 font-medium text-gray-900">{inv.id}</td>
+                                    <td className="px-6 py-4 text-gray-500">{new Date(inv.date).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 text-gray-900 font-medium">{inv.amount}</td>
+                                    <td className="px-6 py-4">
+                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 capitalize">
+                                            {inv.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button className="text-gray-400 hover:text-blue-600 transition-colors">
+                                            <Download className="w-4 h-4 ml-auto" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
