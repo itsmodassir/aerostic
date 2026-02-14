@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Res, Req, UseGuards, BadRequestException } from '@nestjs/common';
 import { GoogleService } from './google.service';
 import { ConfigService } from '@nestjs/config';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('google')
 export class GoogleController {
