@@ -46,6 +46,69 @@ export class WorkflowsService {
         return this.workflowRepo.delete({ id, tenantId });
     }
 
+    async executeTest(tenantId: string, workflowId: string, message: string) {
+        const workflow = await this.findOne(workflowId, tenantId);
+        if (!workflow) throw new Error('Workflow not found');
+
+        // Find the trigger node (usually the starting point)
+        const triggerNode = workflow.nodes.find(n => n.type === 'trigger');
+        if (!triggerNode) throw new Error('No Trigger node found');
+
+        this.logger.log(`Starting Test Execution for Workflow ${workflow.id}`);
+
+        // Mock Context
+        const context = {
+            from: 'TEST_USER',
+            contactId: 'test-contact-id',
+            messageBody: message,
+            contactName: 'Test User'
+        };
+
+        // Emit initial debug event
+        this.messagesGateway.emitWorkflowDebug(tenantId, {
+            workflowId: workflow.id,
+            nodeId: triggerNode.id,
+            status: 'processing'
+        });
+
+        // Start execution
+        await this.runNode(workflow, triggerNode.id, context, 0);
+
+        // Emit success for trigger
+        this.messagesGateway.emitWorkflowDebug(tenantId, {
+            workflowId: workflow.id,
+            nodeId: triggerNode.id,
+            status: 'completed'
+        });
+    }
+
+    async executeBroadcast(tenantId: string, workflowId: string, audience: any[]) {
+        const workflow = await this.findOne(workflowId, tenantId);
+        if (!workflow) throw new Error('Workflow not found');
+
+        const broadcastNode = workflow.nodes.find(n => n.type === 'broadcast_trigger');
+        if (!broadcastNode) throw new Error('No Broadcast Trigger node found');
+
+        this.logger.log(`Executing Broadcast for ${audience.length} contacts on workflow ${workflow.id}`);
+
+        // In a real implementation, we would push these to a Queue (BullMQ)
+        // For now, we process them in batch
+        for (const contact of audience) {
+            const context = {
+                from: contact.phone,
+                contactId: contact.id,
+                contactName: contact.name,
+                messageBody: 'BROADCAST_TRIGGER',
+                isBroadcast: true
+            };
+
+            // Run async to not block
+            this.runNode(workflow, broadcastNode.id, context, 0).catch(err =>
+                this.logger.error(`Broadcast failed for ${contact.id}: ${err.message}`)
+            );
+        }
+    }
+
     async executeTrigger(tenantId: string, triggerType: string, context: any) {
         const activeWorkflows = await this.workflowRepo.find({
             where: { tenantId, isActive: true },
