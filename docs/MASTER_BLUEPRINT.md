@@ -400,8 +400,10 @@ Core APIs required:
 Auth:
 
 ```
+```
 POST /auth/login
-POST /auth/register
+POST /auth/register/initiate (Req: name, email, phone, workspace, password)
+POST /auth/register (Req: otp + all above)
 ```
 
 WhatsApp:

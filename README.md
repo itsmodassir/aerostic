@@ -56,7 +56,7 @@ We provide a helper script to automate the entire setup:
 
 - [**Blueprint**](docs/BLUEPRINT.md) - System architecture and roadmap
 - [**Deployment Guide**](docs/ec2_deployment_guide.md) - **New!** AWS EC2 production setup
-- [**Troubleshooting Guide**](docs/troubleshooting) - **New!** Fixes for Meta OAuth, Permissions, and Redirects
+- [**Troubleshooting Guide**](docs/troubleshooting.md) - **New!** Fixes for Meta OAuth, Permissions, and Redirects
 - [**Admin Panel**](docs/admin_panel_guide.md) - **New!** Super admin system documentation
 - [**API Reference**](docs/api_reference.md) - Backend API endpoints
 - [**Walkthrough**](docs/walkthrough.md) - Feature tour and updates
