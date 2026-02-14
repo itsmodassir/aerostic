@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Globe } from 'lucide-react';
+import { ApiNodeData } from '@/types/workflow';
 
-const ApiNode = ({ data, id }: NodeProps) => {
+const ApiNode = ({ data, id }: NodeProps<ApiNodeData>) => {
     return (
         <div className="bg-white border-2 border-cyan-500 rounded-xl shadow-lg min-w-[300px] overflow-hidden">
             <Handle type="target" position={Position.Left} className="w-3 h-3 bg-cyan-500" />
@@ -17,10 +18,10 @@ const ApiNode = ({ data, id }: NodeProps) => {
                             data.method === 'PUT' ? 'bg-orange-500' :
                                 'bg-red-500'
                         }`}>
-                        {(data.method as string) || 'GET'}
+                        {data.method || 'GET'}
                     </span>
-                    <span className="text-xs font-mono truncate max-w-[200px]" title={data.url as string}>
-                        {(data.url as string) || 'https://api.example.com'}
+                    <span className="text-xs font-mono truncate max-w-[200px]" title={data.url}>
+                        {data.url || 'https://api.example.com'}
                     </span>
                 </div>
                 <p className="text-[10px] text-gray-500">
