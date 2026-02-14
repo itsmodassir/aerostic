@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plan } from './entities/plan.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 
 @Injectable()
 export class PlansService {
     constructor(
         @InjectRepository(Plan)
         private planRepo: Repository<Plan>,
+        @InjectRepository(Tenant)
+        private tenantRepo: Repository<Tenant>,
     ) { }
 
     async findAll() {
@@ -23,10 +26,21 @@ export class PlansService {
     }
 
     async create(createPlanDto: Partial<Plan>) {
-        const plan = this.planRepo.create(createPlanDto);
-        if (!plan.slug && plan.name) {
-            plan.slug = this.generateSlug(plan.name);
+        if (!createPlanDto.name) {
+            throw new BadRequestException('Plan name is required');
         }
+
+        const slug = this.generateSlug(createPlanDto.name);
+        const existing = await this.planRepo.findOneBy({ slug });
+        if (existing) {
+            throw new ConflictException(`Plan with name "${createPlanDto.name}" already exists`);
+        }
+
+        const plan = this.planRepo.create({
+            ...createPlanDto,
+            slug,
+        });
+
         return this.planRepo.save(plan);
     }
 
@@ -37,6 +51,11 @@ export class PlansService {
     }
 
     async remove(id: string) {
+        const usageCount = await this.tenantRepo.count({ where: { planId: id } });
+        if (usageCount > 0) {
+            throw new BadRequestException(`Cannot delete plan: it is currently assigned to ${usageCount} tenant(s).`);
+        }
+
         const plan = await this.findOne(id);
         return this.planRepo.remove(plan);
     }

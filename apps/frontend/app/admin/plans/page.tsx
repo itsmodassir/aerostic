@@ -148,12 +148,15 @@ export default function PlansPage() {
                 body: JSON.stringify(formData),
             });
 
-            if (!res.ok) throw new Error('Failed to save plan');
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to save plan');
+            }
 
             await fetchPlans();
             setIsModalOpen(false);
-        } catch (error) {
-            alert('Error saving plan');
+        } catch (error: any) {
+            alert(error.message || 'Error saving plan');
         } finally {
             setSaving(false);
         }
@@ -162,13 +165,19 @@ export default function PlansPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this plan?')) return;
         try {
-            await fetch(`${API_URL}/api/v1/admin/plans/${id}`, {
+            const res = await fetch(`${API_URL}/api/v1/admin/plans/${id}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to delete plan');
+            }
+
             fetchPlans();
-        } catch (error) {
-            alert('Error deleting plan');
+        } catch (error: any) {
+            alert(error.message || 'Error deleting plan');
         }
     };
 
