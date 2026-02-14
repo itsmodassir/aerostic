@@ -33,13 +33,15 @@ import {
     Settings2,
     Trash2,
     X,
-    Users
+    Users,
+    Megaphone
 } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
 // --- Custom Node Components ---
+// ... (omitted for brevity in instruction, but keep existing)
 
 const TriggerNode = ({ data }: NodeProps) => (
     <div className="bg-white border-2 border-amber-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
@@ -122,12 +124,27 @@ const LeadNode = ({ data }: NodeProps) => (
     </div>
 );
 
+const BroadcastNode = ({ data }: NodeProps) => (
+    <div className="bg-white border-2 border-pink-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
+        <div className="bg-pink-500 p-2 flex items-center gap-2 text-white">
+            <Megaphone size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Broadcast Trigger</span>
+        </div>
+        <div className="p-4">
+            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <p className="text-[10px] text-gray-500 mt-1">Triggers when a broadcast is sent</p>
+        </div>
+        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-pink-500" />
+    </div>
+);
+
 const nodeTypes = {
     trigger: TriggerNode,
     action: ActionNode,
     ai_agent: AiNode,
     condition: ConditionNode,
     lead_update: LeadNode,
+    broadcast_trigger: BroadcastNode,
 };
 
 // --- Main Builder Component ---
@@ -135,24 +152,55 @@ const nodeTypes = {
 function WorkflowBuilder() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const workspaceId = params.workspaceId as string;
+    const template = searchParams.get('template');
 
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const [name, setName] = useState('New Automation');
     const [loading, setLoading] = useState(false);
+    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
     // Initialize with dummy data or fetch if editing
     useEffect(() => {
-        setNodes([
-            {
-                id: '1',
-                type: 'trigger',
-                data: { label: 'New Message', triggerType: 'new_message' },
-                position: { x: 100, y: 100 },
-            },
-        ]);
-    }, []);
+        if (template === 'ai-sales') {
+            setName('AI Sales Assistant');
+            setNodes([
+                { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 100 } },
+                { id: '2', type: 'ai_agent', data: { label: 'AI Assistant', persona: 'Proactive Sales Expert' }, position: { x: 400, y: 100 } },
+                { id: '3', type: 'lead_update', data: { label: 'Update Status: Warm', status: 'warm' }, position: { x: 700, y: 100 } },
+            ]);
+            setEdges([
+                { id: 'e1-2', source: '1', target: '2' },
+                { id: 'e2-3', source: '2', target: '3' },
+            ]);
+        } else if (template === 'auto-welcome') {
+            setName('Auto-Welcome');
+            setNodes([
+                { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 150 } },
+                { id: '2', type: 'action', data: { label: 'Welcome Reply', message: 'Hi there! Thanks for reaching out. An agent will be with you shortly.' }, position: { x: 400, y: 150 } },
+            ]);
+            setEdges([{ id: 'e1-2', source: '1', target: '2' }]);
+        } else if (template === 'keyword-router') {
+            setName('Keyword Router: Pricing');
+            setNodes([
+                { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 200 } },
+                { id: '2', type: 'condition', data: { label: 'Check "Price"', keyword: 'price', operator: 'contains' }, position: { x: 400, y: 200 } },
+                { id: '3', type: 'action', data: { label: 'Send Pricing PDF', message: 'Here is our pricing structure: [Link]' }, position: { x: 750, y: 150 } },
+            ]);
+            setEdges([{ id: 'e1-2', source: '1', target: '2' }, { id: 'e2-3', source: '2', target: '3', sourceHandle: 'true' }]);
+        } else {
+            setNodes([
+                {
+                    id: '1',
+                    type: 'trigger',
+                    data: { label: 'New Message', triggerType: 'new_message' },
+                    position: { x: 100, y: 100 },
+                },
+            ]);
+        }
+    }, [template]);
 
     const onNodesChange = useCallback(
         (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -177,15 +225,39 @@ function WorkflowBuilder() {
             case 'ai_agent': label = 'AI Assistant'; break;
             case 'condition': label = 'Keyword Check'; break;
             case 'lead_update': label = 'Update Status'; break;
+            case 'broadcast_trigger': label = 'Campaign Sent'; break;
             default: label = 'New Node';
         }
         const newNode: Node = {
             id,
             type,
             position: { x: Math.random() * 400, y: Math.random() * 400 },
-            data: { label },
+            data: {
+                label,
+                ...(type === 'action' && { message: 'Hello! How can I help you today?' }),
+                ...(type === 'ai_agent' && { persona: 'Helpful Assistant' }),
+                ...(type === 'condition' && { keyword: 'hi', operator: 'equals' }),
+                ...(type === 'lead_update' && { status: 'warm' }),
+            },
         };
         setNodes((nds) => nds.concat(newNode));
+    };
+
+    const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        setSelectedNode(node);
+    }, []);
+
+    const updateNodeData = (newData: any) => {
+        if (!selectedNode) return;
+        setNodes((nds) =>
+            nds.map((node) => {
+                if (node.id === selectedNode.id) {
+                    return { ...node, data: { ...node.data, ...newData } };
+                }
+                return node;
+            })
+        );
+        setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...newData } });
     };
 
     const isValidConnection = useCallback(
@@ -270,6 +342,8 @@ function WorkflowBuilder() {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
+                    onNodeClick={onNodeClick}
+                    onPaneClick={() => setSelectedNode(null)}
                     nodeTypes={nodeTypes}
                     isValidConnection={isValidConnection}
                     fitView
@@ -296,8 +370,121 @@ function WorkflowBuilder() {
                             <Users size={20} />
                             <span className="text-sm font-bold">Update Lead</span>
                         </button>
+                        <button onClick={() => addNode('broadcast_trigger')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Megaphone size={20} />
+                            <span className="text-sm font-bold">Broadcast</span>
+                        </button>
                     </Panel>
                 </ReactFlow>
+
+                {/* Node Editor Side Panel */}
+                {selectedNode && (
+                    <div className="absolute top-0 right-0 h-full w-80 bg-white border-l shadow-2xl z-20 animate-in slide-in-from-right duration-300">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-lg font-bold text-gray-900">Configure Node</h3>
+                                <button onClick={() => setSelectedNode(null)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Node Label</label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.label as string}
+                                        onChange={(e) => updateNodeData({ label: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                    />
+                                </div>
+
+                                {selectedNode.type === 'action' && (
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Reply Message</label>
+                                        <textarea
+                                            value={selectedNode.data.message as string}
+                                            onChange={(e) => updateNodeData({ message: e.target.value })}
+                                            rows={4}
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            placeholder="Enter the WhatsApp message to send..."
+                                        />
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'ai_agent' && (
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Agent Persona / Name</label>
+                                        <input
+                                            type="text"
+                                            value={selectedNode.data.persona as string}
+                                            onChange={(e) => updateNodeData({ persona: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            placeholder="e.g. Sales Expert"
+                                        />
+                                        <p className="text-[10px] text-gray-500 mt-2">The AI will adopt this persona when responding to users.</p>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'condition' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Keyword to Match</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.keyword as string}
+                                                onChange={(e) => updateNodeData({ keyword: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Operator</label>
+                                            <select
+                                                value={selectedNode.data.operator as string}
+                                                onChange={(e) => updateNodeData({ operator: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            >
+                                                <option value="equals">Equals to</option>
+                                                <option value="contains">Contains</option>
+                                                <option value="starts_with">Starts with</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'lead_update' && (
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Update Status to</label>
+                                        <select
+                                            value={selectedNode.data.status as string}
+                                            onChange={(e) => updateNodeData({ status: e.target.value })}
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                        >
+                                            <option value="new">New</option>
+                                            <option value="warm">Warm</option>
+                                            <option value="hot">Hot</option>
+                                            <option value="contacted">Contacted</option>
+                                            <option value="closed">Closed</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                <div className="pt-6 border-t mt-6">
+                                    <button
+                                        onClick={() => {
+                                            setNodes(nds => nds.filter(n => n.id !== selectedNode.id));
+                                            setSelectedNode(null);
+                                        }}
+                                        className="w-full py-3 text-red-600 font-bold hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete Node
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

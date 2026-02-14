@@ -13,6 +13,9 @@ import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
 
 
+import { useSocket } from '@/context/SocketContext';
+import { SocketProvider } from '@/context/SocketContext';
+
 const PLAN_COLORS = {
     starter: { bg: 'bg-gray-100', text: 'text-gray-700', name: 'Starter' },
     growth: { bg: 'bg-blue-100', text: 'text-blue-700', name: 'Growth' },
@@ -20,6 +23,14 @@ const PLAN_COLORS = {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <SocketProvider>
+            <DashboardContent>{children}</DashboardContent>
+        </SocketProvider>
+    );
+}
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const params = useParams();
@@ -48,8 +59,67 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const { socket, isConnected } = useSocket();
+
+    // 1. Initial State from LocalStorage
+    useEffect(() => {
+        const savedSound = localStorage.getItem('sound_enabled');
+        if (savedSound === null) {
+            localStorage.setItem('sound_enabled', 'true'); // Default ON
+        }
+
+        const savedCollapsed = localStorage.getItem('sidebar_collapsed');
+        if (savedCollapsed === 'true') {
+            setIsSidebarCollapsed(true);
+        }
+    }, []);
+
+    const toggleSidebarCollapse = () => {
+        const newState = !isSidebarCollapsed;
+        setIsSidebarCollapsed(newState);
+        localStorage.setItem('sidebar_collapsed', newState.toString());
+    };
+
+    // 2. Real-time Notifications & Sound
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewMessage = (payload: any) => {
+            console.log('[Dashboard] New Notification:', payload);
+
+            // Don't duplicate if already in inbox for this conversation
+            // (The inbox page handles its own state, but we want a global alert)
+
+            // Add to notification list
+            setNotifications(prev => [
+                {
+                    id: Date.now(),
+                    title: 'New message received',
+                    message: `From ${payload.phone}`,
+                    time: 'Just now',
+                    unread: true
+                },
+                ...prev.slice(0, 9) // Keep last 10
+            ]);
+
+            // Play sound if enabled
+            const soundEnabled = localStorage.getItem('sound_enabled') !== 'false';
+            if (soundEnabled) {
+                if (!audioRef.current) {
+                    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                }
+                audioRef.current.play().catch(e => console.log('Sound blocked by browser policy'));
+            }
+        };
+
+        socket.on('newMessage', handleNewMessage);
+        return () => { socket.off('newMessage', handleNewMessage); };
+    }, [socket]);
 
     // Set plan based on user info
     useEffect(() => {
@@ -118,8 +188,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
     }, [workspaceId, user, router]);
 
-    // Demo notifications
-    const [notifications] = useState([
+    // notifications
+    const [notifications, setNotifications] = useState([
         { id: 1, title: 'New message received', message: 'From +91 98765 43210', time: '2m ago', unread: true },
         { id: 2, title: 'Campaign completed', message: 'Welcome Series sent to 150 contacts', time: '1h ago', unread: true },
         { id: 3, title: 'AI Agent resolved', message: 'Support bot handled 5 queries', time: '3h ago', unread: false },
@@ -177,18 +247,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Sidebar */}
             <aside className={clsx(
-                "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-background transition-transform duration-300 sm:translate-x-0",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-all duration-300 sm:translate-x-0",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+                isSidebarCollapsed ? "w-20" : "w-64"
             )}>
-                <div className="flex h-16 items-center px-6 border-b">
+                <div className="flex h-16 items-center px-4 border-b justify-between">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+                    <Link href="/" className={clsx(
+                        "flex items-center gap-2 font-bold text-xl text-primary overflow-hidden transition-all",
+                        isSidebarCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                    )}>
                         <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain" />
                         <span>Aerostic</span>
                     </Link>
+
+                    {/* Collapse Toggle (Desktop only) */}
+                    <button
+                        onClick={toggleSidebarCollapse}
+                        className="hidden sm:flex p-1.5 hover:bg-muted rounded-md text-muted-foreground transition-colors"
+                    >
+                        {isSidebarCollapsed ? <Crown className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 -rotate-90" />}
+                    </button>
+
+                    {/* Mobile Logo Placeholder when sidebar hidden/collapsed */}
+                    {isSidebarCollapsed && (
+                        <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain sm:block hidden" />
+                    )}
                 </div>
-                <div className="px-4 py-4 border-b">
-                    <WorkspaceSwitcher />
+                <div className={clsx("px-4 py-4 border-b", isSidebarCollapsed && "px-2")}>
+                    <WorkspaceSwitcher isCollapsed={isSidebarCollapsed} />
                 </div>
                 <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                     {visibleNavigation.map((item) => {
@@ -199,16 +286,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 key={item.name}
                                 href={item.href}
                                 className={clsx(
-                                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                                    'flex items-center rounded-lg text-sm font-medium transition-all duration-200',
+                                    isSidebarCollapsed ? 'justify-center p-2.5 mx-2' : 'gap-3 px-3 py-2.5',
                                     isActive
                                         ? 'bg-primary text-primary-foreground shadow-md'
                                         : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                                     (item as any).adminOnly && !isActive && 'border border-purple-200 bg-purple-50/50'
                                 )}
+                                title={isSidebarCollapsed ? item.name : undefined}
                             >
-                                <item.icon className={clsx("w-4 h-4", isActive ? "text-white" : "text-muted-foreground")} />
-                                <span>{item.name}</span>
-                                {(item as any).adminOnly && !isActive && (
+                                <item.icon className={clsx("w-4 h-4 shrink-0", isActive ? "text-white" : "text-muted-foreground")} />
+                                {!isSidebarCollapsed && <span>{item.name}</span>}
+                                {(item as any).adminOnly && !isActive && !isSidebarCollapsed && (
                                     <Shield className="w-3 h-3 text-purple-500 ml-auto" />
                                 )}
                             </Link>
@@ -218,19 +307,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="p-4 border-t bg-muted/20">
                     <button
                         onClick={logout}
-                        className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors"
+                        className={clsx(
+                            "flex items-center text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors",
+                            isSidebarCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
+                        )}
+                        title={isSidebarCollapsed ? "Logout" : undefined}
                     >
                         <LogOut className="w-4 h-4" />
-                        Logout
+                        {!isSidebarCollapsed && <span>Logout</span>}
                     </button>
-                    <div className="mt-4 text-[10px] text-center text-muted-foreground uppercase tracking-widest font-semibold">
-                        v1.0.0 Alpha
-                    </div>
+                    {!isSidebarCollapsed && (
+                        <div className="mt-4 text-[10px] text-center text-muted-foreground uppercase tracking-widest font-semibold">
+                            v1.0.0 Alpha
+                        </div>
+                    )}
                 </div>
             </aside>
 
             {/* Main Content */}
-            <div className="flex flex-col sm:ml-64 w-full min-h-screen">
+            <div className={clsx(
+                "flex flex-col w-full min-h-screen transition-all duration-300",
+                isSidebarCollapsed ? "sm:pl-20" : "sm:pl-64"
+            )}>
                 <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 md:px-8 shadow-sm">
                     <div className="flex items-center gap-4">
                         <button

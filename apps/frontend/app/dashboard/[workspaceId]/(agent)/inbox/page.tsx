@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocket } from '@/context/SocketContext';
 import {
     Send, Search, User, Filter, MoreVertical, Phone, Video,
     Check, CheckCheck, Clock, AlertCircle, Smile, Paperclip,
@@ -47,7 +48,7 @@ interface Message {
     direction: 'in' | 'out';
     type: 'text' | 'image' | 'document' | 'audio' | 'template';
     content: any;
-    status: 'sent' | 'delivered' | 'read' | 'failed';
+    status: 'sent' | 'delivered' | 'read' | 'failed' | 'received';
     createdAt: string;
     sender?: TeamMember;
 }
@@ -81,6 +82,7 @@ export default function InboxPage() {
 
     const params = useParams();
     const { user } = useAuth();
+    const { socket, joinTenant, leaveTenant, isConnected } = useSocket();
 
     // Init: Get user info and team members
     useEffect(() => {
@@ -106,6 +108,9 @@ export default function InboxPage() {
                         status: 'online',
                     });
 
+                    // Join tenant room
+                    joinTenant(tid);
+
                     // Fetch real team members
                     try {
                         const teamRes = await api.get(`/users?tenantId=${tid}`);
@@ -130,9 +135,67 @@ export default function InboxPage() {
         if (user) {
             initInbox();
         }
-    }, [user, params.workspaceId]);
 
-    // Fetch conversations from API
+        return () => {
+            if (tenantId) leaveTenant(tenantId);
+        };
+    }, [user, params.workspaceId, joinTenant, leaveTenant, tenantId]);
+
+    // Handle Real-time Socket Events
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewMessage = (payload: any) => {
+            console.log('[Inbox] New Socket Message:', payload);
+
+            // 1. Update messages list if this conversation is active
+            if (selectedConversation?.id === payload.conversationId) {
+                const newMessage: Message = {
+                    id: payload.id || `msg-${Date.now()}`,
+                    direction: payload.direction,
+                    type: payload.type,
+                    content: payload.content,
+                    status: 'received',
+                    createdAt: payload.timestamp || new Date().toISOString(),
+                };
+                setMessages(prev => [...prev, newMessage]);
+            }
+
+            // 2. Update conversations list (last message, unread count)
+            setConversations(prev => prev.map(conv => {
+                if (conv.id === payload.conversationId) {
+                    return {
+                        ...conv,
+                        lastMessage: payload.content.body || payload.type,
+                        lastMessageAt: payload.timestamp || new Date().toISOString(),
+                        unreadCount: selectedConversation?.id === payload.conversationId
+                            ? conv.unreadCount
+                            : conv.unreadCount + 1
+                    };
+                }
+                return conv;
+            }));
+        };
+
+        const handleMessageStatus = (payload: any) => {
+            console.log('[Inbox] Message Status Update:', payload);
+            setMessages(prev => prev.map(m =>
+                (m.id === payload.messageId || (m as any).metaMessageId === payload.metaMessageId)
+                    ? { ...m, status: payload.status }
+                    : m
+            ));
+        };
+
+        socket.on('newMessage', handleNewMessage);
+        socket.on('messageStatus', handleMessageStatus);
+
+        return () => {
+            socket.off('newMessage', handleNewMessage);
+            socket.off('messageStatus', handleMessageStatus);
+        };
+    }, [socket, selectedConversation?.id]);
+
+    // Fetch conversations from API (Initial load only, then sync via socket)
     useEffect(() => {
         if (!tenantId) return;
         const fetchConvs = async () => {
@@ -156,11 +219,9 @@ export default function InboxPage() {
             }
         };
         fetchConvs();
-        const interval = setInterval(fetchConvs, 10000);
-        return () => clearInterval(interval);
     }, [tenantId]);
 
-    // Fetch messages when conversation selected
+    // Fetch messages when conversation selected (Initial load)
     useEffect(() => {
         if (!selectedConversation) {
             setMessages([]);
@@ -181,9 +242,7 @@ export default function InboxPage() {
         };
 
         fetchMsgs();
-        const interval = setInterval(fetchMsgs, 5000);
-        return () => clearInterval(interval);
-    }, [selectedConversation, tenantId]);
+    }, [selectedConversation?.id, tenantId]);
 
     // Scroll to bottom on new messages
     useEffect(() => {

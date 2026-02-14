@@ -13,7 +13,7 @@ interface Workspace {
     role: 'owner' | 'admin' | 'agent' | 'viewer';
 }
 
-export function WorkspaceSwitcher() {
+export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
@@ -88,15 +88,23 @@ export function WorkspaceSwitcher() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg border bg-background hover:bg-muted font-medium text-sm transition-all shadow-sm w-full max-w-[240px]"
+                className={clsx(
+                    "flex items-center rounded-lg border bg-background hover:bg-muted font-medium text-sm transition-all shadow-sm w-full",
+                    isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2 max-w-[240px]"
+                )}
+                title={isCollapsed ? (activeWorkspace?.name || 'Select Workspace') : undefined}
             >
-                <div className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs uppercase">
+                <div className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs uppercase shrink-0">
                     {(activeWorkspace?.name || 'A')[0]}
                 </div>
-                <span className="truncate flex-1 text-left">
-                    {activeWorkspace?.name || 'Select Workspace'}
-                </span>
-                <ChevronDown className={clsx("w-4 h-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+                {!isCollapsed && (
+                    <>
+                        <span className="truncate flex-1 text-left">
+                            {activeWorkspace?.name || 'Select Workspace'}
+                        </span>
+                        <ChevronDown className={clsx("w-4 h-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+                    </>
+                )}
             </button>
 
             {open && (

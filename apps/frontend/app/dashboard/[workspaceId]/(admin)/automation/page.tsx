@@ -6,7 +6,9 @@ import {
     Zap,
     Trash2,
     MoreVertical,
-    ArrowRight
+    ArrowRight,
+    Bot,
+    MessageSquare
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
@@ -77,6 +79,48 @@ export default function AutomationPage() {
                     <Plus size={20} />
                     New Workflow
                 </Link>
+            </div>
+
+            {/* Template Library */}
+            <div className="grid grid-cols-3 gap-6">
+                {[
+                    {
+                        id: 'ai-sales',
+                        name: 'AI Sales Assistant',
+                        desc: 'Intelligent AI response that updates lead status.',
+                        icon: Bot,
+                        color: 'bg-purple-100 text-purple-600'
+                    },
+                    {
+                        id: 'auto-welcome',
+                        name: 'Auto-Welcome',
+                        desc: 'Instantly reply to new customers who message you.',
+                        icon: MessageSquare,
+                        color: 'bg-blue-100 text-blue-600'
+                    },
+                    {
+                        id: 'keyword-router',
+                        name: 'Keyword Router',
+                        desc: 'Send specific info based on words like "Price" or "Demo".',
+                        icon: Zap,
+                        color: 'bg-amber-100 text-amber-600'
+                    },
+                ].map((tpl) => (
+                    <Link
+                        key={tpl.id}
+                        href={`/dashboard/${workspaceId}/automation/builder?template=${tpl.id}`}
+                        className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group relative overflow-hidden"
+                    >
+                        <div className={`p-3 rounded-xl w-fit mb-4 ${tpl.color}`}>
+                            <tpl.icon size={24} />
+                        </div>
+                        <h4 className="font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{tpl.name}</h4>
+                        <p className="text-xs text-gray-500 leading-relaxed">{tpl.desc}</p>
+                        <div className="mt-4 flex items-center gap-1.5 text-blue-600 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                            Use Template <ArrowRight size={12} />
+                        </div>
+                    </Link>
+                ))}
             </div>
 
             <div className="grid grid-cols-1 gap-4">

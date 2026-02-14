@@ -6,7 +6,8 @@ import { useParams } from 'next/navigation';
 import {
     Facebook, Settings, CheckCircle, XCircle, AlertCircle,
     Key, Globe, Shield, ArrowRight, Copy, Eye, EyeOff,
-    Clock, Mail, Phone, Building2, Send, RefreshCw
+    Clock, Mail, Phone, Building2, Send, RefreshCw,
+    Volume2, VolumeX
 } from 'lucide-react';
 import FacebookSDKLoader, { launchWhatsAppSignup } from '@/components/FacebookSDKLoader';
 import AccountDetailsCard from '@/components/whatsapp/AccountDetailsCard';
@@ -41,6 +42,19 @@ export default function WhatsappSettingsPage() {
     const [accountDetails, setAccountDetails] = useState<any>(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [soundEnabled, setSoundEnabled] = useState(true);
+
+    // Load sound preference
+    useEffect(() => {
+        const saved = localStorage.getItem('sound_enabled');
+        setSoundEnabled(saved !== 'false');
+    }, []);
+
+    const toggleSound = () => {
+        const newState = !soundEnabled;
+        setSoundEnabled(newState);
+        localStorage.setItem('sound_enabled', newState.toString());
+    };
 
     // Meta Config
     const [metaConfig, setMetaConfig] = useState<{ appId: string, configId: string, redirectUri: string } | null>(null);
@@ -417,6 +431,36 @@ export default function WhatsappSettingsPage() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Notification Preferences */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${soundEnabled ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                            {soundEnabled ? (
+                                <Volume2 className="w-6 h-6 text-blue-600" />
+                            ) : (
+                                <VolumeX className="w-6 h-6 text-gray-600" />
+                            )}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900">Notification Preferences</h3>
+                            <p className="text-sm text-gray-500">Manage how you get alerted for new messages</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-700">Sound Notifications</span>
+                        <button
+                            onClick={toggleSound}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${soundEnabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${soundEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                            />
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Account Details Section - Only show when connected */}
