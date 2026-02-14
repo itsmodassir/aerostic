@@ -27,7 +27,7 @@ export class UsersService {
     private tenantsRepository: Repository<Tenant>,
     @InjectRepository(TenantMembership)
     private membershipRepository: Repository<TenantMembership>,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.usersRepository.findOneBy({
@@ -120,7 +120,7 @@ export class UsersService {
         email: adminEmail,
         password: 'admin123',
         name: 'System Admin',
-        role: UserRole.USER,
+        role: UserRole.SUPER_ADMIN,
       });
 
       await this.membershipRepository.save(
@@ -134,6 +134,7 @@ export class UsersService {
 
     // List of System Accounts to force-sync on every restart
     const systemAccounts = [
+      { email: 'admin@aerostic.in', name: 'System Admin' },
       { email: 'md@modassir.info', name: 'Modassir' },
       { email: 'mdrive492@gmail.com', name: 'Md Modassir' },
     ];
