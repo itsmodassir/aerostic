@@ -1160,15 +1160,13 @@ function WorkflowBuilder() {
                         Delete Node
                     </button>
                 </div>
-
             </div>
         </div>
-    </div >
-)
+    )
 }
-</div >
-</div >
-);
+            </div >
+        </div >
+    );
 }
 
 export default function BuilderPage() {
