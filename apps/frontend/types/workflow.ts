@@ -55,6 +55,7 @@ export interface TriggerNodeData extends BaseNodeData {
     webhookUrl?: string;
     schedule?: string; // Cron expression
     eventType?: string;
+    workflowId?: string;
 }
 
 /**
@@ -129,6 +130,7 @@ export interface ContactNodeData extends BaseNodeData {
     contactId?: string;
     fields?: Record<string, string>;
     variableName?: string;
+    matchField?: 'phone' | 'email';
 }
 
 /**
@@ -137,6 +139,7 @@ export interface ContactNodeData extends BaseNodeData {
 export interface TemplateNodeData extends BaseNodeData {
     templateId: string;
     templateName?: string;
+    language?: string;
     variables?: Record<string, string>;
 }
 
@@ -150,6 +153,7 @@ export interface EmailNodeData extends BaseNodeData {
     cc?: string;
     bcc?: string;
     attachments?: string[];
+    provider?: 'smtp' | 'resend' | 'sendgrid';
 }
 
 /**

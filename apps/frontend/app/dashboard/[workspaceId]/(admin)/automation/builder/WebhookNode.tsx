@@ -1,11 +1,12 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { Webhook } from 'lucide-react';
+import { TriggerNodeData } from '@/types/workflow';
 
-const WebhookNode = ({ data, id }: NodeProps) => {
+const WebhookNode = ({ data, id }: NodeProps<WorkflowUIFlowNode<TriggerNodeData>>) => {
     // Construct the webhook URL based on the current environment and workflow ID
     // In a real app, this might come from an env var or context
-    const webhookUrl = `https://api.aerostic.com/automation/webhooks/${data.workflowId || 'WORKFLOW_ID'}`;
+    const webhookUrl = `https://api.aerostic.com/automation/webhooks/${(data as any).workflowId || 'WORKFLOW_ID'}`;
 
     return (
         <div className="bg-white border-2 border-pink-500 rounded-xl shadow-lg min-w-[300px] overflow-hidden">

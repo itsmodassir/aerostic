@@ -7,7 +7,7 @@ import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import {
     LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut, Bell,
     Megaphone, FileText, Bot, Shield, User, CreditCard, HelpCircle,
-    ChevronDown, Crown, Check, Menu, BarChart2, Calendar, Gift, Target
+    ChevronDown, Crown, Check, Menu, BarChart2, Calendar, Gift, Target, Globe
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
@@ -47,6 +47,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
         { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
         { name: 'AI Agent', href: `/dashboard/${workspaceId}/agents`, icon: Bot, permission: 'automation:create' },
+        { name: 'Knowledge Base', href: `/dashboard/${workspaceId}/knowledge`, icon: Globe, permission: 'automation:create' },
         { name: 'Scheduler', href: `/dashboard/${workspaceId}/scheduler`, icon: Calendar },
         { name: 'Settings', href: `/dashboard/${workspaceId}/settings/whatsapp`, icon: Settings, permission: 'billing:manage' },
         { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals`, icon: Gift },

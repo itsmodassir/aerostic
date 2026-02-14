@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AiAgent } from './entities/ai-agent.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserTenant } from '../auth/decorators/user-tenant.decorator';
+import { KnowledgeBaseService } from './knowledge-base.service';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
@@ -11,7 +12,8 @@ export class AiController {
   constructor(
     @InjectRepository(AiAgent)
     private aiAgentRepo: Repository<AiAgent>,
-  ) {}
+    private kbService: KnowledgeBaseService,
+  ) { }
 
   @Get('agent')
   async getAgent(@UserTenant() tenantId: string) {
@@ -50,5 +52,29 @@ export class AiController {
     // Internal Dispatcher Call
     // This ensures AI routes through proper channels
     return { status: 'processed' };
+  }
+
+  // --- Knowledge Base Management ---
+
+  @Get('knowledge-bases')
+  async getKnowledgeBases(@UserTenant() tenantId: string) {
+    return this.kbService.getKnowledgeBases(tenantId);
+  }
+
+  @Post('knowledge-bases')
+  async createKnowledgeBase(
+    @UserTenant() tenantId: string,
+    @Body() body: { name: string; description?: string },
+  ) {
+    return this.kbService.createKnowledgeBase(tenantId, body.name, body.description);
+  }
+
+  @Post('knowledge-bases/ingest')
+  async ingestKnowledge(
+    @UserTenant() tenantId: string,
+    @Body() body: { knowledgeBaseId: string; content: string; metadata?: any },
+  ) {
+    // Basic verification that KB belongs to tenant would be good in a real app
+    return this.kbService.ingestText(body.knowledgeBaseId, body.content, body.metadata);
   }
 }

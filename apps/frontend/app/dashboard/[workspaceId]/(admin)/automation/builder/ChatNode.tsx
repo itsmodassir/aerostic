@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { MessageSquare, UserCheck } from 'lucide-react';
+import { ChatNodeData } from '@/types/workflow';
 
-const ChatNode = ({ data }: NodeProps) => {
+const ChatNode = ({ data }: NodeProps<WorkflowUIFlowNode<ChatNodeData>>) => {
     return (
         <div className="bg-white border-2 border-indigo-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
             <Handle type="target" position={Position.Left} className="w-3 h-3 bg-indigo-500" />

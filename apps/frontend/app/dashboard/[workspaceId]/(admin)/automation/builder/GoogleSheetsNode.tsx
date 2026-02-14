@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps, Node } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { FileSpreadsheet } from 'lucide-react';
 
 interface GoogleSheetsNodeData extends Record<string, unknown> {
@@ -8,7 +8,7 @@ interface GoogleSheetsNodeData extends Record<string, unknown> {
     operation?: string;
 }
 
-const GoogleSheetsNode = ({ data, selected }: NodeProps<Node<GoogleSheetsNodeData>>) => {
+const GoogleSheetsNode = ({ data, selected }: NodeProps<WorkflowUIFlowNode<GoogleSheetsNodeData>>) => {
     return (
         <div className={`bg-white border-2 rounded-xl shadow-lg min-w-[250px] overflow-hidden transition-all duration-200 ${selected ? 'border-green-500 ring-2 ring-green-100' : 'border-green-200 hover:border-green-300'}`}>
             {/* Header */}

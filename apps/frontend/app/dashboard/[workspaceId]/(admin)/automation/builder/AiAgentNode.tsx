@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { Bot, Wrench, Cpu } from 'lucide-react';
+import { AiAgentNodeData } from '@/types/workflow';
 
-const AiAgentNode = ({ data, id }: NodeProps) => {
+const AiAgentNode = ({ data, id }: NodeProps<WorkflowUIFlowNode<AiAgentNodeData>>) => {
     return (
         <div className="bg-white border-2 border-purple-600 rounded-xl shadow-lg min-w-[300px] overflow-hidden">
             {/* Flow Inputs */}
@@ -27,7 +28,7 @@ const AiAgentNode = ({ data, id }: NodeProps) => {
 
             <div className="p-4 space-y-2">
                 <p className="text-xs text-gray-600 line-clamp-2">
-                    {data.systemPrompt ? (data.systemPrompt as string) : "I am a helpful assistant..."}
+                    {data.systemPrompt || "I am a helpful assistant..."}
                 </p>
 
                 <div className="flex gap-2">

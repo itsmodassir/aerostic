@@ -1,9 +1,9 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { Globe } from 'lucide-react';
 import { ApiNodeData } from '@/types/workflow';
 
-const ApiNode = ({ data, id }: NodeProps<ApiNodeData>) => {
+const ApiNode = ({ data, id }: NodeProps<WorkflowUIFlowNode<ApiNodeData>>) => {
     return (
         <div className="bg-white border-2 border-cyan-500 rounded-xl shadow-lg min-w-[300px] overflow-hidden">
             <Handle type="target" position={Position.Left} className="w-3 h-3 bg-cyan-500" />

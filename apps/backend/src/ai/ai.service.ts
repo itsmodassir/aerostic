@@ -5,6 +5,7 @@ import { AiAgent } from './entities/ai-agent.entity';
 import { MessagesService } from '../messages/messages.service';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { KnowledgeChunk } from './entities/knowledge-chunk.entity';
 
 @Injectable()
 export class AiService {
@@ -16,6 +17,8 @@ export class AiService {
     private configService: ConfigService,
     @InjectRepository(AiAgent)
     private aiAgentRepo: Repository<AiAgent>,
+    @InjectRepository(KnowledgeChunk)
+    private chunkRepo: Repository<KnowledgeChunk>,
   ) {
     const apiKey = this.configService.get('GEMINI_API_KEY');
     if (apiKey) {
@@ -176,5 +179,51 @@ Agent:`;
       console.error('Agent Execution Failed:', e);
       return `Agent Error: ${e.message}`;
     }
+  }
+
+  /**
+   * Generates a vector embedding for a given text using Gemini
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    if (!this.genAI) throw new Error('AI not configured');
+    const model = this.genAI.getGenerativeModel({ model: 'embedding-001' });
+    const result = await model.embedContent(text);
+    return result.embedding.values;
+  }
+
+  /**
+   * Finds the most relevant chunks in a knowledge base using cosine similarity
+   */
+  async findRelevantChunks(knowledgeBaseId: string, query: string, limit: number = 3): Promise<string[]> {
+    const queryEmbedding = await this.generateEmbedding(query);
+
+    // Fetch chunks for this KB
+    const chunks = await this.chunkRepo.find({
+      where: { knowledgeBaseId }
+    });
+
+    if (chunks.length === 0) return [];
+
+    // Calculate similarity and sort
+    const scoredChunks = chunks.map(chunk => ({
+      content: chunk.content,
+      score: this.cosineSimilarity(queryEmbedding, chunk.embedding)
+    }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
+    return scoredChunks.map(c => c.content);
+  }
+
+  private cosineSimilarity(vecA: number[], vecB: number[]): number {
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 }

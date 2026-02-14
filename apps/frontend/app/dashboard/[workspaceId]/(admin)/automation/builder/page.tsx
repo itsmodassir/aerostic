@@ -20,6 +20,10 @@ import {
     ReactFlowProvider,
     useReactFlow
 } from '@xyflow/react';
+
+export type WorkflowUIFlowNode<D extends Record<string, any> = Record<string, any>, T extends string = string> = Node<D, T>;
+import { NodeEditorPanel } from './NodeEditorPanel';
+
 import '@xyflow/react/dist/style.css';
 import {
     Zap,
@@ -58,25 +62,33 @@ import GoogleDriveNode from './GoogleDriveNode';
 import AiAgentNode from './AiAgentNode';
 import OpenAiModelNode from './OpenAiModelNode';
 import GeminiModelNode from './GeminiModelNode';
+import {
+    TriggerNodeData,
+    ActionNodeData,
+    AiAgentNodeData,
+    ConditionNodeData,
+    LeadUpdateNodeData,
+    BroadcastTriggerNodeData
+} from '@/types/workflow';
 
 // --- Custom Node Components ---
 // ... (omitted for brevity in instruction, but keep existing)
 
-const TriggerNode = ({ data }: NodeProps) => (
+const TriggerNode = ({ data }: NodeProps<WorkflowUIFlowNode<TriggerNodeData>>) => (
     <div className="bg-white border-2 border-amber-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
         <div className="bg-amber-500 p-2 flex items-center gap-2 text-white">
             <Zap size={16} />
             <span className="text-xs font-bold uppercase tracking-wider">Trigger</span>
         </div>
         <div className="p-4">
-            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
             <p className="text-[10px] text-gray-500 mt-1">Starts when a new message is received</p>
         </div>
         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-amber-500" />
     </div>
 );
 
-const ActionNode = ({ data }: NodeProps) => (
+const ActionNode = ({ data }: NodeProps<WorkflowUIFlowNode<ActionNodeData>>) => (
     <div className="bg-white border-2 border-blue-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
         <Handle type="target" position={Position.Left} className="w-3 h-3 bg-blue-500" />
         <div className="bg-blue-500 p-2 flex items-center gap-2 text-white">
@@ -84,14 +96,14 @@ const ActionNode = ({ data }: NodeProps) => (
             <span className="text-xs font-bold uppercase tracking-wider">Action</span>
         </div>
         <div className="p-4">
-            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
             <p className="text-[10px] text-gray-500 mt-1">Send a WhatsApp reply</p>
         </div>
         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
     </div>
 );
 
-const AiNode = ({ data }: NodeProps) => (
+const AiNode = ({ data }: NodeProps<WorkflowUIFlowNode<AiAgentNodeData>>) => (
     <div className="bg-white border-2 border-purple-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
         <Handle type="target" position={Position.Left} className="w-3 h-3 bg-purple-500" />
         <div className="bg-purple-500 p-2 flex items-center gap-2 text-white">
@@ -99,13 +111,13 @@ const AiNode = ({ data }: NodeProps) => (
             <span className="text-xs font-bold uppercase tracking-wider">AI Agent</span>
         </div>
         <div className="p-4">
-            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
             <p className="text-[10px] text-gray-500 mt-1">Intelligent AI response</p>
         </div>
     </div>
 );
 
-const ConditionNode = ({ data }: NodeProps) => (
+const ConditionNode = ({ data }: NodeProps<WorkflowUIFlowNode<ConditionNodeData>>) => (
     <div className="bg-white border-2 border-amber-500 rounded-xl shadow-lg min-w-[220px] overflow-hidden">
         <Handle type="target" position={Position.Left} className="w-3 h-3 bg-amber-500" />
         <div className="bg-amber-500 p-2 flex items-center gap-2 text-white">
@@ -113,7 +125,7 @@ const ConditionNode = ({ data }: NodeProps) => (
             <span className="text-xs font-bold uppercase tracking-wider">Condition</span>
         </div>
         <div className="p-4">
-            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
             <div className="flex flex-col gap-2 mt-2">
                 <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
                     <span>MATCH</span>
@@ -128,7 +140,7 @@ const ConditionNode = ({ data }: NodeProps) => (
     </div>
 );
 
-const LeadNode = ({ data }: NodeProps) => (
+const LeadNode = ({ data }: NodeProps<WorkflowUIFlowNode<LeadUpdateNodeData>>) => (
     <div className="bg-white border-2 border-emerald-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
         <Handle type="target" position={Position.Left} className="w-3 h-3 bg-emerald-500" />
         <div className="bg-emerald-500 p-2 flex items-center gap-2 text-white">
@@ -136,21 +148,21 @@ const LeadNode = ({ data }: NodeProps) => (
             <span className="text-xs font-bold uppercase tracking-wider">Update Lead</span>
         </div>
         <div className="p-4">
-            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
             <p className="text-[10px] text-gray-500 mt-1">Change lead status or score</p>
         </div>
         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-emerald-500" />
     </div>
 );
 
-const BroadcastNode = ({ data }: NodeProps) => (
+const BroadcastNode = ({ data }: NodeProps<WorkflowUIFlowNode<BroadcastTriggerNodeData>>) => (
     <div className="bg-white border-2 border-pink-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
         <div className="bg-pink-500 p-2 flex items-center gap-2 text-white">
             <Megaphone size={16} />
             <span className="text-xs font-bold uppercase tracking-wider">Broadcast Trigger</span>
         </div>
         <div className="p-4">
-            <h4 className="font-bold text-gray-900">{data.label as string}</h4>
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
             <p className="text-[10px] text-gray-500 mt-1">Triggers when a broadcast is sent</p>
         </div>
         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-pink-500" />
@@ -185,11 +197,11 @@ function WorkflowBuilder() {
     const workspaceId = params.workspaceId as string;
     const template = searchParams.get('template');
 
-    const [nodes, setNodes] = useState<Node[]>([]);
+    const [nodes, setNodes] = useState<WorkflowUIFlowNode[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const [name, setName] = useState('New Automation');
     const [loading, setLoading] = useState(false);
-    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+    const [selectedNode, setSelectedNode] = useState<WorkflowUIFlowNode | null>(null);
     const [showTestPanel, setShowTestPanel] = useState(false);
 
     // Initialize with dummy data or fetch if editing
@@ -200,7 +212,7 @@ function WorkflowBuilder() {
                 { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 100 } },
                 { id: '2', type: 'ai_agent', data: { label: 'AI Assistant', persona: 'Proactive Sales Expert' }, position: { x: 400, y: 100 } },
                 { id: '3', type: 'lead_update', data: { label: 'Update Status: Warm', status: 'warm' }, position: { x: 700, y: 100 } },
-            ]);
+            ] as WorkflowUIFlowNode[]);
             setEdges([
                 { id: 'e1-2', source: '1', target: '2' },
                 { id: 'e2-3', source: '2', target: '3' },
@@ -210,7 +222,7 @@ function WorkflowBuilder() {
             setNodes([
                 { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 150 } },
                 { id: '2', type: 'action', data: { label: 'Welcome Reply', message: 'Hi there! Thanks for reaching out. An agent will be with you shortly.' }, position: { x: 400, y: 150 } },
-            ]);
+            ] as WorkflowUIFlowNode[]);
             setEdges([{ id: 'e1-2', source: '1', target: '2' }]);
         } else if (template === 'keyword-router') {
             setName('Keyword Router: Pricing');
@@ -218,7 +230,7 @@ function WorkflowBuilder() {
                 { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 200 } },
                 { id: '2', type: 'condition', data: { label: 'Check "Price"', keyword: 'price', operator: 'contains' }, position: { x: 400, y: 200 } },
                 { id: '3', type: 'action', data: { label: 'Send Pricing PDF', message: 'Here is our pricing structure: [Link]' }, position: { x: 750, y: 150 } },
-            ]);
+            ] as WorkflowUIFlowNode[]);
             setEdges([{ id: 'e1-2', source: '1', target: '2' }, { id: 'e2-3', source: '2', target: '3', sourceHandle: 'true' }]);
         } else {
             setNodes([
@@ -228,12 +240,12 @@ function WorkflowBuilder() {
                     data: { label: 'New Message', triggerType: 'new_message' },
                     position: { x: 100, y: 100 },
                 },
-            ]);
+            ] as WorkflowUIFlowNode[]);
         }
     }, [template]);
 
     const onNodesChange = useCallback(
-        (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
+        (changes: any) => setNodes((nds: WorkflowUIFlowNode[]) => applyNodeChanges(changes, nds) as any as WorkflowUIFlowNode[]),
         []
     );
 
@@ -265,7 +277,7 @@ function WorkflowBuilder() {
             case 'google_drive': label = 'Google Drive'; break;
             default: label = 'New Node';
         }
-        const newNode: Node = {
+        const newNode: WorkflowUIFlowNode = {
             id,
             type,
             position: { x: Math.random() * 400, y: Math.random() * 400 },
@@ -290,7 +302,7 @@ function WorkflowBuilder() {
         setNodes((nds) => nds.concat(newNode));
     };
 
-    const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    const onNodeClick = useCallback((event: React.MouseEvent, node: WorkflowUIFlowNode) => {
         setSelectedNode(node);
     }, []);
 
@@ -519,7 +531,24 @@ function WorkflowBuilder() {
                             <MessageSquare size={20} />
                             <span className="text-sm font-bold">Agent Handoff</span>
                         </button>
+                        <button onClick={() => addNode('memory')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Cpu size={20} />
+                            <span className="text-sm font-bold">Memory</span>
+                        </button>
+                        <button onClick={() => addNode('knowledge_query')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Globe size={20} />
+                            <span className="text-sm font-bold">Knowledge Query</span>
+                        </button>
                     </Panel>
+
+                    {selectedNode && (
+                        <NodeEditorPanel
+                            node={selectedNode}
+                            nodes={nodes}
+                            onUpdate={(id: string, data: any) => updateNodeData(data)}
+                            onClose={() => setSelectedNode(null)}
+                        />
+                    )}
                 </ReactFlow>
             </div>
         </div>

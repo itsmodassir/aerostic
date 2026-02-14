@@ -1,14 +1,9 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps, Node } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { LayoutTemplate } from 'lucide-react';
+import { TemplateNodeData } from '@/types/workflow';
 
-interface TemplateNodeData extends Record<string, unknown> {
-    templateName?: string;
-    language?: string;
-    variables?: string;
-}
-
-const TemplateNode = ({ data, selected }: NodeProps<Node<TemplateNodeData>>) => {
+const TemplateNode = ({ data, selected }: NodeProps<WorkflowUIFlowNode<TemplateNodeData>>) => {
     return (
         <div className={`bg-white border-2 rounded-xl shadow-lg min-w-[250px] overflow-hidden transition-all duration-200 ${selected ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-indigo-200 hover:border-indigo-300'}`}>
             {/* Header */}

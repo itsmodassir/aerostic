@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Send, X, Play, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { socket } from '@/lib/socket'; // Assuming a singleton socket instance exists or we create one
+import { socket } from '@/lib/socket';
 import { toast } from 'sonner';
+import api from '@/lib/api';
 
 interface TestChatPanelProps {
     workspaceId: string;
@@ -25,6 +26,7 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
     ]);
     const [input, setInput] = useState('');
     const [isConnected, setIsConnected] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -75,20 +77,24 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
         setMessages(prev => [...prev, userMsg]);
         setInput('');
 
-        // Trigger Workflow via Test API (Mocking the trigger for now via direct socket or API)
-        // For this implementation, we'll assume the backend listens to standard webhooks or we call a special test endpoint
-        // Let's call the test endpoint we planned
+        setIsLoading(true);
         try {
-            // In a real scenario, we'd hit an endpoint that injects this message into the workflow engine
-            // forcing it to run locally for this user context.
-            // For now, let's simulate a "keyword trigger" via the standard webhook simulator if available,
-            // or just assume the user sends a message to the system.
-
-            // TODO: Call API to inject message
-            // api.post('/automation/test-chat', { workflowId, message: input })
-
-        } catch (e) {
-            toast.error('Failed to send message');
+            await api.post(`/workflows/${workflowId}/execute`, {
+                triggerData: {
+                    body: input,
+                    from: 'TEST_USER'
+                }
+            });
+        } catch (e: any) {
+            toast.error('Failed to trigger workflow: ' + e.message);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'system',
+                content: `❌ Error triggering workflow: ${e.message}`,
+                timestamp: new Date()
+            }]);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -111,10 +117,10 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
                     <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div
                             className={`max-w-[80%] rounded-xl p-3 text-sm ${msg.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded-br-none'
-                                    : msg.role === 'system'
-                                        ? 'bg-red-100 text-red-800 border border-red-200 w-full text-center'
-                                        : 'bg-white border text-gray-800 rounded-bl-none shadow-sm'
+                                ? 'bg-blue-600 text-white rounded-br-none'
+                                : msg.role === 'system'
+                                    ? 'bg-red-100 text-red-800 border border-red-200 w-full text-center'
+                                    : 'bg-white border text-gray-800 rounded-bl-none shadow-sm'
                                 }`}
                         >
                             {msg.content}
@@ -137,9 +143,10 @@ export default function TestChatPanel({ workspaceId, workflowId, onClose, onDebu
                     />
                     <button
                         onClick={handleSend}
-                        className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                        disabled={isLoading}
+                        className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                        <Send size={18} />
+                        {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                     </button>
                 </div>
                 <p className="text-[10px] text-gray-400 text-center mt-2">

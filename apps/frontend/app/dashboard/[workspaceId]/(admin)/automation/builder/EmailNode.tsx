@@ -1,15 +1,9 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps, Node } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { Mail } from 'lucide-react';
+import { EmailNodeData } from '@/types/workflow';
 
-interface EmailNodeData extends Record<string, unknown> {
-    to?: string;
-    subject?: string;
-    body?: string;
-    provider?: 'smtp' | 'resend' | 'sendgrid';
-}
-
-const EmailNode = ({ data, selected }: NodeProps<Node<EmailNodeData>>) => {
+const EmailNode = ({ data, selected }: NodeProps<WorkflowUIFlowNode<EmailNodeData>>) => {
     return (
         <div className={`bg-white border-2 rounded-xl shadow-lg min-w-[250px] overflow-hidden transition-all duration-200 ${selected ? 'border-sky-500 ring-2 ring-sky-100' : 'border-sky-200 hover:border-sky-300'}`}>
             {/* Header */}

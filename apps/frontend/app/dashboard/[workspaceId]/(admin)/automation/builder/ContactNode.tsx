@@ -1,13 +1,9 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps, Node } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node as WorkflowUIFlowNode } from '@xyflow/react';
 import { User, UserPlus, Search } from 'lucide-react';
+import { ContactNodeData } from '@/types/workflow';
 
-interface ContactNodeData extends Record<string, unknown> {
-    operation?: 'create' | 'update' | 'get';
-    matchField?: 'phone' | 'email';
-}
-
-const ContactNode = ({ data, selected }: NodeProps<Node<ContactNodeData>>) => {
+const ContactNode = ({ data, selected }: NodeProps<WorkflowUIFlowNode<ContactNodeData>>) => {
     const getIcon = () => {
         switch (data.operation) {
             case 'create': return <UserPlus size={18} />;
