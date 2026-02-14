@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
             return NextResponse.rewrite(new URL('/admin/login', request.url));
         }
         if (pathname === '/') {
-            return NextResponse.rewrite(new URL('/admin', request.url));
+            return NextResponse.redirect(new URL('/admin', request.url));
         }
         return NextResponse.next();
     }

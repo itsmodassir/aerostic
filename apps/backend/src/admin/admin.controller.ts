@@ -14,6 +14,7 @@ import { IsEnum, IsOptional, IsString, Allow } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 // New Services
 import { AdminConfigService } from './services/admin-config.service';
@@ -42,7 +43,7 @@ class UpdateUserPlanDto {
 }
 
 @Controller('admin')
-@UseGuards(SuperAdminGuard)
+@UseGuards(JwtAuthGuard, SuperAdminGuard)
 export class AdminController {
   constructor(
     private readonly configService: AdminConfigService,
@@ -54,7 +55,7 @@ export class AdminController {
     private readonly inboxService: AdminInboxService,
     private readonly auditService: AuditService,
     private readonly legacyAdminService: AdminService,
-  ) {}
+  ) { }
 
   // ============ Database Explorer ============
   @Get('database/tables')
