@@ -298,13 +298,13 @@ function WorkflowBuilder() {
         if (!selectedNode) return;
         setNodes((nds) =>
             nds.map((node) => {
-                if (node.id === selectedNode.id) {
+                if (node.id === selectedNode?.id) {
                     return { ...node, data: { ...node.data, ...newData } };
                 }
                 return node;
             })
         );
-        setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...newData } });
+        setSelectedNode({ ...selectedNode, data: { ...selectedNode?.data, ...newData } });
     };
 
     const isValidConnection = useCallback(
@@ -538,17 +538,17 @@ function WorkflowBuilder() {
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Node Label</label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.label as string}
+                                        value={selectedNode?.data.label as string}
                                         onChange={(e) => updateNodeData({ label: e.target.value })}
                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                     />
                                 </div>
 
-                                {selectedNode.type === 'action' && (
+                                {selectedNode?.type === 'action' && (
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Reply Message</label>
                                         <textarea
-                                            value={selectedNode.data.message as string}
+                                            value={selectedNode?.data.message as string}
                                             onChange={(e) => updateNodeData({ message: e.target.value })}
                                             rows={4}
                                             className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
@@ -557,12 +557,12 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'ai_agent' && (
+                                {selectedNode?.type === 'ai_agent' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Model</label>
                                             <select
-                                                value={selectedNode.data.model as string || 'gpt-4o'}
+                                                value={selectedNode?.data.model as string || 'gpt-4o'}
                                                 onChange={(e) => updateNodeData({ model: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium"
                                             >
@@ -574,7 +574,7 @@ function WorkflowBuilder() {
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">System Prompt</label>
                                             <textarea
-                                                value={selectedNode.data.systemPrompt as string || ''}
+                                                value={selectedNode?.data.systemPrompt as string || ''}
                                                 onChange={(e) => updateNodeData({ systemPrompt: e.target.value })}
                                                 rows={6}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium font-mono text-xs"
@@ -586,7 +586,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Agent Persona</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.persona as string}
+                                                value={selectedNode?.data.persona as string}
                                                 onChange={(e) => updateNodeData({ persona: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium"
                                                 placeholder="e.g. Sales Expert"
@@ -595,13 +595,13 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'condition' && (
+                                {selectedNode?.type === 'condition' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Keyword to Match</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.keyword as string}
+                                                value={selectedNode?.data.keyword as string}
                                                 onChange={(e) => updateNodeData({ keyword: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                             />
@@ -609,7 +609,7 @@ function WorkflowBuilder() {
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Operator</label>
                                             <select
-                                                value={selectedNode.data.operator as string}
+                                                value={selectedNode?.data.operator as string}
                                                 onChange={(e) => updateNodeData({ operator: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                             >
@@ -621,11 +621,11 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'lead_update' && (
+                                {selectedNode?.type === 'lead_update' && (
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Update Status to</label>
                                         <select
-                                            value={selectedNode.data.status as string}
+                                            value={selectedNode?.data.status as string}
                                             onChange={(e) => updateNodeData({ status: e.target.value })}
                                             className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                         >
@@ -638,33 +638,33 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'broadcast_trigger' && (
+                                {selectedNode?.type === 'broadcast_trigger' && (
                                     <div className="space-y-4">
                                         <div className="bg-gray-100 p-1 rounded-lg flex">
                                             {['contacts', 'file', 'sheets'].map((t) => (
                                                 <button
                                                     key={t}
                                                     onClick={() => updateNodeData({ audienceType: t })}
-                                                    className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode.data.audienceType || 'contacts') === t ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500'
+                                                    className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode?.data.audienceType || 'contacts') === t ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500'
                                                         }`}
                                                 >
                                                     {t}
                                                 </button>
                                             ))}
                                         </div>
-                                        {(!selectedNode.data.audienceType || selectedNode.data.audienceType === 'contacts') && (
+                                        {(!selectedNode?.data.audienceType || selectedNode?.data.audienceType === 'contacts') && (
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Filter Tags</label>
                                                 <input
                                                     type="text"
-                                                    value={selectedNode.data.tags as string || ''}
+                                                    value={selectedNode?.data.tags as string || ''}
                                                     onChange={(e) => updateNodeData({ tags: e.target.value })}
                                                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-pink-500 text-sm font-medium"
                                                     placeholder="vip, new-lead"
                                                 />
                                             </div>
                                         )}
-                                        {selectedNode.data.audienceType === 'sheets' && (
+                                        {selectedNode?.data.audienceType === 'sheets' && (
                                             <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl border border-dashed">
                                                 Connect a "Google Sheets" node to this workflow to use it as a source.
                                             </div>
@@ -672,13 +672,13 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'google_sheets' && (
+                                {selectedNode?.type === 'google_sheets' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Spreadsheet ID</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.sheetId as string || ''}
+                                                value={selectedNode?.data.sheetId as string || ''}
                                                 onChange={(e) => updateNodeData({ sheetId: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                                 placeholder="1BxiMVs0..."
@@ -688,7 +688,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Range / Sheet Name</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.range as string || ''}
+                                                value={selectedNode?.data.range as string || ''}
                                                 onChange={(e) => updateNodeData({ range: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                                 placeholder="Sheet1!A1:D"
@@ -697,7 +697,7 @@ function WorkflowBuilder() {
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Operation</label>
                                             <select
-                                                value={selectedNode.data.operation as string || 'read'}
+                                                value={selectedNode?.data.operation as string || 'read'}
                                                 onChange={(e) => updateNodeData({ operation: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                             >
@@ -708,7 +708,7 @@ function WorkflowBuilder() {
                                         </div>
                                     </div>
                                 )}
-                                {selectedNode.type === 'contact' && (
+                                {selectedNode?.type === 'contact' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Action</label>
@@ -717,7 +717,7 @@ function WorkflowBuilder() {
                                                     <button
                                                         key={op}
                                                         onClick={() => updateNodeData({ operation: op })}
-                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode.data.operation || 'get') === op ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'
+                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode?.data.operation || 'get') === op ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'
                                                             }`}
                                                     >
                                                         {op}
@@ -728,7 +728,7 @@ function WorkflowBuilder() {
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Match Field</label>
                                             <select
-                                                value={selectedNode.data.matchField as string || 'phone'}
+                                                value={selectedNode?.data.matchField as string || 'phone'}
                                                 onChange={(e) => updateNodeData({ matchField: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium"
                                             >
@@ -736,7 +736,7 @@ function WorkflowBuilder() {
                                                 <option value="email">Email Address</option>
                                             </select>
                                         </div>
-                                        {(selectedNode.data.operation === 'create' || selectedNode.data.operation === 'update') && (
+                                        {(selectedNode?.data.operation === 'create' || selectedNode?.data.operation === 'update') && (
                                             <div className="p-3 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100">
                                                 Use <strong>{'{{contact.name}}'}</strong> or <strong>{'{{contact.phone}}'}</strong> variables in other nodes to reference this contact.
                                             </div>
@@ -744,13 +744,13 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'template' && (
+                                {selectedNode?.type === 'template' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Template Name</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.templateName as string || ''}
+                                                value={selectedNode?.data.templateName as string || ''}
                                                 onChange={(e) => updateNodeData({ templateName: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
                                                 placeholder="hello_world"
@@ -760,7 +760,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Language Code</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.language as string || 'en_US'}
+                                                value={selectedNode?.data.language as string || 'en_US'}
                                                 onChange={(e) => updateNodeData({ language: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
                                                 placeholder="en_US"
@@ -770,7 +770,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Variables (CSV)</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.variables as string || ''}
+                                                value={selectedNode?.data.variables as string || ''}
                                                 onChange={(e) => updateNodeData({ variables: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
                                                 placeholder="{{contact.name}}, Coupon123"
@@ -782,13 +782,13 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'email' && (
+                                {selectedNode?.type === 'email' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">To (Email Address)</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.to as string || ''}
+                                                value={selectedNode?.data.to as string || ''}
                                                 onChange={(e) => updateNodeData({ to: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
                                                 placeholder="{{contact.email}}"
@@ -798,7 +798,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Subject</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.subject as string || ''}
+                                                value={selectedNode?.data.subject as string || ''}
                                                 onChange={(e) => updateNodeData({ subject: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
                                                 placeholder="Welcome to Aerostic!"
@@ -807,7 +807,7 @@ function WorkflowBuilder() {
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Email Body</label>
                                             <textarea
-                                                value={selectedNode.data.body as string || ''}
+                                                value={selectedNode?.data.body as string || ''}
                                                 onChange={(e) => updateNodeData({ body: e.target.value })}
                                                 rows={5}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
@@ -817,7 +817,7 @@ function WorkflowBuilder() {
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Provider</label>
                                             <select
-                                                value={selectedNode.data.provider as string || 'smtp'}
+                                                value={selectedNode?.data.provider as string || 'smtp'}
                                                 onChange={(e) => updateNodeData({ provider: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
                                             >
@@ -829,7 +829,7 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'google_drive' && (
+                                {selectedNode?.type === 'google_drive' && (
                                     <div className="space-y-4">
                                         <div className="p-4 bg-green-50 border border-green-200 rounded-xl mb-4">
                                             <h4 className="text-sm font-bold text-green-800 mb-2">Google Account</h4>
@@ -868,7 +868,7 @@ function WorkflowBuilder() {
                                                     <button
                                                         key={op}
                                                         onClick={() => updateNodeData({ operation: op })}
-                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode.data.operation || 'list') === op ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
+                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode?.data.operation || 'list') === op ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
                                                             }`}
                                                     >
                                                         {op}
@@ -877,12 +877,12 @@ function WorkflowBuilder() {
                                             </div>
                                         </div>
 
-                                        {selectedNode.data.operation === 'read' && (
+                                        {selectedNode?.data.operation === 'read' && (
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File ID</label>
                                                 <input
                                                     type="text"
-                                                    value={selectedNode.data.fileId as string || ''}
+                                                    value={selectedNode?.data.fileId as string || ''}
                                                     onChange={(e) => updateNodeData({ fileId: e.target.value })}
                                                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium font-mono"
                                                     placeholder="1BxiMVs0..."
@@ -890,13 +890,13 @@ function WorkflowBuilder() {
                                             </div>
                                         )}
 
-                                        {selectedNode.data.operation === 'upload' && (
+                                        {selectedNode?.data.operation === 'upload' && (
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File Name</label>
                                                     <input
                                                         type="text"
-                                                        value={selectedNode.data.fileName as string || ''}
+                                                        value={selectedNode?.data.fileName as string || ''}
                                                         onChange={(e) => updateNodeData({ fileName: e.target.value })}
                                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                                         placeholder="report.pdf"
@@ -905,7 +905,7 @@ function WorkflowBuilder() {
                                                 <div>
                                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Content (Text/Base64)</label>
                                                     <textarea
-                                                        value={selectedNode.data.content as string || ''}
+                                                        value={selectedNode?.data.content as string || ''}
                                                         onChange={(e) => updateNodeData({ content: e.target.value })}
                                                         rows={3}
                                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
@@ -919,7 +919,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Save Result To (Variable)</label>
                                             <input
                                                 type="text"
-                                                value={selectedNode.data.variableName as string || 'driveResult'}
+                                                value={selectedNode?.data.variableName as string || 'driveResult'}
                                                 onChange={(e) => updateNodeData({ variableName: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                                 placeholder="driveResult"
@@ -928,12 +928,12 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'openai_model' && (
+                                {selectedNode?.type === 'openai_model' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Model Name</label>
                                             <select
-                                                value={selectedNode.data.modelName as string || 'gpt-4o'}
+                                                value={selectedNode?.data.modelName as string || 'gpt-4o'}
                                                 onChange={(e) => updateNodeData({ modelName: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-medium"
                                             >
@@ -949,7 +949,7 @@ function WorkflowBuilder() {
                                                 min="0"
                                                 max="2"
                                                 step="0.1"
-                                                value={selectedNode.data.temperature as number || 0.7}
+                                                value={selectedNode?.data.temperature as number || 0.7}
                                                 onChange={(e) => updateNodeData({ temperature: parseFloat(e.target.value) })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-medium"
                                             />
@@ -959,7 +959,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">API Key (Optional)</label>
                                             <input
                                                 type="password"
-                                                value={selectedNode.data.apiKey as string || ''}
+                                                value={selectedNode?.data.apiKey as string || ''}
                                                 onChange={(e) => updateNodeData({ apiKey: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-medium"
                                                 placeholder="sk-..."
@@ -969,12 +969,12 @@ function WorkflowBuilder() {
                                     </div>
                                 )}
 
-                                {selectedNode.type === 'gemini_model' && (
+                                {selectedNode?.type === 'gemini_model' && (
                                     <div className="space-y-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Model Name</label>
                                             <select
-                                                value={selectedNode.data.modelName as string || 'gemini-1.5-pro'}
+                                                value={selectedNode?.data.modelName as string || 'gemini-1.5-pro'}
                                                 onChange={(e) => updateNodeData({ modelName: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                             >
@@ -989,7 +989,7 @@ function WorkflowBuilder() {
                                                 min="0"
                                                 max="1"
                                                 step="0.1"
-                                                value={selectedNode.data.temperature as number || 0.7}
+                                                value={selectedNode?.data.temperature as number || 0.7}
                                                 onChange={(e) => updateNodeData({ temperature: parseFloat(e.target.value) })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                             />
@@ -998,7 +998,7 @@ function WorkflowBuilder() {
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">API Key (Optional)</label>
                                             <input
                                                 type="password"
-                                                value={selectedNode.data.apiKey as string || ''}
+                                                value={selectedNode?.data.apiKey as string || ''}
                                                 onChange={(e) => updateNodeData({ apiKey: e.target.value })}
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                                                 placeholder="AIza..."
@@ -1008,25 +1008,25 @@ function WorkflowBuilder() {
                                 )}
                             </div>
                         </div>
-                        {selectedNode.data.operation === 'read' && (
+                        {selectedNode?.data.operation === 'read' && (
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File ID</label>
                                 <input
                                     type="text"
-                                    value={selectedNode.data.fileId as string || ''}
+                                    value={selectedNode?.data.fileId as string || ''}
                                     onChange={(e) => updateNodeData({ fileId: e.target.value })}
                                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium font-mono"
                                     placeholder="1abc..."
                                 />
                             </div>
                         )}
-                        {selectedNode.data.operation === 'upload' && (
+                        {selectedNode?.data.operation === 'upload' && (
                             <>
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File Name</label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.fileName as string || ''}
+                                        value={selectedNode?.data.fileName as string || ''}
                                         onChange={(e) => updateNodeData({ fileName: e.target.value })}
                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                         placeholder="report.pdf"
@@ -1035,7 +1035,7 @@ function WorkflowBuilder() {
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Content (Text/Base64/Var)</label>
                                     <textarea
-                                        value={selectedNode.data.fileContent as string || ''}
+                                        value={selectedNode?.data.fileContent as string || ''}
                                         onChange={(e) => updateNodeData({ fileContent: e.target.value })}
                                         rows={3}
                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium font-mono text-xs"
@@ -1046,7 +1046,7 @@ function WorkflowBuilder() {
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">MIME Type</label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.mimeType as string || 'text/plain'}
+                                        value={selectedNode?.data.mimeType as string || 'text/plain'}
                                         onChange={(e) => updateNodeData({ mimeType: e.target.value })}
                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                         placeholder="text/plain"
@@ -1058,7 +1058,7 @@ function WorkflowBuilder() {
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Save Result To (Variable)</label>
                             <input
                                 type="text"
-                                value={selectedNode.data.variableName as string || 'driveResult'}
+                                value={selectedNode?.data.variableName as string || 'driveResult'}
                                 onChange={(e) => updateNodeData({ variableName: e.target.value })}
                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
                                 placeholder="driveResult"
@@ -1067,7 +1067,7 @@ function WorkflowBuilder() {
                     </div>
                 )}
 
-                {selectedNode.type === 'chat' && (
+                {selectedNode?.type === 'chat' && (
                     <div className="space-y-4">
                         <div className="p-4 bg-indigo-50 text-indigo-700 text-sm rounded-xl border border-indigo-100">
                             <strong>Agent Handoff</strong><br />
@@ -1078,7 +1078,7 @@ function WorkflowBuilder() {
                     </div>
                 )}
 
-                {selectedNode.type === 'api_request' && (
+                {selectedNode?.type === 'api_request' && (
                     <div className="space-y-4">
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Method</label>
@@ -1087,7 +1087,7 @@ function WorkflowBuilder() {
                                     <button
                                         key={m}
                                         onClick={() => updateNodeData({ method: m })}
-                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${(selectedNode.data.method || 'GET') === m
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${(selectedNode?.data.method || 'GET') === m
                                             ? 'bg-white text-cyan-600 shadow-sm'
                                             : 'text-gray-500'
                                             }`}
@@ -1101,7 +1101,7 @@ function WorkflowBuilder() {
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">URL</label>
                             <input
                                 type="text"
-                                value={selectedNode.data.url as string || ''}
+                                value={selectedNode?.data.url as string || ''}
                                 onChange={(e) => updateNodeData({ url: e.target.value })}
                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium font-mono"
                                 placeholder="https://api.example.com/v1/users"
@@ -1110,18 +1110,18 @@ function WorkflowBuilder() {
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Headers (JSON)</label>
                             <textarea
-                                value={selectedNode.data.headers as string || '{}'}
+                                value={selectedNode?.data.headers as string || '{}'}
                                 onChange={(e) => updateNodeData({ headers: e.target.value })}
                                 rows={3}
                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium font-mono text-xs"
                                 placeholder='{"Authorization": "Bearer TOKEN"}'
                             />
                         </div>
-                        {selectedNode.data.method !== 'GET' && (
+                        {selectedNode?.data.method !== 'GET' && (
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Body (JSON)</label>
                                 <textarea
-                                    value={selectedNode.data.body as string || '{}'}
+                                    value={selectedNode?.data.body as string || '{}'}
                                     onChange={(e) => updateNodeData({ body: e.target.value })}
                                     rows={5}
                                     className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium font-mono text-xs"
@@ -1133,7 +1133,7 @@ function WorkflowBuilder() {
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Save Response To (Variable)</label>
                             <input
                                 type="text"
-                                value={selectedNode.data.variableName as string || 'apiResponse'}
+                                value={selectedNode?.data.variableName as string || 'apiResponse'}
                                 onChange={(e) => updateNodeData({ variableName: e.target.value })}
                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium"
                                 placeholder="apiResponse"
@@ -1150,7 +1150,7 @@ function WorkflowBuilder() {
                     <button
                         onClick={() => {
                             if (selectedNode) {
-                                setNodes(nds => nds.filter(n => n.id !== selectedNode.id));
+                                setNodes(nds => nds.filter(n => n.id !== selectedNode?.id));
                                 setSelectedNode(null);
                             }
                         }}
