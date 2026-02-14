@@ -11,6 +11,7 @@ import { Contact } from '../contacts/entities/contact.entity';
 import { User } from '../users/entities/user.entity';
 import { MessagesGateway } from './messages.gateway';
 import { AuditModule } from '../audit/audit.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
@@ -23,9 +24,10 @@ import { AuditModule } from '../audit/audit.module';
       User,
     ]),
     AuditModule,
+    BillingModule,
   ],
   controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway],
   exports: [MessagesService, MessagesGateway],
 })
-export class MessagesModule {}
+export class MessagesModule { }

@@ -17,6 +17,7 @@ import { AuditService } from '../audit/audit.service';
 import { LogCategory, LogLevel } from '../audit/entities/audit-log.entity';
 
 import { EncryptionService } from '../common/encryption.service';
+import { BillingService } from '../billing/billing.service';
 
 @Injectable()
 export class MessagesService {
@@ -34,6 +35,7 @@ export class MessagesService {
     private messagesGateway: MessagesGateway,
     private auditService: AuditService,
     private encryptionService: EncryptionService,
+    private billingService: BillingService,
   ) { }
 
   async send(dto: SendMessageDto) {
@@ -139,6 +141,11 @@ export class MessagesService {
         content: dto.type === 'text' ? { body: dto.payload.text } : dto.payload,
         timestamp: new Date(),
       });
+
+      // 7. Track Usage
+      if (dto.tenantId) {
+        await this.billingService.incrementUsage(dto.tenantId, 'messages_sent', 1);
+      }
 
       // Audit message sending
       await this.auditService.logAction(

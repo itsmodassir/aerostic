@@ -20,6 +20,7 @@ import { UsersModule } from '../users/users.module';
 import { User } from '../users/entities/user.entity';
 import { Plan } from './entities/plan.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
+import { Invoice } from './entities/invoice.entity';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       RazorpayEvent,
       User,
       Tenant,
+      Invoice,
     ]),
     AuditModule,
     UsersModule,

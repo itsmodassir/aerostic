@@ -18,6 +18,8 @@ import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import { Plan } from './entities/plan.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
+import { Invoice } from './entities/invoice.entity';
+import { UsageMetric } from './entities/usage-metric.entity';
 
 @Injectable()
 export class BillingService {
@@ -30,6 +32,8 @@ export class BillingService {
     private apiKeyRepo: Repository<ApiKey>,
     @InjectRepository(WebhookEndpoint)
     private webhookRepo: Repository<WebhookEndpoint>,
+    @InjectRepository(UsageMetric)
+    private usageMetricRepo: Repository<UsageMetric>,
     @InjectRepository(RazorpayEvent)
     private eventRepo: Repository<RazorpayEvent>,
     @InjectRepository(User)
@@ -38,6 +42,8 @@ export class BillingService {
     private planRepo: Repository<Plan>,
     @InjectRepository(Tenant)
     private tenantRepo: Repository<Tenant>,
+    @InjectRepository(Invoice)
+    private invoiceRepo: Repository<Invoice>,
     private razorpayService: RazorpayService,
     private auditService: AuditService,
     private mailService: MailService,
@@ -531,11 +537,83 @@ export class BillingService {
       this.logger.log(
         `Invoice email sent to ${user.email} for payment ${paymentId}`,
       );
+
+      // 4. Save Invoice to DB
+      const invoice = this.invoiceRepo.create({
+        tenantId,
+        amount: amount / 100,
+        status: 'paid',
+        date: new Date(),
+        razorpayPaymentId: paymentId,
+      });
+      await this.invoiceRepo.save(invoice);
+
     } catch (error) {
       this.logger.error(
         `Failed to generate/send invoice for payment ${paymentId}`,
         error,
       );
     }
+  }
+
+  // ============ DASHBOARD DATA ============
+
+  async getInvoices(tenantId: string): Promise<Invoice[]> {
+    return this.invoiceRepo.find({
+      where: { tenantId },
+      order: { date: 'DESC' },
+    });
+  }
+
+  async countUsers(tenantId: string): Promise<number> {
+    return this.usersService.findAllByTenant(tenantId).then((users) => users.length);
+  }
+
+  async getUsageMetrics(tenantId: string) {
+    const today = new Date();
+    const periodStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const periodEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const metrics = await this.usageMetricRepo.find({
+      where: {
+        tenantId,
+        periodStart,
+      },
+    });
+
+    const messages = metrics.find(m => m.metric === 'messages_sent')?.value || 0;
+    const aiCredits = metrics.find(m => m.metric === 'ai_credits')?.value || 0;
+    const broadcasts = metrics.find(m => m.metric === 'broadcasts_sent')?.value || 0;
+
+    return {
+      messages,
+      aiCredits,
+      broadcasts,
+      periodStart,
+      periodEnd
+    };
+  }
+
+  async incrementUsage(tenantId: string, metric: string, amount: number = 1) {
+    const today = new Date();
+    const periodStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const periodEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    let usage = await this.usageMetricRepo.findOne({
+      where: { tenantId, metric, periodStart },
+    });
+
+    if (!usage) {
+      usage = this.usageMetricRepo.create({
+        tenantId,
+        metric,
+        value: 0,
+        periodStart,
+        periodEnd,
+      });
+    }
+
+    usage.value += amount;
+    await this.usageMetricRepo.save(usage);
   }
 }

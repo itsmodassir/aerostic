@@ -55,9 +55,20 @@ export class BillingController {
     const email = req.user?.email || 'demo@example.com';
     const phone = req.user?.phone || '9999999999';
 
+    // Map UUID to Razorpay Plan ID
+    let razorpayPlanId = body.planId;
+    if (body.planId.includes('-')) { // Assume UUID
+      try {
+        const plan = await this.plansService.findOne(body.planId);
+        razorpayPlanId = `plan_${plan.slug}`;
+      } catch (e) {
+        // Ignore, maybe it's already a razorpay id or fails
+      }
+    }
+
     return this.razorpayService.createSubscription({
       tenantId,
-      planId: body.planId,
+      planId: razorpayPlanId,
       email,
       phone,
     });
@@ -150,5 +161,16 @@ export class BillingController {
       body.events,
       body.description,
     );
+  }
+  @Get('invoices')
+  async getInvoiceHistory(@UserTenant() tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
+    return this.billingService.getInvoices(tenantId);
+  }
+
+  @Get('usage')
+  async getUsageMetrics(@UserTenant() tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant ID required');
+    return this.billingService.getUsageMetrics(tenantId);
   }
 }
