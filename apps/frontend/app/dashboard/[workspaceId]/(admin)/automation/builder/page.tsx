@@ -522,7 +522,7 @@ function WorkflowBuilder() {
                     </Panel>
                 </ReactFlow>
 
-                {/* Node Editor Side Panel */}
+                {/* TEMPORARILY DISABLED - SIDEBAR PANEL
                 {selectedNode && (
                     <div className="absolute top-0 right-0 h-full w-80 bg-white border-l shadow-2xl z-20 animate-in slide-in-from-right duration-300">
                         <div className="p-6">
@@ -1162,7 +1162,7 @@ function WorkflowBuilder() {
                 </div>
             </div>
         </div>
-                )}
+                */}
             </div>
         </div>
     );
