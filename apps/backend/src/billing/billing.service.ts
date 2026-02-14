@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -16,6 +16,8 @@ import { RazorpayEvent } from './entities/razorpay-event.entity';
 import { MailService } from '../common/mail.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
+import { Plan } from './entities/plan.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 
 @Injectable()
 export class BillingService {
@@ -32,11 +34,15 @@ export class BillingService {
     private eventRepo: Repository<RazorpayEvent>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(Plan)
+    private planRepo: Repository<Plan>,
+    @InjectRepository(Tenant)
+    private tenantRepo: Repository<Tenant>,
     private razorpayService: RazorpayService,
     private auditService: AuditService,
     private mailService: MailService,
     private usersService: UsersService,
-  ) {}
+  ) { }
 
   // ============ WEBHOOK HANDLING & IDEMPOTENCY ============
 
@@ -289,11 +295,42 @@ export class BillingService {
     return this.apiKeyRepo.find({ where: { tenantId } });
   }
 
+  async findAllApiKeys(): Promise<ApiKey[]> {
+    return this.apiKeyRepo.find({
+      relations: ['tenant'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async checkPlanFeature(tenantId: string, feature: string): Promise<boolean> {
+    const tenant = await this.tenantRepo.findOne({
+      where: { id: tenantId },
+      relations: ['planRelation'],
+    });
+
+    if (!tenant) return false;
+
+    // Fallback to legacy plan logic if no plan relation
+    if (!tenant.planRelation) {
+      if (tenant.plan === 'enterprise') return true;
+      if (tenant.plan === 'growth' && feature === 'api_access') return true;
+      if (feature === 'webhooks' && tenant.plan !== 'starter') return true;
+      return false;
+    }
+
+    return tenant.planRelation.features?.includes(feature) || false;
+  }
+
   async createApiKey(
     tenantId: string,
     name: string,
     permissions: string[],
   ): Promise<{ apiKey: ApiKey; rawKey: string }> {
+    const allowed = await this.checkPlanFeature(tenantId, 'api_access');
+    if (!allowed) {
+      throw new ForbiddenException('API Access is not available in your plan');
+    }
+
     const rawKey = `ask_${crypto.randomBytes(32).toString('hex')}`;
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
     const keyPrefix = rawKey.substring(0, 12);
@@ -382,6 +419,14 @@ export class BillingService {
     });
 
     return this.webhookRepo.save(webhook);
+  }
+
+  async updateWebhookEndpoint(
+    id: string,
+    update: { url?: string; events?: string[]; isActive?: boolean },
+  ) {
+    await this.webhookRepo.update({ id }, update);
+    return this.webhookRepo.findOneBy({ id });
   }
 
   async triggerWebhooks(

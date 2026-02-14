@@ -6,7 +6,10 @@ import {
   UpdateDateColumn,
   Index,
   BeforeInsert,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Plan } from '../../billing/entities/plan.entity';
 
 @Entity('tenants')
 export class Tenant {
@@ -20,6 +23,14 @@ export class Tenant {
   @Index()
   slug: string;
 
+  @Column({ name: 'plan_id', nullable: true })
+  planId: string;
+
+  @ManyToOne(() => Plan, { nullable: true })
+  @JoinColumn({ name: 'plan_id' })
+  planRelation: Plan;
+
+  // Legacy field, keeping for backward compatibility or migration
   @Column({ default: 'starter' })
   plan: string;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import api from '@/lib/api';
 import {
     MessageSquare, Users2, BarChart3, ArrowUpRight, ArrowDownLeft,
@@ -89,6 +90,8 @@ export default function DashboardPage() {
     const [greeting, setGreeting] = useState('');
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'overview' | 'developer' | 'team' | 'settings'>('overview');
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -178,7 +181,7 @@ export default function DashboardPage() {
                         <Bell className="w-5 h-5 text-gray-500" />
                         <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                     </button>
-                    <Link href="/dashboard/billing" className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-lg transition-all">
+                    <Link href={`/dashboard/${workspaceId}/billing`} className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-lg transition-all">
                         <Crown className="w-4 h-4" />
                         <span className="font-semibold text-xs md:text-sm whitespace-nowrap">{planFeatures.name} Plan</span>
                     </Link>
@@ -241,6 +244,8 @@ export default function DashboardPage() {
 
 // Overview Tab Component
 function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, userPlan }: any) {
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
     return (
         <div className="space-y-6">
             {/* Usage Banners */}
@@ -292,13 +297,12 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                 </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                <QuickAction icon={Send} label="New Campaign" href="/dashboard/campaigns" color="bg-blue-500" />
-                <QuickAction icon={Users2} label="Add Contact" href="/dashboard/contacts" color="bg-green-500" />
-                <QuickAction icon={Bot} label="AI Agents" href="/dashboard/agents" color="bg-purple-500" available={planFeatures.aiAgents > 0} />
-                <QuickAction icon={Zap} label="Automation" href="/dashboard/automation" color="bg-amber-500" />
-                <QuickAction icon={FileText} label="Templates" href="/dashboard/templates" color="bg-pink-500" />
+                <QuickAction icon={Send} label="New Campaign" href={`/dashboard/${workspaceId}/campaigns`} color="bg-blue-500" />
+                <QuickAction icon={Users2} label="Add Contact" href={`/dashboard/${workspaceId}/contacts`} color="bg-green-500" />
+                <QuickAction icon={Bot} label="AI Agents" href={`/dashboard/${workspaceId}/agents`} color="bg-purple-500" available={planFeatures.aiAgents > 0} />
+                <QuickAction icon={Zap} label="Automation" href={`/dashboard/${workspaceId}/automation`} color="bg-amber-500" />
+                <QuickAction icon={FileText} label="Templates" href={`/dashboard/${workspaceId}/templates`} color="bg-pink-500" />
             </div>
 
             {/* Stats Grid */}
@@ -339,7 +343,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                     </div>
                     <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
                         {recentMsgs.length === 0 ? (
-                            <EmptyState icon={MessageSquare} message="No recent messages" action="Start your first campaign →" href="/dashboard/campaigns" />
+                            <EmptyState icon={MessageSquare} message="No recent messages" action="Start your first campaign →" href={`/dashboard/${workspaceId}/campaigns`} />
                         ) : (
                             recentMsgs.slice(0, 6).map((msg: any, i: number) => (
                                 <MessageRow key={i} msg={msg} />
@@ -355,7 +359,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                             <Bot className="w-5 h-5 text-purple-600" />
                             AI Agents ({stats?.totalAgents || 0} / {planFeatures.aiAgents === -1 ? '∞' : planFeatures.aiAgents})
                         </h3>
-                        <Link href="/dashboard/agents" className="text-blue-600 text-sm hover:underline">Manage</Link>
+                        <Link href={`/dashboard/${workspaceId}/agents`} className="text-blue-600 text-sm hover:underline">Manage</Link>
                     </div>
                     <div className="p-4 space-y-3">
                         <AIAgentCard name="Sales Bot" status="active" conversations={47} resolutionRate={85} />
@@ -372,11 +376,11 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
 
             {/* Feature Access Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                <FeatureCard title="API Access" description="REST API" icon={Code} available={planFeatures.apiAccess} href="/dashboard/developer" />
-                <FeatureCard title="Webhooks" description="Real-time events" icon={Webhook} available={planFeatures.webhooks} href="/dashboard/developer" />
-                <FeatureCard title="Team Inbox" description="Collaborate" icon={Users} available={planFeatures.teamCollaboration} href="/dashboard/inbox" />
-                <FeatureCard title="Custom Templates" description="Brand templates" icon={Palette} available={planFeatures.customTemplates} href="/dashboard/templates" />
-                <FeatureCard title="White Label" description="Your brand" icon={Building2} available={planFeatures.whiteLabel} href="/dashboard/settings" />
+                <FeatureCard title="API Access" description="REST API" icon={Code} available={planFeatures.apiAccess} href={`/dashboard/${workspaceId}/developer`} />
+                <FeatureCard title="Webhooks" description="Real-time events" icon={Webhook} available={planFeatures.webhooks} href={`/dashboard/${workspaceId}/developer`} />
+                <FeatureCard title="Team Inbox" description="Collaborate" icon={Users} available={planFeatures.teamCollaboration} href={`/dashboard/${workspaceId}/inbox`} />
+                <FeatureCard title="Custom Templates" description="Brand templates" icon={Palette} available={planFeatures.customTemplates} href={`/dashboard/${workspaceId}/templates`} />
+                <FeatureCard title="White Label" description="Your brand" icon={Building2} available={planFeatures.whiteLabel} href={`/dashboard/${workspaceId}/settings`} />
             </div>
         </div >
     );
@@ -422,18 +426,12 @@ function DeveloperTab({ planFeatures }: any) {
 
             // Fetch webhooks
             if (planFeatures.webhooks) {
-                const webhooksRes = await fetch(`${API_URL}/billing/webhooks`, { headers, credentials: 'include' });
+                const webhooksRes = await fetch(`${API_URL}/webhooks/settings`, { headers, credentials: 'include' });
                 if (webhooksRes.ok) {
                     const webhooksData = await webhooksRes.json();
-                    setWebhooks(webhooksData.length > 0 ? webhooksData : [
-                        { id: '1', url: 'https://api.example.com/webhooks/aerostic', events: ['message.received', 'message.delivered'], status: 'active' },
-                        { id: '2', url: 'https://crm.example.com/hooks', events: ['contact.created'], status: 'active' }
-                    ]);
+                    setWebhooks(Array.isArray(webhooksData) ? webhooksData : []);
                 } else {
-                    setWebhooks([
-                        { id: '1', url: 'https://api.example.com/webhooks/aerostic', events: ['message.received', 'message.delivered'], status: 'active' },
-                        { id: '2', url: 'https://crm.example.com/hooks', events: ['contact.created'], status: 'active' }
-                    ]);
+                    setWebhooks([]);
                 }
             }
         } catch (e) {
@@ -479,15 +477,17 @@ function DeveloperTab({ planFeatures }: any) {
         if (!newWebhookUrl.trim() || newWebhookEvents.length === 0) return;
         setSaving(true);
         try {
-            const res = await fetch(`${API_URL}/billing/webhooks`, {
+            const res = await fetch(`${API_URL}/webhooks/settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ url: newWebhookUrl, events: newWebhookEvents })
+                body: JSON.stringify({ url: newWebhookUrl, events: newWebhookEvents, isActive: true })
             });
             if (res.ok) {
                 const newWebhook = await res.json();
-                setWebhooks([...webhooks, newWebhook]);
+                // If it returns a single object and we want to append, or if it returns the updated object (my service returns updated object)
+                // My controller logic: `return this.billingService.createWebhookEndpoint(...)` which returns the entity.
+                setWebhooks(prev => [...prev, newWebhook]);
                 setSuccessMsg('Webhook endpoint added!');
                 setTimeout(() => setSuccessMsg(''), 3000);
             }
@@ -731,6 +731,8 @@ function DeveloperTab({ planFeatures }: any) {
 
 // Team Tab Component - Connected to Backend APIs
 function TeamTab({ planFeatures }: any) {
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [conversations, setConversations] = useState<any[]>([]);
     const [inboxStats, setInboxStats] = useState({ unassigned: 0, inProgress: 0, resolved: 0 });
@@ -932,7 +934,7 @@ function TeamTab({ planFeatures }: any) {
                             <p className="text-sm text-gray-500">Collaborative conversation management</p>
                         </div>
                     </div>
-                    <Link href="/dashboard/inbox" className="text-blue-600 text-sm hover:underline">
+                    <Link href={`/dashboard/${workspaceId}/inbox`} className="text-blue-600 text-sm hover:underline">
                         Open Inbox →
                     </Link>
                 </div>
@@ -1056,6 +1058,8 @@ function TeamTab({ planFeatures }: any) {
 
 // Settings Tab Component - Connected to Backend APIs
 function SettingsTab({ planFeatures, userPlan }: any) {
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
     const [whatsappConfig, setWhatsappConfig] = useState({
         phoneNumberId: '',
         wabaId: '',
@@ -1342,7 +1346,7 @@ function SettingsTab({ planFeatures, userPlan }: any) {
                         <p className="text-blue-100">₹{planFeatures.price.toLocaleString()}/month</p>
                     </div>
                     {userPlan !== 'enterprise' && (
-                        <Link href="/dashboard/billing" className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
+                        <Link href={`/dashboard/${workspaceId}/billing`} className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
                             Upgrade Plan
                         </Link>
                     )}
@@ -1457,8 +1461,10 @@ function AIAgentCard({ name, status, conversations, resolutionRate }: any) {
 }
 
 function FeatureCard({ title, description, icon: Icon, available, href }: any) {
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
     return (
-        <Link href={available ? href : '/dashboard/billing'} className={`relative p-4 rounded-xl border transition-all ${available ? 'bg-white hover:shadow-md' : 'bg-gray-50 border-dashed'}`}>
+        <Link href={available ? href : `/dashboard/${workspaceId}/billing`} className={`relative p-4 rounded-xl border transition-all ${available ? 'bg-white hover:shadow-md' : 'bg-gray-50 border-dashed'}`}>
             {!available && <Lock className="absolute top-2 right-2 w-3 h-3 text-gray-400" />}
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${available ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-400'}`}>
                 <Icon size={16} />
@@ -1471,6 +1477,8 @@ function FeatureCard({ title, description, icon: Icon, available, href }: any) {
 }
 
 function LockedFeatureCard({ title, description, icon: Icon, plan }: any) {
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
     return (
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1483,7 +1491,7 @@ function LockedFeatureCard({ title, description, icon: Icon, plan }: any) {
                         <p className="text-gray-500 text-sm">{description}</p>
                     </div>
                 </div>
-                <Link href="/dashboard/billing" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 text-sm text-center">
+                <Link href={`/dashboard/${workspaceId}/billing`} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 text-sm text-center">
                     Upgrade to {plan}
                 </Link>
             </div>

@@ -11,6 +11,9 @@ import { AiModule } from '../ai/ai.module';
 import { BullModule } from '@nestjs/bullmq';
 import { MessagesModule } from '../messages/messages.module';
 
+import { BillingModule } from '../billing/billing.module';
+import { WebhookSettingsController } from './webhook-settings.controller';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([WhatsappAccount, Contact, Conversation, Message]),
@@ -20,8 +23,9 @@ import { MessagesModule } from '../messages/messages.module';
     AutomationModule,
     AiModule,
     MessagesModule,
+    BillingModule,
   ],
-  controllers: [WebhooksController],
+  controllers: [WebhooksController, WebhookSettingsController],
   providers: [WebhooksService],
 })
-export class WebhooksModule {}
+export class WebhooksModule { }
