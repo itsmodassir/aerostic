@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building, Search, Plus, MoreHorizontal, Edit, Trash2, Eye, Filter, Loader2, X, Check } from 'lucide-react';
+import { Building, Search, Plus, MoreHorizontal, Edit, Trash2, Eye, Filter, Loader2, X, Check, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 interface Tenant {
@@ -87,6 +87,26 @@ export default function TenantsPage() {
             alert('Failed to update tenant plan');
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleImpersonate = async (tenantId: string) => {
+        try {
+            const res = await fetch(`/api/v1/admin/tenants/${tenantId}/impersonate`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+
+            if (!res.ok) throw new Error('Impersonation failed');
+
+            const data = await res.json();
+            if (data.success && data.workspaceId) {
+                // Force full reload to ensure auth state is picked up
+                window.location.href = `/dashboard/${data.workspaceId}`;
+            }
+        } catch (error) {
+            console.error('Impersonation error:', error);
+            alert('Failed to login as tenant');
         }
     };
 
@@ -219,6 +239,13 @@ export default function TenantsPage() {
                                                 title="Edit Plan"
                                             >
                                                 <Edit className="w-4 h-4 text-gray-500" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleImpersonate(tenant.id)}
+                                                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"
+                                                title="Login as Tenant"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </td>

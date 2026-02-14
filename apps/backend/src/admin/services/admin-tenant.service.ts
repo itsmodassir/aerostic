@@ -9,6 +9,7 @@ import {
   PlanType,
   SubscriptionStatus,
 } from '../../billing/entities/subscription.entity';
+import { TenantMembership, TenantRole } from '../../tenants/entities/tenant-membership.entity';
 
 @Injectable()
 export class AdminTenantService {
@@ -17,9 +18,11 @@ export class AdminTenantService {
     private tenantRepo: Repository<Tenant>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    @InjectRepository(TenantMembership)
+    private membershipRepo: Repository<TenantMembership>,
     private auditService: AuditService,
     private billingService: BillingService,
-  ) {}
+  ) { }
 
   async getAllTenants() {
     return this.tenantRepo.find({
@@ -83,5 +86,31 @@ export class AdminTenantService {
     );
 
     return saved;
+  }
+
+  async getTenantOwner(tenantId: string): Promise<User> {
+    const membership = await this.membershipRepo.findOne({
+      where: {
+        tenantId,
+        role: TenantRole.OWNER,
+      },
+      relations: ['user'],
+    });
+
+    if (!membership || !membership.user) {
+      // Fallback: Try to find ANY admin if owner is missing (rare case)
+      const adminMembership = await this.membershipRepo.findOne({
+        where: { tenantId },
+        relations: ['user'],
+        order: { createdAt: 'ASC' }, // Oldest member often creator
+      });
+
+      if (!adminMembership || !adminMembership.user) {
+        throw new NotFoundException(`No valid user found for tenant ${tenantId}`);
+      }
+      return adminMembership.user;
+    }
+
+    return membership.user;
   }
 }

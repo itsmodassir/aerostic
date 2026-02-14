@@ -9,12 +9,14 @@ import {
   UseGuards,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
 import { IsEnum, IsOptional, IsString, Allow } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { SuperAdminGuard } from '../common/guards/super-admin.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthService } from '../auth/auth.service';
 
 // New Services
 import { AdminConfigService } from './services/admin-config.service';
@@ -55,6 +57,7 @@ export class AdminController {
     private readonly inboxService: AdminInboxService,
     private readonly auditService: AuditService,
     private readonly legacyAdminService: AdminService,
+    private readonly authService: AuthService,
   ) { }
 
   // ============ Database Explorer ============
@@ -94,6 +97,34 @@ export class AdminController {
       dto.plan,
       dto.status as any,
     );
+  }
+
+  @Post('tenants/:id/impersonate')
+  async impersonateTenant(
+    @Param('id') tenantId: string,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    const user = await this.tenantService.getTenantOwner(tenantId);
+
+    // Login as the user
+    const { access_token } = await this.authService.login(user);
+
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Set cookie similar to AuthController
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      domain: isProduction ? '.aerostic.com' : undefined,
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    return {
+      success: true,
+      workspaceId: tenantId,
+    };
   }
 
   // ============ WhatsApp Account Management ============

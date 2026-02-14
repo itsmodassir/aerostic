@@ -12,6 +12,8 @@ import { AuditModule } from '../audit/audit.module';
 import { WebhookEndpoint } from '../billing/entities/webhook-endpoint.entity';
 import { User } from '../users/entities/user.entity';
 import { EmailMessage } from './entities/email-message.entity';
+import { TenantMembership } from '../tenants/entities/tenant-membership.entity';
+import { AuthModule } from '../auth/auth.module';
 
 import { Conversation } from '../messages/entities/conversation.entity';
 import { Contact } from '../contacts/entities/contact.entity';
@@ -41,9 +43,11 @@ import { AdminInboxService } from './services/admin-inbox.service';
       Contact,
       User,
       EmailMessage,
+      TenantMembership,
     ]),
     AuditModule,
     BillingModule,
+    AuthModule,
   ],
   controllers: [AdminController],
   providers: [
@@ -67,4 +71,4 @@ import { AdminInboxService } from './services/admin-inbox.service';
     AdminInboxService,
   ],
 })
-export class AdminModule {}
+export class AdminModule { }
