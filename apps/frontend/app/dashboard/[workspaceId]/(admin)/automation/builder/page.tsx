@@ -1164,7 +1164,6 @@ function WorkflowBuilder() {
         </div>
     )}
         </div>
-    </div>
     );
 }
 
