@@ -143,7 +143,7 @@ export default function OnboardingPage() {
     }
 
     // Combine Free Trial with fetched plans
-    const allPlans = [
+    const allPlans: (Plan & { duration: string; isStatic: boolean; highlight: boolean; icon: any })[] = [
         {
             id: 'free_trial',
             name: 'Free Trial',
@@ -152,6 +152,8 @@ export default function OnboardingPage() {
             duration: '7 days',
             setupFee: 0,
             features: ['1,000 Messages', '100 AI Credits', '1 AI Agent', 'Basic Automation'],
+            limits: null,
+            slug: 'free-trial',
             isStatic: true,
             highlight: false,
             icon: <Clock className="w-6 h-6 text-gray-500" />
