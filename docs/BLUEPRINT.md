@@ -33,10 +33,11 @@
                 │       └────────────────────────────────────────────────┘
                 ▼                  │
        ┌─────────────────┐         ▼
-       │ Redis 7 (Queues)│  ┌─────────────────┐
-       │ BullMQ Workers  │  │ AI Agent Engine │
-       │ Broadcasts      │  │ Google Gemini Pro│
-       └─────────────────┘  └─────────────────┘
+       │ Redis 7 (Queues)│  ┌─────────────────────────┐
+       │ BullMQ Workers  │  │ AI & Automation Engine  │
+       │ Broadcasts      │  │ Google Gemini Pro       |
+       | WebSockets      |  | Workflow Execution (n8n)|
+       └─────────────────┘  └─────────────────────────┘
 ```
 
 ---
@@ -49,6 +50,7 @@ aerostic/
 │   ├── backend/         # NestJS 11 + TypeORM (Enterprise API)
 │   │   ├── src/
 │   │   │   ├── admin/   # Platform Admin Service
+│   │   │   ├── automation/# Workflow Engine (Nodes, Rules, Execution)
 │   │   │   ├── common/  # Encryption, Guards, Redis
 │   │   │   ├── meta/    # Meta OAuth & Cloud API
 │   │   │   └── webhooks/# Meta Webhook Handler
@@ -58,6 +60,7 @@ aerostic/
 │       │   ├── (public)/# aerostic.com (Landing)
 │       │   ├── (auth)/  # Consolidated login/register
 │       │   ├── dashboard/# app.aerostic.com (SaaS)
+│       │   │   └── .../automation/builder/ # Visual Workflow Editor
 │       │   └── admin/   # admin.aerostic.com (Platform Control)
 │       └── middleware.ts# Subdomain router & tenant context
 ├── docs/                # System Blueprints & Master Docs

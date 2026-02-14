@@ -24,24 +24,34 @@ export class AiService {
     }
   }
 
-  async process(tenantId: string, from: string, messageBody: string) {
-    if (!this.model) {
+  async process(tenantId: string, from: string, messageBody: string, options?: { model?: string; systemPrompt?: string }) {
+    if (!this.genAI) {
+      // Fallback or error if AI is not configured
       return;
     }
 
     try {
-      // Fetch Agent Configuration
+      // Fetch Agent Configuration (Global Fallback)
       const agent = await this.aiAgentRepo.findOneBy({ tenantId });
 
-      // Default System Prompt if not configured
+      // Use Custom Prompt from Workflow OR Global Agent Prompt OR System Default
       const systemPrompt =
+        options?.systemPrompt ||
         agent?.systemPrompt ||
         'You are a helpful and friendly customer support agent for Aerostic, a SaaS platform. Answer concisely.';
-      const isActive = agent ? agent.isActive : true; // Default active
 
-      if (!isActive) {
+      const isActive = agent ? agent.isActive : true;
+
+      if (!isActive && !options?.systemPrompt) {
+        // Only block if using global agent and it's inactive.
+        // If workflow explicitly invoked AI, we should probably run it.
         return;
       }
+
+      // Model Selection (Mocking Switch for now, leveraging Gemini)
+      // simplified for this iteration
+      const modelName = options?.model?.includes('gpt') ? 'gemini-pro' : 'gemini-pro';
+      const model = this.genAI.getGenerativeModel({ model: modelName });
 
       const prompt = `
 System: ${systemPrompt}
@@ -49,12 +59,11 @@ Instruction: You are an AI agent. If you are not confident you can answer the us
 User: ${messageBody}
 Agent:`;
 
-      const result = await this.model.generateContent(prompt);
+      const result = await model.generateContent(prompt);
       const response = result.response;
       const aiReply = response.text();
 
       if (aiReply.includes('HANDOFF_TO_AGENT')) {
-        // TODO: Update Conversation Status to 'needs_human' or notify agents
         return;
       }
 

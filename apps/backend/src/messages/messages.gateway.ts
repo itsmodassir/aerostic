@@ -14,8 +14,7 @@ import { Logger } from '@nestjs/common';
   },
 })
 export class MessagesGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -62,6 +61,19 @@ export class MessagesGateway
    */
   emitConversationUpdate(tenantId: string, payload: any) {
     this.server.to(tenantId).emit('conversationUpdate', payload);
+  }
+
+  /**
+   * Emit workflow debug events (node execution status)
+   */
+  emitWorkflowDebug(tenantId: string, payload: {
+    workflowId: string;
+    nodeId: string;
+    status: 'processing' | 'completed' | 'failed';
+    error?: string;
+    result?: any;
+  }) {
+    this.server.to(tenantId).emit('workflowDebug', payload);
   }
 
   /**

@@ -34,11 +34,15 @@ import {
     Trash2,
     X,
     Users,
-    Megaphone
+    Megaphone,
+    FileSpreadsheet,
+    Terminal
 } from 'lucide-react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import clsx from 'clsx';
+import TestChatPanel from './TestChatPanel';
 
 // --- Custom Node Components ---
 // ... (omitted for brevity in instruction, but keep existing)
@@ -138,6 +142,10 @@ const BroadcastNode = ({ data }: NodeProps) => (
     </div>
 );
 
+import GoogleSheetsNode from './GoogleSheetsNode';
+
+// ... (keep existing imports)
+
 const nodeTypes = {
     trigger: TriggerNode,
     action: ActionNode,
@@ -145,6 +153,7 @@ const nodeTypes = {
     condition: ConditionNode,
     lead_update: LeadNode,
     broadcast_trigger: BroadcastNode,
+    google_sheets: GoogleSheetsNode,
 };
 
 // --- Main Builder Component ---
@@ -161,6 +170,7 @@ function WorkflowBuilder() {
     const [name, setName] = useState('New Automation');
     const [loading, setLoading] = useState(false);
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+    const [showTestPanel, setShowTestPanel] = useState(false);
 
     // Initialize with dummy data or fetch if editing
     useEffect(() => {
@@ -226,6 +236,7 @@ function WorkflowBuilder() {
             case 'condition': label = 'Keyword Check'; break;
             case 'lead_update': label = 'Update Status'; break;
             case 'broadcast_trigger': label = 'Campaign Sent'; break;
+            case 'google_sheets': label = 'Google Sheets'; break;
             default: label = 'New Node';
         }
         const newNode: Node = {
@@ -238,6 +249,7 @@ function WorkflowBuilder() {
                 ...(type === 'ai_agent' && { persona: 'Helpful Assistant' }),
                 ...(type === 'condition' && { keyword: 'hi', operator: 'equals' }),
                 ...(type === 'lead_update' && { status: 'warm' }),
+                ...(type === 'google_sheets' && { operation: 'read' }),
             },
         };
         setNodes((nds) => nds.concat(newNode));
@@ -320,8 +332,12 @@ function WorkflowBuilder() {
                     />
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                        Test Flow
+                    <button
+                        onClick={() => setShowTestPanel(!showTestPanel)}
+                        className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2 ${showTestPanel ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <Terminal size={18} />
+                        Test Bot
                     </button>
                     <button
                         onClick={saveWorkflow}
@@ -333,6 +349,33 @@ function WorkflowBuilder() {
                     </button>
                 </div>
             </div>
+
+            {/* Test Chat Panel */}
+            {showTestPanel && (
+                <TestChatPanel
+                    workspaceId={workspaceId}
+                    workflowId={params.workflowId as string}
+                    onClose={() => setShowTestPanel(false)}
+                    onDebugEvent={(event) => {
+                        console.log('Received Debug Event in Page:', event);
+                        setNodes((nds) => nds.map((node) => {
+                            if (node.id === event.nodeId) {
+                                // Apply Visual Styles based on status
+                                let style = {};
+                                if (event.status === 'processing') {
+                                    style = { border: '2px solid #3b82f6', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }; // Blue
+                                } else if (event.status === 'completed') {
+                                    style = { border: '2px solid #22c55e', boxShadow: '0 0 15px rgba(34, 197, 94, 0.4)' }; // Green
+                                } else if (event.status === 'failed') {
+                                    style = { border: '2px solid #ef4444', boxShadow: '0 0 15px rgba(239, 68, 68, 0.6)' }; // Red
+                                }
+                                return { ...node, style: { ...node.style, ...style } };
+                            }
+                            return node;
+                        }));
+                    }}
+                />
+            )}
 
             {/* Main Builder Area */}
             <div className="flex-1 relative bg-[#f8fafc]">
@@ -374,6 +417,10 @@ function WorkflowBuilder() {
                             <Megaphone size={20} />
                             <span className="text-sm font-bold">Broadcast</span>
                         </button>
+                        <button onClick={() => addNode('google_sheets')} className="p-3 hover:bg-green-50 text-green-600 rounded-xl transition-colors flex items-center gap-3">
+                            <FileSpreadsheet size={20} />
+                            <span className="text-sm font-bold">Google Sheets</span>
+                        </button>
                     </Panel>
                 </ReactFlow>
 
@@ -413,16 +460,40 @@ function WorkflowBuilder() {
                                 )}
 
                                 {selectedNode.type === 'ai_agent' && (
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Agent Persona / Name</label>
-                                        <input
-                                            type="text"
-                                            value={selectedNode.data.persona as string}
-                                            onChange={(e) => updateNodeData({ persona: e.target.value })}
-                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                                            placeholder="e.g. Sales Expert"
-                                        />
-                                        <p className="text-[10px] text-gray-500 mt-2">The AI will adopt this persona when responding to users.</p>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Model</label>
+                                            <select
+                                                value={selectedNode.data.model as string || 'gpt-4o'}
+                                                onChange={(e) => updateNodeData({ model: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium"
+                                            >
+                                                <option value="gpt-4o">GPT-4o (Best Quality)</option>
+                                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fastest)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">System Prompt</label>
+                                            <textarea
+                                                value={selectedNode.data.systemPrompt as string || ''}
+                                                onChange={(e) => updateNodeData({ systemPrompt: e.target.value })}
+                                                rows={6}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium font-mono text-xs"
+                                                placeholder="You are a helpful assistant. Use {{contact.name}} to personalize..."
+                                            />
+                                            <p className="text-[10px] text-gray-400 mt-2">Variables: {'{{contact.name}}'}, {'{{contact.phone}}'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Agent Persona</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.persona as string}
+                                                onChange={(e) => updateNodeData({ persona: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium"
+                                                placeholder="e.g. Sales Expert"
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
@@ -466,6 +537,77 @@ function WorkflowBuilder() {
                                             <option value="contacted">Contacted</option>
                                             <option value="closed">Closed</option>
                                         </select>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'broadcast_trigger' && (
+                                    <div className="space-y-4">
+                                        <div className="bg-gray-100 p-1 rounded-lg flex">
+                                            {['contacts', 'file', 'sheets'].map((t) => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => updateNodeData({ audienceType: t })}
+                                                    className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode.data.audienceType || 'contacts') === t ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500'
+                                                        }`}
+                                                >
+                                                    {t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {(!selectedNode.data.audienceType || selectedNode.data.audienceType === 'contacts') && (
+                                            <div>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Filter Tags</label>
+                                                <input
+                                                    type="text"
+                                                    value={selectedNode.data.tags as string || ''}
+                                                    onChange={(e) => updateNodeData({ tags: e.target.value })}
+                                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-pink-500 text-sm font-medium"
+                                                    placeholder="vip, new-lead"
+                                                />
+                                            </div>
+                                        )}
+                                        {selectedNode.data.audienceType === 'sheets' && (
+                                            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl border border-dashed">
+                                                Connect a "Google Sheets" node to this workflow to use it as a source.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'google_sheets' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Spreadsheet ID</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.sheetId as string || ''}
+                                                onChange={(e) => updateNodeData({ sheetId: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                                placeholder="1BxiMVs0..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Range / Sheet Name</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.range as string || ''}
+                                                onChange={(e) => updateNodeData({ range: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                                placeholder="Sheet1!A1:D"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Operation</label>
+                                            <select
+                                                value={selectedNode.data.operation as string || 'read'}
+                                                onChange={(e) => updateNodeData({ operation: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                            >
+                                                <option value="read">Read Data</option>
+                                                <option value="write">Write Data</option>
+                                                <option value="append">Append Row</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 )}
 

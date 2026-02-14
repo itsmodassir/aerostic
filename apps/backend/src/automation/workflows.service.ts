@@ -7,6 +7,7 @@ import { AiService } from '../ai/ai.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { AuditService } from '../audit/audit.service';
 import { LogLevel, LogCategory } from '../audit/entities/audit-log.entity';
+import { MessagesGateway } from '../messages/messages.gateway';
 
 @Injectable()
 export class WorkflowsService {
@@ -20,6 +21,7 @@ export class WorkflowsService {
         private aiService: AiService,
         private contactsService: ContactsService,
         private auditService: AuditService,
+        private messagesGateway: MessagesGateway,
     ) { }
 
     async create(tenantId: string, data: Partial<Workflow>) {
@@ -71,6 +73,13 @@ export class WorkflowsService {
             return;
         }
 
+        // Emit Processing Event
+        this.messagesGateway.emitWorkflowDebug(workflow.tenantId, {
+            workflowId: workflow.id,
+            nodeId,
+            status: 'processing'
+        });
+
         const edges = workflow.edges.filter((e) => e.source === nodeId);
 
         for (const edge of edges) {
@@ -94,12 +103,31 @@ export class WorkflowsService {
                     case 'lead_update':
                         await this.handleLeadUpdate(workflow.tenantId, nextNode, context);
                         break;
+                    case 'google_sheets':
+                        await this.handleGoogleSheets(workflow.tenantId, nextNode, context);
+                        break;
                 }
 
                 if (shouldContinue) {
                     await this.runNode(workflow, nextNode.id, context, depth + 1);
                 }
+
+                // Emit Success Event (if we got here without error)
+                this.messagesGateway.emitWorkflowDebug(workflow.tenantId, {
+                    workflowId: workflow.id,
+                    nodeId: nextNode.id,
+                    status: 'completed'
+                });
+
             } catch (error) {
+                // Emit Failure Event
+                this.messagesGateway.emitWorkflowDebug(workflow.tenantId, {
+                    workflowId: workflow.id,
+                    nodeId: nextNode.id,
+                    status: 'failed',
+                    error: error.message
+                });
+
                 this.logger.error(`Error executing node ${nextNode.id} in workflow ${workflow.id}: ${error.message}`);
                 await this.auditService.logAction(
                     'SYSTEM',
@@ -147,8 +175,29 @@ export class WorkflowsService {
     }
 
     private async handleAiNode(tenantId: string, node: any, context: any) {
-        this.logger.log(`Forwarding to AI Agent: ${tenantId}`);
-        await this.aiService.process(tenantId, context.from, context.messageBody);
+        const { model, systemPrompt, persona } = node.data;
+        const promptWithContext = systemPrompt
+            ? systemPrompt.replace('{{contact.name}}', 'Customer') // Simple replacement for now
+            : undefined;
+
+        this.logger.log(`Forwarding to AI Agent: ${tenantId}, Persona: ${persona}`);
+        await this.aiService.process(tenantId, context.from, context.messageBody, {
+            model,
+            systemPrompt: promptWithContext
+        });
+    }
+
+    // Placeholder for Google Sheets - Simulating execution for now
+    private async handleGoogleSheets(tenantId: string, node: any, context: any) {
+        const { operation, sheetId, range } = node.data;
+        this.logger.log(`Executing Google Sheets Operation: ${operation} on ${sheetId} range ${range}`);
+
+        // In a real implementation, we would use the Google Sheets API here.
+        // For now, we simulate success to allow the workflow to continue.
+        // We could attach mock data to the context if it's a 'read' operation.
+        if (operation === 'read') {
+            context.sheetData = [['Mock Row 1', 'Data A'], ['Mock Row 2', 'Data B']];
+        }
     }
 
     private async handleLeadUpdate(tenantId: string, node: any, context: any) {

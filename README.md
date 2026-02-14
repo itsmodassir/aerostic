@@ -8,11 +8,12 @@
 
 *   **Multi-tenant Architecture**: Isolated workspaces for every user.
 *   **Official Meta Integration**: Supports both **Cloud API** (New Numbers) and **Embedded Signup** (Existing Business Numbers).
-*   **Smart AI Agents**: Google Gemini-powered chatbots with automated handoff to human agents.
-*   **Campaign Manager**: Bulk broadcasting with template message support.
+*   **Advanced Automation Builder**: n8n-style visual workflow editor with drag-and-drop nodes.
+*   **Visual Debugging**: Real-time "Test Bot" with green/red execution tracing and error logs.
+*   **Google Sheets Integration**: Read and write data directly from spreadsheets in your flows.
+*   **Smart AI Agents**: Google Gemini-powered chatbots with **custom system prompts** and variable support.
+*   **Campaign Manager**: Bulk broadcasting via audience lists (CSV, Contacts, Sheets).
 *   **WhatsApp Template Management**: Create, customize, and submit templates for Meta approval directly.
-*   **Curated Template Library**: Access industry-standard message templates (Welcome, Shipping, etc.).
-*   **Rejection Reason Tracking**: Real-time feedback from Meta on template rejections for quick fixing.
 *   **Real-time Usage Dashboard**: Live tracking of messages, AI credits, and agent limits.
 *   **Team Inbox**: Real-time shared inbox for support agents.
 *   **Role-Based Access**: Super Admin, Workspace Admin, and Agent roles.
