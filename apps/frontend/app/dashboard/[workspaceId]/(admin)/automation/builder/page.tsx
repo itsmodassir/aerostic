@@ -1167,9 +1167,6 @@ function WorkflowBuilder() {
         </div>
     );
 }
-
-export default function BuilderPage() {
-    return (
         <ReactFlowProvider>
             <WorkflowBuilder />
         </ReactFlowProvider>
