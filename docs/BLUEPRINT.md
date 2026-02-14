@@ -37,6 +37,7 @@
        │ BullMQ Workers  │  │ AI & Automation Engine  │
        │ Broadcasts      │  │ Google Gemini Pro       |
        | WebSockets      |  | Workflow Execution (n8n)|
+       | API Integrations|  | Drive/Sheets/Webhooks   |
        └─────────────────┘  └─────────────────────────┘
 ```
 
@@ -52,7 +53,9 @@ aerostic/
 │   │   │   ├── admin/   # Platform Admin Service
 │   │   │   ├── automation/# Workflow Engine (Nodes, Rules, Execution)
 │   │   │   ├── common/  # Encryption, Guards, Redis
+│   │   │   ├── google/  # Google Drive & Sheets Integration (OAuth2)
 │   │   │   ├── meta/    # Meta OAuth & Cloud API
+│   │   │   ├── ai/      # AI Agents & Recursive Execution Engine
 │   │   │   └── webhooks/# Meta Webhook Handler
 │   │   └── migrations/  # Versioned DB Schema Changes
 │   └── frontend/        # Next.js 16 (Subdomain-Aware)
@@ -96,6 +99,11 @@ aerostic/
 - **Manual Popup Security**: Switched from SDK-implicit login to manual OAuth popups for 100% control over the `redirect_uri` to prevent mismatch attacks and errors.
 - **Database Safety**: `synchronize: false` in production; managed via versioned **TypeORM Migrations**. Fixed circular dependencies using string-based entity decoupling.
 
+### 🛡️ System Hardening & AI Security
+- **Strict Node Validation**: Workflow builder enforces type-safe connections (e.g., Models can only connect to Agent Model inputs).
+- **Recursive Execution Safety**: AI Agents use a `MAX_TURNS` limit (10) to prevent infinite loops during tool execution.
+- **Encrypted Tokens**: Google OAuth refresh tokens are stored using AES-256-CBC encryption.
+
 ### 🛡️ Infrastructure (Hardened Nginx)
 - **Cloudflare Trusted**: Trusts Cloudflare IP ranges; uses `CF-Connecting-IP` for real visitor tracing.
 - **TLS 1.3**: Hardened SSL configuration with preferred ciphers.
@@ -130,3 +138,18 @@ aerostic/
 - **Meta API Version**: Hardcoded to **v19.0** across all services for stability and predictable behavior during Embedded Signup.
 - **Orchestration**: Docker Compose with bridge networking.
 - **Monitoring**: Health endpoints with consistent `text/plain` responses on all subdomains.
+
+---
+
+## 8️⃣ DATA FLOW: WEBHOOK TRIGGERS & API INTEGRATIONS
+1. **External System** sends POST request to `https://api.aerostic.com/automation/webhooks/:workflowId`.
+2. **Nginx** routes request to `AutomationWebhooksController`.
+3. **Workflow Service** executes the workflow immediately (Direct Execution).
+4. **Context Injection**:
+   - `body`, `query`, and `headers` are injected into `context.webhookPayload`.
+5. **ApiNode Execution**:
+   - Backend uses `axios` to fetch external data.
+   - Response is stored in `context.apiResponse` (or custom variable).
+6. **GoogleDriveNode**:
+   - Backend uses `GoogleService` to upload/read files.
+   - Result is stored in `context.driveResult`.

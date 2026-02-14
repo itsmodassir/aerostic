@@ -78,4 +78,103 @@ Agent:`;
       console.error('AI Generation Failed', e);
     }
   }
+
+  async runAgent(tenantId: string, messageBody: string, tools: any[], systemPrompt: string): Promise<string> {
+    if (!this.genAI) return 'AI not configured';
+
+    // 1. Prepare Tools
+    const toolMap = new Map(tools.map(t => [t.name, t]));
+    const functionDeclarations = tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters
+    }));
+
+    // 2. Initialize Model
+    const model = this.genAI.getGenerativeModel({
+      model: 'gemini-pro',
+      tools: functionDeclarations.length > 0 ? [{ functionDeclarations }] : undefined
+    });
+
+    // 3. Start Chat Session
+    const chat = model.startChat({
+      history: [
+        { role: 'user', parts: [{ text: `System: ${systemPrompt}` }] },
+        { role: 'model', parts: [{ text: 'Understood. I am ready to help.' }] }
+      ]
+    });
+
+    try {
+      // 4. Send Initial Message
+      let result = await chat.sendMessage(messageBody);
+      let response = result.response;
+
+      // 5. Execution Loop (Max 10 turns to prevent infinite loops)
+      let turns = 0;
+      const MAX_TURNS = 10;
+
+      while (turns < MAX_TURNS) {
+        const functionCalls = response.functionCalls();
+
+        // If no function calls, we are done
+        if (!functionCalls || functionCalls.length === 0) {
+          return response.text();
+        }
+
+        // Execute all requested tools
+        const toolResults = [];
+        for (const call of functionCalls) {
+          const tool = toolMap.get(call.name);
+          if (tool) {
+            try {
+              console.log(`[Agent] Calling Tool: ${call.name}`);
+              const output = await tool.execute(call.args);
+
+              // Ensure output is a string or object that Gemini can handle
+              const content = typeof output === 'string' ? output : JSON.stringify(output);
+
+              toolResults.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { name: call.name, content: content }
+                }
+              });
+            } catch (err) {
+              console.error(`[Agent] Tool Error (${call.name}):`, err);
+              toolResults.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { name: call.name, content: `Error: ${err.message}` }
+                }
+              });
+            }
+          } else {
+            toolResults.push({
+              functionResponse: {
+                name: call.name,
+                response: { name: call.name, content: `Error: Tool ${call.name} not found` }
+              }
+            });
+          }
+        }
+
+        // Send tool results back to the model
+        if (toolResults.length > 0) {
+          result = await chat.sendMessage(toolResults);
+          response = result.response;
+        } else {
+          // Should not happen if functionCalls > 0 but safety break
+          break;
+        }
+
+        turns++;
+      }
+
+      return response.text();
+
+    } catch (e) {
+      console.error('Agent Execution Failed:', e);
+      return `Agent Error: ${e.message}`;
+    }
+  }
 }

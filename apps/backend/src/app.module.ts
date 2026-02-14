@@ -28,6 +28,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CommonModule } from './common/common.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AgentsModule } from './agents/agents.module';
+import { EmailModule } from './email/email.module';
+import { GoogleModule } from './google/google.module';
 
 @Module({
   imports: [
@@ -94,6 +96,8 @@ import { AgentsModule } from './agents/agents.module';
     AnalyticsModule,
     AuditModule,
     AgentsModule,
+    EmailModule,
+    GoogleModule,
   ],
   controllers: [AppController],
   providers: [

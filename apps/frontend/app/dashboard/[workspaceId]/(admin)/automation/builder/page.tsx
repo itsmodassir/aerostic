@@ -36,13 +36,28 @@ import {
     Users,
     Megaphone,
     FileSpreadsheet,
-    Terminal
+    Terminal,
+    Mail,
+    Globe,
+    Cpu,
+    Sparkles
 } from 'lucide-react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import TestChatPanel from './TestChatPanel';
+import GoogleSheetsNode from './GoogleSheetsNode';
+import ContactNode from './ContactNode';
+import TemplateNode from './TemplateNode';
+import EmailNode from './EmailNode';
+import ChatNode from './ChatNode';
+import WebhookNode from './WebhookNode';
+import ApiNode from './ApiNode';
+import GoogleDriveNode from './GoogleDriveNode';
+import AiAgentNode from './AiAgentNode';
+import OpenAiModelNode from './OpenAiModelNode';
+import GeminiModelNode from './GeminiModelNode';
 
 // --- Custom Node Components ---
 // ... (omitted for brevity in instruction, but keep existing)
@@ -142,18 +157,23 @@ const BroadcastNode = ({ data }: NodeProps) => (
     </div>
 );
 
-import GoogleSheetsNode from './GoogleSheetsNode';
-
-// ... (keep existing imports)
-
 const nodeTypes = {
     trigger: TriggerNode,
     action: ActionNode,
-    ai_agent: AiNode,
+    ai_agent: AiAgentNode, // Replaces old AiNode
     condition: ConditionNode,
     lead_update: LeadNode,
     broadcast_trigger: BroadcastNode,
     google_sheets: GoogleSheetsNode,
+    contact: ContactNode,
+    template: TemplateNode,
+    email: EmailNode,
+    chat: ChatNode,
+    webhook: WebhookNode,
+    api_request: ApiNode,
+    google_drive: GoogleDriveNode,
+    openai_model: OpenAiModelNode,
+    gemini_model: GeminiModelNode,
 };
 
 // --- Main Builder Component ---
@@ -237,6 +257,12 @@ function WorkflowBuilder() {
             case 'lead_update': label = 'Update Status'; break;
             case 'broadcast_trigger': label = 'Campaign Sent'; break;
             case 'google_sheets': label = 'Google Sheets'; break;
+            case 'contact': label = 'Contact Operation'; break;
+            case 'template': label = 'Send Template'; break;
+            case 'email': label = 'Send Email'; break;
+            case 'webhook': label = 'Webhook Trigger'; break;
+            case 'api_request': label = 'HTTP Request'; break;
+            case 'google_drive': label = 'Google Drive'; break;
             default: label = 'New Node';
         }
         const newNode: Node = {
@@ -250,6 +276,15 @@ function WorkflowBuilder() {
                 ...(type === 'condition' && { keyword: 'hi', operator: 'equals' }),
                 ...(type === 'lead_update' && { status: 'warm' }),
                 ...(type === 'google_sheets' && { operation: 'read' }),
+                ...(type === 'contact' && { operation: 'get', matchField: 'phone' }),
+                ...(type === 'template' && { templateName: 'hello_world', language: 'en_US' }),
+                ...(type === 'email' && { to: '{{CONTACT_EMAIL}}', provider: 'smtp' }),
+                ...(type === 'openai_model' && { modelName: 'gpt-4o', temperature: 0.7 }),
+                ...(type === 'gemini_model' && { modelName: 'gemini-1.5-pro', temperature: 0.7 }),
+                ...(type === 'chat' && { label: 'Agent Handoff' }),
+                ...(type === 'webhook' && { label: 'Webhook Trigger', workflowId: params.workflowId || 'NEW' }),
+                ...(type === 'api_request' && { method: 'GET', url: 'https://', headers: '{}', body: '{}', variableName: 'apiResponse' }),
+                ...(type === 'google_drive' && { operation: 'list', variableName: 'driveResult' }),
             },
         };
         setNodes((nds) => nds.concat(newNode));
@@ -281,7 +316,38 @@ function WorkflowBuilder() {
             const targetNode = nodes.find((n) => n.id === connection.target);
 
             // Triggers can't be targets
-            if (targetNode?.type === 'trigger') return false;
+            if (targetNode?.type === 'trigger' || targetNode?.type === 'webhook' || targetNode?.type === 'broadcast_trigger') return false;
+
+            // AI Agent Specific Validation
+            if (targetNode?.type === 'ai_agent') {
+                const targetHandle = connection.targetHandle;
+
+                // 1. Model Input Validation
+                if (targetHandle === 'model-target') {
+                    // Only allow Model nodes to connect to 'model-target'
+                    return sourceNode?.type === 'openai_model' || sourceNode?.type === 'gemini_model';
+                }
+
+                // 2. Tool Input Validation
+                if (targetHandle === 'tool-target') {
+                    // Only allow Tool nodes to connect to 'tool-target'
+                    // Currently only Google Drive is a tool
+                    return sourceNode?.type === 'google_drive';
+                }
+
+                // 3. Flow Input Validation
+                if (targetHandle === 'flow-target' || !targetHandle) {
+                    // Models and Tools typically SHOULD NOT connect to the main flow input
+                    // unless they also act as flow nodes (which they don't right now)
+                    if (sourceNode?.type === 'openai_model' || sourceNode?.type === 'gemini_model') return false;
+                    // Google Drive IS a flow node too, so it CAN connect to flow-target if used sequentially
+                }
+            }
+
+            // Prevent Models from connecting to non-model inputs
+            if (sourceNode?.type === 'openai_model' || sourceNode?.type === 'gemini_model') {
+                return targetNode?.type === 'ai_agent' && connection.targetHandle === 'model-target';
+            }
 
             return true;
         },
@@ -405,9 +471,25 @@ function WorkflowBuilder() {
                             <Settings2 size={20} />
                             <span className="text-sm font-bold">Condition</span>
                         </button>
-                        <button onClick={() => addNode('ai_agent')} className="p-3 hover:bg-purple-50 text-purple-600 rounded-xl transition-colors flex items-center gap-3">
-                            <Bot size={20} />
-                            <span className="text-sm font-bold">AI Agent</span>
+                        <button onClick={() => addNode('webhook')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Zap size={20} />
+                            <span className="text-sm font-bold">Webhook Trigger</span>
+                        </button>
+                        <button onClick={() => addNode('api_request')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Globe size={20} />
+                            <span className="text-sm font-bold">HTTP Request</span>
+                        </button>
+                        <button onClick={() => addNode('ai_agent')} className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-left flex items-center gap-3 border border-purple-200 shadow-sm group">
+                            <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Bot size={18} className="text-purple-600" /></div>
+                            <div><div className="font-bold text-sm">AI Agent</div><div className="text-[10px] opacity-70">Smart Assistant</div></div>
+                        </button>
+                        <button onClick={() => addNode('openai_model')} className="p-3 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition text-left flex items-center gap-3 border border-teal-200 shadow-sm group">
+                            <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Cpu size={18} className="text-teal-600" /></div>
+                            <div><div className="font-bold text-sm">OpenAI Model</div><div className="text-[10px] opacity-70">GPT-4 Config</div></div>
+                        </button>
+                        <button onClick={() => addNode('gemini_model')} className="p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition text-left flex items-center gap-3 border border-blue-200 shadow-sm group">
+                            <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Sparkles size={18} className="text-blue-600" /></div>
+                            <div><div className="font-bold text-sm">Gemini Model</div><div className="text-[10px] opacity-70">Gemini Pro Config</div></div>
                         </button>
                         <button onClick={() => addNode('lead_update')} className="p-3 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors flex items-center gap-3">
                             <Users size={20} />
@@ -420,6 +502,22 @@ function WorkflowBuilder() {
                         <button onClick={() => addNode('google_sheets')} className="p-3 hover:bg-green-50 text-green-600 rounded-xl transition-colors flex items-center gap-3">
                             <FileSpreadsheet size={20} />
                             <span className="text-sm font-bold">Google Sheets</span>
+                        </button>
+                        <button onClick={() => addNode('contact')} className="p-3 hover:bg-purple-50 text-purple-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Users size={20} />
+                            <span className="text-sm font-bold">Contact</span>
+                        </button>
+                        <button onClick={() => addNode('template')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Zap size={20} />
+                            <span className="text-sm font-bold">Send Template</span>
+                        </button>
+                        <button onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3">
+                            <Mail size={20} />
+                            <span className="text-sm font-bold">Send Email</span>
+                        </button>
+                        <button onClick={() => addNode('chat')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3">
+                            <MessageSquare size={20} />
+                            <span className="text-sm font-bold">Agent Handoff</span>
                         </button>
                     </Panel>
                 </ReactFlow>
@@ -610,26 +708,467 @@ function WorkflowBuilder() {
                                         </div>
                                     </div>
                                 )}
+                                {selectedNode.type === 'contact' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Action</label>
+                                            <div className="bg-gray-100 p-1 rounded-lg flex">
+                                                {['get', 'create', 'update'].map((op) => (
+                                                    <button
+                                                        key={op}
+                                                        onClick={() => updateNodeData({ operation: op })}
+                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode.data.operation || 'get') === op ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'
+                                                            }`}
+                                                    >
+                                                        {op}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Match Field</label>
+                                            <select
+                                                value={selectedNode.data.matchField as string || 'phone'}
+                                                onChange={(e) => updateNodeData({ matchField: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 text-sm font-medium"
+                                            >
+                                                <option value="phone">Phone Number</option>
+                                                <option value="email">Email Address</option>
+                                            </select>
+                                        </div>
+                                        {(selectedNode.data.operation === 'create' || selectedNode.data.operation === 'update') && (
+                                            <div className="p-3 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100">
+                                                Use <strong>{'{{contact.name}}'}</strong> or <strong>{'{{contact.phone}}'}</strong> variables in other nodes to reference this contact.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
-                                <div className="pt-6 border-t mt-6">
-                                    <button
-                                        onClick={() => {
-                                            setNodes(nds => nds.filter(n => n.id !== selectedNode.id));
-                                            setSelectedNode(null);
-                                        }}
-                                        className="w-full py-3 text-red-600 font-bold hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <Trash2 size={16} />
-                                        Delete Node
-                                    </button>
-                                </div>
+                                {selectedNode.type === 'template' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Template Name</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.templateName as string || ''}
+                                                onChange={(e) => updateNodeData({ templateName: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                                                placeholder="hello_world"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Language Code</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.language as string || 'en_US'}
+                                                onChange={(e) => updateNodeData({ language: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                                                placeholder="en_US"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Variables (CSV)</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.variables as string || ''}
+                                                onChange={(e) => updateNodeData({ variables: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                                                placeholder="{{contact.name}}, Coupon123"
+                                            />
+                                        </div>
+                                        <div className="p-3 bg-indigo-50 text-indigo-700 text-xs rounded-lg border border-indigo-100">
+                                            Ensure the template name matches exactly with your Meta Business Manager.
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'email' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">To (Email Address)</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.to as string || ''}
+                                                onChange={(e) => updateNodeData({ to: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
+                                                placeholder="{{contact.email}}"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Subject</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.subject as string || ''}
+                                                onChange={(e) => updateNodeData({ subject: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
+                                                placeholder="Welcome to Aerostic!"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Email Body</label>
+                                            <textarea
+                                                value={selectedNode.data.body as string || ''}
+                                                onChange={(e) => updateNodeData({ body: e.target.value })}
+                                                rows={5}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
+                                                placeholder="Hello {{contact.name}}, ..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Provider</label>
+                                            <select
+                                                value={selectedNode.data.provider as string || 'smtp'}
+                                                onChange={(e) => updateNodeData({ provider: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-sky-500 text-sm font-medium"
+                                            >
+                                                <option value="smtp">SMTP (Default)</option>
+                                                <option value="resend">Resend</option>
+                                                <option value="sendgrid">SendGrid</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'google_drive' && (
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-green-50 border border-green-200 rounded-xl mb-4">
+                                            <h4 className="text-sm font-bold text-green-800 mb-2">Google Account</h4>
+                                            <button
+                                                onClick={() => {
+                                                    const width = 500;
+                                                    const height = 600;
+                                                    const left = (window.screen.width / 2) - (width / 2);
+                                                    const top = (window.screen.height / 2) - (height / 2);
+                                                    const popup = window.open(
+                                                        `${api.defaults.baseURL}/google/auth?tenantId=${params.workspaceId}`,
+                                                        'GoogleAuth',
+                                                        `width=${width},height=${height},top=${top},left=${left}`
+                                                    );
+
+                                                    const receiveMessage = (event: any) => {
+                                                        if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+                                                            toast.success('Google Account Connected!');
+                                                            if (popup) popup.close();
+                                                            window.removeEventListener('message', receiveMessage);
+                                                        }
+                                                    };
+                                                    window.addEventListener('message', receiveMessage);
+                                                }}
+                                                className="w-full py-2 bg-white border-2 border-green-500 text-green-700 font-bold rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <div className="w-5 h-5 bg-contain bg-no-repeat bg-center" style={{ backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg)' }} />
+                                                Connect Google Drive
+                                            </button>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Operation</label>
+                                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                                {['list', 'read', 'upload'].map((op) => (
+                                                    <button
+                                                        key={op}
+                                                        onClick={() => updateNodeData({ operation: op })}
+                                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md capitalize transition-all ${(selectedNode.data.operation || 'list') === op ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
+                                                            }`}
+                                                    >
+                                                        {op}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {selectedNode.data.operation === 'read' && (
+                                            <div>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File ID</label>
+                                                <input
+                                                    type="text"
+                                                    value={selectedNode.data.fileId as string || ''}
+                                                    onChange={(e) => updateNodeData({ fileId: e.target.value })}
+                                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium font-mono"
+                                                    placeholder="1BxiMVs0..."
+                                                />
+                                            </div>
+                                        )}
+
+                                        {selectedNode.data.operation === 'upload' && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={selectedNode.data.fileName as string || ''}
+                                                        onChange={(e) => updateNodeData({ fileName: e.target.value })}
+                                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                                        placeholder="report.pdf"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Content (Text/Base64)</label>
+                                                    <textarea
+                                                        value={selectedNode.data.content as string || ''}
+                                                        onChange={(e) => updateNodeData({ content: e.target.value })}
+                                                        rows={3}
+                                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                                        placeholder="File content..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Save Result To (Variable)</label>
+                                            <input
+                                                type="text"
+                                                value={selectedNode.data.variableName as string || 'driveResult'}
+                                                onChange={(e) => updateNodeData({ variableName: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                                placeholder="driveResult"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'openai_model' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Model Name</label>
+                                            <select
+                                                value={selectedNode.data.modelName as string || 'gpt-4o'}
+                                                onChange={(e) => updateNodeData({ modelName: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-medium"
+                                            >
+                                                <option value="gpt-4o">GPT-4o</option>
+                                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Temperature</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="2"
+                                                step="0.1"
+                                                value={selectedNode.data.temperature as number || 0.7}
+                                                onChange={(e) => updateNodeData({ temperature: parseFloat(e.target.value) })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-medium"
+                                            />
+                                            <p className="text-[10px] text-gray-400 mt-1">0 = Deterministic, 2 = Creative</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">API Key (Optional)</label>
+                                            <input
+                                                type="password"
+                                                value={selectedNode.data.apiKey as string || ''}
+                                                onChange={(e) => updateNodeData({ apiKey: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500 text-sm font-medium"
+                                                placeholder="sk-..."
+                                            />
+                                            <p className="text-[10px] text-gray-400 mt-1">Leave empty to use system default.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedNode.type === 'gemini_model' && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Model Name</label>
+                                            <select
+                                                value={selectedNode.data.modelName as string || 'gemini-1.5-pro'}
+                                                onChange={(e) => updateNodeData({ modelName: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            >
+                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                                <option value="gemini-pro">Gemini Pro</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Temperature</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="1"
+                                                step="0.1"
+                                                value={selectedNode.data.temperature as number || 0.7}
+                                                onChange={(e) => updateNodeData({ temperature: parseFloat(e.target.value) })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">API Key (Optional)</label>
+                                            <input
+                                                type="password"
+                                                value={selectedNode.data.apiKey as string || ''}
+                                                onChange={(e) => updateNodeData({ apiKey: e.target.value })}
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                                                placeholder="AIza..."
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                        </div>
+                        {selectedNode.data.operation === 'read' && (
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File ID</label>
+                                <input
+                                    type="text"
+                                    value={selectedNode.data.fileId as string || ''}
+                                    onChange={(e) => updateNodeData({ fileId: e.target.value })}
+                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium font-mono"
+                                    placeholder="1abc..."
+                                />
+                            </div>
+                        )}
+                        {selectedNode.data.operation === 'upload' && (
+                            <>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">File Name</label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.fileName as string || ''}
+                                        onChange={(e) => updateNodeData({ fileName: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                        placeholder="report.pdf"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Content (Text/Base64/Var)</label>
+                                    <textarea
+                                        value={selectedNode.data.fileContent as string || ''}
+                                        onChange={(e) => updateNodeData({ fileContent: e.target.value })}
+                                        rows={3}
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium font-mono text-xs"
+                                        placeholder="{{apiResponse.data}}"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">MIME Type</label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.mimeType as string || 'text/plain'}
+                                        onChange={(e) => updateNodeData({ mimeType: e.target.value })}
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                        placeholder="text/plain"
+                                    />
+                                </div>
+                            </>
+                        )}
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Save Result To (Variable)</label>
+                            <input
+                                type="text"
+                                value={selectedNode.data.variableName as string || 'driveResult'}
+                                onChange={(e) => updateNodeData({ variableName: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-green-500 text-sm font-medium"
+                                placeholder="driveResult"
+                            />
                         </div>
                     </div>
                 )}
+
+                {selectedNode.type === 'chat' && (
+                    <div className="space-y-4">
+                        <div className="p-4 bg-indigo-50 text-indigo-700 text-sm rounded-xl border border-indigo-100">
+                            <strong>Agent Handoff</strong><br />
+                            When this node is reached, the conversation status will be set to <strong>"agent_handoff"</strong>.
+                            <br /><br />
+                            The bot will stop responding, and the conversation will be flagged for a human agent.
+                        </div>
+                    </div>
+                )}
+
+                {selectedNode.type === 'api_request' && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Method</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['GET', 'POST', 'PUT', 'DELETE'].map((m) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => updateNodeData({ method: m })}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${(selectedNode.data.method || 'GET') === m
+                                            ? 'bg-white text-cyan-600 shadow-sm'
+                                            : 'text-gray-500'
+                                            }`}
+                                    >
+                                        {m}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">URL</label>
+                            <input
+                                type="text"
+                                value={selectedNode.data.url as string || ''}
+                                onChange={(e) => updateNodeData({ url: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium font-mono"
+                                placeholder="https://api.example.com/v1/users"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Headers (JSON)</label>
+                            <textarea
+                                value={selectedNode.data.headers as string || '{}'}
+                                onChange={(e) => updateNodeData({ headers: e.target.value })}
+                                rows={3}
+                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium font-mono text-xs"
+                                placeholder='{"Authorization": "Bearer TOKEN"}'
+                            />
+                        </div>
+                        {selectedNode.data.method !== 'GET' && (
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Body (JSON)</label>
+                                <textarea
+                                    value={selectedNode.data.body as string || '{}'}
+                                    onChange={(e) => updateNodeData({ body: e.target.value })}
+                                    rows={5}
+                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium font-mono text-xs"
+                                    placeholder='{"name": "{{contact.name}}"}'
+                                />
+                            </div>
+                        )}
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Save Response To (Variable)</label>
+                            <input
+                                type="text"
+                                value={selectedNode.data.variableName as string || 'apiResponse'}
+                                onChange={(e) => updateNodeData({ variableName: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-cyan-500 text-sm font-medium"
+                                placeholder="apiResponse"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                                Access later with <code>context.apiResponse</code>
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Common Delete Button for All Nodes */}
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <button
+                        onClick={() => {
+                            if (selectedNode) {
+                                setNodes(nds => nds.filter(n => n.id !== selectedNode.id));
+                                setSelectedNode(null);
+                            }
+                        }}
+                        className="w-full py-3 text-red-600 font-bold hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                        <Trash2 size={16} />
+                        Delete Node
+                    </button>
+                </div>
+
             </div>
         </div>
-    );
+    </div >
+)
+}
+</div >
+</div >
+);
 }
 
 export default function BuilderPage() {

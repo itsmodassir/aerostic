@@ -9,6 +9,8 @@
 *   **Multi-tenant Architecture**: Isolated workspaces for every user.
 *   **Official Meta Integration**: Supports both **Cloud API** (New Numbers) and **Embedded Signup** (Existing Business Numbers).
 *   **Advanced Automation Builder**: n8n-style visual workflow editor with drag-and-drop nodes.
+*   **External Integrations**: Connect any API via **HTTP Request Node** and manage files with **Google Drive Node**.
+*   **Webhook Triggers**: Trigger workflows effortlessly from external apps (Zapier, Stripe, custom backends).
 *   **Visual Debugging**: Real-time "Test Bot" with green/red execution tracing and error logs.
 *   **Google Sheets Integration**: Read and write data directly from spreadsheets in your flows.
 *   **Smart AI Agents**: Google Gemini-powered chatbots with **custom system prompts** and variable support.
@@ -17,6 +19,8 @@
 *   **Real-time Usage Dashboard**: Live tracking of messages, AI credits, and agent limits.
 *   **Team Inbox**: Real-time shared inbox for support agents.
 *   **Role-Based Access**: Super Admin, Workspace Admin, and Agent roles.
+*   **Secure Google Drive**: OAuth2 integration with encrypted token storage for file operations.
+*   **System Hardening**: Strict node connection validation and recursive AI execution engine.
 
 ---
 
@@ -60,6 +64,7 @@ We provide a helper script to automate the entire setup:
 - [**Troubleshooting Guide**](docs/troubleshooting.md) - **New!** Fixes for Meta OAuth, Permissions, and Redirects
 - [**Admin Panel**](docs/admin_panel_guide.md) - **New!** Super admin system documentation
 - [**API Reference**](docs/api_reference.md) - Backend API endpoints
+- [**System Design**](docs/system_design.md) - **New!** High-level architecture and security
 - [**Walkthrough**](docs/walkthrough.md) - Feature tour and updates
 
 ---

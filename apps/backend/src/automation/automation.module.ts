@@ -10,6 +10,9 @@ import { MessagesModule } from '../messages/messages.module';
 import { AuditModule } from '../audit/audit.module';
 import { AiModule } from '../ai/ai.module';
 import { ContactsModule } from '../contacts/contacts.module';
+import { EmailModule } from '../email/email.module';
+import { GoogleModule } from '../google/google.module';
+import { AutomationWebhooksController } from './webhooks.controller';
 
 @Module({
   imports: [
@@ -18,8 +21,10 @@ import { ContactsModule } from '../contacts/contacts.module';
     AuditModule,
     AiModule,
     ContactsModule,
+    EmailModule,
+    GoogleModule,
   ],
-  controllers: [AutomationController, WorkflowsController],
+  controllers: [AutomationController, WorkflowsController, AutomationWebhooksController],
   providers: [AutomationService, WorkflowsService],
   exports: [AutomationService, WorkflowsService],
 })

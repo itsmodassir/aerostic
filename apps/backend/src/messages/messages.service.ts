@@ -188,6 +188,14 @@ export class MessagesService {
     });
   }
 
+  async getConversation(conversationId: string): Promise<Conversation | null> {
+    return this.conversationRepo.findOneBy({ id: conversationId });
+  }
+
+  async setConversationStatus(conversationId: string, status: string): Promise<void> {
+    await this.conversationRepo.update({ id: conversationId }, { status });
+  }
+
   async cleanupMockData() {
     const mockNames = [
       'Vikram Singh',
