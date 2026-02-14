@@ -25,6 +25,9 @@ export class Plan {
     @Column('decimal', { precision: 10, scale: 2, default: 0, name: 'setup_fee' })
     setupFee: number;
 
+    @Column({ name: 'razorpay_plan_id', nullable: true })
+    razorpayPlanId: string;
+
     @Column('jsonb', { default: {} })
     limits: {
         monthly_messages: number;

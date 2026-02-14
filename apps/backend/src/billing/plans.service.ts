@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plan } from './entities/plan.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
+import { RazorpayService } from './razorpay.service';
 
 @Injectable()
 export class PlansService {
@@ -11,6 +12,7 @@ export class PlansService {
         private planRepo: Repository<Plan>,
         @InjectRepository(Tenant)
         private tenantRepo: Repository<Tenant>,
+        private razorpayService: RazorpayService,
     ) { }
 
     async findAll() {
@@ -41,12 +43,46 @@ export class PlansService {
             slug,
         });
 
+        // Create in Razorpay
+        if (plan.price > 0) {
+            try {
+                const rpPlan = await this.razorpayService.createPlan(
+                    plan.name,
+                    plan.price,
+                    'monthly',
+                    `${plan.name} - Monthly Subscription`
+                );
+                plan.razorpayPlanId = rpPlan.id;
+            } catch (error) {
+                console.error('Failed to create Razorpay plan, saving local only', error);
+            }
+        }
+
         return this.planRepo.save(plan);
     }
 
     async update(id: string, updatePlanDto: Partial<Plan>) {
         const plan = await this.findOne(id);
+
+        // Check if price changed
+        const priceChanged = updatePlanDto.price !== undefined && Number(updatePlanDto.price) !== Number(plan.price);
+
         Object.assign(plan, updatePlanDto);
+
+        if (priceChanged && plan.price > 0) {
+            try {
+                const rpPlan = await this.razorpayService.createPlan(
+                    plan.name,
+                    plan.price,
+                    'monthly',
+                    `${plan.name} - Monthly Subscription (v${Date.now()})`
+                );
+                plan.razorpayPlanId = rpPlan.id;
+            } catch (error) {
+                console.error('Failed to update Razorpay plan', error);
+            }
+        }
+
         return this.planRepo.save(plan);
     }
 
@@ -81,7 +117,7 @@ export class PlansService {
                 features: ['whatsapp_embedded', 'human_takeover'],
             },
             {
-                name: 'Starter 2',
+                name: 'Growth', // Replaces Starter 2 price point
                 price: 2499,
                 setupFee: 1999,
                 limits: {
@@ -92,10 +128,10 @@ export class PlansService {
                     max_bots: 3,
                     monthly_broadcasts: 20000,
                 },
-                features: ['whatsapp_embedded', 'human_takeover'],
+                features: ['whatsapp_embedded', 'human_takeover', 'templates'],
             },
             {
-                name: 'Growth',
+                name: 'Pro', // New tier
                 price: 3999,
                 setupFee: 0,
                 limits: {
@@ -110,6 +146,7 @@ export class PlansService {
                     'whatsapp_embedded',
                     'human_takeover',
                     'unlimited_broadcasts',
+                    'api_access',
                 ],
             },
             {
@@ -133,6 +170,30 @@ export class PlansService {
                     'ai_classification',
                 ],
             },
+            {
+                name: 'Agency',
+                price: 14999,
+                setupFee: 49999,
+                limits: {
+                    monthly_messages: 100000,
+                    ai_credits: 10000,
+                    max_agents: 50,
+                    max_phone_numbers: 20,
+                    max_bots: 100,
+                    monthly_broadcasts: -1,
+                },
+                features: [
+                    'whatsapp_embedded',
+                    'human_takeover',
+                    'unlimited_broadcasts',
+                    'multi_client_dashboard',
+                    'lead_pipeline',
+                    'ai_classification',
+                    'webhooks',
+                    'api_access',
+                    'whitelabel', // Assumed feature
+                ],
+            },
         ];
 
         for (const planData of plans) {
@@ -144,12 +205,13 @@ export class PlansService {
                 await this.create({ ...planData, slug });
             } else {
                 console.log(`Updating Plan: ${planData.name}`);
-                // Optional: Update existing plans to match new pricing if desired
-                // existing.price = planData.price;
-                // existing.setupFee = planData.setupFee;
-                // existing.limits = planData.limits;
-                // existing.features = planData.features;
-                // await this.planRepo.save(existing);
+                // Update existing plans to match new pricing
+                existing.name = planData.name;
+                existing.price = planData.price;
+                existing.setupFee = planData.setupFee;
+                existing.limits = planData.limits;
+                existing.features = planData.features;
+                await this.planRepo.save(existing);
             }
         }
     }

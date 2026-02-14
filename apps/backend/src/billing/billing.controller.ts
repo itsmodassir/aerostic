@@ -60,7 +60,8 @@ export class BillingController {
     if (body.planId.includes('-')) { // Assume UUID
       try {
         const plan = await this.plansService.findOne(body.planId);
-        razorpayPlanId = `plan_${plan.slug}`;
+        // Use stored Razorpay ID, fallback to slug-based ID
+        razorpayPlanId = plan.razorpayPlanId || `plan_${plan.slug}`;
       } catch (e) {
         // Ignore, maybe it's already a razorpay id or fails
       }

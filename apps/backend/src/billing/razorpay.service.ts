@@ -138,6 +138,30 @@ export class RazorpayService {
     }
   }
 
+  async createPlan(
+    name: string,
+    amount: number,
+    interval: 'monthly' | 'yearly' = 'monthly',
+    description?: string
+  ): Promise<any> {
+    try {
+      const plan = await this.razorpay.plans.create({
+        period: interval,
+        interval: 1,
+        item: {
+          name,
+          amount: amount * 100, // Amount in paise
+          currency: 'INR',
+          description,
+        },
+      });
+      return plan;
+    } catch (error) {
+      this.logger.error('Failed to create Razorpay plan', error);
+      throw error;
+    }
+  }
+
   async createPaymentLink(
     amount: number,
     description: string,
