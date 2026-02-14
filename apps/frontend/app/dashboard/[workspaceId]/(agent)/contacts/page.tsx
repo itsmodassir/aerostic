@@ -19,6 +19,13 @@ export default function ContactsPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newContact, setNewContact] = useState({ name: '', phoneNumber: '', email: '' });
     const [tenantId, setTenantId] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredContacts = contacts.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.phoneNumber.includes(searchTerm) ||
+        (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     const params = useParams();
 
@@ -95,8 +102,9 @@ export default function ContactsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                     type="text"
-                    placeholder="Search contacts..."
+                    placeholder="Search by name or phone..."
                     className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
@@ -114,10 +122,10 @@ export default function ContactsPage() {
                     <tbody className="divide-y">
                         {loading ? (
                             <tr><td colSpan={4} className="p-6 text-center text-gray-500">Loading...</td></tr>
-                        ) : contacts.length === 0 ? (
-                            <tr><td colSpan={4} className="p-6 text-center text-gray-500">No contacts found. Add one to get started.</td></tr>
+                        ) : filteredContacts.length === 0 ? (
+                            <tr><td colSpan={4} className="p-6 text-center text-gray-500">No contacts found.</td></tr>
                         ) : (
-                            contacts.map((contact) => (
+                            filteredContacts.map((contact) => (
                                 <tr key={contact.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 font-medium text-gray-900">{contact.name}</td>
                                     <td className="px-6 py-4 text-gray-600">{contact.phoneNumber}</td>
