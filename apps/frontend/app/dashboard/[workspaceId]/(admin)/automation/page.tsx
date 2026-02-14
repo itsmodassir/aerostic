@@ -1,268 +1,146 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import {
+    Plus,
+    Zap,
+    Trash2,
+    MoreVertical,
+    ArrowRight
+} from 'lucide-react';
 import api from '@/lib/api';
-import { Plus, Zap, Trash2 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
-interface AutomationRule {
+interface Workflow {
     id: string;
     name: string;
-    trigger: string;
-    condition: string;
-    keyword: string;
-    action: string;
-    payload: any;
     isActive: boolean;
+    updatedAt: string;
+    nodes: any[];
 }
 
 export default function AutomationPage() {
-    const [rules, setRules] = useState<AutomationRule[]>([]);
-    const [showModal, setShowModal] = useState(false);
-    const [tenantId, setTenantId] = useState<string>('');
-    const [aiAgent, setAiAgent] = useState({ systemPrompt: '', active: false });
-    const [isAiLoading, setIsAiLoading] = useState(true);
-
-    const [newRule, setNewRule] = useState({
-        name: '',
-        trigger: 'keyword',
-        condition: 'contains',
-        keyword: '',
-        action: 'reply',
-        replyText: ''
-    });
+    const params = useParams();
+    const router = useRouter();
+    const workspaceId = params.workspaceId as string;
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const init = async () => {
+        const fetchWorkflows = async () => {
             try {
-                const res = await api.get('/auth/me'); // Check auth and get user
-                if (res.data && res.data.tenantId) {
-                    setTenantId(res.data.tenantId);
-                    fetchRules(res.data.tenantId);
-                    fetchAiAgent();
-                }
-            } catch (e) {
-                console.error('Auth failed', e);
+                const res = await api.get('/workflows');
+                setWorkflows(res.data);
+            } catch (err) {
+                console.error('Failed to fetch workflows', err);
+            } finally {
+                setLoading(false);
             }
         };
-        init();
+        fetchWorkflows();
     }, []);
 
-    const fetchAiAgent = async () => {
+    const toggleStatus = async (id: string, current: boolean) => {
         try {
-            const res = await api.get('/ai/agent');
-            setAiAgent({
-                systemPrompt: res.data.systemPrompt,
-                active: res.data.isActive ?? res.data.active
-            });
-        } catch (e) {
-            console.error('Failed to fetch AI agent', e);
-        } finally {
-            setIsAiLoading(false);
+            await api.put(`/workflows/${id}`, { isActive: !current });
+            setWorkflows(workflows.map(w => w.id === id ? { ...w, isActive: !current } : w));
+            toast.success(`Workflow ${!current ? 'activated' : 'paused'}`);
+        } catch (err) {
+            toast.error('Failed to update status');
         }
     };
 
-    const handleToggleAiAgent = async () => {
-        const newState = !aiAgent.active;
-        setAiAgent({ ...aiAgent, active: newState });
+    const deleteWorkflow = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this workflow?')) return;
         try {
-            await api.post('/ai/agent', {
-                systemPrompt: aiAgent.systemPrompt || 'You are a helpful customer support agent.',
-                active: newState
-            });
-        } catch (e) {
-            console.error('Failed to update AI agent', e);
-            setAiAgent({ ...aiAgent, active: !newState }); // Rollback
-        }
-    };
-
-    const fetchRules = async (tid: string) => {
-        try {
-            const res = await api.get(`/automation/rules?tenantId=${tid}`);
-            setRules(res.data);
-        } catch (error) {
-            console.error('Failed to fetch rules', error);
-        }
-    };
-
-    const handleCreateRule = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await api.post('/automation/rules', {
-                tenantId,
-                name: newRule.name,
-                trigger: newRule.trigger,
-                condition: newRule.condition,
-                keyword: newRule.keyword,
-                action: newRule.action,
-                payload: { text: newRule.replyText }
-            });
-            setShowModal(false);
-            setNewRule({ name: '', trigger: 'keyword', condition: 'contains', keyword: '', action: 'reply', replyText: '' });
-            fetchRules(tenantId);
-        } catch (error) {
-            alert('Failed to create rule');
+            await api.delete(`/workflows/${id}`);
+            setWorkflows(workflows.filter(w => w.id !== id));
+            toast.success('Workflow deleted');
+        } catch (err) {
+            toast.error('Failed to delete workflow');
         }
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Automation</h1>
-                    <p className="text-sm text-gray-500">Create rules to automate your conversations.</p>
+                    <p className="text-gray-500 text-sm">Create smart workflows to engage your customers.</p>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto"
+                <Link
+                    href={`/dashboard/${workspaceId}/automation/builder`}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all hover:scale-105 active:scale-95"
                 >
-                    <Plus size={18} />
-                    New Rule
-                </button>
+                    <Plus size={20} />
+                    New Workflow
+                </Link>
             </div>
 
-            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 shrink-0">
-                        <Zap size={20} fill="currentColor" />
+            <div className="grid grid-cols-1 gap-4">
+                {loading ? (
+                    Array(3).fill(0).map((_, i) => (
+                        <div key={i} className="h-24 bg-white border rounded-2xl animate-pulse" />
+                    ))
+                ) : workflows.length === 0 ? (
+                    <div className="bg-white border-2 border-dashed rounded-3xl p-16 text-center flex flex-col items-center">
+                        <div className="p-5 bg-blue-50 text-blue-600 rounded-2xl mb-6">
+                            <Zap size={40} />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900">Create your first Automation</h3>
+                        <p className="text-gray-500 max-w-sm mt-3 text-lg leading-relaxed">Save time and boost engagement with automated WhatsApp sequences.</p>
+                        <Link
+                            href={`/dashboard/${workspaceId}/automation/builder`}
+                            className="mt-8 flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:bg-blue-700 transition-all hover:scale-105"
+                        >
+                            Open Workflow Builder <ArrowRight size={20} />
+                        </Link>
                     </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900">AI Agent</h2>
-                        <p className="text-sm text-gray-500">
-                            When no rules match, let the AI reply intelligently.
-                        </p>
-                    </div>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-0 pt-4 sm:pt-0">
-                    <span className="text-sm font-medium text-gray-700">
-                        {isAiLoading ? 'Loading...' : aiAgent.active ? 'Enabled' : 'Disabled'}
-                    </span>
-                    <button
-                        onClick={handleToggleAiAgent}
-                        disabled={isAiLoading}
-                        className={`w-12 h-6 rounded-full relative transition-colors ${aiAgent.active ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    >
-                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-all ${aiAgent.active ? 'left-6' : 'left-0.5'}`}></div>
-                    </button>
-                </div>
-            </div>
-
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Custom Rules</h2>
-            <div className="grid gap-4">
-                {rules.length === 0 ? (
-                    <div className="p-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300 text-gray-500">
-                        No automation rules found. Create one to get started.
-                    </div>
-                ) : (
-                    rules.map((rule) => (
-                        <div key={rule.id} className="bg-white p-4 md:p-6 rounded-lg shadow-sm border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 shrink-0">
-                                    <Zap size={20} />
-                                </div>
-                                <div className="min-w-0">
-                                    <h3 className="font-semibold text-gray-900 truncate">{rule.name}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-500">
-                                        If message <strong>{rule.condition}</strong> "{rule.keyword}", then <strong>reply</strong>.
-                                    </p>
-                                </div>
+                ) : workflows.map((workflow) => (
+                    <div key={workflow.id} className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow group flex items-center justify-between">
+                        <div className="flex items-center gap-5">
+                            <div className={`p-4 rounded-2xl ${workflow.isActive ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
+                                <Zap size={28} />
                             </div>
-                            <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-0 pt-4 sm:pt-0">
-                                <span className={`shrink-0 px-2 py-1 rounded text-[10px] font-medium ${rule.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                                    {rule.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                                <button className="text-red-500 hover:bg-red-50 p-2 rounded-lg ml-auto">
-                                    <Trash2 size={18} />
-                                </button>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{workflow.name}</h3>
+                                <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-sm text-gray-500 font-medium">{workflow.nodes.length} steps</span>
+                                    <div className="w-1 h-1 bg-gray-300 rounded-full" />
+                                    <span className="text-sm text-gray-500 font-medium">Updated {new Date(workflow.updatedAt).toLocaleDateString()}</span>
+                                </div>
                             </div>
                         </div>
-                    ))
-                )}
-            </div>
-
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg">
-                        <h2 className="text-xl font-bold mb-4">Create Automation Rule</h2>
-                        <form onSubmit={handleCreateRule} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Rule Name</label>
-                                <input
-                                    required
-                                    className="w-full border rounded-md px-3 py-2 mt-1"
-                                    placeholder="e.g. Welcome Message"
-                                    value={newRule.name}
-                                    onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Trigger</label>
-                                    <select
-                                        className="w-full border rounded-md px-3 py-2 mt-1 bg-gray-50"
-                                        disabled
-                                        value={newRule.trigger}
-                                    >
-                                        <option value="keyword">Keyword</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Condition</label>
-                                    <select
-                                        className="w-full border rounded-md px-3 py-2 mt-1"
-                                        value={newRule.condition}
-                                        onChange={(e) => setNewRule({ ...newRule, condition: e.target.value })}
-                                    >
-                                        <option value="contains">Contains</option>
-                                        <option value="exact">Exact Match</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Keyword</label>
-                                <input
-                                    required
-                                    className="w-full border rounded-md px-3 py-2 mt-1"
-                                    placeholder="e.g. hello, pricing, help"
-                                    value={newRule.keyword}
-                                    onChange={(e) => setNewRule({ ...newRule, keyword: e.target.value })}
-                                />
-                            </div>
-
-                            <hr />
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Action: Reply Text</label>
-                                <textarea
-                                    required
-                                    rows={3}
-                                    className="w-full border rounded-md px-3 py-2 mt-1"
-                                    placeholder="Enter the automated reply..."
-                                    value={newRule.replyText}
-                                    onChange={(e) => setNewRule({ ...newRule, replyText: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 mt-6">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 mr-4">
+                                <span className={`text-[10px] font-bold uppercase tracking-widest ${workflow.isActive ? 'text-green-600' : 'text-gray-400'}`}>
+                                    {workflow.isActive ? 'Active' : 'Paused'}
+                                </span>
                                 <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    onClick={() => toggleStatus(workflow.id, workflow.isActive)}
+                                    className={`w-11 h-6 rounded-full p-1 transition-colors relative ${workflow.isActive ? 'bg-blue-600' : 'bg-gray-200'}`}
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                >
-                                    Create Rule
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${workflow.isActive ? 'translate-x-5' : 'translate-x-0'}`} />
                                 </button>
                             </div>
-                        </form>
+                            <button
+                                onClick={() => deleteWorkflow(workflow.id)}
+                                className="p-2.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                            <Link
+                                href={`/dashboard/${workspaceId}/automation/builder?id=${workflow.id}`}
+                                className="p-2.5 text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
+                            >
+                                <MoreVertical size={20} />
+                            </Link>
+                        </div>
                     </div>
-                </div>
-            )}
+                ))}
+            </div>
         </div>
     );
 }

@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { Message } from '../messages/entities/message.entity';
 import { Campaign } from '../campaigns/entities/campaign.entity';
 import { Contact } from '../contacts/entities/contact.entity';
 import { AiAgent } from '../ai/entities/ai-agent.entity';
 import { UsageMetric } from '../billing/entities/usage-metric.entity';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
 
 @Injectable()
 export class AnalyticsService {
@@ -20,18 +21,30 @@ export class AnalyticsService {
     private aiAgentRepo: Repository<AiAgent>,
     @InjectRepository(UsageMetric)
     private usageRepo: Repository<UsageMetric>,
-  ) {}
+  ) { }
 
   async getOverview(tenantId: string) {
-    const [totalSent, totalReceived] = await Promise.all([
-      this.messageRepo.count({ where: { tenantId, direction: 'out' } }),
-      this.messageRepo.count({ where: { tenantId, direction: 'in' } }),
-    ]);
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7);
 
-    const totalContacts = await this.contactRepo.count({ where: { tenantId } });
-    const totalAgents = await this.aiAgentRepo.count({ where: { tenantId } });
+    const [totalSent, totalReceived, totalContacts, totalAgents, dailyStats] =
+      await Promise.all([
+        this.messageRepo.count({ where: { tenantId, direction: 'out' } }),
+        this.messageRepo.count({ where: { tenantId, direction: 'in' } }),
+        this.contactRepo.count({ where: { tenantId } }),
+        this.aiAgentRepo.count({ where: { tenantId } }),
+        this.getDailyStats(tenantId, sevenDaysAgo, now),
+      ]);
 
-    // Calculate AI credits (for now, just sum tokens or use a default)
+    const statusBreakdown = await this.messageRepo
+      .createQueryBuilder('message')
+      .select('message.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('message.tenantId = :tenantId', { tenantId })
+      .andWhere('message.direction = :direction', { direction: 'out' })
+      .groupBy('message.status')
+      .getRawMany();
+
     const aiCreditsResult = await this.usageRepo.findOne({
       where: { tenantId, metric: 'ai_credits' },
       order: { periodStart: 'DESC' },
@@ -58,7 +71,12 @@ export class AnalyticsService {
         totalAgents,
         aiCreditsUsed: aiCreditsResult?.value || 0,
         activeCampaigns: campaigns.filter((c) => c.status === 'sending').length,
+        statusBreakdown: statusBreakdown.reduce((acc, curr) => {
+          acc[curr.status] = parseInt(curr.count);
+          return acc;
+        }, {}),
       },
+      dailyStats,
       recentCampaigns: campaigns,
       recentMessages: recentMessages.map((m) => ({
         id: m.id,
@@ -70,4 +88,43 @@ export class AnalyticsService {
       })),
     };
   }
+
+  private async getDailyStats(tenantId: string, start: Date, end: Date) {
+    const stats = [];
+    let current = startOfDay(start);
+    const stop = endOfDay(end);
+
+    while (current <= stop) {
+      const dayStart = startOfDay(current);
+      const dayEnd = endOfDay(current);
+
+      const [sent, received] = await Promise.all([
+        this.messageRepo.count({
+          where: {
+            tenantId,
+            direction: 'out',
+            createdAt: Between(dayStart, dayEnd),
+          },
+        }),
+        this.messageRepo.count({
+          where: {
+            tenantId,
+            direction: 'in',
+            createdAt: Between(dayStart, dayEnd),
+          },
+        }),
+      ]);
+
+      stats.push({
+        date: dayStart.toISOString().split('T')[0],
+        sent,
+        received,
+      });
+
+      current = subDays(current, -1);
+    }
+
+    return stats;
+  }
 }
+
