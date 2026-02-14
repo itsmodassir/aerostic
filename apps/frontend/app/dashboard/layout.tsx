@@ -35,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { name: 'Leads', href: `/dashboard/${workspaceId}/leads`, icon: Target },
         { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
         { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
+        { name: 'AI Agent', href: `/dashboard/${workspaceId}/agents`, icon: Bot, permission: 'automation:create' },
         { name: 'Scheduler', href: `/dashboard/${workspaceId}/scheduler`, icon: Calendar },
         { name: 'Settings', href: `/dashboard/${workspaceId}/settings/whatsapp`, icon: Settings, permission: 'billing:manage' },
         { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals`, icon: Gift },
