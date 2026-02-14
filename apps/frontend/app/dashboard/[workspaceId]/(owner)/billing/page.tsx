@@ -13,50 +13,62 @@ const PLANS = [
     {
         id: 'starter',
         name: 'Starter',
-        price: '₹1,999',
-        description: 'Perfect for small businesses just getting started.',
+        price: '₹999',
+        setupFee: '₹1,999',
+        description: 'For local businesses & beginners.',
         features: [
-            { name: '10,000 Messages/mo', included: true },
-            { name: '1 AI Agent', included: true },
-            { name: '1,000 AI Credits', included: true },
-            { name: 'Basic Templates', included: true },
-            { name: 'Email Support', included: true },
-            { name: 'API Access', included: false },
-            { name: 'Webhooks', included: false },
-            { name: 'Team Collaboration', included: false },
+            { name: '1 WhatsApp Number', included: true },
+            { name: '100 AI Credits/mo', included: true },
+            { name: '1 Basic Auto-reply Bot', included: true },
+            { name: 'Human Takeover', included: true },
+            { name: 'Unlimited Contacts', included: true },
+            { name: 'Broadcasts', included: false },
+        ]
+    },
+    {
+        id: 'starter-2',
+        name: 'Starter 2',
+        price: '₹2,499',
+        setupFee: '₹1,999',
+        description: 'For growing agents needing more power.',
+        features: [
+            { name: '1 WhatsApp Number', included: true },
+            { name: '500 AI Credits/mo', included: true },
+            { name: '3 Auto-reply Bots', included: true },
+            { name: 'Human Takeover', included: true },
+            { name: 'Unlimited Contacts', included: true },
+            { name: '20,000 Broadcasts/mo', included: true },
         ]
     },
     {
         id: 'growth',
         name: 'Growth',
-        price: '₹4,999',
+        price: '₹3,999',
+        setupFee: '₹0',
         popular: true,
-        description: 'For growing teams that need more power and flexibility.',
+        description: 'For real estate agents & coaches.',
         features: [
-            { name: '50,000 Messages/mo', included: true },
-            { name: '5 AI Agents', included: true },
-            { name: '5,000 AI Credits', included: true },
-            { name: 'Custom Templates', included: true },
-            { name: 'Priority Support', included: true },
-            { name: 'API Access', included: true },
-            { name: 'Webhooks', included: true },
-            { name: 'Team Collaboration', included: true },
+            { name: '3 WhatsApp Numbers', included: true },
+            { name: '1,000 AI Credits/mo', included: true },
+            { name: '10 Auto-reply Bots', included: true },
+            { name: 'Unlimited Broadcasts', included: true },
+            { name: 'Unlimited Contacts', included: true },
+            { name: 'Human Takeover', included: true },
         ]
     },
     {
-        id: 'enterprise',
-        name: 'Enterprise',
-        price: '₹14,999',
-        description: 'Advanced features and dedicated support for large scale.',
+        id: 'professional',
+        name: 'Professional',
+        price: '₹6,999',
+        setupFee: '₹29,999',
+        description: 'For agencies & marketing teams.',
         features: [
-            { name: 'Unlimited Messages', included: true },
-            { name: 'Unlimited AI Agents', included: true },
-            { name: 'Unlimited AI Credits', included: true },
-            { name: 'Custom Integrations', included: true },
-            { name: 'Dedicated Support', included: true },
-            { name: 'SLA Guarantee', included: true },
-            { name: 'On-premise Deployment', included: true },
-            { name: 'White Labeling', included: true },
+            { name: '5 WhatsApp Numbers', included: true },
+            { name: '2,000 AI Credits/mo', included: true },
+            { name: '20 Auto-reply Bots', included: true },
+            { name: 'Multi-client Dashboard', included: true },
+            { name: 'Lead Pipeline & Tagging', included: true },
+            { name: 'AI Message Classification', included: true },
         ]
     }
 ];
@@ -191,6 +203,20 @@ export default function BillingPage() {
                                 <div className="bg-green-600 h-full rounded-full" style={{ width: '10%' }}></div>
                             </div>
                         </div>
+
+                        {/* Broadcasts */}
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600 flex items-center gap-2"><MessageSquare className="w-4 h-4" /> Broadcasts</span>
+                                <span className="font-medium">
+                                    {subscription?.monthlyBroadcasts === -1 ? 'Unlimited' : (subscription?.monthlyBroadcasts || 0).toLocaleString()} /
+                                    {PLANS.find(p => p.id === currentPlanId)?.features.find(f => f.name.includes('Broadcasts'))?.name.split(' ')[0] || '0'}
+                                </span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                <div className="bg-orange-500 h-full rounded-full" style={{ width: '5%' }}></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -203,8 +229,8 @@ export default function BillingPage() {
                         <div
                             key={plan.id}
                             className={`bg-white rounded-2xl border p-6 flex flex-col transition-all ${currentPlanId === plan.id
-                                    ? 'border-blue-600 ring-2 ring-blue-600 ring-opacity-20 shadow-lg scale-[1.02]'
-                                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                                ? 'border-blue-600 ring-2 ring-blue-600 ring-opacity-20 shadow-lg scale-[1.02]'
+                                : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
                                 }`}
                         >
                             {plan.popular && (
@@ -216,6 +242,11 @@ export default function BillingPage() {
                             <div className="mt-2 mb-4">
                                 <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
                                 <span className="text-gray-500">/month</span>
+                                {(plan as any).setupFee && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        + {(plan as any).setupFee} setup fee
+                                    </div>
+                                )}
                             </div>
                             <p className="text-gray-500 text-sm mb-6">{plan.description}</p>
 
@@ -223,8 +254,8 @@ export default function BillingPage() {
                                 onClick={() => handleUpgrade(plan.id)}
                                 disabled={currentPlanId === plan.id || upgrading !== null}
                                 className={`w-full py-2.5 rounded-xl font-medium transition-colors mb-6 flex items-center justify-center gap-2 ${currentPlanId === plan.id
-                                        ? 'bg-gray-100 text-gray-500 cursor-default'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    ? 'bg-gray-100 text-gray-500 cursor-default'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
                                     }`}
                             >
                                 {upgrading === plan.id && <Loader2 className="w-4 h-4 animate-spin" />}

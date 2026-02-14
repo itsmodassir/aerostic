@@ -41,6 +41,100 @@ export class PlansService {
         return this.planRepo.remove(plan);
     }
 
+    async onModuleInit() {
+        await this.seedPlans();
+    }
+
+    private async seedPlans() {
+        const plans = [
+            {
+                name: 'Starter',
+                price: 999,
+                setupFee: 1999,
+                limits: {
+                    monthly_messages: 1000,
+                    ai_credits: 100,
+                    max_agents: 1,
+                    max_phone_numbers: 1,
+                    max_bots: 1,
+                    monthly_broadcasts: 0,
+                },
+                features: ['whatsapp_embedded', 'human_takeover'],
+            },
+            {
+                name: 'Starter 2',
+                price: 2499,
+                setupFee: 1999,
+                limits: {
+                    monthly_messages: 5000,
+                    ai_credits: 500,
+                    max_agents: 3,
+                    max_phone_numbers: 1,
+                    max_bots: 3,
+                    monthly_broadcasts: 20000,
+                },
+                features: ['whatsapp_embedded', 'human_takeover'],
+            },
+            {
+                name: 'Growth',
+                price: 3999,
+                setupFee: 0,
+                limits: {
+                    monthly_messages: 10000,
+                    ai_credits: 1000,
+                    max_agents: 5,
+                    max_phone_numbers: 3,
+                    max_bots: 10,
+                    monthly_broadcasts: -1, // Unlimited
+                },
+                features: [
+                    'whatsapp_embedded',
+                    'human_takeover',
+                    'unlimited_broadcasts',
+                ],
+            },
+            {
+                name: 'Professional',
+                price: 6999,
+                setupFee: 29999,
+                limits: {
+                    monthly_messages: 20000,
+                    ai_credits: 2000,
+                    max_agents: 10,
+                    max_phone_numbers: 5,
+                    max_bots: 20,
+                    monthly_broadcasts: -1,
+                },
+                features: [
+                    'whatsapp_embedded',
+                    'human_takeover',
+                    'unlimited_broadcasts',
+                    'multi_client_dashboard',
+                    'lead_pipeline',
+                    'ai_classification',
+                ],
+            },
+        ];
+
+        for (const planData of plans) {
+            const slug = this.generateSlug(planData.name);
+            const existing = await this.planRepo.findOneBy({ slug });
+
+            if (!existing) {
+                console.log(`Seeding Plan: ${planData.name}`);
+                await this.create({ ...planData, slug });
+            } else {
+                console.log(`Updating Plan: ${planData.name}`);
+                // Optional: Update existing plans to match new pricing if desired
+                // existing.price = planData.price;
+                // existing.setupFee = planData.setupFee;
+                // existing.limits = planData.limits;
+                // existing.features = planData.features;
+                // await this.planRepo.save(existing);
+            }
+        }
+    }
+
     private generateSlug(name: string): string {
         return name
             .toLowerCase()

@@ -22,11 +22,17 @@ export class Plan {
     @Column('decimal', { precision: 10, scale: 2, default: 0 })
     price: number;
 
+    @Column('decimal', { precision: 10, scale: 2, default: 0, name: 'setup_fee' })
+    setupFee: number;
+
     @Column('jsonb', { default: {} })
     limits: {
         monthly_messages: number;
         ai_credits: number;
         max_agents: number;
+        max_phone_numbers?: number;
+        max_bots?: number;
+        monthly_broadcasts?: number;
     };
 
     @Column('jsonb', { default: [] })

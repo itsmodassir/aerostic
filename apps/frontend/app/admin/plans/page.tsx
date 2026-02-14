@@ -22,11 +22,15 @@ interface Plan {
     name: string;
     slug: string;
     price: number;
+    setupFee: number;
     isActive: boolean;
     limits: {
         monthly_messages: number;
         ai_credits: number;
         max_agents: number;
+        max_phone_numbers?: number;
+        max_bots?: number;
+        monthly_broadcasts?: number;
     };
     features: string[];
 }
@@ -51,10 +55,14 @@ export default function PlansPage() {
     const [formData, setFormData] = useState({
         name: '',
         price: 0,
+        setupFee: 0,
         limits: {
             monthly_messages: 1000,
             ai_credits: 100,
             max_agents: 1,
+            max_phone_numbers: 1,
+            max_bots: 1,
+            monthly_broadcasts: 0,
         },
         features: [] as string[],
     });
@@ -87,6 +95,7 @@ export default function PlansPage() {
             setFormData({
                 name: plan.name,
                 price: plan.price,
+                setupFee: plan.setupFee || 0,
                 limits: plan.limits,
                 features: plan.features,
             });
@@ -95,7 +104,15 @@ export default function PlansPage() {
             setFormData({
                 name: '',
                 price: 0,
-                limits: { monthly_messages: 1000, ai_credits: 100, max_agents: 1 },
+                setupFee: 0,
+                limits: {
+                    monthly_messages: 1000,
+                    ai_credits: 100,
+                    max_agents: 1,
+                    max_phone_numbers: 1,
+                    max_bots: 1,
+                    monthly_broadcasts: 0
+                },
                 features: [],
             });
         }
@@ -201,6 +218,24 @@ export default function PlansPage() {
                                         <span className="text-gray-600">Max Agents</span>
                                         <span className="font-medium">{plan.limits.max_agents}</span>
                                     </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">WhatsApp Numbers</span>
+                                        <span className="font-medium">{plan.limits.max_phone_numbers || 1}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Bots</span>
+                                        <span className="font-medium">{plan.limits.max_bots || 1}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Broadcasts</span>
+                                        <span className="font-medium">{plan.limits.monthly_broadcasts === -1 ? 'Unlimited' : (plan.limits.monthly_broadcasts || 0).toLocaleString()}</span>
+                                    </div>
+                                    {plan.setupFee > 0 && (
+                                        <div className="flex justify-between pt-2 border-t border-dashed">
+                                            <span className="text-gray-600">Setup Fee</span>
+                                            <span className="font-medium">₹{plan.setupFee.toLocaleString()}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -275,12 +310,21 @@ export default function PlansPage() {
                                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Setup Fee (₹)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.setupFee}
+                                        onChange={e => setFormData(prev => ({ ...prev, setupFee: Number(e.target.value) }))}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    />
+                                </div>
                             </div>
 
                             {/* Limits */}
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900 mb-3 border-b pb-1">Usage Limits</h3>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium text-gray-500 mb-1">Messages / Month</label>
                                         <input
@@ -317,6 +361,44 @@ export default function PlansPage() {
                                             className="w-full px-3 py-2 border rounded-lg outline-none"
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Phone Numbers</label>
+                                        <input
+                                            type="number"
+                                            value={formData.limits.max_phone_numbers}
+                                            onChange={e => setFormData(prev => ({
+                                                ...prev,
+                                                limits: { ...prev.limits, max_phone_numbers: Number(e.target.value) }
+                                            }))}
+                                            className="w-full px-3 py-2 border rounded-lg outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Max Bots</label>
+                                        <input
+                                            type="number"
+                                            value={formData.limits.max_bots}
+                                            onChange={e => setFormData(prev => ({
+                                                ...prev,
+                                                limits: { ...prev.limits, max_bots: Number(e.target.value) }
+                                            }))}
+                                            className="w-full px-3 py-2 border rounded-lg outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Monthly Broadcasts</label>
+                                        <input
+                                            type="number"
+                                            value={formData.limits.monthly_broadcasts}
+                                            onChange={e => setFormData(prev => ({
+                                                ...prev,
+                                                limits: { ...prev.limits, monthly_broadcasts: Number(e.target.value) }
+                                            }))}
+                                            placeholder="-1 for Unlimited"
+                                            className="w-full px-3 py-2 border rounded-lg outline-none"
+                                        />
+                                        <span className="text-[10px] text-gray-400">-1 for Unlimited</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -329,8 +411,8 @@ export default function PlansPage() {
                                             key={feature.id}
                                             onClick={() => toggleFeature(feature.id)}
                                             className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${formData.features.includes(feature.id)
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                                    : 'border-gray-200 hover:border-blue-300'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 hover:border-blue-300'
                                                 }`}
                                         >
                                             <div className={`p-2 rounded-lg ${formData.features.includes(feature.id) ? 'bg-blue-200' : 'bg-gray-100'
