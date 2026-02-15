@@ -217,11 +217,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Filter navigation items based on admin status and permissions
+    // Filter navigation items based on context
     const permissions = membership?.permissions || [];
     const visibleNavigation = navigation.filter(item => {
-        if (isAdmin) return true; // Super Admin sees everything
-        if (item.adminOnly) return false; // Non-super admins don't see platform admin
+        // If we are in a reseller context, only show Reseller items + Dashboard
+        if (isReseller) {
+            const resellerFeatures = ['Dashboard', 'My Clients', 'Branding'];
+            if (!resellerFeatures.includes(item.name)) return false;
+        }
+
+        if (isAdmin && !isReseller) return true; // Super Admin sees everything in main app
+        if (item.adminOnly) return false;
         if ((item as any).resellerOnly && !isReseller) return false;
         if (item.permission && !permissions.includes(item.permission)) return false;
         return true;
@@ -356,7 +362,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         </button>
                         {/* Breadcrumb / Title Stub */}
                         <h2 className="text-lg font-semibold text-foreground capitalize">
-                            {pathname.split('/')[3]?.replace('-', ' ') || 'Overview'}
+                            {isReseller && (pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
+                                ? 'Partner Console'
+                                : pathname.split('/')[3]?.replace('-', ' ') || 'Overview'}
                         </h2>
                     </div>
 
@@ -426,8 +434,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                     {userName[0]?.toUpperCase()}
                                 </div>
                                 <div className="text-left hidden md:block">
-                                    <p className="text-sm font-medium leading-none text-gray-900">{userName}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{email}</p>
+                                    <p className="text-sm font-medium leading-none text-gray-900">
+                                        {isReseller ? (membership?.tenant?.name || userName) : userName}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        {isReseller ? (membership?.tenant?.email || email) : email}
+                                    </p>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
                             </button>
@@ -439,11 +451,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                     <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500">
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center font-bold text-lg">
-                                                {userName[0]?.toUpperCase()}
+                                                {(isReseller ? (membership?.tenant?.name || userName) : userName)[0]?.toUpperCase()}
                                             </div>
                                             <div className="text-white">
-                                                <p className="font-semibold">{userName}</p>
-                                                <p className="text-xs text-white/80">{email}</p>
+                                                <p className="font-semibold">{isReseller ? (membership?.tenant?.name || userName) : userName}</p>
+                                                <p className="text-xs text-white/80">{isReseller ? (membership?.tenant?.email || email) : email}</p>
                                             </div>
                                         </div>
                                         <div className="mt-3 flex items-center gap-2">
