@@ -146,6 +146,7 @@ services:
       - NEXTAUTH_SECRET=${AUTH_SECRET}
       - BACKEND_URL=http://api:3001
       - NEXT_PUBLIC_API_URL=/api/v1
+      - NEXT_PUBLIC_BASE_DOMAIN=aerostic.com
     depends_on:
       - api
 

@@ -43,22 +43,31 @@ export function middleware(request: NextRequest) {
 
     // 4. Tenant Subdomains (Wildcard)
     // e.g. tenant.aerostic.com
-    const isLocal = hostname.includes('localhost');
-    const tenantSubdomain = hostname.replace(`.${baseDomain}`, '');
-    const reservedSubdomains = ['www', 'app', 'admin', 'api'];
+    const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1');
 
-    if (!reservedSubdomains.includes(tenantSubdomain) && !isLocal) {
-        // Rewrite all requests to /dashboard/[slug]/[path]
-        // This makes "tenant.aerostic.com/settings" -> "/dashboard/tenant/settings"
+    // Safety: only process subdomains of the base domain
+    if (!hostname.endsWith(baseDomain) && !isLocal) {
+        return NextResponse.next();
+    }
 
-        // If the path already starts with /dashboard, strip it to avoid duplication or nested paths
-        // e.g. /dashboard/messages -> /messages -> /dashboard/tenant/messages
+    const tenantSubdomain = hostname.replace(`.${baseDomain}`, '').split(':')[0]; // Remove port if present
+    const reservedSubdomains = ['www', 'app', 'admin', 'api', 'frontend', 'webhook', 'worker'];
+
+    if (tenantSubdomain && !reservedSubdomains.includes(tenantSubdomain) && !isLocal) {
+        // Exclude authentication and system paths from wildcard rewrite
+        const excludedPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/auth', '/api', '/_next', '/favicon.ico'];
+        if (excludedPaths.some(path => pathname.startsWith(path))) {
+            return NextResponse.next();
+        }
+
+        // Rewrite all other requests to /dashboard/[slug]/[path]
         let cleanPath = pathname;
         if (pathname.startsWith('/dashboard')) {
             cleanPath = pathname.replace('/dashboard', '') || '/';
         }
 
-        return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}${cleanPath}${search}`, request.url));
+        const rewriteUrl = new URL(`/dashboard/${tenantSubdomain}${cleanPath}${search}`, request.url);
+        return NextResponse.rewrite(rewriteUrl);
     }
 
     return NextResponse.next();
