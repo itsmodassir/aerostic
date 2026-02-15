@@ -87,8 +87,10 @@ export class TenantGuard implements CanActivate {
         ],
       });
 
-      // Special handling for super_admin: Allow access even without explicit membership
-      if (!membership && request.user.role === 'super_admin') {
+      // Special handling for administrators: Allow access even without explicit membership
+      const isPlatformAdmin = request.user.role === 'super_admin' || request.user.role === 'admin';
+
+      if (!membership && isPlatformAdmin) {
         const fullTenant = await this.tenantRepo.findOne({
           where: { id: targetTenant.id },
           relations: ['resellerConfig', 'reseller', 'reseller.resellerConfig'],

@@ -7,7 +7,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    globalRole: 'super_admin' | 'user';
+    globalRole: 'super_admin' | 'admin' | 'user';
 }
 
 export function useAuth() {
@@ -67,6 +67,7 @@ export function useAuth() {
         loading,
         logout,
         isSuperAdmin: user?.globalRole === 'super_admin',
+        isAdmin: user?.globalRole === 'super_admin' || user?.globalRole === 'admin',
         isAuthenticated: !!user,
     };
 }

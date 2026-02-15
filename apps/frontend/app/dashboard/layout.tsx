@@ -35,7 +35,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const params = useParams();
     const workspaceId = params?.workspaceId as string || 'default';
-    const { user, loading, logout, isSuperAdmin: isAdmin } = useAuth();
+    const { user, loading, logout, isAdmin } = useAuth();
 
     const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
     const [membership, setMembership] = useState<any>(null);

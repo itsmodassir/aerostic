@@ -127,7 +127,7 @@ class UpdateResellerDto {
 }
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, SuperAdminGuard)
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(
     private readonly configService: AdminConfigService,
@@ -144,11 +144,13 @@ export class AdminController {
 
   // ============ Database Explorer ============
   @Get('database/tables')
+  @UseGuards(SuperAdminGuard)
   async getTables() {
     return this.databaseService.getTables();
   }
 
   @Get('database/tables/:tableName')
+  @UseGuards(SuperAdminGuard)
   async getTableData(
     @Param('tableName') tableName: string,
     @Query('page') page: number = 1,
@@ -251,11 +253,13 @@ export class AdminController {
 
   // ============ System Configuration ============
   @Get('config')
+  @UseGuards(SuperAdminGuard)
   async getConfig() {
     return this.configService.getConfig();
   }
 
   @Post('config')
+  @UseGuards(SuperAdminGuard)
   async updateConfig(@Body() updates: any, @Req() req: any) {
     console.log('Received config update request:', updates);
     // Pass actor ID from request user
@@ -263,6 +267,7 @@ export class AdminController {
   }
 
   @Delete('config/:key')
+  @UseGuards(SuperAdminGuard)
   async deleteConfig(@Param('key') key: string) {
     await this.configService.deleteConfig(key);
     return { success: true };
@@ -270,6 +275,7 @@ export class AdminController {
 
   // ============ System Operations ============
   @Post('tokens/rotate')
+  @UseGuards(SuperAdminGuard)
   async rotateSystemTokens() {
     return this.legacyAdminService.rotateSystemTokens();
   }
@@ -296,6 +302,7 @@ export class AdminController {
   }
 
   @Get('env')
+  @UseGuards(SuperAdminGuard)
   async getEnv() {
     return this.healthService.getEnvContent();
   }
