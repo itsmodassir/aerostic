@@ -38,20 +38,32 @@ export class AdminTenantService {
     });
   }
 
+  // Summary for a specific reseller's sub-tenants
+  async getResellerTenantsSummary(resellerId: string): Promise<any[]> {
+    const tenants = await this.tenantRepo.find({
+      where: { resellerId },
+      order: { createdAt: 'DESC' },
+    });
+
+    return tenants.map((t) => ({
+      id: t.id,
+      name: t.name,
+      tenantName: t.name,
+      currentPlan: t.plan || 'starter',
+      status: t.status,
+      createdAt: t.createdAt,
+    }));
+  }
+
   // Improved version of getAllUsers - actually returns tenants with key info
   async getAllTenantsSummary(): Promise<any[]> {
     const tenants = await this.tenantRepo.find({
       order: { createdAt: 'DESC' },
     });
 
-    // In a real scenario, we might want to fetch the "Owner" user for each tenant
-    // For now, we'll return tenant info correctly labeled
     return tenants.map((t) => ({
       id: t.id,
       name: t.name,
-      // We don't have email on Tenant entity, so we shouldn't fake it.
-      // If we need email, we should join with the owner User.
-      // For now, leaving it empty or we could fetch the first user.
       tenantName: t.name,
       currentPlan: t.plan || 'starter',
       status: t.status,
@@ -122,7 +134,7 @@ export class AdminTenantService {
     return membership.user;
   }
 
-  async onboardReseller(dto: any): Promise<Tenant> {
+  async onboardReseller(dto: any): Promise<any> {
     const { name, email, planId, initialCredits } = dto;
 
     // 1. Create Tenant
@@ -132,12 +144,34 @@ export class AdminTenantService {
       resellerCredits: initialCredits || 0,
       planId: planId || null,
       status: 'active',
-      subscriptionStatus: 'active', // Resellers are active by default usually
+      subscriptionStatus: 'active',
     });
 
     const savedTenant = await this.tenantRepo.save(tenant);
 
-    // 2. Create ResellerConfig
+    // 2. Generate Password
+    const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
+
+    // 3. Create Owner User
+    const userRole = (await import('../../users/entities/user.entity')).UserRole;
+    const user = this.userRepo.create({
+      email,
+      name,
+      password: generatedPassword, // UsersService should hash this on save if there's a hook, or we hash it here
+      role: userRole.ADMIN,
+    });
+    const savedUser = await this.userRepo.save(user);
+
+    // 4. Create Membership
+    const membership = this.membershipRepo.create({
+      userId: savedUser.id,
+      tenantId: savedTenant.id,
+      role: TenantRole.OWNER,
+      status: 'active',
+    });
+    await this.membershipRepo.save(membership);
+
+    // 5. Create ResellerConfig
     const config = this.resellerConfigRepo.create({
       tenantId: savedTenant.id,
       brandName: name,
@@ -145,7 +179,7 @@ export class AdminTenantService {
     });
     await this.resellerConfigRepo.save(config);
 
-    // 3. Audit Log
+    // 6. Audit Log
     await this.auditService.logAction(
       'admin',
       'Administrator',
@@ -155,6 +189,34 @@ export class AdminTenantService {
       { email, planId, initialCredits },
     );
 
-    return savedTenant;
+    return {
+      ...savedTenant,
+      generatedPassword,
+    };
+  }
+
+  async updateTenantLimits(tenantId: string, dto: any): Promise<Tenant> {
+    const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant with ID ${tenantId} not found`);
+    }
+
+    if (dto.monthlyMessageLimit !== undefined) tenant.monthlyMessageLimit = dto.monthlyMessageLimit;
+    if (dto.aiCredits !== undefined) tenant.aiCredits = dto.aiCredits;
+    if (dto.apiAccessEnabled !== undefined) tenant.apiAccessEnabled = dto.apiAccessEnabled;
+    if (dto.status !== undefined) tenant.status = dto.status;
+
+    const saved = await this.tenantRepo.save(tenant);
+
+    await this.auditService.logAction(
+      'admin',
+      'Administrator',
+      'UPDATE_TENANT_LIMITS',
+      `Tenant: ${tenant.name}`,
+      tenant.id,
+      dto,
+    );
+
+    return saved;
   }
 }

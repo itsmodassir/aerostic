@@ -24,7 +24,10 @@ export default function ResellersPage() {
         initialCredits: 5000
     });
     const [submitting, setSubmitting] = useState(false);
-    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string, data?: any } | null>(null);
+    const [selectedReseller, setSelectedReseller] = useState<any>(null);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [savingLimits, setSavingLimits] = useState(false);
 
     useEffect(() => {
         fetchResellers();
@@ -87,14 +90,15 @@ export default function ResellersPage() {
             });
 
             if (res.ok) {
-                setFeedback({ type: 'success', msg: 'Partner instance deployed successfully!' });
+                const data = await res.json();
+                setFeedback({
+                    type: 'success',
+                    msg: 'Partner instance deployed successfully!',
+                    data: { password: data.generatedPassword, email: onboardForm.email }
+                });
                 fetchResellers();
                 fetchStats();
-                setTimeout(() => {
-                    setShowOnboardModal(false);
-                    setFeedback(null);
-                    setOnboardForm({ name: '', email: '', planId: '', initialCredits: 5000 });
-                }, 2000);
+                // Don't close immediately if we have a password to show
             } else {
                 const err = await res.json();
                 throw new Error(err.message || 'Deployment failed');
@@ -109,8 +113,8 @@ export default function ResellersPage() {
     const handleRedirect = (slug: string) => {
         const isProduction = window.location.hostname !== 'localhost';
         const url = isProduction
-            ? `https://${slug}.aerostic.com/admin/login`
-            : `http://${slug}.localhost:3000/admin/login`;
+            ? `https://${slug}.aerostic.com/admin`
+            : `http://${slug}.localhost:3000/admin`;
         window.open(url, '_blank');
     };
 
@@ -130,6 +134,27 @@ export default function ResellersPage() {
             }
         } catch (error) {
             console.error('Failed to impersonate:', error);
+        }
+    };
+
+    const handleUpdateLimits = async (id: string, updates: any) => {
+        setSavingLimits(true);
+        try {
+            const res = await fetch(`/api/v1/admin/tenants/${id}/limits`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                fetchResellers();
+                setFeedback({ type: 'success', msg: 'Limits updated successfully' });
+                setTimeout(() => setFeedback(null), 3000);
+            }
+        } catch (error) {
+            console.error('Failed to update limits:', error);
+        } finally {
+            setSavingLimits(false);
         }
     };
 
@@ -297,17 +322,29 @@ export default function ResellersPage() {
                                                     </button>
                                                     <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 hidden group-hover/menu:block z-50 animate-in fade-in slide-in-from-top-1">
                                                         <button
+                                                            onClick={() => {
+                                                                setSelectedReseller(reseller);
+                                                                setShowProfileModal(true);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                        >
+                                                            <Users2 className="w-4 h-4 text-gray-400" />
+                                                            View Profile
+                                                        </button>
+                                                        <button
                                                             onClick={() => handleImpersonate(reseller.id)}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                         >
                                                             <Shield className="w-4 h-4 text-gray-400" />
                                                             Impersonate Admin
                                                         </button>
-                                                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                                                            <Users2 className="w-4 h-4 text-gray-400" />
-                                                            View Portfolio
-                                                        </button>
-                                                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedReseller(reseller);
+                                                                setShowProfileModal(true); // Share same modal or different? For now same
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                        >
                                                             <CreditCard className="w-4 h-4 text-gray-400" />
                                                             Distribute Credits
                                                         </button>
@@ -335,6 +372,108 @@ export default function ResellersPage() {
                 </div>
             </div>
 
+            {/* Partner Profile Modal */}
+            {showProfileModal && selectedReseller && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in">
+                    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in">
+                        <div className="p-8 border-b flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">Partner Profile: {selectedReseller.name}</h3>
+                                <p className="text-sm text-gray-500">Configure partner limits and platform access</p>
+                            </div>
+                            <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <Plus className="w-6 h-6 rotate-45 text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-8 max-height-[70vh] overflow-y-auto">
+                            {/* Metrics */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Portfolio Size</p>
+                                    <p className="text-2xl font-bold text-gray-900">{selectedReseller.subTenants?.length || 0} Entities</p>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Credit Pool</p>
+                                    <p className="text-2xl font-bold text-indigo-600">{selectedReseller.resellerCredits || 0} Units</p>
+                                </div>
+                            </div>
+
+                            {/* Limits Configuration */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-blue-600 pl-3">Usage Limits</h4>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Monthly Message Limit</label>
+                                        <input
+                                            type="number"
+                                            defaultValue={selectedReseller.monthlyMessageLimit || 1000}
+                                            onChange={(e) => selectedReseller.newMonthlyLimit = parseInt(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">AI Credits (Monthly)</label>
+                                        <input
+                                            type="number"
+                                            defaultValue={selectedReseller.aiCredits || 100}
+                                            onChange={(e) => selectedReseller.newAiCredits = parseInt(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Feature Toggles */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Platform Access</h4>
+                                <div className="space-y-3">
+                                    {[
+                                        { id: 'api', label: 'API Access', desc: 'Allow partner to use developer endpoints', enabled: selectedReseller.apiAccessEnabled },
+                                        { id: 'whitelabel', label: 'White-Label Branding', desc: 'Custom logo, colors, and subdomain', enabled: true },
+                                        { id: 'analytics', label: 'Advanced Analytics', desc: 'Real-time message tracing and reporting', enabled: true },
+                                    ].map((feat) => (
+                                        <div key={feat.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">{feat.label}</p>
+                                                <p className="text-xs text-gray-500">{feat.desc}</p>
+                                            </div>
+                                            <div className={clsx(
+                                                "w-12 h-6 rounded-full p-1 transition-colors cursor-pointer",
+                                                feat.enabled ? "bg-blue-600" : "bg-gray-200"
+                                            )}>
+                                                <div className={clsx(
+                                                    "w-4 h-4 bg-white rounded-full transition-transform",
+                                                    feat.enabled ? "translate-x-6" : "translate-x-0"
+                                                )} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-8 bg-gray-50 flex gap-4">
+                            <button
+                                onClick={() => setShowProfileModal(false)}
+                                className="px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-bold text-sm"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={() => handleUpdateLimits(selectedReseller.id, {
+                                    monthlyMessageLimit: selectedReseller.newMonthlyLimit,
+                                    aiCredits: selectedReseller.newAiCredits
+                                })}
+                                disabled={savingLimits}
+                                className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
+                            >
+                                {savingLimits && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                {savingLimits ? 'Saving...' : 'Apply Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Improved Onboard Modal */}
             {showOnboardModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
@@ -349,77 +488,120 @@ export default function ResellersPage() {
                             <div className="absolute -right-4 -top-4 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl" />
                         </div>
 
-                        {feedback && (
-                            <div className={clsx(
-                                "mx-10 mt-6 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2",
-                                feedback.type === 'success' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                            )}>
-                                {feedback.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                                <span className="text-sm font-bold tracking-tight">{feedback.msg}</span>
-                            </div>
-                        )}
+                        {feedback && feedback.type === 'success' && feedback.data ? (
+                            <div className="p-10 space-y-6">
+                                <div className="p-6 bg-green-50 rounded-[24px] border border-green-100 text-center">
+                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle className="w-8 h-8 text-green-600" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-gray-900 mb-2">Partner Onboarded!</h4>
+                                    <p className="text-sm text-gray-600 mb-6">Share these temporary credentials with the partner. They must change their password on first login.</p>
 
-                        <div className="p-10 space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Company Entity Name</label>
-                                    <input
-                                        type="text"
-                                        value={onboardForm.name}
-                                        onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
-                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic"
-                                        placeholder="e.g. SKYNET MEDIA GROUP"
-                                    />
+                                    <div className="space-y-3 text-left">
+                                        <div className="p-4 bg-white rounded-xl border border-green-200">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Login Email</p>
+                                            <p className="font-bold text-gray-900">{feedback.data.email}</p>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-xl border border-green-200 flex justify-between items-center group">
+                                            <div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Generated Password</p>
+                                                <p className="font-mono font-bold text-blue-600">{feedback.data.password}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(feedback.data.password)}
+                                                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+                                            >
+                                                <Plus className="w-4 h-4 rotate-45" /> {/* Using Plus as a placeholder for copy if not available */}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Administrative Email</label>
-                                    <input
-                                        type="email"
-                                        value={onboardForm.email}
-                                        onChange={(e) => setOnboardForm({ ...onboardForm, email: e.target.value })}
-                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all"
-                                        placeholder="admin@partner.com"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Territory Tier</label>
-                                    <select
-                                        value={onboardForm.planId}
-                                        onChange={(e) => setOnboardForm({ ...onboardForm, planId: e.target.value })}
-                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold text-gray-700 appearance-none transition-all"
-                                    >
-                                        <option value="">Select Tier...</option>
-                                        {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Unit Allocation</label>
-                                    <input
-                                        type="number"
-                                        value={onboardForm.initialCredits}
-                                        onChange={(e) => setOnboardForm({ ...onboardForm, initialCredits: parseInt(e.target.value) || 0 })}
-                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
-                                    />
-                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowOnboardModal(false);
+                                        setFeedback(null);
+                                        setOnboardForm({ name: '', email: '', planId: '', initialCredits: 5000 });
+                                    }}
+                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs tracking-widest hover:bg-black transition-all"
+                                >
+                                    DONE & CLOSE
+                                </button>
                             </div>
-                        </div>
-                        <div className="p-10 bg-gray-50/50 flex gap-4">
-                            <button
-                                onClick={() => setShowOnboardModal(false)}
-                                className="flex-1 px-8 py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-100 transition-all font-black text-xs tracking-widest"
-                                disabled={submitting}
-                            >
-                                ABORT
-                            </button>
-                            <button
-                                onClick={handleDeploy}
-                                disabled={submitting}
-                                className="flex-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all font-black text-xs tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {submitting && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                                {submitting ? 'DEPLOYING...' : 'DEPLOY INSTANCE'}
-                            </button>
-                        </div>
+                        ) : (
+                            <>
+                                {feedback && (
+                                    <div className={clsx(
+                                        "mx-10 mt-6 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2",
+                                        feedback.type === 'success' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                                    )}>
+                                        {feedback.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                        <span className="text-sm font-bold tracking-tight">{feedback.msg}</span>
+                                    </div>
+                                )}
+
+                                <div className="p-10 space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2">
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Company Entity Name</label>
+                                            <input
+                                                type="text"
+                                                value={onboardForm.name}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic"
+                                                placeholder="e.g. SKYNET MEDIA GROUP"
+                                            />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Administrative Email</label>
+                                            <input
+                                                type="email"
+                                                value={onboardForm.email}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, email: e.target.value })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all"
+                                                placeholder="admin@partner.com"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Territory Tier</label>
+                                            <select
+                                                value={onboardForm.planId}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, planId: e.target.value })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold text-gray-700 appearance-none transition-all"
+                                            >
+                                                <option value="">Select Tier...</option>
+                                                {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Unit Allocation</label>
+                                            <input
+                                                type="number"
+                                                value={onboardForm.initialCredits}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, initialCredits: parseInt(e.target.value) || 0 })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-10 bg-gray-50/50 flex gap-4">
+                                    <button
+                                        onClick={() => setShowOnboardModal(false)}
+                                        className="flex-1 px-8 py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-100 transition-all font-black text-xs tracking-widest"
+                                        disabled={submitting}
+                                    >
+                                        ABORT
+                                    </button>
+                                    <button
+                                        onClick={handleDeploy}
+                                        disabled={submitting}
+                                        className="flex-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all font-black text-xs tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {submitting && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                        {submitting ? 'DEPLOYING...' : 'DEPLOY INSTANCE'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

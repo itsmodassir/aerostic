@@ -115,7 +115,16 @@ export class AdminController {
     );
   }
 
-  @Post('resellers')
+  @Patch('tenants/:id/limits')
+  async updateTenantLimits(
+    @Param('id') tenantId: string,
+    @Body() dto: any,
+  ) {
+    return this.tenantService.updateTenantLimits(
+      tenantId,
+      dto,
+    );
+  }
   async onboardReseller(@Body() dto: OnboardResellerDto) {
     return this.tenantService.onboardReseller(dto);
   }

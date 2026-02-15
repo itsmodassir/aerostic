@@ -160,6 +160,13 @@ export class ResellerService {
         return { success: true, remainingCredits: reseller.resellerCredits };
     }
 
+    async listSubTenants(resellerId: string) {
+        return this.tenantsRepository.find({
+            where: { resellerId },
+            order: { createdAt: 'DESC' },
+        });
+    }
+
     private slugify(text: string): string {
         return text
             .toLowerCase()

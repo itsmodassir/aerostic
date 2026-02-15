@@ -117,10 +117,10 @@
 - [x] Add CI/CD Pipeline Config (GitHub Actions)
 - [x] Final Smoke Test (Docker Up check)
 
-## 15. Reseller Portal & Plan Enhancements [/]
-- [ ] Implement External Redirection link for Resellers
-- [ ] Implement Partner Actions Menu (3 dots)
-- [ ] Add Plan Type (Regular/Reseller) to Plans UI
-- [ ] Add Razorpay Plan ID management to Plans UI
-- [ ] Implement Max Sub-tenants & White Label toggles in Plans
-- [ ] Verify Reseller Dashboard "Manage Plans" shortcut
+## 15. Reseller Portal & Plan Enhancements [x]
+- [x] Implement External Redirection link for Resellers
+- [x] Implement Partner Actions Menu (3 dots)
+- [x] Add Plan Type (Regular/Reseller) to Plans UI
+- [x] Add Razorpay Plan ID management to Plans UI
+- [x] Implement Max Sub-tenants & White Label toggles in Plans
+- [x] Verify Reseller Dashboard "Manage Plans" shortcut

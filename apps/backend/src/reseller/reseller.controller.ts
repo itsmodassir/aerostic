@@ -40,13 +40,21 @@ export class ResellerController {
         return this.resellerService.updateBranding(req.user.tenantId, dto);
     }
 
-    @Post('credits/allocate')
-    @Roles(TenantRole.OWNER)
     async allocateCredits(
         @Request() req: any,
         @Body('targetTenantId') targetTenantId: string,
         @Body('amount') amount: number,
     ) {
-        return this.resellerService.allocateCredits(req.user.tenantId, targetTenantId, amount);
+        return this.resellerService.allocateCredits(
+            req.user.tenantId,
+            targetTenantId,
+            amount,
+        );
+    }
+
+    @Get('clients')
+    @Roles(TenantRole.OWNER)
+    async listClients(@Request() req: any) {
+        return this.resellerService.listSubTenants(req.user.tenantId);
     }
 }

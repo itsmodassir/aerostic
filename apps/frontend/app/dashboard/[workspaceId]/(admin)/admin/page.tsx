@@ -35,16 +35,21 @@ const PLANS = {
 };
 
 export default function AdminPage() {
-    const [activeTab, setActiveTab] = useState<'tenants' | 'configuration'>('tenants');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('tenants'); // Added activeTab state
 
     const checkAdmin = async () => {
         try {
             const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
             if (res.ok) {
                 const user = await res.json();
-                setIsAdmin(user.globalRole === 'super_admin' || user.email === 'md@modassir.info');
+                const superAdmin = user.globalRole === 'super_admin' || user.email === 'md@modassir.info';
+                const workspaceAdmin = user.role === 'admin' || user.role === 'owner';
+
+                setIsSuperAdmin(superAdmin);
+                setIsAdmin(superAdmin || workspaceAdmin);
             }
         } catch (e) { }
         setLoading(false);
@@ -96,26 +101,16 @@ export default function AdminPage() {
                         }`}
                 >
                     <Users className="w-4 h-4" />
-                    Tenants & Users
-                </button>
-                <button
-                    onClick={() => setActiveTab('configuration')}
-                    className={`px-6 py-3 font-medium text-sm flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'configuration'
-                        ? 'border-purple-600 text-purple-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
-                >
-                    <Settings className="w-4 h-4" />
-                    System Configuration
+                    Sub-Tenants
                 </button>
             </div>
 
-            {activeTab === 'tenants' ? <TenantsTab /> : <ConfigurationTab />}
+            {activeTab === 'tenants' ? <TenantsTab isSuperAdmin={isSuperAdmin} /> : <ConfigurationTab />}
         </div>
     );
 }
 
-function TenantsTab() {
+function TenantsTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -139,7 +134,9 @@ function TenantsTab() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/admin/users`, {
+            // Use different endpoint based on role
+            const endpoint = isSuperAdmin ? '/admin/users' : '/reseller/clients';
+            const res = await fetch(`${API_URL}${endpoint}`, {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed');
