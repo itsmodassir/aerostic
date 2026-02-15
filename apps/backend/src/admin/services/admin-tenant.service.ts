@@ -72,6 +72,25 @@ export class AdminTenantService {
     }));
   }
 
+  async getResellerDetails(id: string): Promise<any> {
+    const tenant = await this.getTenantById(id);
+    let owner = null;
+    try {
+      owner = await this.getTenantOwner(id);
+    } catch (e) {
+      // Ignore if owner not found
+    }
+
+    return {
+      ...tenant,
+      owner: owner ? {
+        id: owner.id,
+        name: owner.name,
+        email: owner.email,
+      } : null,
+    };
+  }
+
   async getTenantById(tenantId: string): Promise<Tenant> {
     const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
     if (!tenant) {

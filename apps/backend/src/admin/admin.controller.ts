@@ -165,6 +165,11 @@ export class AdminController {
     return this.tenantService.getAllTenants(type);
   }
 
+  @Get('resellers/:id')
+  async getReseller(@Param('id') id: string) {
+    return this.tenantService.getResellerDetails(id);
+  }
+
   @Get('users')
   async getAllUsers() {
     // Fixed: Returns valid tenant summary instead of trying to look like users

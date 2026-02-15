@@ -29,7 +29,9 @@ export default function ResellersPage() {
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string, data?: any } | null>(null);
     const [selectedReseller, setSelectedReseller] = useState<any>(null);
+    const [selectedResellerOwner, setSelectedResellerOwner] = useState<any>(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [fetchingOwner, setFetchingOwner] = useState(false);
     const [savingLimits, setSavingLimits] = useState(false);
 
     useEffect(() => {
@@ -132,6 +134,21 @@ export default function ResellersPage() {
             }
         } catch (error) {
             console.error('Failed to impersonate:', error);
+        }
+    };
+
+    const fetchResellerOwner = async (id: string) => {
+        setFetchingOwner(true);
+        try {
+            const res = await fetch(`/api/v1/admin/resellers/${id}`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setSelectedResellerOwner(data.owner);
+            }
+        } catch (error) {
+            console.error('Failed to fetch reseller owner:', error);
+        } finally {
+            setFetchingOwner(false);
         }
     };
 
@@ -364,9 +381,10 @@ export default function ResellersPage() {
                                                     </button>
                                                     <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 hidden group-hover/menu:block z-50 animate-in fade-in slide-in-from-top-1">
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={async () => {
                                                                 setSelectedReseller(reseller);
                                                                 setShowProfileModal(true);
+                                                                await fetchResellerOwner(reseller.id);
                                                             }}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                         >
@@ -381,9 +399,10 @@ export default function ResellersPage() {
                                                             Impersonate Admin
                                                         </button>
                                                         <button
-                                                            onClick={() => {
+                                                            onClick={async () => {
                                                                 setSelectedReseller(reseller);
                                                                 setShowProfileModal(true);
+                                                                await fetchResellerOwner(reseller.id);
                                                             }}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                         >
@@ -440,6 +459,40 @@ export default function ResellersPage() {
                                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Credit Pool</p>
                                     <p className="text-2xl font-bold text-indigo-600">{selectedReseller.resellerCredits || 0} Units</p>
+                                </div>
+                            </div>
+
+                            {/* Partner User Details */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Partner User Details</h4>
+                                <div className="grid grid-cols-2 gap-6 bg-emerald-50/30 p-6 rounded-2xl border border-emerald-100">
+                                    {fetchingOwner ? (
+                                        <div className="col-span-2 py-4 flex flex-col items-center gap-2">
+                                            <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                                            <p className="text-xs text-emerald-600 font-bold">Fetching owner details...</p>
+                                        </div>
+                                    ) : selectedResellerOwner ? (
+                                        <>
+                                            <div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Owner Name</p>
+                                                <p className="font-bold text-gray-900">{selectedResellerOwner.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Owner Email</p>
+                                                <p className="font-bold text-blue-600">{selectedResellerOwner.email}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="col-span-2 text-center py-4 bg-white/50 rounded-xl border border-dashed border-emerald-200">
+                                            <p className="text-sm font-bold text-emerald-700">No owner associated with this partner.</p>
+                                            <button
+                                                onClick={() => handleDeployExisting(selectedReseller.id)}
+                                                className="mt-2 text-xs text-emerald-600 underline font-bold"
+                                            >
+                                                Deploy Instance to create owner
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -602,7 +655,7 @@ export default function ResellersPage() {
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-orange-600 pl-3 mt-8">Security & Operations</h4>
                                 <div className="grid grid-cols-2 gap-4">
                                     <button
-                                        onClick={() => handleRegeneratePassword(selectedReseller.id, selectedReseller.email || 'partner@aerostic.com')}
+                                        onClick={() => handleRegeneratePassword(selectedReseller.id, selectedResellerOwner?.email || selectedReseller.email || 'partner@aerostic.com')}
                                         className="p-4 bg-orange-50 border border-orange-100 rounded-2xl text-left hover:bg-orange-100 transition-all group"
                                     >
                                         <Shield className="w-5 h-5 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
