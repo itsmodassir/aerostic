@@ -13,6 +13,7 @@ import { WebhookEndpoint } from '../billing/entities/webhook-endpoint.entity';
 import { User } from '../users/entities/user.entity';
 import { EmailMessage } from './entities/email-message.entity';
 import { TenantMembership } from '../tenants/entities/tenant-membership.entity';
+import { ResellerConfig } from '../tenants/entities/reseller-config.entity';
 import { AuthModule } from '../auth/auth.module';
 
 import { Conversation } from '../messages/entities/conversation.entity';
@@ -44,6 +45,7 @@ import { AdminInboxService } from './services/admin-inbox.service';
       User,
       EmailMessage,
       TenantMembership,
+      ResellerConfig,
     ]),
     AuditModule,
     BillingModule,

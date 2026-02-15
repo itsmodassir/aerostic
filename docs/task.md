@@ -79,6 +79,8 @@
 - [x] Create comprehensive Reseller management page
 - [x] Overhaul Admin Dashboard with high-density, rich visuals
 - [x] Implement Quick Actions panel for administrators
+- [x] Functionalize 'Deploy Instance' button for Reseller onboarding
+- [x] Connect Reseller dashboard stats to real-time database data
 
 ## Phase 9: Version Control [x]
 - [x] Stage all changes (Backend & Frontend)
