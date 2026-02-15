@@ -53,11 +53,57 @@ class OnboardResellerDto {
 
   @IsOptional()
   @IsString()
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
   planId?: string;
+
+  @IsOptional()
+  @IsString()
+  plan?: string;
 
   @IsOptional()
   @Type(() => Number)
   initialCredits?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  maxUsers?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  monthlyMessageLimit?: number;
+}
+
+class UpdateResellerDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
+  @IsOptional()
+  @IsString()
+  plan?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  maxUsers?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  monthlyMessageLimit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  aiCredits?: number;
+
+  @IsOptional()
+  @IsEnum(['active', 'suspended'])
+  status?: string;
 }
 
 @Controller('admin')
@@ -125,8 +171,17 @@ export class AdminController {
       dto,
     );
   }
+  @Post('resellers')
   async onboardReseller(@Body() dto: OnboardResellerDto) {
     return this.tenantService.onboardReseller(dto);
+  }
+
+  @Patch('resellers/:id')
+  async updateReseller(
+    @Param('id') id: string,
+    @Body() dto: UpdateResellerDto,
+  ) {
+    return this.tenantService.updateReseller(id, dto);
   }
 
   @Post('tenants/:id/impersonate')
@@ -154,6 +209,7 @@ export class AdminController {
     return {
       success: true,
       workspaceId: tenantId,
+      redirectUrl: `/dashboard/${tenantId}`,
     };
   }
 

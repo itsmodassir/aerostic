@@ -136,14 +136,18 @@ export class AdminTenantService {
   }
 
   async onboardReseller(dto: any): Promise<any> {
-    const { name, email, planId, initialCredits } = dto;
+    const { name, email, slug, planId, plan, initialCredits, maxUsers, monthlyMessageLimit } = dto;
 
     // 1. Create Tenant
     const tenant = this.tenantRepo.create({
       name,
+      slug: slug || undefined, // Entity @BeforeInsert will handle if empty, but we prefer custom
       type: TenantType.RESELLER,
       resellerCredits: initialCredits || 0,
       planId: planId || null,
+      plan: plan || 'platinum', // Manual plan name
+      maxUsers: maxUsers || 10,
+      monthlyMessageLimit: monthlyMessageLimit || 1000,
       status: 'active',
       subscriptionStatus: 'active',
     });
@@ -215,6 +219,32 @@ export class AdminTenantService {
       'Administrator',
       'UPDATE_TENANT_LIMITS',
       `Tenant: ${tenant.name}`,
+      tenant.id,
+      dto,
+    );
+
+    return saved;
+  }
+
+  async updateReseller(id: string, dto: any): Promise<Tenant> {
+    const tenant = await this.tenantRepo.findOne({ where: { id } });
+    if (!tenant) throw new NotFoundException('Reseller not found');
+
+    if (dto.name) tenant.name = dto.name;
+    if (dto.slug) tenant.slug = dto.slug;
+    if (dto.plan) tenant.plan = dto.plan;
+    if (dto.maxUsers !== undefined) tenant.maxUsers = dto.maxUsers;
+    if (dto.monthlyMessageLimit !== undefined) tenant.monthlyMessageLimit = dto.monthlyMessageLimit;
+    if (dto.aiCredits !== undefined) tenant.aiCredits = dto.aiCredits;
+    if (dto.status) tenant.status = dto.status;
+
+    const saved = await this.tenantRepo.save(tenant);
+
+    await this.auditService.logAction(
+      'admin',
+      'Administrator',
+      'UPDATE_RESELLER',
+      `Partner: ${tenant.name}`,
       tenant.id,
       dto,
     );

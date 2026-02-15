@@ -96,6 +96,9 @@ export class Tenant {
   @Column({ name: 'reseller_credits', default: 0, comment: 'Credits allocated to reseller to distribute' })
   resellerCredits: number;
 
+  @Column({ name: 'max_users', default: 10 })
+  maxUsers: number;
+
   // Developer Access
   @Column({ name: 'api_access_enabled', default: false })
   apiAccessEnabled: boolean;

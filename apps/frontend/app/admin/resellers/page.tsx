@@ -16,12 +16,15 @@ export default function ResellersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [stats, setStats] = useState<any>(null);
 
-    // Form State
     const [onboardForm, setOnboardForm] = useState({
         name: '',
         email: '',
+        slug: '',
+        plan: 'Platinum Partner',
         planId: '',
-        initialCredits: 5000
+        initialCredits: 5000,
+        maxUsers: 10,
+        monthlyMessageLimit: 1000
     });
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string, data?: any } | null>(null);
@@ -113,8 +116,8 @@ export default function ResellersPage() {
     const handleRedirect = (slug: string) => {
         const isProduction = window.location.hostname !== 'localhost';
         const url = isProduction
-            ? `https://${slug}.aerostic.com/admin`
-            : `http://${slug}.localhost:3000/admin`;
+            ? `https://${slug}.aerostic.com/dashboard`
+            : `http://${slug}.localhost:3000/dashboard`;
         window.open(url, '_blank');
     };
 
@@ -126,11 +129,7 @@ export default function ResellersPage() {
             });
             if (res.ok) {
                 const data = await res.json();
-                const isProduction = window.location.hostname !== 'localhost';
-                const url = isProduction
-                    ? `https://${data.workspaceId}.aerostic.com/dashboard/${data.workspaceId}`
-                    : `http://${data.workspaceId}.localhost:3000/dashboard/${data.workspaceId}`;
-                window.location.href = url;
+                window.location.href = data.redirectUrl || `/dashboard/${data.workspaceId}`;
             }
         } catch (error) {
             console.error('Failed to impersonate:', error);
@@ -140,7 +139,7 @@ export default function ResellersPage() {
     const handleUpdateLimits = async (id: string, updates: any) => {
         setSavingLimits(true);
         try {
-            const res = await fetch(`/api/v1/admin/tenants/${id}/limits`, {
+            const res = await fetch(`/api/v1/admin/resellers/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates),
@@ -148,11 +147,12 @@ export default function ResellersPage() {
             });
             if (res.ok) {
                 fetchResellers();
-                setFeedback({ type: 'success', msg: 'Limits updated successfully' });
+                setFeedback({ type: 'success', msg: 'Partner details updated successfully' });
                 setTimeout(() => setFeedback(null), 3000);
+                setShowProfileModal(false);
             }
         } catch (error) {
-            console.error('Failed to update limits:', error);
+            console.error('Failed to update reseller:', error);
         } finally {
             setSavingLimits(false);
         }
@@ -341,12 +341,12 @@ export default function ResellersPage() {
                                                         <button
                                                             onClick={() => {
                                                                 setSelectedReseller(reseller);
-                                                                setShowProfileModal(true); // Share same modal or different? For now same
+                                                                setShowProfileModal(true);
                                                             }}
                                                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                                         >
                                                             <CreditCard className="w-4 h-4 text-gray-400" />
-                                                            Distribute Credits
+                                                            Configure Limits
                                                         </button>
                                                         <div className="h-px bg-gray-100 my-1"></div>
                                                         <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium">
@@ -425,7 +425,48 @@ export default function ResellersPage() {
 
                             {/* Feature Toggles */}
                             <div className="space-y-4">
-                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Platform Access</h4>
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Partner Configuration</h4>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Partner Subdomain</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={selectedReseller.slug}
+                                            onChange={(e) => selectedReseller.newSlug = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Partner Plan</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={selectedReseller.plan}
+                                            onChange={(e) => selectedReseller.newPlan = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Max User Accounts</label>
+                                        <input
+                                            type="number"
+                                            defaultValue={selectedReseller.maxUsers || 10}
+                                            onChange={(e) => selectedReseller.newMaxUsers = parseInt(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Status</label>
+                                        <select
+                                            defaultValue={selectedReseller.status}
+                                            onChange={(e) => selectedReseller.newStatus = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="suspended">Suspended</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3 mt-8">Platform Access</h4>
                                 <div className="space-y-3">
                                     {[
                                         { id: 'api', label: 'API Access', desc: 'Allow partner to use developer endpoints', enabled: selectedReseller.apiAccessEnabled },
@@ -460,8 +501,13 @@ export default function ResellersPage() {
                             </button>
                             <button
                                 onClick={() => handleUpdateLimits(selectedReseller.id, {
+                                    name: selectedReseller.newName,
+                                    slug: selectedReseller.newSlug,
+                                    plan: selectedReseller.newPlan,
+                                    maxUsers: selectedReseller.newMaxUsers,
                                     monthlyMessageLimit: selectedReseller.newMonthlyLimit,
-                                    aiCredits: selectedReseller.newAiCredits
+                                    aiCredits: selectedReseller.newAiCredits,
+                                    status: selectedReseller.newStatus
                                 })}
                                 disabled={savingLimits}
                                 className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
@@ -520,7 +566,16 @@ export default function ResellersPage() {
                                     onClick={() => {
                                         setShowOnboardModal(false);
                                         setFeedback(null);
-                                        setOnboardForm({ name: '', email: '', planId: '', initialCredits: 5000 });
+                                        setOnboardForm({
+                                            name: '',
+                                            email: '',
+                                            slug: '',
+                                            plan: 'Platinum Partner',
+                                            planId: '',
+                                            initialCredits: 5000,
+                                            maxUsers: 10,
+                                            monthlyMessageLimit: 1000
+                                        });
                                     }}
                                     className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs tracking-widest hover:bg-black transition-all"
                                 >
@@ -546,10 +601,23 @@ export default function ResellersPage() {
                                             <input
                                                 type="text"
                                                 value={onboardForm.name}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })}
                                                 className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic"
                                                 placeholder="e.g. SKYNET MEDIA GROUP"
                                             />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Partner Subdomain</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={onboardForm.slug}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, slug: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                    placeholder="partner-slug"
+                                                />
+                                                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">.aerostic.com</span>
+                                            </div>
                                         </div>
                                         <div className="col-span-2">
                                             <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Administrative Email</label>
@@ -562,22 +630,39 @@ export default function ResellersPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Territory Tier</label>
-                                            <select
-                                                value={onboardForm.planId}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, planId: e.target.value })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold text-gray-700 appearance-none transition-all"
-                                            >
-                                                <option value="">Select Tier...</option>
-                                                {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                            </select>
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Manual Plan Name</label>
+                                            <input
+                                                type="text"
+                                                value={onboardForm.plan}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, plan: e.target.value })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                placeholder="e.g. Platinum Partner"
+                                            />
                                         </div>
                                         <div>
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Unit Allocation</label>
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Credits</label>
                                             <input
                                                 type="number"
                                                 value={onboardForm.initialCredits}
                                                 onChange={(e) => setOnboardForm({ ...onboardForm, initialCredits: parseInt(e.target.value) || 0 })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">User Limit</label>
+                                            <input
+                                                type="number"
+                                                value={onboardForm.maxUsers}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, maxUsers: parseInt(e.target.value) || 1 })}
+                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Message Limit (Monthly)</label>
+                                            <input
+                                                type="number"
+                                                value={onboardForm.monthlyMessageLimit}
+                                                onChange={(e) => setOnboardForm({ ...onboardForm, monthlyMessageLimit: parseInt(e.target.value) || 0 })}
                                                 className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
                                             />
                                         </div>

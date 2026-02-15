@@ -239,10 +239,11 @@ function WorkflowBuilder() {
     const [selectedNode, setSelectedNode] = useState<WorkflowUIFlowNode | null>(null);
     const [showTestPanel, setShowTestPanel] = useState(false);
 
+    const workflowId = searchParams.get('id');
+
     // Fetch existing workflow if editing
     useEffect(() => {
         const fetchWorkflow = async () => {
-            const workflowId = params.workflowId as string;
             if (workflowId && workflowId !== 'new') {
                 try {
                     const res = await api.get(`/workflows/${workflowId}`);
@@ -258,11 +259,10 @@ function WorkflowBuilder() {
             }
         };
         fetchWorkflow();
-    }, [params.workflowId]);
+    }, [workflowId]);
 
     // Initialize with templates
     useEffect(() => {
-        const workflowId = params.workflowId as string;
         if (!workflowId || workflowId === 'new') {
             if (template === 'ai-sales') {
                 setName('AI Sales Assistant');
@@ -325,7 +325,7 @@ function WorkflowBuilder() {
                 ] as WorkflowUIFlowNode[]);
             }
         }
-    }, [template, params.workflowId]);
+    }, [template, workflowId]);
 
     // Auto-save logic
     useEffect(() => {
@@ -398,7 +398,7 @@ function WorkflowBuilder() {
                 ...(type === 'openai_model' && { modelName: 'gpt-4o', temperature: 0.7 }),
                 ...(type === 'gemini_model' && { modelName: 'gemini-1.5-pro', temperature: 0.7 }),
                 ...(type === 'chat' && { label: 'Agent Handoff' }),
-                ...(type === 'webhook' && { label: 'Webhook Trigger', workflowId: params.workflowId || 'NEW' }),
+                ...(type === 'webhook' && { label: 'Webhook Trigger', workflowId: workflowId || 'NEW' }),
                 ...(type === 'api_request' && { method: 'GET', url: 'https://', headers: '{}', body: '{}', variableName: 'apiResponse' }),
                 ...(type === 'google_drive' && { operation: 'list', variableName: 'driveResult' }),
                 ...(type === 'knowledge_query' && { knowledgeBaseId: 'default' }),
@@ -492,7 +492,6 @@ function WorkflowBuilder() {
 
         if (!isAutoSave) setLoading(true);
         try {
-            const workflowId = params.workflowId as string;
             if (workflowId && workflowId !== 'new') {
                 await api.patch(`/workflows/${workflowId}`, {
                     name,
@@ -507,7 +506,7 @@ function WorkflowBuilder() {
                     isActive: true,
                 });
                 if (res.data?.id) {
-                    router.replace(`/dashboard/${workspaceId}/automation/builder/${res.data.id}`);
+                    router.replace(`/dashboard/${workspaceId}/automation/builder?id=${res.data.id}`);
                 }
             }
             if (!isAutoSave) toast.success('Workflow saved successfully!');
@@ -569,7 +568,7 @@ function WorkflowBuilder() {
             {showTestPanel && (
                 <TestChatPanel
                     workspaceId={workspaceId}
-                    workflowId={params.workflowId as string}
+                    workflowId={workflowId as string}
                     onClose={() => setShowTestPanel(false)}
                     onDebugEvent={(eventData) => {
                         console.log('Received Debug Event in Page:', eventData);
