@@ -6,6 +6,12 @@ import {
   Get,
   BadRequestException,
   Res,
+  UseGuards,
+  Request as NestRequest,
+  HttpStatus,
+  Query,
+  Patch,
+  Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -22,7 +28,6 @@ import {
 import { Role } from '../tenants/entities/role.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { UseGuards, Request as NestRequest } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -72,6 +77,7 @@ class RegisterDto {
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   constructor(
     private authService: AuthService,
     private usersService: UsersService,
@@ -108,24 +114,22 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     try {
-      console.log(`[AuthController] Login attempt for: ${loginDto.email}`);
+      this.logger.log(`Login attempt for: ${loginDto.email}`);
       const user = await this.authService.validateUser(
         loginDto.email,
         loginDto.password,
       );
       if (!user) {
-        console.warn(
-          `[AuthController] Invalid credentials for: ${loginDto.email}`,
-        );
+        this.logger.warn(`Invalid credentials for: ${loginDto.email}`);
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      console.log(`[AuthController] User validated: ${user.id} (${user.role})`);
+      this.logger.log(`User validated: ${user.id} (${user.role})`);
       const { access_token } = await this.authService.login(user);
 
       const isProduction = process.env.NODE_ENV === 'production';
 
-      console.log('[AuthController] Setting cookie...');
+      this.logger.debug('Setting cookie...');
       res.cookie('access_token', access_token, {
         httpOnly: true,
         secure: isProduction, // False for localhost
@@ -135,7 +139,7 @@ export class AuthController {
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
-      console.log('[AuthController] Auditing login...');
+      this.logger.debug('Auditing login...');
       try {
         await this.auditService.logAction(
           user.id,
@@ -150,26 +154,23 @@ export class AuthController {
           'AuthController',
         );
       } catch (auditError) {
-        console.error(
-          '[AuthController] Audit log failed (non-critical):',
-          auditError,
-        );
+        this.logger.error('Audit log failed (non-critical):', auditError.stack);
       }
 
-      console.log('[AuthController] Fetching membership...');
+      this.logger.debug('Fetching membership...');
       const membership = await this.membershipRepo.findOne({
         where: { userId: user.id },
         relations: ['tenant'],
       });
 
-      console.log(`[AuthController] Membership found: ${membership?.tenantId}`);
+      this.logger.log(`Membership found: ${membership?.tenantId}`);
       return {
         user,
         workspaceId: membership?.tenantId,
         workspaceName: membership?.tenant?.name,
       };
     } catch (error) {
-      console.error('[AuthController] Login CRASH:', error);
+      this.logger.error('Login CRASH:', error.stack);
       if (error instanceof UnauthorizedException) {
         throw error;
       }
@@ -289,14 +290,14 @@ export class AuthController {
         this.mailService
           .sendWelcomeEmail(user.email, user.name)
           .catch((err) => {
-            console.error('Failed to send welcome email:', err);
+            this.logger.error('Failed to send welcome email:', err.stack);
           });
 
         const { passwordHash: _, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
     } catch (error) {
-      console.error('Registration error details:', error);
+      this.logger.error('Registration error details:', error.stack);
       if (
         error.message?.includes('already exists') ||
         error.message?.includes('duplicate key')
@@ -318,7 +319,7 @@ export class AuthController {
       ? req.membership?.tenant?.resellerConfig
       : req.membership?.tenant?.reseller?.resellerConfig;
 
-    console.log(`[AuthController] Returning membership for ${req.membership?.tenant?.slug} (Type: ${req.membership?.tenant?.type})`);
+    this.logger.log(`Returning membership for ${req.membership?.tenant?.slug} (Type: ${req.membership?.tenant?.type})`);
     return {
       ...req.membership,
       tenantType: req.membership?.tenant?.type,

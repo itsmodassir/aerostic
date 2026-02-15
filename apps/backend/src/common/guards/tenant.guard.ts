@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ import { TenantMembership } from '../../tenants/entities/tenant-membership.entit
 
 @Injectable()
 export class TenantGuard implements CanActivate {
+  private readonly logger = new Logger(TenantGuard.name);
   constructor(
     @InjectRepository(Tenant)
     private tenantRepo: Repository<Tenant>,
@@ -21,7 +23,7 @@ export class TenantGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const hostname = request.headers['host'] || '';
-    console.log(`[TenantGuard] Hostname: ${hostname}`);
+    this.logger.debug(`Hostname: ${hostname}`);
 
     // 1. Resolve Tenant from Host (Subdomain)
     let tenantFromHost: Tenant | null = null;
@@ -63,12 +65,12 @@ export class TenantGuard implements CanActivate {
     }
 
     if (!targetTenant) {
-      console.warn(`[TenantGuard] No tenant found for host: ${hostname}`);
+      this.logger.warn(`No tenant found for host: ${hostname}`);
       throw new UnauthorizedException(
         'Tenant not identified or invalid context',
       );
     }
-    console.log(`[TenantGuard] Resolved Tenant: ${targetTenant.slug} (Type: ${targetTenant.type})`);
+    this.logger.log(`Resolved Tenant: ${targetTenant.slug} (Type: ${targetTenant.type})`);
 
     // 4. Verification Check: Does the user have a membership in this tenant?
     if (request.user) {
@@ -118,7 +120,9 @@ export class TenantGuard implements CanActivate {
       request.membership = membership;
       request.permissions = permissions;
       request.role = membership.roleEntity?.name || membership.role;
-      console.log(`[TenantGuard] Membership attached: ${membership.tenant?.slug} (Role: ${request.role}, TenantType: ${membership.tenant?.type})`);
+      this.logger.log(`Membership attached: ${membership.tenant?.slug} (Role: ${request.role}, TenantType: ${membership.tenant?.type})`);
+    } else {
+      this.logger.warn('No user in request - cannot verify membership');
     }
 
     if (targetTenant.status !== 'active') {
