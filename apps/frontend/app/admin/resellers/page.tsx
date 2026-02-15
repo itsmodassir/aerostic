@@ -106,6 +106,33 @@ export default function ResellersPage() {
         }
     };
 
+    const handleRedirect = (slug: string) => {
+        const isProduction = window.location.hostname !== 'localhost';
+        const url = isProduction
+            ? `https://${slug}.aerostic.com/admin/login`
+            : `http://${slug}.localhost:3000/admin/login`;
+        window.open(url, '_blank');
+    };
+
+    const handleImpersonate = async (tenantId: string) => {
+        try {
+            const res = await fetch(`/api/v1/admin/tenants/${tenantId}/impersonate`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const isProduction = window.location.hostname !== 'localhost';
+                const url = isProduction
+                    ? `https://${data.workspaceId}.aerostic.com/dashboard/${data.workspaceId}`
+                    : `http://${data.workspaceId}.localhost:3000/dashboard/${data.workspaceId}`;
+                window.location.href = url;
+            }
+        } catch (error) {
+            console.error('Failed to impersonate:', error);
+        }
+    };
+
     const filteredResellers = resellers.filter(r =>
         r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.slug.toLowerCase().includes(searchTerm.toLowerCase())
@@ -121,13 +148,21 @@ export default function ResellersPage() {
                         Manage your white-label ecosystem and tiered credit distribution.
                     </p>
                 </div>
-                <button
-                    onClick={() => setShowOnboardModal(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all font-semibold"
-                >
-                    <Plus className="w-5 h-5" />
-                    Onboard New Partner
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => window.location.href = '/admin/plans'}
+                        className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold shadow-sm"
+                    >
+                        Manage Partner Plans
+                    </button>
+                    <button
+                        onClick={() => setShowOnboardModal(true)}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all font-semibold"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Onboard New Partner
+                    </button>
+                </div>
             </div>
 
             {/* Stats Grid */}
@@ -249,12 +284,39 @@ export default function ResellersPage() {
                                         </td>
                                         <td className="px-8 py-5 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all">
+                                                <button
+                                                    onClick={() => handleRedirect(reseller.slug)}
+                                                    className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all"
+                                                    title="Open Portal"
+                                                >
                                                     <ExternalLink className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-900 hover:text-white transition-all">
-                                                    <MoreVertical className="w-4 h-4" />
-                                                </button>
+                                                <div className="relative group/menu">
+                                                    <button className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-900 hover:text-white transition-all">
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 hidden group-hover/menu:block z-50 animate-in fade-in slide-in-from-top-1">
+                                                        <button
+                                                            onClick={() => handleImpersonate(reseller.id)}
+                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                        >
+                                                            <Shield className="w-4 h-4 text-gray-400" />
+                                                            Impersonate Admin
+                                                        </button>
+                                                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                                            <Users2 className="w-4 h-4 text-gray-400" />
+                                                            View Portfolio
+                                                        </button>
+                                                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                                            <CreditCard className="w-4 h-4 text-gray-400" />
+                                                            Distribute Credits
+                                                        </button>
+                                                        <div className="h-px bg-gray-100 my-1"></div>
+                                                        <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium">
+                                                            Suspend Partner
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>

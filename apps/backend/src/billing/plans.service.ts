@@ -43,8 +43,8 @@ export class PlansService {
             slug,
         });
 
-        // Create in Razorpay
-        if (plan.price > 0) {
+        // Create in Razorpay only if price > 0 AND razorpayPlanId is not already provided
+        if (plan.price > 0 && !plan.razorpayPlanId) {
             try {
                 const rpPlan = await this.razorpayService.createPlan(
                     plan.name,
@@ -66,10 +66,13 @@ export class PlansService {
 
         // Check if price changed
         const priceChanged = updatePlanDto.price !== undefined && Number(updatePlanDto.price) !== Number(plan.price);
+        const manualRazorpayId = updatePlanDto.razorpayPlanId;
 
         Object.assign(plan, updatePlanDto);
 
-        if (priceChanged && plan.price > 0) {
+        // Only create in Razorpay if price changed AND no manual ID was provided in this update, 
+        // AND the current plan doesn't have a manual ID we should preserve.
+        if (priceChanged && plan.price > 0 && !manualRazorpayId) {
             try {
                 const rpPlan = await this.razorpayService.createPlan(
                     plan.name,

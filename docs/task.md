@@ -116,3 +116,11 @@
 - [x] Create docker-compose.yml (One-click Run)
 - [x] Add CI/CD Pipeline Config (GitHub Actions)
 - [x] Final Smoke Test (Docker Up check)
+
+## 15. Reseller Portal & Plan Enhancements [/]
+- [ ] Implement External Redirection link for Resellers
+- [ ] Implement Partner Actions Menu (3 dots)
+- [ ] Add Plan Type (Regular/Reseller) to Plans UI
+- [ ] Add Razorpay Plan ID management to Plans UI
+- [ ] Implement Max Sub-tenants & White Label toggles in Plans
+- [ ] Verify Reseller Dashboard "Manage Plans" shortcut

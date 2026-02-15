@@ -23,8 +23,12 @@ interface Plan {
     id: string;
     name: string;
     slug: string;
+    type: 'regular' | 'reseller';
     price: number;
     setupFee: number;
+    razorpayPlanId?: string;
+    maxSubTenants: number;
+    whiteLabelEnabled: boolean;
     isActive: boolean;
     limits: {
         monthly_messages: number;
@@ -61,8 +65,12 @@ export default function PlansPage() {
     // Form State
     const [formData, setFormData] = useState({
         name: '',
+        type: 'regular' as 'regular' | 'reseller',
         price: 0,
         setupFee: 0,
+        razorpayPlanId: '',
+        maxSubTenants: 0,
+        whiteLabelEnabled: false,
         limits: {
             monthly_messages: 1000,
             ai_credits: 100,
@@ -101,8 +109,12 @@ export default function PlansPage() {
             setEditingPlan(plan);
             setFormData({
                 name: plan.name,
+                type: plan.type || 'regular',
                 price: plan.price,
                 setupFee: plan.setupFee || 0,
+                razorpayPlanId: plan.razorpayPlanId || '',
+                maxSubTenants: plan.maxSubTenants || 0,
+                whiteLabelEnabled: plan.whiteLabelEnabled || false,
                 limits: {
                     monthly_messages: plan.limits.monthly_messages,
                     ai_credits: plan.limits.ai_credits,
@@ -117,8 +129,12 @@ export default function PlansPage() {
             setEditingPlan(null);
             setFormData({
                 name: '',
+                type: 'regular',
                 price: 0,
                 setupFee: 0,
+                razorpayPlanId: '',
+                maxSubTenants: 0,
+                whiteLabelEnabled: false,
                 limits: {
                     monthly_messages: 1000,
                     ai_credits: 100,
@@ -214,8 +230,19 @@ export default function PlansPage() {
                         <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                                        <span className={clsx(
+                                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                            plan.type === 'reseller' ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+                                        )}>
+                                            {plan.type}
+                                        </span>
+                                    </div>
                                     <p className="text-sm text-gray-500 font-mono mt-1">{plan.slug}</p>
+                                    {plan.razorpayPlanId && (
+                                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">RP: {plan.razorpayPlanId}</p>
+                                    )}
                                 </div>
                                 <div className="text-right">
                                     <p className="text-2xl font-bold text-blue-600">₹{plan.price}</p>
@@ -257,6 +284,18 @@ export default function PlansPage() {
                                         <div className="flex justify-between pt-2 border-t border-dashed">
                                             <span className="text-gray-600">Setup Fee</span>
                                             <span className="font-medium">₹{plan.setupFee.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {plan.type === 'reseller' && (
+                                        <div className="flex justify-between pt-2 border-t border-dashed">
+                                            <span className="text-gray-600">Max Sub-tenants</span>
+                                            <span className="font-medium">{plan.maxSubTenants || 0}</span>
+                                        </div>
+                                    )}
+                                    {plan.whiteLabelEnabled && (
+                                        <div className="flex justify-between pt-2 border-t border-dashed">
+                                            <span className="text-gray-600">White Label</span>
+                                            <span className="text-green-600 font-bold uppercase text-[10px]">Enabled</span>
                                         </div>
                                     )}
                                 </div>
@@ -325,6 +364,17 @@ export default function PlansPage() {
                                     />
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+                                    <select
+                                        value={formData.type}
+                                        onChange={e => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    >
+                                        <option value="regular">Regular Subscriptions</option>
+                                        <option value="reseller">Reseller Partner</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                                     <input
                                         type="number"
@@ -342,6 +392,43 @@ export default function PlansPage() {
                                         className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Plan ID (Manual)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.razorpayPlanId}
+                                        onChange={e => setFormData(prev => ({ ...prev, razorpayPlanId: e.target.value }))}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                                        placeholder="plan_KxJ8..."
+                                    />
+                                    <p className="text-[10px] text-gray-400 mt-1">Leave empty to auto-create in Razorpay</p>
+                                </div>
+                                {formData.type === 'reseller' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Sub-tenants</label>
+                                            <input
+                                                type="number"
+                                                value={formData.maxSubTenants}
+                                                onChange={e => setFormData(prev => ({ ...prev, maxSubTenants: Number(e.target.value) }))}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                                placeholder="e.g. 50"
+                                            />
+                                        </div>
+                                        <div className="flex items-center pt-6">
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={formData.whiteLabelEnabled}
+                                                    onChange={e => setFormData(prev => ({ ...prev, whiteLabelEnabled: e.target.checked }))}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                <span className="ml-3 text-sm font-medium text-gray-700">Enable White Label</span>
+                                            </label>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Limits */}
