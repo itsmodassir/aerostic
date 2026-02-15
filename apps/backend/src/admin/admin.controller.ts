@@ -44,6 +44,22 @@ class UpdateUserPlanDto {
   status?: SubscriptionStatus;
 }
 
+class OnboardResellerDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  planId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  initialCredits?: number;
+}
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
 export class AdminController {
@@ -97,6 +113,11 @@ export class AdminController {
       dto.plan,
       dto.status as any,
     );
+  }
+
+  @Post('resellers')
+  async onboardReseller(@Body() dto: OnboardResellerDto) {
+    return this.tenantService.onboardReseller(dto);
   }
 
   @Post('tenants/:id/impersonate')

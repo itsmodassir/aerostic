@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import {
     Users2, Plus, Search, Shield, CreditCard,
-    ExternalLink, MoreVertical, CheckCircle2, AlertCircle,
-    ArrowUpRight, ArrowDownRight, Filter
+    ExternalLink, MoreVertical, ArrowUpRight, Filter,
+    CheckCircle, AlertTriangle
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -14,10 +14,22 @@ export default function ResellersPage() {
     const [showOnboardModal, setShowOnboardModal] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [stats, setStats] = useState<any>(null);
+
+    // Form State
+    const [onboardForm, setOnboardForm] = useState({
+        name: '',
+        email: '',
+        planId: '',
+        initialCredits: 5000
+    });
+    const [submitting, setSubmitting] = useState(false);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
     useEffect(() => {
         fetchResellers();
         fetchPlans();
+        fetchStats();
     }, []);
 
     const fetchResellers = async () => {
@@ -36,13 +48,61 @@ export default function ResellersPage() {
 
     const fetchPlans = async () => {
         try {
-            const res = await fetch('/api/v1/billing/plans?type=reseller', { credentials: 'include' });
+            const res = await fetch('/api/v1/billing/plans', { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
-                setPlans(data);
+                setPlans(data.filter((p: any) => p.isPublic || p.name.toLowerCase().includes('partner')));
             }
         } catch (error) {
             console.error('Failed to fetch plans:', error);
+        }
+    };
+
+    const fetchStats = async () => {
+        try {
+            const res = await fetch('/api/v1/admin/stats', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setStats(data.resellerStats);
+            }
+        } catch (error) {
+            console.error('Failed to fetch reseller stats:', error);
+        }
+    };
+
+    const handleDeploy = async () => {
+        if (!onboardForm.name || !onboardForm.email) {
+            setFeedback({ type: 'error', msg: 'Please provide company name and email' });
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setFeedback(null);
+            const res = await fetch('/api/v1/admin/resellers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(onboardForm),
+                credentials: 'include'
+            });
+
+            if (res.ok) {
+                setFeedback({ type: 'success', msg: 'Partner instance deployed successfully!' });
+                fetchResellers();
+                fetchStats();
+                setTimeout(() => {
+                    setShowOnboardModal(false);
+                    setFeedback(null);
+                    setOnboardForm({ name: '', email: '', planId: '', initialCredits: 5000 });
+                }, 2000);
+            } else {
+                const err = await res.json();
+                throw new Error(err.message || 'Deployment failed');
+            }
+        } catch (error: any) {
+            setFeedback({ type: 'error', msg: error.message });
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -73,10 +133,10 @@ export default function ResellersPage() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Resellers', value: resellers.length, icon: Users2, color: 'blue', trend: '+12%' },
-                    { label: 'Sub-tenants', value: resellers.reduce((acc, r) => acc + (r.subTenants?.length || 0), 0), icon: Shield, color: 'emerald', trend: '+18%' },
-                    { label: 'Credits Allocated', value: '1.2M', icon: CreditCard, color: 'purple', trend: '+5.4%' },
-                    { label: 'Partner Revenue', value: '₹4.2L', icon: CreditCard, color: 'amber', trend: '+22%' },
+                    { label: 'Total Resellers', value: stats?.totalResellers || 0, icon: Users2, color: 'blue', trend: '+12%' },
+                    { label: 'Sub-tenants', value: stats?.subTenantsCount || 0, icon: Shield, color: 'emerald', trend: '+18%' },
+                    { label: 'Credits Allocated', value: (stats?.totalCreditsAllocated / 1000).toFixed(1) + 'K', icon: CreditCard, color: 'purple', trend: '+5.4%' },
+                    { label: 'Partner Revenue', value: '₹' + (stats?.partnerRevenue / 100000).toFixed(1) + 'L', icon: CreditCard, color: 'amber', trend: '+22%' },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                         <div className="flex items-center justify-between mb-4">
@@ -226,26 +286,58 @@ export default function ResellersPage() {
                             </div>
                             <div className="absolute -right-4 -top-4 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl" />
                         </div>
+
+                        {feedback && (
+                            <div className={clsx(
+                                "mx-10 mt-6 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2",
+                                feedback.type === 'success' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                            )}>
+                                {feedback.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                <span className="text-sm font-bold tracking-tight">{feedback.msg}</span>
+                            </div>
+                        )}
+
                         <div className="p-10 space-y-6">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">
                                     <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Company Entity Name</label>
-                                    <input type="text" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic" placeholder="e.g. SKYNET MEDIA GROUP" />
+                                    <input
+                                        type="text"
+                                        value={onboardForm.name}
+                                        onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
+                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic"
+                                        placeholder="e.g. SKYNET MEDIA GROUP"
+                                    />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Administrative Email</label>
-                                    <input type="email" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all" placeholder="admin@partner.com" />
+                                    <input
+                                        type="email"
+                                        value={onboardForm.email}
+                                        onChange={(e) => setOnboardForm({ ...onboardForm, email: e.target.value })}
+                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all"
+                                        placeholder="admin@partner.com"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Territory Tier</label>
-                                    <select className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold text-gray-700 appearance-none transition-all">
-                                        <option>Select Tier...</option>
+                                    <select
+                                        value={onboardForm.planId}
+                                        onChange={(e) => setOnboardForm({ ...onboardForm, planId: e.target.value })}
+                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold text-gray-700 appearance-none transition-all"
+                                    >
+                                        <option value="">Select Tier...</option>
                                         {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Unit Allocation</label>
-                                    <input type="number" className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all" defaultValue={5000} />
+                                    <input
+                                        type="number"
+                                        value={onboardForm.initialCredits}
+                                        onChange={(e) => setOnboardForm({ ...onboardForm, initialCredits: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -253,11 +345,17 @@ export default function ResellersPage() {
                             <button
                                 onClick={() => setShowOnboardModal(false)}
                                 className="flex-1 px-8 py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-100 transition-all font-black text-xs tracking-widest"
+                                disabled={submitting}
                             >
                                 ABORT
                             </button>
-                            <button className="flex-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all font-black text-xs tracking-widest">
-                                DEPLOY INSTANCE
+                            <button
+                                onClick={handleDeploy}
+                                disabled={submitting}
+                                className="flex-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all font-black text-xs tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {submitting && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                {submitting ? 'DEPLOYING...' : 'DEPLOY INSTANCE'}
                             </button>
                         </div>
                     </div>

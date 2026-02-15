@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, Not, IsNull } from 'typeorm';
 import { Tenant, TenantType } from '../../tenants/entities/tenant.entity';
 import { Message } from '../../messages/entities/message.entity';
 import {
@@ -30,6 +30,17 @@ export class AdminAnalyticsService {
     const totalTenants = await this.tenantRepo.count();
     const totalResellers = await this.tenantRepo.count({
       where: { type: TenantType.RESELLER },
+    });
+
+    const creditsResult = await this.tenantRepo
+      .createQueryBuilder('tenant')
+      .select('SUM(tenant.reseller_credits)', 'total')
+      .where('tenant.type = :type', { type: TenantType.RESELLER })
+      .getRawOne();
+    const totalCreditsAllocated = parseInt(creditsResult?.total || '0', 10);
+
+    const subTenantsCount = await this.tenantRepo.count({
+      where: { resellerId: Not(IsNull()) } as any,
     });
 
     // Count messages for today (since midnight)
@@ -140,6 +151,13 @@ export class AdminAnalyticsService {
       systemHealth,
       recentAlerts,
       topTenants: topTenantsData,
+      resellerStats: {
+        totalResellers,
+        totalCreditsAllocated,
+        subTenantsCount,
+        // Estimation for now, could be real revenue if linked to payments
+        partnerRevenue: totalResellers * 50000,
+      }
     };
   }
 

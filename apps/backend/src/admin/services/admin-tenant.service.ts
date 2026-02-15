@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant, TenantType } from '../../tenants/entities/tenant.entity';
+import { ResellerConfig } from '../../tenants/entities/reseller-config.entity';
 import { User } from '../../users/entities/user.entity';
 import { AuditService } from '../../audit/audit.service';
 import { BillingService } from '../../billing/billing.service';
@@ -20,6 +21,8 @@ export class AdminTenantService {
     private userRepo: Repository<User>,
     @InjectRepository(TenantMembership)
     private membershipRepo: Repository<TenantMembership>,
+    @InjectRepository(ResellerConfig)
+    private resellerConfigRepo: Repository<ResellerConfig>,
     private auditService: AuditService,
     private billingService: BillingService,
   ) { }
@@ -117,5 +120,41 @@ export class AdminTenantService {
     }
 
     return membership.user;
+  }
+
+  async onboardReseller(dto: any): Promise<Tenant> {
+    const { name, email, planId, initialCredits } = dto;
+
+    // 1. Create Tenant
+    const tenant = this.tenantRepo.create({
+      name,
+      type: TenantType.RESELLER,
+      resellerCredits: initialCredits || 0,
+      planId: planId || null,
+      status: 'active',
+      subscriptionStatus: 'active', // Resellers are active by default usually
+    });
+
+    const savedTenant = await this.tenantRepo.save(tenant);
+
+    // 2. Create ResellerConfig
+    const config = this.resellerConfigRepo.create({
+      tenantId: savedTenant.id,
+      brandName: name,
+      supportEmail: email,
+    });
+    await this.resellerConfigRepo.save(config);
+
+    // 3. Audit Log
+    await this.auditService.logAction(
+      'admin',
+      'Administrator',
+      'ONBOARD_RESELLER',
+      `Partner: ${name}`,
+      savedTenant.id,
+      { email, planId, initialCredits },
+    );
+
+    return savedTenant;
   }
 }
