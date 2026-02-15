@@ -232,6 +232,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             if (!resellerFeatures.includes(item.name)) return false;
         }
 
+        // Feature Gates for Client Dashboard
+        if (!isReseller && !isAdmin) {
+            const tenant = membership?.tenant;
+            if (item.name === 'Developer API' && !tenant?.apiAccessEnabled) return false;
+            // Other feature gates can go here based on reseller-set limits
+        }
+
         if (isAdmin && !isReseller) return true; // Super Admin sees everything in main app
         if (item.adminOnly) return false;
         if ((item as any).resellerOnly && !isReseller) return false;
@@ -260,6 +267,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="flex h-screen bg-muted/40 font-sans" style={{
             // @ts-ignore
             '--primary': membership?.branding?.primaryColor || '#7C3AED',
+            '--primary-hover': (membership?.branding?.primaryColor || '#7C3AED') + 'CC',
             '--primary-foreground': '#ffffff'
         }}>
             {/* Mobile Sidebar Overlay */}
@@ -285,9 +293,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         <img
                             src={membership?.branding?.logo || "/logo.png"}
                             alt={membership?.branding?.brandName || "Aerostic"}
-                            className="w-8 h-8 object-contain"
+                            className="w-8 h-8 object-contain rounded-lg"
                         />
-                        <span>{membership?.branding?.brandName || "Aerostic"}</span>
+                        <span>{membership?.branding?.brandName || (isReseller ? membership?.tenant?.name : "Aerostic")}</span>
                     </Link>
 
                     {/* Collapse Toggle (Desktop only) */}

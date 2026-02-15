@@ -101,7 +101,6 @@ export default function ResellersPage() {
                 });
                 fetchResellers();
                 fetchStats();
-                // Don't close immediately if we have a password to show
             } else {
                 const err = await res.json();
                 throw new Error(err.message || 'Deployment failed');
@@ -155,6 +154,49 @@ export default function ResellersPage() {
             console.error('Failed to update reseller:', error);
         } finally {
             setSavingLimits(false);
+        }
+    };
+
+    const handleRegeneratePassword = async (id: string, email: string) => {
+        if (!confirm('Are you sure you want to regenerate the password for this partner?')) return;
+
+        try {
+            const res = await fetch(`/api/v1/admin/resellers/${id}/regenerate-password`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setFeedback({
+                    type: 'success',
+                    msg: 'Password regenerated successfully!',
+                    data: { password: data.generatedPassword, email }
+                });
+                setShowOnboardModal(true);
+            }
+        } catch (error) {
+            console.error('Failed to regenerate password:', error);
+        }
+    };
+
+    const handleDeployExisting = async (id: string) => {
+        try {
+            const res = await fetch(`/api/v1/admin/resellers/${id}/deploy`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setFeedback({
+                    type: 'success',
+                    msg: 'Instance deployed successfully!',
+                    data: { password: data.generatedPassword, email: selectedReseller?.email || 'N/A' }
+                });
+                setShowOnboardModal(true);
+                fetchResellers();
+            }
+        } catch (error) {
+            console.error('Failed to deploy instance:', error);
         }
     };
 
@@ -401,12 +443,12 @@ export default function ResellersPage() {
                                 </div>
                             </div>
 
-                            {/* Management Actions - Added Upgrade/Downgrade/Pause terminology */}
+                            {/* Management Actions */}
                             <div className="space-y-4">
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-red-600 pl-3">Account Management</h4>
                                 <div className="grid grid-cols-2 gap-6 bg-red-50/30 p-6 rounded-2xl border border-red-100">
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 underline decoration-red-200">Current Plan (Upgrade/Downgrade)</label>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 underline decoration-red-200">Current Plan</label>
                                         <input
                                             type="text"
                                             defaultValue={selectedReseller.plan}
@@ -414,10 +456,9 @@ export default function ResellersPage() {
                                             className="w-full px-4 py-3 bg-white border border-red-100 rounded-xl outline-none focus:ring-2 focus:ring-red-600/20 font-bold text-red-950"
                                             placeholder="e.g. starter, platinum"
                                         />
-                                        <p className="text-[10px] text-gray-400 mt-1 italic">Type the new plan name to upgrade or downgrade.</p>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2 underline decoration-red-200">Account Status (Pause/Resume)</label>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 underline decoration-red-200">Account Status</label>
                                         <select
                                             defaultValue={selectedReseller.status}
                                             onChange={(e) => selectedReseller.newStatus = e.target.value}
@@ -426,10 +467,9 @@ export default function ResellersPage() {
                                                 selectedReseller.status === 'active' ? "bg-green-50 border-green-100 text-green-700" : "bg-red-50 border-red-100 text-red-700"
                                             )}
                                         >
-                                            <option value="active">Active (Resume)</option>
-                                            <option value="suspended">Suspended (Pause)</option>
+                                            <option value="active">Active</option>
+                                            <option value="suspended">Suspended</option>
                                         </select>
-                                        <p className="text-[10px] text-gray-400 mt-1 italic">Suspended partners cannot access their dashboard.</p>
                                     </div>
                                 </div>
                             </div>
@@ -459,7 +499,6 @@ export default function ResellersPage() {
                                 </div>
                             </div>
 
-                            {/* Feature Toggles */}
                             <div className="space-y-4">
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Subdomain Configuration</h4>
                                 <div className="grid grid-cols-1 gap-6">
@@ -476,19 +515,61 @@ export default function ResellersPage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2">Max User Accounts</label>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Primary Domain (Custom)</label>
                                         <input
-                                            type="number"
-                                            defaultValue={selectedReseller.maxUsers || 10}
-                                            onChange={(e) => selectedReseller.newMaxUsers = parseInt(e.target.value)}
+                                            type="text"
+                                            defaultValue={selectedReseller.resellerConfig?.domain || ''}
+                                            onChange={(e) => selectedReseller.newDomain = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                            placeholder="e.g. partner-domain.com"
+                                        />
+                                    </div>
+                                </div>
+
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3 mt-8">White-Label Branding</h4>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Brand Name</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={selectedReseller.resellerConfig?.brandName || selectedReseller.name}
+                                            onChange={(e) => selectedReseller.newBrandName = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Support Email</label>
+                                        <input
+                                            type="email"
+                                            defaultValue={selectedReseller.resellerConfig?.supportEmail || ''}
+                                            onChange={(e) => selectedReseller.newSupportEmail = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Primary Color</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={selectedReseller.resellerConfig?.primaryColor || '#3B82F6'}
+                                            onChange={(e) => selectedReseller.newPrimaryColor = e.target.value}
+                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2">Logo URL</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={selectedReseller.resellerConfig?.logo || ''}
+                                            onChange={(e) => selectedReseller.newLogo = e.target.value}
                                             className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
                                         />
                                     </div>
                                 </div>
+
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3 mt-8">Platform Access</h4>
                                 <div className="space-y-3">
                                     {[
-                                        { id: 'api', label: 'API Access', desc: 'Allow partner to use developer endpoints', enabled: selectedReseller.apiAccessEnabled },
+                                        { id: 'api', label: 'API Access', desc: 'Allow partner to use developer endpoints', enabled: selectedReseller.apiAccessEnabled, key: 'apiAccessEnabled' },
                                         { id: 'whitelabel', label: 'White-Label Branding', desc: 'Custom logo, colors, and subdomain', enabled: true },
                                         { id: 'analytics', label: 'Advanced Analytics', desc: 'Real-time message tracing and reporting', enabled: true },
                                     ].map((feat) => (
@@ -497,10 +578,18 @@ export default function ResellersPage() {
                                                 <p className="text-sm font-bold text-gray-900">{feat.label}</p>
                                                 <p className="text-xs text-gray-500">{feat.desc}</p>
                                             </div>
-                                            <div className={clsx(
-                                                "w-12 h-6 rounded-full p-1 transition-colors cursor-pointer",
-                                                feat.enabled ? "bg-blue-600" : "bg-gray-200"
-                                            )}>
+                                            <div
+                                                onClick={() => {
+                                                    if (feat.key) {
+                                                        const newVal = !feat.enabled;
+                                                        handleUpdateLimits(selectedReseller.id, { [feat.key]: newVal });
+                                                    }
+                                                }}
+                                                className={clsx(
+                                                    "w-12 h-6 rounded-full p-1 transition-colors cursor-pointer",
+                                                    feat.enabled ? "bg-blue-600" : "bg-gray-200"
+                                                )}
+                                            >
                                                 <div className={clsx(
                                                     "w-4 h-4 bg-white rounded-full transition-transform",
                                                     feat.enabled ? "translate-x-6" : "translate-x-0"
@@ -508,6 +597,26 @@ export default function ResellersPage() {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-orange-600 pl-3 mt-8">Security & Operations</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => handleRegeneratePassword(selectedReseller.id, selectedReseller.email || 'partner@aerostic.com')}
+                                        className="p-4 bg-orange-50 border border-orange-100 rounded-2xl text-left hover:bg-orange-100 transition-all group"
+                                    >
+                                        <Shield className="w-5 h-5 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
+                                        <p className="text-sm font-bold text-orange-900">Regenerate Password</p>
+                                        <p className="text-[10px] text-orange-600 italic">Force reset admin access</p>
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeployExisting(selectedReseller.id)}
+                                        className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-left hover:bg-blue-100 transition-all group"
+                                    >
+                                        <ArrowUpRight className="w-5 h-5 text-blue-600 mb-2 group-hover:scale-110 transition-transform" />
+                                        <p className="text-sm font-bold text-blue-900">Deploy Instance</p>
+                                        <p className="text-[10px] text-blue-600 italic">Re-initialize everything</p>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -525,10 +634,15 @@ export default function ResellersPage() {
                                     name: selectedReseller.newName,
                                     slug: selectedReseller.newSlug,
                                     plan: selectedReseller.newPlan,
+                                    status: selectedReseller.newStatus,
+                                    brandName: selectedReseller.newBrandName,
+                                    supportEmail: selectedReseller.newSupportEmail,
+                                    primaryColor: selectedReseller.newPrimaryColor,
+                                    logo: selectedReseller.newLogo,
+                                    domain: selectedReseller.newDomain,
                                     maxUsers: selectedReseller.newMaxUsers,
                                     monthlyMessageLimit: selectedReseller.newMonthlyLimit,
                                     aiCredits: selectedReseller.newAiCredits,
-                                    status: selectedReseller.newStatus
                                 })}
                                 disabled={savingLimits}
                                 className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-gray-900/10"

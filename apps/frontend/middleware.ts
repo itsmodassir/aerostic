@@ -60,13 +60,25 @@ export function middleware(request: NextRequest) {
             return NextResponse.next();
         }
 
-        // Rewrite all other requests to /dashboard/[slug]/[path]
-        let cleanPath = pathname;
-        if (pathname.startsWith('/dashboard')) {
-            cleanPath = pathname.replace('/dashboard', '') || '/';
+        // 1. Root landing page: tenant.aerostic.com/ -> /landing/[tenant]
+        if (pathname === '/') {
+            return NextResponse.rewrite(new URL(`/landing/${tenantSubdomain}${search}`, request.url));
         }
 
-        const rewriteUrl = new URL(`/dashboard/${tenantSubdomain}${cleanPath}${search}`, request.url);
+        // 2. Client Dashboard: tenant.aerostic.com/user/dashboard -> /dashboard/[tenant]/user
+        if (pathname.startsWith('/user/dashboard')) {
+            const clientPath = pathname.replace('/user/dashboard', '') || '/';
+            return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}/user${clientPath}${search}`, request.url));
+        }
+
+        // 3. Partner Console: tenant.aerostic.com/dashboard -> /dashboard/[tenant]
+        if (pathname.startsWith('/dashboard')) {
+            const partnerPath = pathname.replace('/dashboard', '') || '/';
+            return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}${partnerPath}${search}`, request.url));
+        }
+
+        // Default fallback (compatibility)
+        const rewriteUrl = new URL(`/dashboard/${tenantSubdomain}${pathname}${search}`, request.url);
         return NextResponse.rewrite(rewriteUrl);
     }
 

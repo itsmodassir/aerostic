@@ -123,7 +123,7 @@ export class AdminTenantService {
       const adminMembership = await this.membershipRepo.findOne({
         where: { tenantId },
         relations: ['user'],
-        order: { createdAt: 'ASC' }, // Oldest member often creator
+        order: { createdAt: 'ASC' },
       });
 
       if (!adminMembership || !adminMembership.user) {
@@ -133,6 +133,66 @@ export class AdminTenantService {
     }
 
     return membership.user;
+  }
+
+  async regenerateResellerPassword(id: string): Promise<{ generatedPassword: string }> {
+    const user = await this.getTenantOwner(id);
+    const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(generatedPassword, salt);
+
+    user.passwordHash = passwordHash;
+    await this.userRepo.save(user);
+
+    await this.auditService.logAction(
+      'admin',
+      'Administrator',
+      'REGENERATE_RESELLER_PASSWORD',
+      `User: ${user.email}`,
+      id,
+    );
+
+    return { generatedPassword };
+  }
+
+  async deployResellerInstance(id: string): Promise<{ generatedPassword: string }> {
+    const tenant = await this.tenantRepo.findOne({ where: { id } });
+    if (!tenant) throw new NotFoundException('Reseller not found');
+
+    // If tenant is already active and has an owner, just regenerate
+    try {
+      const owner = await this.getTenantOwner(id);
+      return this.regenerateResellerPassword(id);
+    } catch (e) {
+      // Create owner if it doesn't exist (e.g. if onboarded without creating user)
+      const config = await this.resellerConfigRepo.findOne({ where: { tenantId: id } });
+      const email = config?.supportEmail || tenant.name.toLowerCase().replace(/\s/g, '') + '@aerostic.com';
+
+      const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
+      const salt = await bcrypt.genSalt();
+      const passwordHash = await bcrypt.hash(generatedPassword, salt);
+
+      const user = this.userRepo.create({
+        email,
+        name: tenant.name,
+        passwordHash,
+        role: UserRole.ADMIN,
+      });
+      const savedUser = await this.userRepo.save(user);
+
+      const membership = this.membershipRepo.create({
+        userId: savedUser.id,
+        tenantId: tenant.id,
+        role: TenantRole.OWNER,
+        status: 'active',
+      });
+      await this.membershipRepo.save(membership);
+
+      tenant.status = 'active';
+      await this.tenantRepo.save(tenant);
+
+      return { generatedPassword };
+    }
   }
 
   async onboardReseller(dto: any): Promise<any> {
@@ -230,6 +290,7 @@ export class AdminTenantService {
     const tenant = await this.tenantRepo.findOne({ where: { id } });
     if (!tenant) throw new NotFoundException('Reseller not found');
 
+    // Update Tenant fields
     if (dto.name) tenant.name = dto.name;
     if (dto.slug) tenant.slug = dto.slug;
     if (dto.plan) tenant.plan = dto.plan;
@@ -237,8 +298,24 @@ export class AdminTenantService {
     if (dto.monthlyMessageLimit !== undefined) tenant.monthlyMessageLimit = dto.monthlyMessageLimit;
     if (dto.aiCredits !== undefined) tenant.aiCredits = dto.aiCredits;
     if (dto.status) tenant.status = dto.status;
+    if (dto.apiAccessEnabled !== undefined) tenant.apiAccessEnabled = dto.apiAccessEnabled;
 
     const saved = await this.tenantRepo.save(tenant);
+
+    // Update ResellerConfig fields if provided
+    let config = await this.resellerConfigRepo.findOne({ where: { tenantId: id } });
+    if (!config) {
+      config = this.resellerConfigRepo.create({ tenantId: id });
+    }
+
+    if (dto.brandName) config.brandName = dto.brandName;
+    if (dto.supportEmail) config.supportEmail = dto.supportEmail;
+    if (dto.primaryColor) config.primaryColor = dto.primaryColor;
+    if (dto.logo) config.logo = dto.logo;
+    if (dto.domain) config.domain = dto.domain;
+    if (dto.theme) config.theme = dto.theme;
+
+    await this.resellerConfigRepo.save(config);
 
     await this.auditService.logAction(
       'admin',

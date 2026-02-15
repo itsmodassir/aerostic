@@ -104,6 +104,26 @@ class UpdateResellerDto {
   @IsOptional()
   @IsEnum(['active', 'suspended'])
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  brandName?: string;
+
+  @IsOptional()
+  @IsString()
+  supportEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  primaryColor?: string;
+
+  @IsOptional()
+  @IsString()
+  logo?: string;
+
+  @IsOptional()
+  @IsString()
+  domain?: string;
 }
 
 @Controller('admin')
@@ -182,6 +202,16 @@ export class AdminController {
     @Body() dto: UpdateResellerDto,
   ) {
     return this.tenantService.updateReseller(id, dto);
+  }
+
+  @Post('resellers/:id/regenerate-password')
+  async regenerateResellerPassword(@Param('id') id: string) {
+    return this.tenantService.regenerateResellerPassword(id);
+  }
+
+  @Post('resellers/:id/deploy')
+  async deployResellerInstance(@Param('id') id: string) {
+    return this.tenantService.deployResellerInstance(id);
   }
 
   @Post('tenants/:id/impersonate')
