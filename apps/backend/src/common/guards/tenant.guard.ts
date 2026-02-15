@@ -21,6 +21,7 @@ export class TenantGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const hostname = request.headers['host'] || '';
+    console.log(`[TenantGuard] Hostname: ${hostname}`);
 
     // 1. Resolve Tenant from Host (Subdomain)
     let tenantFromHost: Tenant | null = null;
@@ -62,10 +63,12 @@ export class TenantGuard implements CanActivate {
     }
 
     if (!targetTenant) {
+      console.warn(`[TenantGuard] No tenant found for host: ${hostname}`);
       throw new UnauthorizedException(
         'Tenant not identified or invalid context',
       );
     }
+    console.log(`[TenantGuard] Resolved Tenant: ${targetTenant.slug} (Type: ${targetTenant.type})`);
 
     // 4. Verification Check: Does the user have a membership in this tenant?
     if (request.user) {
@@ -115,6 +118,7 @@ export class TenantGuard implements CanActivate {
       request.membership = membership;
       request.permissions = permissions;
       request.role = membership.roleEntity?.name || membership.role;
+      console.log(`[TenantGuard] Membership attached: ${membership.tenant?.slug} (Role: ${request.role}, TenantType: ${membership.tenant?.type})`);
     }
 
     if (targetTenant.status !== 'active') {

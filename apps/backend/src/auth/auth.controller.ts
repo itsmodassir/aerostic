@@ -318,6 +318,7 @@ export class AuthController {
       ? req.membership?.tenant?.resellerConfig
       : req.membership?.tenant?.reseller?.resellerConfig;
 
+    console.log(`[AuthController] Returning membership for ${req.membership?.tenant?.slug} (Type: ${req.membership?.tenant?.type})`);
     return {
       ...req.membership,
       tenantType: req.membership?.tenant?.type,
