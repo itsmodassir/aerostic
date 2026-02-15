@@ -34,8 +34,60 @@ import { ResellerModule } from './reseller/reseller.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get('DATABASE_URL'),
+        autoLoadEntities: true,
+        synchronize: false, // Always false in prod
+        logging: configService.get('NODE_ENV') === 'development',
+      }),
+      inject: [ConfigService],
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST', 'localhost'),
+          port: configService.get('REDIS_PORT', 6379),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get('THROTTLE_TTL', 60),
+          limit: configService.get('THROTTLE_LIMIT', 10),
+        },
+      ],
+    }),
+    ScheduleModule.forRoot(),
     CommonModule,
-    // ... other modules
+    TenantsModule,
+    UsersModule,
+    WhatsappModule,
+    MessagesModule,
+    WebhooksModule,
+    AiModule,
+    AutomationModule,
+    CampaignsModule,
+    TemplatesModule,
+    MetaModule,
+    SchedulerModule,
+    ReferralsModule,
+    ContactsModule,
+    AuthModule,
+    AnalyticsModule,
+    AdminModule,
+    BillingModule,
+    AuditModule,
     AgentsModule,
     EmailModule,
     GoogleModule,
