@@ -65,6 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { name: 'Inbox', href: '/admin/inbox', icon: MessageSquare },
         { name: 'Tenants', href: '/admin/tenants', icon: Users },
+        { name: 'Resellers', href: '/admin/resellers', icon: Globe },
         { name: 'Plans', href: '/admin/plans', icon: Shield },
         { name: 'Billing & Revenue', href: '/admin/billing', icon: CreditCard },
         { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
