@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Tenant, TenantType } from '../../tenants/entities/tenant.entity';
 import { User } from '../../users/entities/user.entity';
 import { AuditService } from '../../audit/audit.service';
 import { BillingService } from '../../billing/billing.service';
@@ -24,8 +24,13 @@ export class AdminTenantService {
     private billingService: BillingService,
   ) { }
 
-  async getAllTenants() {
+  async getAllTenants(type?: string) {
+    const where: any = {};
+    if (type) {
+      where.type = type;
+    }
     return this.tenantRepo.find({
+      where,
       order: { createdAt: 'DESC' },
     });
   }

@@ -77,8 +77,8 @@ export class AdminController {
 
   // ============ Tenant Management ============
   @Get('tenants')
-  async getAllTenants() {
-    return this.tenantService.getAllTenants();
+  async getAllTenants(@Query('type') type?: string) {
+    return this.tenantService.getAllTenants(type);
   }
 
   @Get('users')

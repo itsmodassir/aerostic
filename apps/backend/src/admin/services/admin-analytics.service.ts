@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Tenant, TenantType } from '../../tenants/entities/tenant.entity';
 import { Message } from '../../messages/entities/message.entity';
 import {
   Subscription,
@@ -29,7 +29,7 @@ export class AdminAnalyticsService {
   async getDashboardStats() {
     const totalTenants = await this.tenantRepo.count();
     const totalResellers = await this.tenantRepo.count({
-      where: { type: 'reseller' as any },
+      where: { type: TenantType.RESELLER },
     });
 
     // Count messages for today (since midnight)
