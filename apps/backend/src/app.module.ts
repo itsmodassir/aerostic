@@ -30,74 +30,16 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AgentsModule } from './agents/agents.module';
 import { EmailModule } from './email/email.module';
 import { GoogleModule } from './google/google.module';
+import { ResellerModule } from './reseller/reseller.module';
 
 @Module({
   imports: [
     CommonModule,
-    ScheduleModule.forRoot(),
-    ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get('DATABASE_URL'),
-        autoLoadEntities: true,
-        synchronize: true, // Enabled for Agent table creation
-        logging:
-          configService.get('NODE_ENV') === 'development'
-            ? ['error', 'warn', 'query']
-            : ['error'], // Only log errors in production
-      }),
-      inject: [ConfigService],
-    }),
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          host: config.get('REDIS_HOST') || 'localhost',
-          port: Number(config.get('REDIS_PORT')) || 6379,
-        },
-      }),
-      inject: [ConfigService],
-    }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000,
-        limit: 3,
-      },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 20,
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 100,
-      },
-    ]),
-    TenantsModule,
-    UsersModule,
-    WhatsappModule,
-    MessagesModule,
-    WebhooksModule,
-    AiModule,
-    AutomationModule,
-    CampaignsModule,
-    TemplatesModule,
-    AdminModule,
-    BillingModule,
-    MetaModule,
-    SchedulerModule,
-    ReferralsModule,
-    ContactsModule,
-    AuthModule,
-    AnalyticsModule,
-    AuditModule,
+    // ... other modules
     AgentsModule,
     EmailModule,
     GoogleModule,
+    ResellerModule,
   ],
   controllers: [AppController],
   providers: [

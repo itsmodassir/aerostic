@@ -19,7 +19,9 @@
 *   **WhatsApp Template Management**: Create, customize, and submit templates for Meta approval directly.
 *   **Real-time Usage Dashboard**: Live tracking of messages, AI credits, and agent limits.
 *   **Team Inbox**: Real-time shared inbox for support agents.
-*   **Role-Based Access**: Super Admin, Workspace Admin, and Agent roles.
+*   **White-label Reseller Module**: Partner management system with **dynamic branding (logo, colors)** and **custom domain routing**.
+*   **Credit Management**: Allocate and track credits for sub-tenants/clients in a multi-tier hierarchy.
+*   **Role-Based Access**: Super Admin, Platform Admin, Reseller Admin, and Workspace Agent roles.
 *   **Secure Google Drive**: OAuth2 integration with encrypted token storage for file operations.
 *   **System Hardening**: Strict node connection validation and recursive AI execution engine.
 

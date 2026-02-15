@@ -314,8 +314,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     res.setHeader('Cache-Control', 'no-store');
+    const branding = req.membership?.tenant?.type === 'reseller'
+      ? req.membership?.tenant?.resellerConfig
+      : req.membership?.tenant?.reseller?.resellerConfig;
+
     return {
       ...req.membership,
+      tenantType: req.membership?.tenant?.type,
+      branding,
       permissions: req.permissions, // Resolved in TenantGuard
     };
   }

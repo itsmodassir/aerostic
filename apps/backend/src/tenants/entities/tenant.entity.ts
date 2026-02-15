@@ -7,14 +7,40 @@ import {
   Index,
   BeforeInsert,
   ManyToOne,
+  OneToMany,
+  OneToOne,
   JoinColumn,
 } from 'typeorm';
 import { Plan } from '../../billing/entities/plan.entity';
+import { ResellerConfig } from './reseller-config.entity';
+
+export enum TenantType {
+  REGULAR = 'regular',
+  RESELLER = 'reseller',
+}
 
 @Entity('tenants')
 export class Tenant {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'enum', enum: TenantType, default: TenantType.REGULAR })
+  @Index()
+  type: TenantType;
+
+  @Column({ name: 'reseller_id', nullable: true })
+  @Index()
+  resellerId: string;
+
+  @ManyToOne(() => Tenant, (tenant) => tenant.subTenants, { nullable: true })
+  @JoinColumn({ name: 'reseller_id' })
+  reseller: Tenant;
+
+  @OneToMany(() => Tenant, (tenant) => tenant.reseller)
+  subTenants: Tenant[];
+
+  @OneToOne(() => ResellerConfig, (config) => config.tenant)
+  resellerConfig: ResellerConfig;
 
   @Column()
   name: string;
@@ -66,6 +92,9 @@ export class Tenant {
 
   @Column({ name: 'ai_credits_used', default: 0 })
   aiCreditsUsed: number;
+
+  @Column({ name: 'reseller_credits', default: 0, comment: 'Credits allocated to reseller to distribute' })
+  resellerCredits: number;
 
   // Developer Access
   @Column({ name: 'api_access_enabled', default: false })

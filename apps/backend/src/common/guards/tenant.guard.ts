@@ -16,7 +16,7 @@ export class TenantGuard implements CanActivate {
     private tenantRepo: Repository<Tenant>,
     @InjectRepository(TenantMembership)
     private membershipRepo: Repository<TenantMembership>,
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -72,6 +72,10 @@ export class TenantGuard implements CanActivate {
       const membership = await this.membershipRepo.findOne({
         where: { userId: request.user.id, tenantId: targetTenant.id },
         relations: [
+          'tenant',
+          'tenant.resellerConfig',
+          'tenant.reseller',
+          'tenant.reseller.resellerConfig',
           'roleEntity',
           'roleEntity.rolePermissions',
           'roleEntity.rolePermissions.permission',

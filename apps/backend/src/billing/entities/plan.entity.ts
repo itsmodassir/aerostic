@@ -7,6 +7,11 @@ import {
     Index,
 } from 'typeorm';
 
+export enum PlanType {
+    REGULAR = 'regular',
+    RESELLER = 'reseller',
+}
+
 @Entity('plans')
 export class Plan {
     @PrimaryGeneratedColumn('uuid')
@@ -14,6 +19,9 @@ export class Plan {
 
     @Column()
     name: string;
+
+    @Column({ type: 'enum', enum: PlanType, default: PlanType.REGULAR })
+    type: PlanType;
 
     @Column({ unique: true })
     @Index()
@@ -37,6 +45,12 @@ export class Plan {
         max_bots?: number;
         monthly_broadcasts?: number;
     };
+
+    @Column({ name: 'max_sub_tenants', default: 0 })
+    maxSubTenants: number;
+
+    @Column({ name: 'white_label_enabled', default: false })
+    whiteLabelEnabled: boolean;
 
     @Column('jsonb', { default: [] })
     features: string[]; // ['whatsapp_embedded', 'ai_features', 'whatsapp_marketing', 'templates', 'api_access', 'webhooks']

@@ -542,6 +542,25 @@ AWS infrastructure
 
 ---
 
+# PHASE 21 — Reseller & White-labeling System
+
+## Reseller Infrastructure
+- **Multi-tier Tenancy**: `Tenants` can now act as `RESELLER` parents for sub-tenants.
+- **Credit Allocation**: Hierarchical credit system where resellers distribute their own platform credits to clients.
+- **Dynamic Branding**: Inheritance logic where sub-tenants automatically adopt the logo, colors, and support email of their parent reseller.
+
+## Database Additions
+```
+reseller_configs (tenant_id, brand_name, domain, logo, primary_color, support_email)
+```
+
+## Security & Routing
+- **Public Branding API**: Resolves reseller assets based on request `host` (domain/subdomain).
+- **Domain Mapping**: Supports CNAME mapping for reseller domains to provide a full white-label experience.
+- **Tiered Role Checks**: Platform Admins manage Resellers; Resellers manage Clients.
+
+---
+
 # FINAL STATUS
 
 Aerostic is now fully capable of running as:

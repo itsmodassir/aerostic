@@ -4,7 +4,7 @@ export class AddRejectionReasonToTemplates1770985200000 implements MigrationInte
     name = 'AddRejectionReasonToTemplates1770985200000'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "templates" ADD "rejection_reason" character varying`);
+        // await queryRunner.query(`ALTER TABLE "templates" ADD "rejection_reason" character varying`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

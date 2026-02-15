@@ -152,3 +152,29 @@ Receives real-time updates from Meta (messages, status).
 - **Security:** Verified via `X-Hub-Signature-256` header using `META_WEBHOOK_VERIFY_TOKEN` (for challenge) and `META_APP_SECRET` (for payload).
 
 ---
+
+## 🏢 Reseller & Branding (BETA)
+
+### 1. Platform Reseller Management
+- **Endpoint:** `GET /admin/tenants?type=reseller`
+- **Access:** Platform Admin (`super_admin`)
+- **Description:** List all registered white-label partners.
+
+### 2. Client Onboarding (Reseller)
+- **Endpoint:** `POST /reseller/onboard-sub-tenant`
+- **Access:** Reseller Owner
+- **Payload:** `name`, `ownerEmail`, `password`
+- **Description:** Creates a sub-tenant workspace under the reseller.
+
+### 3. Branding Configuration
+- **Endpoint:** `PATCH /reseller/branding`
+- **Access:** Reseller Owner
+- **Payload:** `brandName`, `logo`, `primaryColor`, `supportEmail`, `domain`
+- **Description:** Updates white-label settings for the reseller and their clients.
+
+### 4. Public Branding Resolution
+- **Endpoint:** `GET /auth/branding?host=:domain`
+- **Access:** Public
+- **Description:** Resolves branding assets for a given domain/host for white-labeled login pages.
+
+---

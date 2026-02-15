@@ -37,6 +37,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const workspaceId = params?.workspaceId as string || 'default';
     const { user, loading, logout, isSuperAdmin: isAdmin } = useAuth();
 
+    const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
+    const [membership, setMembership] = useState<any>(null);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
+    const notifRef = useRef<HTMLDivElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const isReseller = membership?.tenantType === 'reseller';
+
     const navigation = [
         { name: 'Dashboard', href: `/dashboard/${workspaceId}`, icon: LayoutDashboard },
         { name: 'Contacts', href: `/dashboard/${workspaceId}/contacts`, icon: Users2, permission: 'contacts:read' },
@@ -53,17 +65,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals`, icon: Gift },
         // Platform Admin - only for super_admin or specific platform admins
         { name: 'Platform Admin', href: `/dashboard/${workspaceId}/admin`, icon: Shield, adminOnly: true },
-    ];
+        { name: 'Resellers', href: `/dashboard/${workspaceId}/admin/resellers`, icon: Users2, adminOnly: true },
 
-    const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
-    const [membership, setMembership] = useState<any>(null);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const profileRef = useRef<HTMLDivElement>(null);
-    const notifRef = useRef<HTMLDivElement>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+        // Reseller Specific
+        { name: 'My Clients', href: `/dashboard/${workspaceId}/reseller/clients`, icon: Users2, resellerOnly: true },
+        { name: 'Branding', href: `/dashboard/${workspaceId}/reseller/branding`, icon: Globe, resellerOnly: true },
+    ];
 
     const { socket, isConnected } = useSocket();
 
@@ -215,6 +222,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const visibleNavigation = navigation.filter(item => {
         if (isAdmin) return true; // Super Admin sees everything
         if (item.adminOnly) return false; // Non-super admins don't see platform admin
+        if ((item as any).resellerOnly && !isReseller) return false;
         if (item.permission && !permissions.includes(item.permission)) return false;
         return true;
     });
@@ -237,7 +245,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="flex h-screen bg-muted/40">
+        <div className="flex h-screen bg-muted/40 font-sans" style={{
+            // @ts-ignore
+            '--primary': membership?.branding?.primaryColor || '#7C3AED',
+            '--primary-foreground': '#ffffff'
+        }}>
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div
@@ -258,8 +270,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         "flex items-center gap-2 font-bold text-xl text-primary overflow-hidden transition-all",
                         isSidebarCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                     )}>
-                        <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain" />
-                        <span>Aerostic</span>
+                        <img
+                            src={membership?.branding?.logo || "/logo.png"}
+                            alt={membership?.branding?.brandName || "Aerostic"}
+                            className="w-8 h-8 object-contain"
+                        />
+                        <span>{membership?.branding?.brandName || "Aerostic"}</span>
                     </Link>
 
                     {/* Collapse Toggle (Desktop only) */}

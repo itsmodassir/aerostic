@@ -20,6 +20,8 @@ export default function LoginPage() {
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const router = useRouter();
 
+    const [branding, setBranding] = useState<any>(null);
+
     useEffect(() => {
         // Aggressively clear any existing session data on mount
         localStorage.clear();
@@ -30,6 +32,15 @@ export default function LoginPage() {
             document.cookie = `access_token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
             document.cookie = `access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
         });
+
+        // Fetch branding
+        const host = window.location.host;
+        fetch(`/api/v1/auth/branding?host=${host}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data) setBranding(data);
+            })
+            .catch(err => console.error('Branding fetch failed:', err));
     }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -71,7 +82,15 @@ export default function LoginPage() {
     ];
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen" style={{
+            // @ts-ignore
+            '--primary': branding?.primaryColor || '#2563eb'
+        }}>
+            <style jsx global>{`
+                :root {
+                    --primary: ${branding?.primaryColor || '#2563eb'};
+                }
+            `}</style>
             {/* Left Panel - Branding */}
             <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 relative overflow-hidden">
                 {/* Animated Background Elements */}
@@ -103,8 +122,12 @@ export default function LoginPage() {
                 <div className="relative z-10 flex flex-col justify-center p-16">
                     {/* Logo */}
                     <div className="flex items-center gap-3 mb-12">
-                        <img src="/logo.png" alt="Aerostic" className="w-14 h-14 object-contain" />
-                        <span className="text-3xl font-bold text-white">Aerostic</span>
+                        <img
+                            src={branding?.logo || "/logo.png"}
+                            alt={branding?.brandName || "Aerostic"}
+                            className="w-14 h-14 object-contain"
+                        />
+                        <span className="text-3xl font-bold text-white">{branding?.brandName || "Aerostic"}</span>
                     </div>
 
                     {/* Headline */}

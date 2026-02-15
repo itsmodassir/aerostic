@@ -83,8 +83,20 @@ Every execution step is logged immutably:
 -   **Model Nodes**: Configuration providers (OpenAI, Anthropic, Gemini).
 -   **Memory Nodes**: Context injection (Conversation History, Vector DB).
 
+5.  **Reseller Engine**: Multi-tier multitenancy layer allowing hierarchical account management and branding inheritance.
+
+### 2.2 Data Flow
+...
+
+## 3. Detailed Component Design
+...
+
+### 3.3 Reseller & White-labeling
+- **Branding Inheritance**: Sub-tenants resolve branding (logo, colors) from their parent `resellerId` if they don't have their own.
+- **Dynamic Routing**: Resolve `ResellerConfig` based on the request `host` header to provide custom domains.
+
 ## 5. Implementation Roadmap
-1.  **Phase 21**: Core Node Implementation (Email, Template, Contact).
-2.  **Phase 22**: External Integrations (Webhook, Drive, API).
-3.  **Phase 23**: AI Brain Architecture (Tool Binding System).
-4.  **Phase 24**: Security Hardening & SSRF Protection.
+1. [x] **Phase 20**: Reseller Module & White-labeling Logic.
+2. [ ] **Phase 21**: Core Node Implementation (Email, Template, Contact).
+3. [ ] **Phase 22**: External Integrations (Webhook, Drive, API).
+4. [ ] **Phase 23**: AI Brain Architecture (Tool Binding System).

@@ -56,6 +56,7 @@ aerostic/
 │   │   │   ├── google/  # Google Drive & Sheets Integration (OAuth2)
 │   │   │   ├── meta/    # Meta OAuth & Cloud API
 │   │   │   ├── ai/      # AI Agents & Recursive Execution Engine
+│   │   │   ├── reseller/# Reseller, Branding, & Multi-tier Management
 │   │   │   └── webhooks/# Meta Webhook Handler
 │   │   └── migrations/  # Versioned DB Schema Changes
 │   └── frontend/        # Next.js 16 (Subdomain-Aware)
@@ -86,7 +87,8 @@ aerostic/
 ### app.aerostic.com Path Detail:
 - `/dashboard/[workspaceId]/` -> Main entry for tenants.
 - `.../(owner)/` -> Billing, Subscription, Team Settings.
-- `.../(admin)/` -> Campaigns, Automation, AI Settings.
+- `.../(admin)/` -> Campaigns, Automation, AI Settings, Reseller Settings (for Admins).
+- `.../(reseller)/` -> Clients Management, Branding/White-label Settings.
 - `.../(agent)/` -> Shared Inbox, Contacts, Live Chat.
 
 ---
@@ -116,7 +118,8 @@ aerostic/
 ## 5️⃣ DATABASE SCHEMA (MODERN)
 
 ### Core Entities
-- **Tenants**: ID, Name, Plan, Status.
+- **Tenants**: ID, Name, Plan, Status, `type` (REGULAR/RESELLER), `resellerId`, `resellerCredits`.
+- **ResellerConfig**: New table for white-label settings (`domain`, `logo`, `primaryColor`, `supportEmail`).
 - **WhatsappAccount**: Encrypted `accessToken`, `wabaId`, `phoneNumberId`, `status`.
 - **Template**: Name, Category, Language, Components, Status (`PENDING`, `APPROVED`, `REJECTED`), and `rejectionReason`.
 - **Message**: Unique `meta_message_id` (Idempotency), Direction, Content, Type.
