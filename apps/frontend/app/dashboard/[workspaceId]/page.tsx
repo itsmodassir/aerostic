@@ -90,6 +90,8 @@ export default function DashboardPage() {
     const [greeting, setGreeting] = useState('');
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'overview' | 'developer' | 'team' | 'settings'>('overview');
+    const [membership, setMembership] = useState<any>(null);
+    const [resellerStats, setResellerStats] = useState<any>(null);
     const params = useParams();
     const workspaceId = params?.workspaceId || 'default';
 
@@ -101,32 +103,50 @@ export default function DashboardPage() {
 
         const initFn = async () => {
             try {
-                const res = await api.get('/auth/me'); // uses cookie
-                if (res.data) {
-                    setUserName(res.data.name || 'there');
-                    fetchData(res.data.tenantId);
-                } else {
-                    setUserName('there');
+                // 1. Get Me
+                const meRes = await api.get('/auth/me');
+                if (meRes.data) {
+                    setUserName(meRes.data.name || 'there');
+                }
+
+                // 2. Get Membership
+                const memRes = await fetch('/api/v1/auth/membership', { credentials: 'include' });
+                if (memRes.ok) {
+                    const memData = await memRes.json();
+                    setMembership(memData);
+
+                    if (memData.tenantType === 'reseller') {
+                        fetchResellerData();
+                    } else {
+                        fetchRegularData();
+                    }
                 }
             } catch (e) {
-                setUserName('there');
+                console.error('Init failed', e);
             } finally {
                 setLoading(false);
             }
         };
         initFn();
+    }, [workspaceId]);
 
-    }, []);
+    const fetchResellerData = async () => {
+        try {
+            const res = await fetch('/api/v1/reseller/stats', { credentials: 'include' });
+            if (res.ok) {
+                setResellerStats(await res.json());
+            }
+        } catch (e) { }
+    };
 
-    const fetchData = async (tenantId: string) => {
+    const fetchRegularData = async () => {
         try {
             const [analyticsRes, subscriptionRes] = await Promise.all([
                 api.get('/analytics/overview'),
                 api.get('/billing/subscription')
             ]);
 
-            // Handle Analytics
-            if (analyticsRes.data && typeof analyticsRes.data === 'object') {
+            if (analyticsRes.data) {
                 const data = analyticsRes.data;
                 setStats(data.stats || { totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0 });
                 setRecentMsgs(data.recentMessages || []);
@@ -135,16 +155,11 @@ export default function DashboardPage() {
                 setAiCreditsUsed(data.stats?.aiCreditsUsed || 0);
             }
 
-            // Handle Subscription
             if (subscriptionRes.data) {
                 const sub = subscriptionRes.data;
                 setUserPlan(sub.plan?.toLowerCase() || 'starter');
             }
-        } catch (error: any) {
-            console.warn('Live API unavailable, using fallback data');
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { }
     };
 
     const planFeatures = PLAN_FEATURES[userPlan];
@@ -164,6 +179,10 @@ export default function DashboardPage() {
                 </div>
             </div>
         );
+    }
+
+    if (membership?.tenantType === 'reseller') {
+        return <PartnerDashboardView stats={resellerStats} />;
     }
 
     return (
@@ -238,6 +257,112 @@ export default function DashboardPage() {
             {activeTab === 'settings' && (
                 <SettingsTab planFeatures={planFeatures} userPlan={userPlan} />
             )}
+        </div>
+    );
+}
+
+function PartnerDashboardView({ stats }: { stats: any }) {
+    const params = useParams();
+    const workspaceId = params?.workspaceId || 'default';
+
+    if (!stats) return (
+        <div className="flex items-center justify-center min-h-[300px]">
+            <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        </div>
+    );
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Partner Console</h1>
+                    <p className="text-gray-500 text-sm">Manage your client portfolio and credit distribution</p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl">
+                    <Crown className="w-5 h-5 text-blue-600" />
+                    <span className="font-bold text-blue-700">Partner Account</span>
+                </div>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <StatCard title="Total Clients" value={stats.totalClients} icon={Building2} color="blue" />
+                <StatCard title="Active Clients" value={stats.activeClients} icon={CheckCircle} color="green" />
+                <StatCard title="Available Credits" value={stats.availableCredits} icon={Zap} color="purple" />
+                <StatCard title="Distributed Credits" value={stats.totalDistributedCredits} icon={ArrowUpRight} color="orange" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Client List Stub */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                        <h3 className="font-bold text-gray-900">Recent Clients</h3>
+                        <Link href={`/dashboard/${workspaceId}/reseller/clients`} className="text-sm text-blue-600 hover:underline">
+                            View All Clients →
+                        </Link>
+                    </div>
+                    <div className="p-12 text-center">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Users2 className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2">Portfolio Management</h4>
+                        <p className="text-gray-500 max-w-sm mx-auto mb-6">You can onboard new clients, manage their plans, and allocate WhatsApp credits directly from your console.</p>
+                        <Link href={`/dashboard/${workspaceId}/reseller/clients`} className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+                            <Users2 className="w-4 h-4" />
+                            Manage My Clients
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Side Content */}
+                <div className="space-y-6">
+                    {/* Quick Actions */}
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                        <h3 className="font-bold text-gray-900 mb-4">Partner Actions</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            <Link href={`/dashboard/${workspaceId}/reseller/clients?action=new`} className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all group">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                    <Rocket className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-gray-900 text-sm">Onboard Client</p>
+                                    <p className="text-xs text-gray-500">Setup a new regular workspace</p>
+                                </div>
+                            </Link>
+
+                            <Link href={`/dashboard/${workspaceId}/reseller/branding`} className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/50 transition-all group">
+                                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                    <Shield className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-gray-900 text-sm">White Labeling</p>
+                                    <p className="text-xs text-gray-500">Configure your brand assets</p>
+                                </div>
+                            </Link>
+
+                            <Link href={`/dashboard/${workspaceId}/reseller/clients?action=credits`} className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/50 transition-all group">
+                                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 group-hover:scale-110 transition-transform">
+                                    <Zap className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-gray-900 text-sm">Allocate Credits</p>
+                                    <p className="text-xs text-gray-500">Transfer credits to sub-tenants</p>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Support Block */}
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
+                        <Sparkles className="w-8 h-8 text-white/30 mb-4" />
+                        <h4 className="text-lg font-bold mb-2">Need Assistance?</h4>
+                        <p className="text-white/80 text-sm mb-4">Dedicated partner support is available 24/7 for Enterprise resellers.</p>
+                        <button className="w-full py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur rounded-lg font-medium transition-colors">
+                            Contact Support
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

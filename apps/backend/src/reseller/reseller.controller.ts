@@ -22,6 +22,12 @@ import { TenantRole } from '../tenants/entities/tenant-membership.entity';
 export class ResellerController {
     constructor(private readonly resellerService: ResellerService) { }
 
+    @Get('stats')
+    @Roles(TenantRole.OWNER)
+    async getStats(@Request() req: any) {
+        return this.resellerService.getStats(req.user.tenantId);
+    }
+
     @Post('onboard')
     @Roles(TenantRole.OWNER) // Super Admins bypass this and can access
     async createReseller(@Body() dto: CreateResellerDto) {

@@ -51,10 +51,14 @@ export function middleware(request: NextRequest) {
         // Rewrite all requests to /dashboard/[slug]/[path]
         // This makes "tenant.aerostic.com/settings" -> "/dashboard/tenant/settings"
 
-        // Prevent double-rewriting if internal routing is already happening
-        if (!pathname.startsWith('/dashboard')) {
-            return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}${pathname}${search}`, request.url));
+        // If the path already starts with /dashboard, strip it to avoid duplication or nested paths
+        // e.g. /dashboard/messages -> /messages -> /dashboard/tenant/messages
+        let cleanPath = pathname;
+        if (pathname.startsWith('/dashboard')) {
+            cleanPath = pathname.replace('/dashboard', '') || '/';
         }
+
+        return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}${cleanPath}${search}`, request.url));
     }
 
     return NextResponse.next();

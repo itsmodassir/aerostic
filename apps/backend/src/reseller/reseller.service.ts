@@ -35,6 +35,29 @@ export class ResellerService {
         private tenantsService: TenantsService,
     ) { }
 
+    async getStats(resellerId: string) {
+        const reseller = await this.tenantsRepository.findOne({
+            where: { id: resellerId },
+        });
+
+        if (!reseller) throw new NotFoundException('Reseller not found');
+
+        const [clients, count] = await this.tenantsRepository.findAndCount({
+            where: { resellerId },
+        });
+
+        const activeClients = clients.filter(c => c.status === 'active').length;
+        const totalDistributedCredits = clients.reduce((sum, c) => sum + (c.resellerCredits || 0), 0);
+
+        return {
+            totalClients: count,
+            activeClients,
+            inactiveClients: count - activeClients,
+            availableCredits: reseller.resellerCredits,
+            totalDistributedCredits,
+        };
+    }
+
     async createReseller(dto: CreateResellerDto) {
         // 1. Check if user exists
         const existingUser = await this.usersService.findOneByEmail(dto.ownerEmail);
