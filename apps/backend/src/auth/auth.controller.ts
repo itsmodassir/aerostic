@@ -314,6 +314,7 @@ export class AuthController {
     @NestRequest() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
+    this.logger.debug(`HEADERS: ${JSON.stringify(req.headers)}`);
     res.setHeader('Cache-Control', 'no-store');
     const branding = req.membership?.tenant?.type === 'reseller'
       ? req.membership?.tenant?.resellerConfig
