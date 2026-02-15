@@ -375,8 +375,9 @@ export default function ResellersPage() {
             {/* Partner Profile Modal */}
             {showProfileModal && selectedReseller && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in">
-                    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in">
-                        <div className="p-8 border-b flex justify-between items-center">
+                    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in duration-300 ring-1 ring-black/5 flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="p-8 border-b bg-white flex items-center justify-between sticky top-0 z-20">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900">Partner Profile: {selectedReseller.name}</h3>
                                 <p className="text-sm text-gray-500">Configure partner limits and platform access</p>
@@ -385,7 +386,9 @@ export default function ResellersPage() {
                                 <Plus className="w-6 h-6 rotate-45 text-gray-400" />
                             </button>
                         </div>
-                        <div className="p-8 space-y-8 max-height-[70vh] overflow-y-auto">
+
+                        {/* Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-8">
                             {/* Metrics */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
@@ -395,6 +398,39 @@ export default function ResellersPage() {
                                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Credit Pool</p>
                                     <p className="text-2xl font-bold text-indigo-600">{selectedReseller.resellerCredits || 0} Units</p>
+                                </div>
+                            </div>
+
+                            {/* Management Actions - Added Upgrade/Downgrade/Pause terminology */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-red-600 pl-3">Account Management</h4>
+                                <div className="grid grid-cols-2 gap-6 bg-red-50/30 p-6 rounded-2xl border border-red-100">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 underline decoration-red-200">Current Plan (Upgrade/Downgrade)</label>
+                                        <input
+                                            type="text"
+                                            defaultValue={selectedReseller.plan}
+                                            onChange={(e) => selectedReseller.newPlan = e.target.value}
+                                            className="w-full px-4 py-3 bg-white border border-red-100 rounded-xl outline-none focus:ring-2 focus:ring-red-600/20 font-bold text-red-950"
+                                            placeholder="e.g. starter, platinum"
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-1 italic">Type the new plan name to upgrade or downgrade.</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-2 underline decoration-red-200">Account Status (Pause/Resume)</label>
+                                        <select
+                                            defaultValue={selectedReseller.status}
+                                            onChange={(e) => selectedReseller.newStatus = e.target.value}
+                                            className={clsx(
+                                                "w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 font-bold",
+                                                selectedReseller.status === 'active' ? "bg-green-50 border-green-100 text-green-700" : "bg-red-50 border-red-100 text-red-700"
+                                            )}
+                                        >
+                                            <option value="active">Active (Resume)</option>
+                                            <option value="suspended">Suspended (Pause)</option>
+                                        </select>
+                                        <p className="text-[10px] text-gray-400 mt-1 italic">Suspended partners cannot access their dashboard.</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -425,25 +461,19 @@ export default function ResellersPage() {
 
                             {/* Feature Toggles */}
                             <div className="space-y-4">
-                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Partner Configuration</h4>
-                                <div className="grid grid-cols-2 gap-6">
+                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3">Subdomain Configuration</h4>
+                                <div className="grid grid-cols-1 gap-6">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-2">Partner Subdomain</label>
-                                        <input
-                                            type="text"
-                                            defaultValue={selectedReseller.slug}
-                                            onChange={(e) => selectedReseller.newSlug = e.target.value}
-                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2">Partner Plan</label>
-                                        <input
-                                            type="text"
-                                            defaultValue={selectedReseller.plan}
-                                            onChange={(e) => selectedReseller.newPlan = e.target.value}
-                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                defaultValue={selectedReseller.slug}
+                                                onChange={(e) => selectedReseller.newSlug = e.target.value}
+                                                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
+                                            />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">.aerostic.com</span>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-2">Max User Accounts</label>
@@ -453,17 +483,6 @@ export default function ResellersPage() {
                                             onChange={(e) => selectedReseller.newMaxUsers = parseInt(e.target.value)}
                                             className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-2">Status</label>
-                                        <select
-                                            defaultValue={selectedReseller.status}
-                                            onChange={(e) => selectedReseller.newStatus = e.target.value}
-                                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
-                                        >
-                                            <option value="active">Active</option>
-                                            <option value="suspended">Suspended</option>
-                                        </select>
                                     </div>
                                 </div>
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-emerald-600 pl-3 mt-8">Platform Access</h4>
@@ -492,12 +511,14 @@ export default function ResellersPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-8 bg-gray-50 flex gap-4">
+
+                        {/* Footer */}
+                        <div className="p-8 bg-gray-50 border-t flex gap-4 sticky bottom-0 z-20">
                             <button
                                 onClick={() => setShowProfileModal(false)}
-                                className="px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-bold text-sm"
+                                className="px-6 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-100 transition-all"
                             >
-                                Close
+                                Cancel
                             </button>
                             <button
                                 onClick={() => handleUpdateLimits(selectedReseller.id, {
@@ -510,10 +531,10 @@ export default function ResellersPage() {
                                     status: selectedReseller.newStatus
                                 })}
                                 disabled={savingLimits}
-                                className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
+                                className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-gray-900/10"
                             >
                                 {savingLimits && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                                {savingLimits ? 'Saving...' : 'Apply Changes'}
+                                {savingLimits ? 'Saving...' : 'Save Profile Changes'}
                             </button>
                         </div>
                     </div>
