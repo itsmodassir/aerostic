@@ -181,7 +181,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
     // Redirect 'default' to actual workspace
     useEffect(() => {
-        if (workspaceId === 'default' && user) {
+        // If we're on a reseller subdomain (isReseller is true), prioritize the resolved tenant
+        if (workspaceId === 'default' && isReseller && membership?.tenant?.slug) {
+            router.replace(`/dashboard/${membership.tenant.slug}`);
+            return;
+        }
+
+        if (workspaceId === 'default' && user && !isReseller) {
             fetch('/api/v1/auth/workspaces', { credentials: 'include' })
                 .then(res => res.json())
                 .then(data => {
@@ -194,7 +200,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 })
                 .catch(err => console.error('Failed to resolve default workspace:', err));
         }
-    }, [workspaceId, user, router]);
+    }, [workspaceId, user, router, isReseller, membership]);
 
     // notifications
     const [notifications, setNotifications] = useState([
@@ -435,10 +441,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                 </div>
                                 <div className="text-left hidden md:block">
                                     <p className="text-sm font-medium leading-none text-gray-900">
-                                        {isReseller ? (membership?.tenant?.name || userName) : userName}
+                                        {isReseller ? (membership?.branding?.brandName || membership?.tenant?.name || userName) : userName}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {isReseller ? (membership?.tenant?.email || email) : email}
+                                        {isReseller ? (membership?.branding?.supportEmail || email) : email}
                                     </p>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
@@ -451,11 +457,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                     <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500">
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center font-bold text-lg">
-                                                {(isReseller ? (membership?.tenant?.name || userName) : userName)[0]?.toUpperCase()}
+                                                {(isReseller ? (membership?.branding?.brandName || membership?.tenant?.name || userName) : userName)[0]?.toUpperCase()}
                                             </div>
                                             <div className="text-white">
-                                                <p className="font-semibold">{isReseller ? (membership?.tenant?.name || userName) : userName}</p>
-                                                <p className="text-xs text-white/80">{isReseller ? (membership?.tenant?.email || email) : email}</p>
+                                                <p className="font-semibold">{isReseller ? (membership?.branding?.brandName || membership?.tenant?.name || userName) : userName}</p>
+                                                <p className="text-xs text-white/80">{isReseller ? (membership?.branding?.supportEmail || email) : email}</p>
                                             </div>
                                         </div>
                                         <div className="mt-3 flex items-center gap-2">
