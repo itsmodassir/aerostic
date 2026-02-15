@@ -18,6 +18,7 @@ import {
     LayoutDashboard,
     GitPullRequest
 } from 'lucide-react';
+import { clsx } from 'clsx';
 
 interface Plan {
     id: string;
