@@ -534,159 +534,161 @@ export default function ResellersPage() {
                             <div className="absolute -right-4 -top-4 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl" />
                         </div>
 
-                        {feedback && feedback.type === 'success' && feedback.data ? (
-                            <div className="p-10 space-y-6">
-                                <div className="p-6 bg-green-50 rounded-[24px] border border-green-100 text-center">
-                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle className="w-8 h-8 text-green-600" />
-                                    </div>
-                                    <h4 className="text-xl font-bold text-gray-900 mb-2">Partner Onboarded!</h4>
-                                    <p className="text-sm text-gray-600 mb-6">Share these temporary credentials with the partner. They must change their password on first login.</p>
-
-                                    <div className="space-y-3 text-left">
-                                        <div className="p-4 bg-white rounded-xl border border-green-200">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Login Email</p>
-                                            <p className="font-bold text-gray-900">{feedback.data.email}</p>
-                                        </div>
-                                        <div className="p-4 bg-white rounded-xl border border-green-200 flex justify-between items-center group">
-                                            <div>
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Generated Password</p>
-                                                <p className="font-mono font-bold text-blue-600">{feedback.data.password}</p>
-                                            </div>
-                                            <button
-                                                onClick={() => navigator.clipboard.writeText(feedback.data.password)}
-                                                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-                                            >
-                                                <Plus className="w-4 h-4 rotate-45" /> {/* Using Plus as a placeholder for copy if not available */}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setShowOnboardModal(false);
-                                        setFeedback(null);
-                                        setOnboardForm({
-                                            name: '',
-                                            email: '',
-                                            slug: '',
-                                            plan: 'Platinum Partner',
-                                            planId: '',
-                                            initialCredits: 5000,
-                                            maxUsers: 10,
-                                            monthlyMessageLimit: 1000
-                                        });
-                                    }}
-                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs tracking-widest hover:bg-black transition-all"
-                                >
-                                    DONE & CLOSE
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                {feedback && (
-                                    <div className={clsx(
-                                        "mx-10 mt-6 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2",
-                                        feedback.type === 'success' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                                    )}>
-                                        {feedback.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-                                        <span className="text-sm font-bold tracking-tight">{feedback.msg}</span>
-                                    </div>
-                                )}
-
+                        <div className="max-h-[min(700px,80vh)] overflow-y-auto">
+                            {feedback && feedback.type === 'success' && feedback.data ? (
                                 <div className="p-10 space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-2">
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Company Entity Name</label>
-                                            <input
-                                                type="text"
-                                                value={onboardForm.name}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic"
-                                                placeholder="e.g. SKYNET MEDIA GROUP"
-                                            />
+                                    <div className="p-6 bg-green-50 rounded-[24px] border border-green-100 text-center">
+                                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <CheckCircle className="w-8 h-8 text-green-600" />
                                         </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Partner Subdomain</label>
-                                            <div className="relative">
+                                        <h4 className="text-xl font-bold text-gray-900 mb-2">Partner Onboarded!</h4>
+                                        <p className="text-sm text-gray-600 mb-6">Share these temporary credentials with the partner. They must change their password on first login.</p>
+
+                                        <div className="space-y-3 text-left">
+                                            <div className="p-4 bg-white rounded-xl border border-green-200">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Login Email</p>
+                                                <p className="font-bold text-gray-900">{feedback.data.email}</p>
+                                            </div>
+                                            <div className="p-4 bg-white rounded-xl border border-green-200 flex justify-between items-center group">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Generated Password</p>
+                                                    <p className="font-mono font-bold text-blue-600">{feedback.data.password}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => navigator.clipboard.writeText(feedback.data.password)}
+                                                    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+                                                >
+                                                    <Plus className="w-4 h-4 rotate-45" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setShowOnboardModal(false);
+                                            setFeedback(null);
+                                            setOnboardForm({
+                                                name: '',
+                                                email: '',
+                                                slug: '',
+                                                plan: 'Platinum Partner',
+                                                planId: '',
+                                                initialCredits: 5000,
+                                                maxUsers: 10,
+                                                monthlyMessageLimit: 1000
+                                            });
+                                        }}
+                                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs tracking-widest hover:bg-black transition-all"
+                                    >
+                                        DONE & CLOSE
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    {feedback && (
+                                        <div className={clsx(
+                                            "mx-10 mt-6 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2",
+                                            feedback.type === 'success' ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                                        )}>
+                                            {feedback.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                            <span className="text-sm font-bold tracking-tight">{feedback.msg}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="p-10 space-y-6">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2">
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Company Entity Name</label>
                                                 <input
                                                     type="text"
-                                                    value={onboardForm.slug}
-                                                    onChange={(e) => setOnboardForm({ ...onboardForm, slug: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
-                                                    placeholder="partner-slug"
+                                                    value={onboardForm.name}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all italic"
+                                                    placeholder="e.g. SKYNET MEDIA GROUP"
                                                 />
-                                                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">.aerostic.com</span>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Partner Subdomain</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={onboardForm.slug}
+                                                        onChange={(e) => setOnboardForm({ ...onboardForm, slug: e.target.value })}
+                                                        className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                        placeholder="partner-slug"
+                                                    />
+                                                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">.aerostic.com</span>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Administrative Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={onboardForm.email}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, email: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all"
+                                                    placeholder="admin@partner.com"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Manual Plan Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={onboardForm.plan}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, plan: e.target.value })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                    placeholder="e.g. Platinum Partner"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Credits</label>
+                                                <input
+                                                    type="number"
+                                                    value={onboardForm.initialCredits}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, initialCredits: parseInt(e.target.value) || 0 })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">User Limit</label>
+                                                <input
+                                                    type="number"
+                                                    value={onboardForm.maxUsers}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, maxUsers: parseInt(e.target.value) || 1 })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Message Limit (Monthly)</label>
+                                                <input
+                                                    type="number"
+                                                    value={onboardForm.monthlyMessageLimit}
+                                                    onChange={(e) => setOnboardForm({ ...onboardForm, monthlyMessageLimit: parseInt(e.target.value) || 0 })}
+                                                    className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
+                                                />
                                             </div>
                                         </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Administrative Email</label>
-                                            <input
-                                                type="email"
-                                                value={onboardForm.email}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, email: e.target.value })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-medium placeholder:text-gray-300 transition-all"
-                                                placeholder="admin@partner.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Manual Plan Name</label>
-                                            <input
-                                                type="text"
-                                                value={onboardForm.plan}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, plan: e.target.value })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
-                                                placeholder="e.g. Platinum Partner"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Initial Credits</label>
-                                            <input
-                                                type="number"
-                                                value={onboardForm.initialCredits}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, initialCredits: parseInt(e.target.value) || 0 })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">User Limit</label>
-                                            <input
-                                                type="number"
-                                                value={onboardForm.maxUsers}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, maxUsers: parseInt(e.target.value) || 1 })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Message Limit (Monthly)</label>
-                                            <input
-                                                type="number"
-                                                value={onboardForm.monthlyMessageLimit}
-                                                onChange={(e) => setOnboardForm({ ...onboardForm, monthlyMessageLimit: parseInt(e.target.value) || 0 })}
-                                                className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
-                                            />
-                                        </div>
                                     </div>
-                                </div>
-                                <div className="p-10 bg-gray-50/50 flex gap-4">
-                                    <button
-                                        onClick={() => setShowOnboardModal(false)}
-                                        className="flex-1 px-8 py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-100 transition-all font-black text-xs tracking-widest"
-                                        disabled={submitting}
-                                    >
-                                        ABORT
-                                    </button>
-                                    <button
-                                        onClick={handleDeploy}
-                                        disabled={submitting}
-                                        className="flex-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all font-black text-xs tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {submitting && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                                        {submitting ? 'DEPLOYING...' : 'DEPLOY INSTANCE'}
-                                    </button>
-                                </div>
-                            </>
-                        )}
+                                    <div className="p-10 bg-gray-50/50 flex gap-4 border-t sticky bottom-0">
+                                        <button
+                                            onClick={() => setShowOnboardModal(false)}
+                                            className="flex-1 px-8 py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-100 transition-all font-black text-xs tracking-widest"
+                                            disabled={submitting}
+                                        >
+                                            ABORT
+                                        </button>
+                                        <button
+                                            onClick={handleDeploy}
+                                            disabled={submitting}
+                                            className="flex-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-500/30 transition-all font-black text-xs tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {submitting && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                            {submitting ? 'DEPLOYING...' : 'DEPLOY INSTANCE'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
