@@ -30,7 +30,7 @@ export default function TenantsPage() {
     const [editStatus, setEditStatus] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 
     useEffect(() => {
         fetchTenants();

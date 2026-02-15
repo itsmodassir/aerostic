@@ -14,7 +14,7 @@ export default function AdminAlertsPage() {
     const fetchAlerts = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/alerts`, {
+            const res = await fetch(`/api/v1/admin/alerts`, {
                 credentials: 'include'
             });
             const data = await res.json();

@@ -83,7 +83,7 @@ export default function PlansPage() {
         features: [] as string[],
     });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 
     useEffect(() => {
         fetchPlans();
@@ -91,7 +91,7 @@ export default function PlansPage() {
 
     const fetchPlans = async () => {
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/plans`, {
+            const res = await fetch(`/api/v1/admin/plans`, {
                 credentials: 'include',
             });
             if (res.ok) {
@@ -154,8 +154,8 @@ export default function PlansPage() {
         setSaving(true);
         try {
             const url = editingPlan
-                ? `${API_URL}/api/v1/admin/plans/${editingPlan.id}`
-                : `${API_URL}/api/v1/admin/plans`;
+                ? `/api/v1/admin/plans/${editingPlan.id}`
+                : `/api/v1/admin/plans`;
             const method = editingPlan ? 'PATCH' : 'POST';
 
             const res = await fetch(url, {
@@ -182,7 +182,7 @@ export default function PlansPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this plan?')) return;
         try {
-            const res = await fetch(`${API_URL}/api/v1/admin/plans/${id}`, {
+            const res = await fetch(`/api/v1/admin/plans/${id}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });

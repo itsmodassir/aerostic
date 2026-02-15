@@ -15,7 +15,7 @@ export default function AdminWebhooksPage() {
     const fetchWebhooks = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/admin/webhooks`, {
+            const res = await fetch(`/api/v1/admin/webhooks`, {
                 credentials: 'include'
             });
             const data = await res.json();
