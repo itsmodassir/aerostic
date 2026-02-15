@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tenant, TenantType } from '../../tenants/entities/tenant.entity';
 import { ResellerConfig } from '../../tenants/entities/reseller-config.entity';
-import { User } from '../../users/entities/user.entity';
+import { User, UserRole } from '../../users/entities/user.entity';
 import { AuditService } from '../../audit/audit.service';
 import { BillingService } from '../../billing/billing.service';
 import {
@@ -151,14 +152,15 @@ export class AdminTenantService {
 
     // 2. Generate Password
     const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(generatedPassword, salt);
 
     // 3. Create Owner User
-    const userRole = (await import('../../users/entities/user.entity')).UserRole;
     const user = this.userRepo.create({
       email,
       name,
-      password: generatedPassword, // UsersService should hash this on save if there's a hook, or we hash it here
-      role: userRole.ADMIN,
+      passwordHash,
+      role: UserRole.ADMIN,
     });
     const savedUser = await this.userRepo.save(user);
 
