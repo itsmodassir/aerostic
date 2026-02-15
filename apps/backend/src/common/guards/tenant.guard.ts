@@ -68,8 +68,8 @@ export class TenantGuard implements CanActivate {
     }
 
     // 4. Verification Check: Does the user have a membership in this tenant?
-    if (request.user && request.user.role !== 'super_admin') {
-      const membership = await this.membershipRepo.findOne({
+    if (request.user) {
+      let membership = await this.membershipRepo.findOne({
         where: { userId: request.user.id, tenantId: targetTenant.id },
         relations: [
           'tenant',
@@ -81,6 +81,23 @@ export class TenantGuard implements CanActivate {
           'roleEntity.rolePermissions.permission',
         ],
       });
+
+      // Special handling for super_admin: Allow access even without explicit membership
+      if (!membership && request.user.role === 'super_admin') {
+        const fullTenant = await this.tenantRepo.findOne({
+          where: { id: targetTenant.id },
+          relations: ['resellerConfig', 'reseller', 'reseller.resellerConfig'],
+        });
+
+        membership = {
+          userId: request.user.id,
+          tenantId: targetTenant.id,
+          tenant: fullTenant,
+          role: 'owner', // Act as owner in context
+          status: 'active',
+          permissions: [], // Controllers might need specific check, but frontend needs the object
+        } as any;
+      }
 
       if (!membership) {
         throw new UnauthorizedException(
