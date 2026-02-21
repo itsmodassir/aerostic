@@ -21,10 +21,8 @@ else
     git pull origin main
 fi
 
-# 2. Install Dependencies (Optimized)
-echo "📦 Installing dependencies..."
-# Using --legacy-peer-deps to bypass Capacitor version conflicts (v6 vs v7)
-npm ci --production=false --legacy-peer-deps
+# 2. Install Dependencies
+echo "📦 Root dependencies skipped (Monorepo structure)..."
 
 # 3. Build Backend
 echo "🏗️ Building Backend..."
