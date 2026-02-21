@@ -58,6 +58,7 @@ services:
       JWT_SECRET: dev_jwt_secret_key_for_aerostic_v1
       TYPEORM_SYNCHRONIZE: "false"
       ALLOWED_ORIGINS: "https://aimstore.in,https://app.aimstore.in,https://admin.aimstore.in"
+      BASE_DOMAIN: "aimstore.in"
     depends_on:
       - postgres
       - redis
