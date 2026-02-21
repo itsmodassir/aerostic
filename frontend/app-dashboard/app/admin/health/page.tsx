@@ -14,13 +14,16 @@ export default function AdminHealthPage() {
     const fetchHealth = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/v1/admin/stats`, {
+            const res = await fetch(`/api/v1/admin/platform/health`, {
                 credentials: 'include'
             });
+            if (!res.ok) throw new Error('Health check failed');
             const data = await res.json();
-            setStats(data.systemHealth || []);
+            // Backend returns { status, checks: [{service, status, uptime}], timestamp }
+            setStats(Array.isArray(data.checks) ? data.checks : []);
         } catch (error) {
             console.error('Failed to fetch health', error);
+            setStats([]);
         } finally {
             setLoading(false);
         }

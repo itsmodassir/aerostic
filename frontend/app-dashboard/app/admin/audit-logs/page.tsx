@@ -8,20 +8,19 @@ export default function AuditLogsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
     useEffect(() => {
         fetchLogs();
     }, []);
 
     const fetchLogs = async () => {
         try {
-            const res = await fetch(`${API_URL}/admin/audit-logs`, {
+            const res = await fetch(`/api/v1/admin/platform/audit-logs?limit=200`, {
                 credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
-                setLogs(data);
+                // Backend returns array directly
+                setLogs(Array.isArray(data) ? data : (data.data || []));
             }
         } catch (error) {
             console.error('Failed to fetch audit logs', error);

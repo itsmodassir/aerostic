@@ -44,8 +44,10 @@ export default function ResellersPage() {
         try {
             const res = await fetch('/api/v1/admin/tenants?type=reseller', { credentials: 'include' });
             if (res.ok) {
-                const data = await res.json();
-                setResellers(data);
+                const response = await res.json();
+                // Backend returns { data: Tenant[], total, ... } or a raw array
+                const list = Array.isArray(response) ? response : (response.data || []);
+                setResellers(list);
             }
         } catch (error) {
             console.error('Failed to fetch resellers:', error);
@@ -218,8 +220,8 @@ export default function ResellersPage() {
     };
 
     const filteredResellers = resellers.filter(r =>
-        r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.slug.toLowerCase().includes(searchTerm.toLowerCase())
+        (r?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (r?.slug || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
