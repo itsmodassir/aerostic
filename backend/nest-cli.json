@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "manualRestart": true
+  },
+  "projects": {
+    "api": {
+      "type": "application",
+      "root": "api-service",
+      "entryFile": "main",
+      "sourceRoot": "api-service"
+    },
+    "webhook": {
+      "type": "application",
+      "root": "webhook-service",
+      "entryFile": "main",
+      "sourceRoot": "webhook-service"
+    },
+    "worker": {
+      "type": "application",
+      "root": "worker-service",
+      "entryFile": "main",
+      "sourceRoot": "worker-service"
+    }
+  }
+}
