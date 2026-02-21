@@ -64,7 +64,7 @@ export default function SystemPage() {
         setError('');
         try {
             console.log('Fetching system config...');
-            const res = await fetch(`/api/v1/admin/config`, {
+            const res = await fetch(`/api/v1/admin/system/config`, {
                 credentials: 'include'
             });
 
@@ -94,7 +94,7 @@ export default function SystemPage() {
     const fetchEnv = async () => {
         setFetchingEnv(true);
         try {
-            const res = await fetch(`/api/v1/admin/env`, {
+            const res = await fetch(`/api/v1/admin/system/env`, {
                 credentials: 'include'
             });
             if (res.ok) {
@@ -114,7 +114,7 @@ export default function SystemPage() {
 
         try {
             console.log('Saving config updates:', config);
-            const res = await fetch(`/api/v1/admin/config`, {
+            const res = await fetch(`/api/v1/admin/system/config`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export default function SystemPage() {
         if (!confirm(`Are you sure you want to reset ${key} to its default value?`)) return;
 
         try {
-            const res = await fetch(`/api/v1/admin/config/${key}`, {
+            const res = await fetch(`/api/v1/admin/system/config/${key}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
@@ -240,8 +240,8 @@ export default function SystemPage() {
                 <button
                     onClick={() => setActiveTab('config')}
                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'config'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}
                 >
                     <Settings className="w-4 h-4" />
@@ -250,8 +250,8 @@ export default function SystemPage() {
                 <button
                     onClick={() => setActiveTab('env')}
                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'env'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                         }`}
                 >
                     <Terminal className="w-4 h-4" />

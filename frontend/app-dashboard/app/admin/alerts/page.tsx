@@ -14,11 +14,15 @@ export default function AdminAlertsPage() {
     const fetchAlerts = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/v1/admin/alerts`, {
+            const res = await fetch(`/api/v1/admin/platform/alerts`, {
                 credentials: 'include'
             });
+            if (!res.ok) {
+                setAlerts([]);
+                return;
+            }
             const data = await res.json();
-            setAlerts(data || []);
+            setAlerts(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch alerts', error);
         } finally {
