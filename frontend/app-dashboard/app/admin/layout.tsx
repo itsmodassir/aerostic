@@ -73,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Messages', href: '/admin/messages', icon: MessageSquare },
         { name: 'API Keys', href: '/admin/api-keys', icon: Key },
         { name: 'Webhooks', href: '/admin/webhooks', icon: Webhook },
-        { name: 'System Logs', href: '/admin/logs', icon: FileText },
+        { name: 'System Logs', href: '/admin/system-logs', icon: FileText },
         { name: 'Audit Logs', href: '/admin/audit-logs', icon: Database },
         { name: 'System Health', href: '/admin/health', icon: Activity },
         { name: 'Alerts', href: '/admin/alerts', icon: AlertTriangle },

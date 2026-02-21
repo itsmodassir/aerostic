@@ -114,7 +114,7 @@ export default function AdminDashboard() {
                 {[
                     { label: 'Onboard Reseller', icon: Globe, href: '/admin/resellers', color: 'blue' },
                     { label: 'Manage Plans', icon: Shield, href: '/admin/plans', color: 'indigo' },
-                    { label: 'System Logs', icon: FileText, href: '/admin/logs', color: 'gray' },
+                    { label: 'System Logs', icon: FileText, href: '/admin/system-logs', color: 'gray' },
                     { label: 'Webhooks', icon: Webhook, href: '/admin/webhooks', color: 'purple' },
                     { label: 'Audit Trail', icon: Database, href: '/admin/audit-logs', color: 'amber' },
                     { label: 'Health Check', icon: Activity, href: '/admin/health', color: 'emerald' },
