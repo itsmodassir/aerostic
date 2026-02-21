@@ -56,7 +56,7 @@ export default function Hero() {
                         className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-16"
                     >
                         <Link
-                            href="https://app.aerostic.com/register"
+                            href="https://app.aerostic.in/auth"
                             className="group bg-emerald-500 text-white px-8 py-4 rounded-2xl text-lg font-bold flex items-center space-x-2 hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-200 hover:-translate-y-1"
                         >
                             <span>Get Official API Access</span>
