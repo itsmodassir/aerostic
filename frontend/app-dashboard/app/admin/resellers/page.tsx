@@ -70,10 +70,11 @@ export default function ResellersPage() {
 
     const fetchStats = async () => {
         try {
-            const res = await fetch('/api/v1/admin/stats', { credentials: 'include' });
+            const res = await fetch('/api/v1/admin/platform/stats', { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
-                setStats(data.resellerStats);
+                // Platform stats returns { resellerStats: { totalResellers, subTenantsCount, totalCreditsAllocated, partnerRevenue } }
+                setStats(data.resellerStats || data);
             }
         } catch (error) {
             console.error('Failed to fetch reseller stats:', error);

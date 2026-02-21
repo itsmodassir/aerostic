@@ -17,7 +17,7 @@ export class AdminBillingService {
     private subscriptionRepo: Repository<Subscription>,
     @InjectRepository(WebhookEndpoint)
     private webhookEndpointRepo: Repository<WebhookEndpoint>,
-  ) {}
+  ) { }
 
   async getAllApiKeys(limit: number = 20, offset: number = 0) {
     const [keys, total] = await this.apiKeyRepo.findAndCount({
@@ -126,6 +126,22 @@ export class AdminBillingService {
 
     const revenueLakhs = (mrr / 100000).toFixed(2);
 
+    // Recent transactions from subscriptions
+    const recentSubs = await this.subscriptionRepo.find({
+      relations: ["tenant"],
+      order: { createdAt: "DESC" },
+      take: 10,
+    });
+
+    const recentTransactions = recentSubs.map((sub) => ({
+      id: `SUB-${sub.id.slice(0, 8).toUpperCase()}`,
+      tenant: (sub as any).tenant?.name || "Unknown",
+      plan: (sub.plan as string).charAt(0).toUpperCase() + (sub.plan as string).slice(1),
+      amount: `₹${(sub.priceInr || 0).toLocaleString()}`,
+      status: sub.status === SubscriptionStatus.ACTIVE ? "success" : sub.status,
+      date: new Date(sub.createdAt).toLocaleDateString("en-IN"),
+    }));
+
     return {
       revenueStats: [
         {
@@ -161,6 +177,7 @@ export class AdminBillingService {
         revenue: `₹${(parseFloat(d.revenue) / 100000).toFixed(2)} L`,
         percentage: mrr > 0 ? (parseFloat(d.revenue) / mrr) * 100 : 0,
       })),
+      recentTransactions,
     };
   }
 }

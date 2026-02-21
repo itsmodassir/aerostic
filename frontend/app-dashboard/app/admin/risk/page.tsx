@@ -68,12 +68,13 @@ export default function RiskDashboard() {
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
+                const opts = { credentials: 'include' as const };
                 const [platformRes, tenantRes, eventRes, trendRes, heatmapRes] = await Promise.all([
-                    fetch('/api/v1/admin/risk/platform'),
-                    fetch('/api/v1/admin/risk/tenants?limit=10'),
-                    fetch('/api/v1/admin/risk/events?limit=20'),
-                    fetch('/api/v1/admin/risk/trends?hours=24'),
-                    fetch('/api/v1/admin/risk/clusters/heatmap?hours=24')
+                    fetch('/api/v1/admin/risk/platform', opts),
+                    fetch('/api/v1/admin/risk/tenants?limit=10', opts),
+                    fetch('/api/v1/admin/risk/events?limit=20', opts),
+                    fetch('/api/v1/admin/risk/trends?hours=24', opts),
+                    fetch('/api/v1/admin/risk/clusters/heatmap?hours=24', opts)
                 ]);
 
                 const platform = platformRes.ok ? await platformRes.json() : { current: platformStats };
@@ -82,11 +83,11 @@ export default function RiskDashboard() {
                 const trendData = trendRes.ok ? await trendRes.json() : [];
                 const heatmap = heatmapRes.ok ? await heatmapRes.json() : [];
 
-                setPlatformStats(platform.current);
-                setTenantRisks(tenants);
-                setSecurityEvents(events);
-                setTrends(trendData);
-                setHeatmapData(heatmap);
+                setPlatformStats(platform.current || platform);
+                setTenantRisks(Array.isArray(tenants) ? tenants : (tenants.data || []));
+                setSecurityEvents(Array.isArray(events) ? events : (events.data || []));
+                setTrends(Array.isArray(trendData) ? trendData : (trendData.data || []));
+                setHeatmapData(Array.isArray(heatmap) ? heatmap : (heatmap.data || []));
                 setLoading(false);
             } catch (err) {
                 console.error('Failed to fetch security data', err);
