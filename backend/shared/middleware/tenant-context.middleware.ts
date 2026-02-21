@@ -27,7 +27,7 @@ export class TenantContextMiddleware implements NestMiddleware {
       return next();
     }
 
-    console.log(`[TenantContextMiddleware] Path: ${req.path}, isExcluded: ${isExcluded}`);
+    console.log(`[TenantContextMiddleware] Path: ${req.path}, OriginalUrl: ${req.originalUrl}, isExcluded: ${isExcluded}`);
 
     const tenantId =
       req.headers["x-tenant-id"] ||
