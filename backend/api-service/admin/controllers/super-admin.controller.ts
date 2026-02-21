@@ -30,7 +30,7 @@ export class SuperAdminController {
     private readonly legacyAdminService: AdminService,
     private readonly authService: AuthService,
     private readonly auditService: AuditService,
-  ) {}
+  ) { }
 
   // ============ Database Explorer ============
   @Get("database/tables")
@@ -63,6 +63,11 @@ export class SuperAdminController {
   async deleteConfig(@Param("key") key: string) {
     await this.configService.deleteConfig(key);
     return { success: true };
+  }
+
+  @Get("env")
+  async getEnv() {
+    return this.configService.getEnv();
   }
 
   // ============ System Operations ============

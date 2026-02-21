@@ -135,7 +135,7 @@ export class AdminConfigService implements OnModuleInit {
     private encryptionService: EncryptionService,
     private auditService: AuditService,
     private redisService: RedisService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     // Prime cache on startup
@@ -396,5 +396,44 @@ export class AdminConfigService implements OnModuleInit {
         { tenantId },
       );
     }
+  }
+
+  async getEnv(): Promise<any[]> {
+    const envVars = process.env;
+    const result = [];
+
+    const SENSITIVE_KEYWORDS = [
+      "KEY",
+      "SECRET",
+      "TOKEN",
+      "PASSWORD",
+      "AUTH",
+      "CREDENTIAL",
+    ];
+
+    for (const [key, value] of Object.entries(envVars)) {
+      // Skip internal node/system vars that might be too noisy
+      if (
+        key.startsWith("NODE_") ||
+        key.startsWith("npm_") ||
+        key === "PATH" ||
+        key === "PWD" ||
+        key === "HOME"
+      ) {
+        if (!key.includes("PORT") && !key.includes("URL")) continue;
+      }
+
+      const isSensitive = SENSITIVE_KEYWORDS.some((kw) =>
+        key.toUpperCase().includes(kw),
+      );
+
+      result.push({
+        key,
+        value: isSensitive ? "••••••••••••••••" : value,
+        isSensitive,
+      });
+    }
+
+    return result.sort((a, b) => a.key.localeCompare(b.key));
   }
 }
