@@ -13,21 +13,20 @@ export class TenantContextMiddleware implements NestMiddleware {
 
   // Routes that do not require a tenant context (Public/Auth/Webhooks)
   private readonly EXCLUDED_PATHS = [
-    "/api/v1/auth",
-    "/api/v1/webhooks",
-    "/api/v1/health",
+    "auth",
+    "webhooks",
+    "health",
   ];
 
   async use(req: Request, res: Response, next: NextFunction) {
+    // Check both req.path and req.originalUrl for the excluded keywords
     const isExcluded = this.EXCLUDED_PATHS.some((path) =>
-      req.path.startsWith(path),
+      req.path.includes(path) || req.originalUrl?.includes(path),
     );
 
     if (isExcluded) {
       return next();
     }
-
-    console.log(`[TenantContextMiddleware] Path: ${req.path}, OriginalUrl: ${req.originalUrl}, isExcluded: ${isExcluded}`);
 
     const tenantId =
       req.headers["x-tenant-id"] ||
