@@ -28,7 +28,6 @@ export default function AdminLoginPage() {
                 return;
             }
 
-            localStorage.setItem('token', res.data.access_token);
             localStorage.setItem('user', JSON.stringify(user));
             // Redirect to admin dashboard
             router.push('/admin');
