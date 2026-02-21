@@ -38,20 +38,21 @@ export default function TenantsPage() {
 
     const fetchTenants = async () => {
         try {
-            const res = await fetch(`/api/v1/admin/users`, { // Using /users as it returns tenant info
+            const res = await fetch(`/api/v1/admin/tenants`, {
                 credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to fetch tenants');
-            const data = await res.json();
+            const response = await res.json();
 
-            // Use real data from backend
-            const mapped = data.map((t: any) => ({
+            // Backend returns { data: Tenant[], total, page, limit, totalPages }
+            const list = Array.isArray(response) ? response : (response.data || []);
+
+            const mapped = list.map((t: any) => ({
                 ...t,
-                // Fallbacks if data is missing, but prefer real values
                 users: t.usersCount || 1,
                 monthlyMessages: t.monthlyMessageLimit || 1000,
                 messagesSent: t.messagesSentThisMonth || 0,
-                plan: t.currentPlan || t.plan || 'starter'
+                currentPlan: t.currentPlan || t.plan || 'starter'
             }));
             setTenants(mapped);
         } catch (e) {
@@ -65,7 +66,7 @@ export default function TenantsPage() {
         if (!selectedTenant) return;
         setIsUpdating(true);
         try {
-            const res = await fetch(`/api/v1/admin/users/${selectedTenant.id}/plan`, {
+            const res = await fetch(`/api/v1/admin/tenants/${selectedTenant.id}/plan`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'
