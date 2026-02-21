@@ -398,7 +398,7 @@ export class AuthController {
       id: req.user.id,
       email: req.user.email,
       name: req.user.name,
-      globalRole: req.user.role,
+      role: req.user.role,
     };
   }
 }
