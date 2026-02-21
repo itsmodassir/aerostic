@@ -257,8 +257,8 @@ export default function ResellersPage() {
                 {[
                     { label: 'Total Resellers', value: stats?.totalResellers || 0, icon: Users2, color: 'blue', trend: '+12%' },
                     { label: 'Sub-tenants', value: stats?.subTenantsCount || 0, icon: Shield, color: 'emerald', trend: '+18%' },
-                    { label: 'Credits Allocated', value: (stats?.totalCreditsAllocated / 1000).toFixed(1) + 'K', icon: CreditCard, color: 'purple', trend: '+5.4%' },
-                    { label: 'Partner Revenue', value: '₹' + (stats?.partnerRevenue / 100000).toFixed(1) + 'L', icon: CreditCard, color: 'amber', trend: '+22%' },
+                    { label: 'Credits Allocated', value: ((stats?.totalCreditsAllocated || 0) / 1000).toFixed(1) + 'K', icon: CreditCard, color: 'purple', trend: '+5.4%' },
+                    { label: 'Partner Revenue', value: '₹' + ((stats?.partnerRevenue || 0) / 100000).toFixed(1) + 'L', icon: CreditCard, color: 'amber', trend: '+22%' },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                         <div className="flex items-center justify-between mb-4">
