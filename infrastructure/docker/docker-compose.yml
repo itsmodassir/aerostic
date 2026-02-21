@@ -56,7 +56,7 @@ services:
       DATABASE_URL: postgresql://aerostic:strongpassword@postgres:5432/aerostic
       ENCRYPTION_KEY: aerostic_dev_encryption_key_32_char_long!!
       JWT_SECRET: dev_jwt_secret_key_for_aerostic_v1
-      TYPEORM_SYNCHRONIZE: "false"
+      TYPEORM_SYNCHRONIZE: "true"
     depends_on:
       - postgres
       - redis
@@ -76,7 +76,7 @@ services:
       DATABASE_URL: postgresql://aerostic:strongpassword@postgres:5432/aerostic
       ENCRYPTION_KEY: aerostic_dev_encryption_key_32_char_long!!
       JWT_SECRET: dev_jwt_secret_key_for_aerostic_v1
-      TYPEORM_SYNCHRONIZE: "false"
+      TYPEORM_SYNCHRONIZE: "true"
     depends_on:
       - postgres
       - redis
@@ -101,7 +101,7 @@ services:
       ML_SERVICE_URL: http://ml-service:8000
       ENCRYPTION_KEY: aerostic_dev_encryption_key_32_char_long!!
       JWT_SECRET: dev_jwt_secret_key_for_aerostic_v1
-      TYPEORM_SYNCHRONIZE: "false"
+      TYPEORM_SYNCHRONIZE: "true"
     depends_on:
       - postgres
       - redis
