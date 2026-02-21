@@ -9,7 +9,7 @@ import { DataSource } from "typeorm";
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
-  constructor(private dataSource: DataSource) {}
+  constructor(private dataSource: DataSource) { }
 
   // Routes that do not require a tenant context (Public/Auth/Webhooks)
   private readonly EXCLUDED_PATHS = [
@@ -26,6 +26,8 @@ export class TenantContextMiddleware implements NestMiddleware {
     if (isExcluded) {
       return next();
     }
+
+    console.log(`[TenantContextMiddleware] Path: ${req.path}, isExcluded: ${isExcluded}`);
 
     const tenantId =
       req.headers["x-tenant-id"] ||
