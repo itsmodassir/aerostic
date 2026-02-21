@@ -61,7 +61,7 @@ export default function CTA() {
                             className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
                         >
                             <Link
-                                href="https://app.aerostic.in/auth"
+                                href="https://app.aimstore.in/auth"
                                 className="w-full sm:w-auto bg-emerald-500 text-white px-10 py-5 rounded-2xl text-xl font-black flex items-center justify-center space-x-2 hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/25 hover:-translate-y-1"
                             >
                                 <span>🚀 Get Started Free</span>
