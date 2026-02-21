@@ -12,11 +12,12 @@ export class TenantContextMiddleware implements NestMiddleware {
   private readonly logger = new Logger(TenantContextMiddleware.name);
   constructor(private dataSource: DataSource) { }
 
-  // Routes that do not require a tenant context (Public/Auth/Webhooks)
+  // Routes that do not require a tenant context (Public/Auth/Webhooks/Admin)
   private readonly EXCLUDED_PATHS = [
     "auth",
     "webhooks",
     "health",
+    "admin",
   ];
 
   async use(req: Request, res: Response, next: NextFunction) {
