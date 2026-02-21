@@ -45,7 +45,7 @@ export default function AdminPage() {
             const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
             if (res.ok) {
                 const user = await res.json();
-                const superAdmin = user.globalRole === 'super_admin' || user.email === 'md@modassir.info';
+                const superAdmin = user.role === 'super_admin' || user.email === 'md@modassir.info';
                 const workspaceAdmin = user.role === 'admin' || user.role === 'owner';
 
                 setIsSuperAdmin(superAdmin);

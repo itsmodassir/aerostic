@@ -35,17 +35,17 @@ export function usePermissions() {
     }, [user]);
 
     const can = (permission: string) => {
-        if (user?.globalRole === 'super_admin') return true;
+        if (user?.role === 'super_admin') return true;
         return permissions.includes(permission);
     };
 
     const hasAny = (perms: string[]) => {
-        if (user?.globalRole === 'super_admin') return true;
+        if (user?.role === 'super_admin') return true;
         return perms.some(p => permissions.includes(p));
     };
 
     const hasAll = (perms: string[]) => {
-        if (user?.globalRole === 'super_admin') return true;
+        if (user?.role === 'super_admin') return true;
         return perms.every(p => permissions.includes(p));
     };
 

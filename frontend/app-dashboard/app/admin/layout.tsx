@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (pathname === '/admin/login') return;
 
         if (!user || (user.role !== 'super_admin' && user.role !== 'admin')) {
-            // Check globalRole. Casting as any because interface might say 'super_admin' | 'user' but db might have 'admin'
+            // Check role. Casting as any because interface might say 'super_admin' | 'user' but db might have 'admin'
             router.push('/admin/login');
             return;
         }

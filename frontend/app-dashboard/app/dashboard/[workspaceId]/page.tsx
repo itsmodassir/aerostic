@@ -896,7 +896,7 @@ function TeamTab({ planFeatures }: any) {
                     currentUser = {
                         name: user.name || 'You',
                         email: user.email || 'user@example.com',
-                        role: user.globalRole === 'admin' ? 'Admin' : 'Agent',
+                        role: user.role === 'admin' ? 'Admin' : 'Agent',
                         avatar: (user.name || 'Y')[0].toUpperCase(),
                         status: 'online'
                     };

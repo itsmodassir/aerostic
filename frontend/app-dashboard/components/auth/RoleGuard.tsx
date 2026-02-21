@@ -19,7 +19,7 @@ export default function RoleGuard({
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && (!user || !allowedRoles.includes(user.globalRole))) {
+        if (!loading && (!user || !allowedRoles.includes(user.role))) {
             router.push(redirectTo);
         }
     }, [user, loading, allowedRoles, router, redirectTo]);
@@ -32,7 +32,7 @@ export default function RoleGuard({
         );
     }
 
-    if (!user || !allowedRoles.includes(user.globalRole)) {
+    if (!user || !allowedRoles.includes(user.role)) {
         return null; // or a customized unauthorized UI
     }
 

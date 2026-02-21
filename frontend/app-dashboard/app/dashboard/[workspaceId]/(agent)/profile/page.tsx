@@ -44,7 +44,7 @@ export default function ProfilePage() {
             // setJoinedDate...
 
             // Set plan and admin status
-            if (user.email === 'md@modassir.info' || user.globalRole === 'super_admin') {
+            if (user.email === 'md@modassir.info' || user.role === 'super_admin') {
                 setUserPlan('growth'); // Demo logic
                 setIsAdmin(true);
             }
