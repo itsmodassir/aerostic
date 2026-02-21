@@ -7,7 +7,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    globalRole: 'super_admin' | 'admin' | 'user';
+    role: 'super_admin' | 'admin' | 'user';
 }
 
 export function useAuth() {
@@ -29,7 +29,12 @@ export function useAuth() {
                 if (!res.ok) {
                     setUser(null);
                     setLoading(false);
-                    router.push('/login');
+                    // Determine redirect based on subdomain
+                    if (window.location.hostname.startsWith('admin.')) {
+                        router.push('/admin/login');
+                    } else {
+                        router.push('/login');
+                    }
                     return;
                 }
 
@@ -39,7 +44,11 @@ export function useAuth() {
             } catch (err) {
                 console.error('Auth check failed', err);
                 setUser(null);
-                router.push('/login');
+                if (window.location.hostname.startsWith('admin.')) {
+                    router.push('/admin/login');
+                } else {
+                    router.push('/login');
+                }
             } finally {
                 setLoading(false);
             }
@@ -59,15 +68,19 @@ export function useAuth() {
         }
 
         setUser(null);
-        router.push('/login');
+        if (window.location.hostname.startsWith('admin.')) {
+            router.push('/admin/login');
+        } else {
+            router.push('/login');
+        }
     };
 
     return {
         user,
         loading,
         logout,
-        isSuperAdmin: user?.globalRole === 'super_admin',
-        isAdmin: user?.globalRole === 'super_admin' || user?.globalRole === 'admin',
+        isSuperAdmin: user?.role === 'super_admin',
+        isAdmin: user?.role === 'super_admin' || user?.role === 'admin',
         isAuthenticated: !!user,
     };
 }
