@@ -89,15 +89,18 @@ export class AuthController {
     private auditService: AuditService,
     private dataSource: DataSource,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   @Post("register/initiate")
   async initiateRegister(@Body() registerDto: RegisterDto) {
+    this.logger.log(`Initiating registration for: ${registerDto.email}`);
+    this.logger.debug(`Register DTO: ${JSON.stringify(registerDto)}`);
     // 1. Check if user already exists
     const existingUser = await this.usersService.findOneByEmail(
       registerDto.email,
     );
     if (existingUser) {
+      this.logger.warn(`Email already registered: ${registerDto.email}`);
       throw new BadRequestException("Email already registered");
     }
 
