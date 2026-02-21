@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware, ForbiddenException } from "@nestjs/common";
+import { Injectable, NestMiddleware, ForbiddenException, Logger } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 
 /**
@@ -9,6 +9,7 @@ import { DataSource } from "typeorm";
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(TenantContextMiddleware.name);
   constructor(private dataSource: DataSource) { }
 
   // Routes that do not require a tenant context (Public/Auth/Webhooks)
@@ -35,6 +36,9 @@ export class TenantContextMiddleware implements NestMiddleware {
       req.body?.tenantId;
 
     if (!tenantId) {
+      this.logger.warn(
+        `Multi-tenant violation: Path=${req.path}, OriginalUrl=${req.originalUrl}, Host=${req.headers.host}`,
+      );
       throw new ForbiddenException(
         "Multi-tenant boundary violation: Header [x-tenant-id] or parameter [tenantId] is required.",
       );
