@@ -57,6 +57,7 @@ services:
       ENCRYPTION_KEY: aerostic_dev_encryption_key_32_char_long!!
       JWT_SECRET: dev_jwt_secret_key_for_aerostic_v1
       TYPEORM_SYNCHRONIZE: "false"
+      ALLOWED_ORIGINS: "https://aimstore.in,https://app.aimstore.in,https://admin.aimstore.in"
     depends_on:
       - postgres
       - redis
@@ -112,7 +113,7 @@ services:
       context: ../../
       dockerfile: infrastructure/docker/app.Dockerfile
       args:
-        - NEXT_PUBLIC_BASE_DOMAIN=localhost
+        - NEXT_PUBLIC_BASE_DOMAIN=aimstore.in
     container_name: aerostic-frontend
     restart: always
     ports:
@@ -120,7 +121,7 @@ services:
     environment:
       - NODE_ENV=production
       - BACKEND_URL=http://api:3001
-      - NEXT_PUBLIC_BASE_DOMAIN=localhost
+      - NEXT_PUBLIC_BASE_DOMAIN=aimstore.in
     depends_on:
       - api
 
