@@ -90,7 +90,7 @@ export default function ResellersPage() {
         try {
             setSubmitting(true);
             setFeedback(null);
-            const res = await fetch('/api/v1/admin/resellers', {
+            const res = await fetch('/api/v1/admin/tenants/resellers', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(onboardForm),
@@ -143,7 +143,7 @@ export default function ResellersPage() {
     const fetchResellerOwner = async (id: string) => {
         setFetchingOwner(true);
         try {
-            const res = await fetch(`/api/v1/admin/resellers/${id}`, { credentials: 'include' });
+            const res = await fetch(`/api/v1/admin/tenants/resellers/${id}`, { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
                 setSelectedResellerOwner(data.owner);
@@ -158,7 +158,7 @@ export default function ResellersPage() {
     const handleUpdateLimits = async (id: string, updates: any) => {
         setSavingLimits(true);
         try {
-            const res = await fetch(`/api/v1/admin/resellers/${id}`, {
+            const res = await fetch(`/api/v1/admin/tenants/resellers/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates),
@@ -181,7 +181,7 @@ export default function ResellersPage() {
         if (!confirm('Are you sure you want to regenerate the password for this partner?')) return;
 
         try {
-            const res = await fetch(`/api/v1/admin/resellers/${id}/regenerate-password`, {
+            const res = await fetch(`/api/v1/admin/tenants/resellers/${id}/regenerate-password`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -201,7 +201,7 @@ export default function ResellersPage() {
 
     const handleDeployExisting = async (id: string) => {
         try {
-            const res = await fetch(`/api/v1/admin/resellers/${id}/deploy`, {
+            const res = await fetch(`/api/v1/admin/tenants/resellers/${id}/deploy`, {
                 method: 'POST',
                 credentials: 'include'
             });
