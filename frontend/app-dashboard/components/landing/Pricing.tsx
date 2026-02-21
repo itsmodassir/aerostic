@@ -181,7 +181,7 @@ export default function Pricing() {
 
                             <div className="p-8 pt-0 mt-auto">
                                 <Link
-                                    href="https://app.aimstore.in/auth"
+                                    href="https://app.aimstore.in/register"
                                     className={`block w-full py-4 rounded-xl text-center font-bold text-lg transition-all ${plan.highlight
                                         ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/30'
                                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
