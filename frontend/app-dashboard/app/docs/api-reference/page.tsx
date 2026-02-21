@@ -34,7 +34,7 @@ export default function APIReferencePage() {
                 path: 'Authorization',
                 title: 'API Key Authentication',
                 description: 'All API requests must include your API key in the Authorization header.',
-                request: `curl -X GET https://api.aerostic.com/v1/me \\
+                request: `curl -X GET https://api.aimstore.in/v1/me \\
   -H "Authorization: Bearer ak_live_xxxxxxxxxxxxx" \\
   -H "Content-Type: application/json"`,
                 response: `{
@@ -54,7 +54,7 @@ export default function APIReferencePage() {
                 path: '/messages/send',
                 title: 'Send Template Message',
                 description: 'Send a pre-approved WhatsApp template message to a recipient.',
-                request: `curl -X POST https://api.aerostic.com/v1/messages/send \\
+                request: `curl -X POST https://api.aimstore.in/v1/messages/send \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -84,7 +84,7 @@ export default function APIReferencePage() {
                 path: '/messages/text',
                 title: 'Send Text Message',
                 description: 'Send a plain text message (only works within 24-hour window).',
-                request: `curl -X POST https://api.aerostic.com/v1/messages/text \\
+                request: `curl -X POST https://api.aimstore.in/v1/messages/text \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -109,7 +109,7 @@ export default function APIReferencePage() {
                 path: '/messages',
                 title: 'List Messages',
                 description: 'Retrieve a paginated list of messages.',
-                request: `curl -X GET "https://api.aerostic.com/v1/messages?limit=20&status=delivered" \\
+                request: `curl -X GET "https://api.aimstore.in/v1/messages?limit=20&status=delivered" \\
   -H "Authorization: Bearer ak_live_xxxxx"`,
                 response: `{
   "data": [
@@ -142,7 +142,7 @@ export default function APIReferencePage() {
                 path: '/contacts',
                 title: 'Create Contact',
                 description: 'Add a new contact to your address book.',
-                request: `curl -X POST https://api.aerostic.com/v1/contacts \\
+                request: `curl -X POST https://api.aimstore.in/v1/contacts \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -172,7 +172,7 @@ export default function APIReferencePage() {
                 path: '/contacts',
                 title: 'List Contacts',
                 description: 'Retrieve all contacts with optional filtering.',
-                request: `curl -X GET "https://api.aerostic.com/v1/contacts?tag=premium&limit=50" \\
+                request: `curl -X GET "https://api.aimstore.in/v1/contacts?tag=premium&limit=50" \\
   -H "Authorization: Bearer ak_live_xxxxx"`,
                 response: `{
   "data": [
@@ -202,7 +202,7 @@ export default function APIReferencePage() {
                 path: '/templates',
                 title: 'List Templates',
                 description: 'Get all message templates with their approval status.',
-                request: `curl -X GET https://api.aerostic.com/v1/templates \\
+                request: `curl -X GET https://api.aimstore.in/v1/templates \\
   -H "Authorization: Bearer ak_live_xxxxx"`,
                 response: `{
   "data": [
@@ -228,7 +228,7 @@ export default function APIReferencePage() {
                 path: '/templates',
                 title: 'Create Template',
                 description: 'Submit a new template for Meta approval.',
-                request: `curl -X POST https://api.aerostic.com/v1/templates \\
+                request: `curl -X POST https://api.aimstore.in/v1/templates \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -262,7 +262,7 @@ export default function APIReferencePage() {
                 path: '/ai-agents',
                 title: 'List AI Agents',
                 description: 'Get all configured AI agents.',
-                request: `curl -X GET https://api.aerostic.com/v1/ai-agents \\
+                request: `curl -X GET https://api.aimstore.in/v1/ai-agents \\
   -H "Authorization: Bearer ak_live_xxxxx"`,
                 response: `{
   "data": [
@@ -286,7 +286,7 @@ export default function APIReferencePage() {
                 path: '/ai-agents',
                 title: 'Create AI Agent',
                 description: 'Create a new AI agent with custom configuration.',
-                request: `curl -X POST https://api.aerostic.com/v1/ai-agents \\
+                request: `curl -X POST https://api.aimstore.in/v1/ai-agents \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{

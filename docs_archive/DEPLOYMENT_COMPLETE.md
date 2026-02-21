@@ -135,8 +135,8 @@ docker compose ps
 ```
 
 ### Service Endpoints (EC2)
-- **API:** `http://13.63.63.170:3001` (internal) → `https://aerostic.com/api/v1` (public)
-- **Frontend:** `http://13.63.63.170:3000` (internal) → `https://aerostic.com` (public)
+- **API:** `http://13.63.63.170:3001` (internal) → `https://aimstore.in/api/v1` (public)
+- **Frontend:** `http://13.63.63.170:3000` (internal) → `https://aimstore.in` (public)
 - **Database:** Port 5432 (internal only)
 - **Redis:** Port 6379 (internal only)
 

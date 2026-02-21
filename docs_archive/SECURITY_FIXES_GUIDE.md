@@ -27,9 +27,9 @@ app.enableCors();
 app.enableCors({
   origin: (origin, callback) => {
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-      'https://app.aerostic.com',
-      'https://admin.aerostic.com',
-      'https://aerostic.com'
+      'https://app.aimstore.in',
+      'https://admin.aimstore.in',
+      'https://aimstore.in'
     ];
     
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -50,7 +50,7 @@ app.enableCors({
 
 **Add to `.env.example` and `.env.production.example`:**
 ```env
-ALLOWED_ORIGINS=https://app.aerostic.com,https://admin.aerostic.com,https://aerostic.com
+ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in,https://aimstore.in
 ```
 
 ---
@@ -220,8 +220,8 @@ server {
   server_name _;
 
   # SSL Configuration
-  ssl_certificate /etc/letsencrypt/live/aerostic.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/aerostic.com/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/aimstore.in/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/aimstore.in/privkey.pem;
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_ciphers HIGH:!aNULL:!MD5;
   ssl_prefer_server_ciphers on;
@@ -453,7 +453,7 @@ After implementing fixes, test:
 - [ ] Encryption: Restart backend without ENCRYPTION_KEY (should fail gracefully)
 - [ ] Logs: No sensitive data in stdout (use `npm run build && npm start 2>&1 | grep -i password`)
 - [ ] Rate limiting: Exceed endpoint limits (should get 429 error)
-- [ ] Security headers: Check with curl: `curl -I https://aerostic.com | grep -i "strict\|x-frame\|csp"`
+- [ ] Security headers: Check with curl: `curl -I https://aimstore.in | grep -i "strict\|x-frame\|csp"`
 - [ ] Input validation: Send invalid email to login (should get 400 error)
 
 ---
@@ -475,12 +475,12 @@ JWT_SECRET=<generate: openssl rand -hex 32>
 ENCRYPTION_KEY=<generate: openssl rand -hex 32>
 
 # CORS
-ALLOWED_ORIGINS=https://app.aerostic.com,https://admin.aerostic.com,https://aerostic.com
+ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in,https://aimstore.in
 
 # Meta WhatsApp
 META_APP_ID=<from Meta Developers>
 META_APP_SECRET=<from Meta Developers>
-META_REDIRECT_URI=https://api.aerostic.com/meta/callback
+META_REDIRECT_URI=https://api.aimstore.in/meta/callback
 META_WEBHOOK_VERIFY_TOKEN=<generate: openssl rand -hex 16>
 
 # AI Services
@@ -497,8 +497,8 @@ SENTRY_DSN=<from Sentry>
 NODE_ENV=production
 
 # Frontend
-NEXT_PUBLIC_API_URL=https://api.aerostic.com
-APP_URL=https://app.aerostic.com
+NEXT_PUBLIC_API_URL=https://api.aimstore.in
+APP_URL=https://app.aimstore.in
 ```
 
 ---

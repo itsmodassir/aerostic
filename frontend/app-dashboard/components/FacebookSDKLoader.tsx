@@ -75,7 +75,7 @@ export function launchWhatsAppSignup(
     const redirectUri = process.env.NEXT_PUBLIC_META_REDIRECT_URI ||
         (typeof window !== 'undefined' && window.location.origin ?
             `${window.location.origin}/meta/callback` :
-            'https://app.aerostic.com/meta/callback');
+            'https://app.aimstore.in/meta/callback');
 
     try {
         window.FB.login(

@@ -1,5 +1,5 @@
 # Aerostic Robots.txt
-# https://aerostic.com
+# https://aimstore.in
 
 User-agent: *
 Allow: /
@@ -22,7 +22,7 @@ Disallow: /auth/
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://aerostic.com/sitemap.xml
+Sitemap: https://aimstore.in/sitemap.xml
 
 # Google specific
 User-agent: Googlebot

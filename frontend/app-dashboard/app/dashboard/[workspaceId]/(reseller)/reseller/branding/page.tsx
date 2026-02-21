@@ -217,7 +217,7 @@ export default function ResellerBrandingPage() {
                                     />
                                     <ExternalLink className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                                 </div>
-                                <p className="mt-2 text-[10px] text-gray-400">CNAME should point to app.aerostic.com</p>
+                                <p className="mt-2 text-[10px] text-gray-400">CNAME should point to app.aimstore.in</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Support Email</label>

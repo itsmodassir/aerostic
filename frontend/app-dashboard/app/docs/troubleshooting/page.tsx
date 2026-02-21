@@ -140,7 +140,7 @@ export default function TroubleshootingPage() {
                         </li>
                         <li className="flex items-start gap-2 text-gray-700">
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2" />
-                            <span>Ensure <code>META_REDIRECT_URI</code> is set to <code>https://app.aerostic.com/meta/callback</code>.</span>
+                            <span>Ensure <code>META_REDIRECT_URI</code> is set to <code>https://app.aimstore.in/meta/callback</code>.</span>
                         </li>
                         <li className="flex items-start gap-2 text-gray-700">
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2" />

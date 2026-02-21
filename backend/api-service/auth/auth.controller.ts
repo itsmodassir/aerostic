@@ -142,7 +142,7 @@ export class AuthController {
         httpOnly: true,
         secure: isProduction,
         sameSite: "lax",
-        domain: isProduction ? `.${process.env.BASE_DOMAIN || "aerostic.com"}` : undefined,
+        domain: isProduction ? `.${process.env.BASE_DOMAIN || "aimstore.in"}` : undefined,
         path: "/",
         maxAge: 15 * 60 * 1000, // 15 minutes
       });
@@ -151,7 +151,7 @@ export class AuthController {
         httpOnly: true,
         secure: isProduction,
         sameSite: "lax",
-        domain: isProduction ? `.${process.env.BASE_DOMAIN || "aerostic.com"}` : undefined,
+        domain: isProduction ? `.${process.env.BASE_DOMAIN || "aimstore.in"}` : undefined,
         path: "/",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
@@ -214,7 +214,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: isProduction ? ".aerostic.com" : undefined,
+      domain: isProduction ? ".aimstore.in" : undefined,
       path: "/",
       maxAge: 15 * 60 * 1000,
     });
@@ -223,7 +223,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: isProduction ? ".aerostic.com" : undefined,
+      domain: isProduction ? ".aimstore.in" : undefined,
       path: "/",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
@@ -244,11 +244,11 @@ export class AuthController {
     const isProduction = process.env.NODE_ENV === "production";
 
     res.clearCookie("access_token", {
-      domain: isProduction ? ".aerostic.com" : undefined,
+      domain: isProduction ? ".aimstore.in" : undefined,
       path: "/",
     });
     res.clearCookie("refresh_token", {
-      domain: isProduction ? ".aerostic.com" : undefined,
+      domain: isProduction ? ".aimstore.in" : undefined,
       path: "/",
     });
 

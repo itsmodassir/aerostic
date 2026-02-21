@@ -101,7 +101,7 @@ export class SuperAdminController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: isProduction ? ".aerostic.com" : undefined,
+      domain: isProduction ? ".aimstore.in" : undefined,
       path: "/",
       maxAge: 1 * 60 * 60 * 1000, // 1 hour for impersonation access tokens
     });
@@ -110,7 +110,7 @@ export class SuperAdminController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: isProduction ? ".aerostic.com" : undefined,
+      domain: isProduction ? ".aimstore.in" : undefined,
       path: "/",
       maxAge: 2 * 60 * 60 * 1000, // 2 hours for impersonation refresh window
     });

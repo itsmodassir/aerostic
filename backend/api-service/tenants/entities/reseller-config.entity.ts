@@ -25,7 +25,7 @@ export class ResellerConfig {
 
   @Column({ unique: true, nullable: true })
   @Index()
-  domain: string; // e.g., partner.aerostic.com
+  domain: string; // e.g., partner.aimstore.in
 
   @Column({ nullable: true })
   logo: string;

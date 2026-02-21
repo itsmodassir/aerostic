@@ -509,7 +509,7 @@ export default function SystemPage() {
                                     value={config['platform.app_url']}
                                     onChange={(e) => updateConfig('platform.app_url', e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="https://app.aerostic.com"
+                                    placeholder="https://app.aimstore.in"
                                     autoComplete="off"
                                 />
                             </div>

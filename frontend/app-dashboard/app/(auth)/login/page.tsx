@@ -27,7 +27,7 @@ export default function LoginPage() {
         localStorage.clear();
 
         // Clear cookies for all possible domains
-        const domains = [window.location.hostname, '.aerostic.com', 'app.aerostic.com'];
+        const domains = [window.location.hostname, '.aimstore.in', 'app.aimstore.in'];
         domains.forEach(domain => {
             document.cookie = `access_token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
             document.cookie = `access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
@@ -191,7 +191,7 @@ export default function LoginPage() {
                     {/* Form Card */}
                     <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
                         <div className="text-center mb-8">
-                            <Link href="https://aerostic.com" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mb-4 lg:hidden">
+                            <Link href="https://aimstore.in" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mb-4 lg:hidden">
                                 <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
                                 Back to home
                             </Link>

@@ -186,7 +186,7 @@ export default function ResellerClientsPage() {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-gray-900 leading-tight">{client.name}</p>
-                                                <p className="text-xs text-gray-500 mt-1">{client.slug}.aerostic.com</p>
+                                                <p className="text-xs text-gray-500 mt-1">{client.slug}.aimstore.in</p>
                                             </div>
                                         </div>
                                     </td>

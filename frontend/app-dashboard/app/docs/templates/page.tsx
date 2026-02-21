@@ -74,7 +74,7 @@ export default function TemplatesDocsPage() {
         REJECTED: 'bg-red-100 text-red-700'
     };
 
-    const createTemplateCode = `curl -X POST https://api.aerostic.com/v1/templates \\
+    const createTemplateCode = `curl -X POST https://api.aimstore.in/v1/templates \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{

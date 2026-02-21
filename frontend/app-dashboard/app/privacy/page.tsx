@@ -93,7 +93,7 @@ export default function PrivacyPolicyPage() {
                         If you have questions about this Privacy Policy, contact us at:
                     </p>
                     <p className="mt-4">
-                        <strong>Email:</strong> privacy@aerostic.com<br />
+                        <strong>Email:</strong> privacy@aimstore.in<br />
                         <strong>Address:</strong> Chembur, Mumbai, India 400071
                     </p>
                 </div>

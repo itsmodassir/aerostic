@@ -5,14 +5,14 @@ export function OrganizationSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "Organization",
-        "@id": "https://aerostic.com/#organization",
+        "@id": "https://aimstore.in/#organization",
         "name": "Aerostic",
         "alternateName": "Aerostic WhatsApp Marketing",
-        "url": "https://aerostic.com",
-        "logo": "https://aerostic.com/logo.png",
-        "image": "https://aerostic.com/og-image.png",
+        "url": "https://aimstore.in",
+        "logo": "https://aimstore.in/logo.png",
+        "image": "https://aimstore.in/og-image.png",
         "description": "India's #1 WhatsApp Marketing & Automation Platform. Send bulk campaigns, deploy AI chatbots, automate customer support.",
-        "email": "hello@aerostic.com",
+        "email": "hello@aimstore.in",
         "telephone": "+91-9876543210",
         "foundingDate": "2024",
         "founders": [
@@ -39,7 +39,7 @@ export function OrganizationSchema() {
                 "@type": "ContactPoint",
                 "contactType": "customer support",
                 "telephone": "+91-9876543210",
-                "email": "support@aerostic.com",
+                "email": "support@aimstore.in",
                 "availableLanguage": ["English", "Hindi"],
                 "areaServed": "IN"
             },
@@ -47,7 +47,7 @@ export function OrganizationSchema() {
                 "@type": "ContactPoint",
                 "contactType": "sales",
                 "telephone": "+91-9876543210",
-                "email": "sales@aerostic.com",
+                "email": "sales@aimstore.in",
                 "availableLanguage": ["English", "Hindi"]
             }
         ],
@@ -71,7 +71,7 @@ export function LocalBusinessSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "@id": "https://aerostic.com/#software",
+        "@id": "https://aimstore.in/#software",
         "name": "Aerostic",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web, iOS, Android",
@@ -91,7 +91,7 @@ export function LocalBusinessSchema() {
         },
         "provider": {
             "@type": "Organization",
-            "@id": "https://aerostic.com/#organization"
+            "@id": "https://aimstore.in/#organization"
         },
         "featureList": [
             "Bulk WhatsApp Campaigns",
@@ -131,10 +131,10 @@ export function SoftwareApplicationSchema() {
             "ratingValue": "4.8",
             "reviewCount": "2847"
         },
-        "screenshot": "https://aerostic.com/dashboard-screenshot.png",
-        "downloadUrl": "https://aerostic.com/signup",
+        "screenshot": "https://aimstore.in/dashboard-screenshot.png",
+        "downloadUrl": "https://aimstore.in/signup",
         "softwareVersion": "2.0",
-        "releaseNotes": "https://aerostic.com/changelog"
+        "releaseNotes": "https://aimstore.in/changelog"
     };
 
     return (
@@ -201,29 +201,29 @@ export function HowToSchema() {
                 "@type": "HowToStep",
                 "position": 1,
                 "name": "Create Account",
-                "text": "Sign up for a free 14-day trial at aerostic.com with your business email.",
-                "url": "https://aerostic.com/signup"
+                "text": "Sign up for a free 14-day trial at aimstore.in with your business email.",
+                "url": "https://aimstore.in/signup"
             },
             {
                 "@type": "HowToStep",
                 "position": 2,
                 "name": "Connect WhatsApp",
                 "text": "Link your WhatsApp Business Account using the embedded signup flow.",
-                "url": "https://aerostic.com/docs/getting-started"
+                "url": "https://aimstore.in/docs/getting-started"
             },
             {
                 "@type": "HowToStep",
                 "position": 3,
                 "name": "Create Templates",
                 "text": "Design message templates and submit them for Meta approval.",
-                "url": "https://aerostic.com/docs/templates"
+                "url": "https://aimstore.in/docs/templates"
             },
             {
                 "@type": "HowToStep",
                 "position": 4,
                 "name": "Send Messages",
                 "text": "Start sending bulk campaigns or set up AI chatbots for automation.",
-                "url": "https://aerostic.com/docs/api-reference"
+                "url": "https://aimstore.in/docs/api-reference"
             }
         ]
     };
@@ -254,7 +254,7 @@ export function ProductSchema() {
                 "priceCurrency": "INR",
                 "priceValidUntil": "2026-12-31",
                 "availability": "https://schema.org/InStock",
-                "url": "https://aerostic.com/pricing",
+                "url": "https://aimstore.in/pricing",
                 "description": "5,000 messages/month, 1 AI agent, basic analytics"
             },
             {
@@ -264,7 +264,7 @@ export function ProductSchema() {
                 "priceCurrency": "INR",
                 "priceValidUntil": "2026-12-31",
                 "availability": "https://schema.org/InStock",
-                "url": "https://aerostic.com/pricing",
+                "url": "https://aimstore.in/pricing",
                 "description": "25,000 messages/month, 5 AI agents, advanced analytics"
             },
             {
@@ -274,7 +274,7 @@ export function ProductSchema() {
                 "priceCurrency": "INR",
                 "priceValidUntil": "2026-12-31",
                 "availability": "https://schema.org/InStock",
-                "url": "https://aerostic.com/pricing",
+                "url": "https://aimstore.in/pricing",
                 "description": "Unlimited messages, unlimited AI agents, dedicated support"
             }
         ],
@@ -352,18 +352,18 @@ export function WebSiteSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "@id": "https://aerostic.com/#website",
-        "url": "https://aerostic.com",
+        "@id": "https://aimstore.in/#website",
+        "url": "https://aimstore.in",
         "name": "Aerostic",
         "description": "India's #1 WhatsApp Marketing & Automation Platform",
         "publisher": {
-            "@id": "https://aerostic.com/#organization"
+            "@id": "https://aimstore.in/#organization"
         },
         "potentialAction": {
             "@type": "SearchAction",
             "target": {
                 "@type": "EntryPoint",
-                "urlTemplate": "https://aerostic.com/search?q={search_term_string}"
+                "urlTemplate": "https://aimstore.in/search?q={search_term_string}"
             },
             "query-input": "required name=search_term_string"
         },
@@ -406,7 +406,7 @@ export function ArticleSchema({
         },
         "publisher": {
             "@type": "Organization",
-            "@id": "https://aerostic.com/#organization"
+            "@id": "https://aimstore.in/#organization"
         },
         "mainEntityOfPage": {
             "@type": "WebPage",

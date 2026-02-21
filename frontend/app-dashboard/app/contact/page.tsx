@@ -51,8 +51,8 @@ export default function ContactPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Email us</p>
-                                            <a href="mailto:support@aerostic.com" className="text-xl font-bold text-gray-900 hover:text-emerald-600">
-                                                support@aerostic.com
+                                            <a href="mailto:support@aimstore.in" className="text-xl font-bold text-gray-900 hover:text-emerald-600">
+                                                support@aimstore.in
                                             </a>
                                         </div>
                                     </div>

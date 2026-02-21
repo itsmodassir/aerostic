@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     openGraph: {
         type: 'website',
         locale: 'en_IN',
-        url: 'https://aerostic.com',
+        url: 'https://aimstore.in',
         siteName: 'Aerostic',
         title: 'Aerostic - WhatsApp Marketing & Automation Platform',
         description: 'Turn WhatsApp into your sales machine with AI-powered automation. Join 2,500+ businesses.',

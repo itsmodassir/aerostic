@@ -95,7 +95,7 @@ export default function Footer() {
                         <ul className="space-y-4">
                             <li className="flex items-center space-x-3 text-gray-500 font-medium">
                                 <Mail className="w-4 h-4 text-emerald-500" />
-                                <a href="mailto:support@aerostic.com" className="hover:text-emerald-600">support@aerostic.com</a>
+                                <a href="mailto:support@aimstore.in" className="hover:text-emerald-600">support@aimstore.in</a>
                             </li>
                             <li className="flex items-center space-x-3 text-gray-500 font-medium">
                                 <Phone className="w-4 h-4 text-emerald-500" />

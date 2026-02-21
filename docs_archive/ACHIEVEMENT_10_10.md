@@ -164,7 +164,7 @@ JWT_SECRET=$(openssl rand -hex 32)
 WEBHOOK_TOKEN=$(openssl rand -hex 16)
 
 # Set these:
-ALLOWED_ORIGINS=https://app.aerostic.com,https://admin.aerostic.com
+ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in
 DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=require
 REDIS_HOST=redis-host
 NODE_ENV=production

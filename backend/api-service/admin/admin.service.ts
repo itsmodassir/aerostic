@@ -82,7 +82,7 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
 
   // Platform
   "platform.app_url": {
-    value: "https://app.aerostic.com",
+    value: "https://app.aimstore.in",
     description: "Application URL",
     category: "platform",
     isSecret: false,

@@ -43,7 +43,7 @@ app.enableCors();
 **Remediation:**
 ```typescript
 app.enableCors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://app.aerostic.com', 'https://admin.aerostic.com'],
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['https://app.aimstore.in', 'https://admin.aimstore.in'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -452,7 +452,7 @@ app.setGlobalPrefix('api/v1');
 ```env
 # Security - MUST be set
 ENCRYPTION_KEY=<generate-random-64-char-hex>
-ALLOWED_ORIGINS=https://app.aerostic.com,https://admin.aerostic.com
+ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in
 NODE_ENV=production
 JWT_SECRET=<generate-random-64-char-hex>
 

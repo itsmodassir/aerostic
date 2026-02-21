@@ -96,7 +96,7 @@ Scoring:
     ];
 
     const apiExample = `// Create an AI Agent via API
-const response = await fetch('https://api.aerostic.com/v1/ai-agents', {
+const response = await fetch('https://api.aimstore.in/v1/ai-agents', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_live_xxxxx',

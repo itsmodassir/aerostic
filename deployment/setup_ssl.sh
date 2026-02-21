@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-DOMAIN="aerostic.com"
-APP_DOMAIN="app.aerostic.com"
-ADMIN_DOMAIN="admin.aerostic.com"
-EMAIL="admin@aerostic.com"
+DOMAIN="aimstore.in"
+APP_DOMAIN="app.aimstore.in"
+ADMIN_DOMAIN="admin.aimstore.in"
+EMAIL="admin@aimstore.in"
 
 echo "🔒 Starting SSL Setup for multiple domains..."
 echo "  📋 Landing: $DOMAIN"

@@ -166,7 +166,7 @@ export default function DocsPage() {
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Start Endpoints</h2>
                     <div className="bg-gray-900 rounded-2xl overflow-hidden">
                         <div className="p-4 border-b border-gray-800">
-                            <p className="text-gray-400 text-sm">Base URL: <code className="text-blue-400">https://api.aerostic.com/v1</code></p>
+                            <p className="text-gray-400 text-sm">Base URL: <code className="text-blue-400">https://api.aimstore.in/v1</code></p>
                         </div>
                         <div className="divide-y divide-gray-800">
                             {quickStartEndpoints.map((endpoint, i) => (
@@ -182,7 +182,7 @@ export default function DocsPage() {
                                         <span className="text-gray-500">{endpoint.description}</span>
                                     </div>
                                     <button
-                                        onClick={() => copyToClipboard(`https://api.aerostic.com/v1${endpoint.path}`, endpoint.path)}
+                                        onClick={() => copyToClipboard(`https://api.aimstore.in/v1${endpoint.path}`, endpoint.path)}
                                         className="p-2 text-gray-400 hover:text-white transition-colors"
                                     >
                                         {copiedEndpoint === endpoint.path ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}

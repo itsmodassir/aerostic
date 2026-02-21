@@ -14,7 +14,7 @@
 # Ensure these are set in production:
 ENCRYPTION_KEY=<random-64-hex>           # Required
 JWT_SECRET=<random-64-hex>               # Required
-ALLOWED_ORIGINS=https://app.aerostic.com # Required
+ALLOWED_ORIGINS=https://app.aimstore.in # Required
 DATABASE_URL=postgresql://...            # Required (with SSL)
 REDIS_HOST=...                           # Required
 NODE_ENV=production                      # Required
@@ -74,7 +74,7 @@ This enables:
 
 **Test:**
 ```bash
-curl -H "Origin: https://evil.com" https://api.aerostic.com/api/v1/status
+curl -H "Origin: https://evil.com" https://api.aimstore.in/api/v1/status
 # Should return CORS error, not data
 ```
 
@@ -91,7 +91,7 @@ curl -H "Origin: https://evil.com" https://api.aerostic.com/api/v1/status
 **Test:**
 ```bash
 # Make 6 rapid login attempts
-for i in {1..6}; do curl -X POST https://api.aerostic.com/api/v1/auth/login; done
+for i in {1..6}; do curl -X POST https://api.aimstore.in/api/v1/auth/login; done
 # 6th should return 429 Too Many Requests
 ```
 
@@ -158,7 +158,7 @@ add_header Content-Security-Policy "default-src 'self'; ...";
 
 **Verify:**
 ```bash
-curl -I https://aerostic.com | grep -i "strict\|x-frame\|x-content\|csp"
+curl -I https://aimstore.in | grep -i "strict\|x-frame\|x-content\|csp"
 # Should show all security headers
 ```
 

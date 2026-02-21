@@ -119,7 +119,7 @@ export class MetaService {
       (await this.adminConfigService.getConfigValue("meta.app_secret")) || "";
     const redirectUri =
       (await this.adminConfigService.getConfigValue("meta.redirect_uri")) ||
-      "https://app.aerostic.com/meta/callback";
+      "https://app.aimstore.in/meta/callback";
     const apiVersion = await this.getApiVersion();
 
     this.logger.debug(`--- OAuth Callback Debug (${apiVersion}) ---`);

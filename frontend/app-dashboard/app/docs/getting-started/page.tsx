@@ -22,7 +22,7 @@ export default function GettingStartedPage() {
             title: 'Create Your Account',
             description: 'Sign up for a free 14-day trial. No credit card required.',
             details: [
-                'Go to aerostic.com and click "Start Free Trial"',
+                'Go to aimstore.in and click "Start Free Trial"',
                 'Enter your business email and create a password',
                 'Verify your email address',
                 'Complete your business profile'
@@ -87,7 +87,7 @@ export default function GettingStartedPage() {
             time: '1 minute',
             codeExample: {
                 id: 'send-message',
-                code: `curl -X POST https://api.aerostic.com/v1/messages/send \\
+                code: `curl -X POST https://api.aimstore.in/v1/messages/send \\
   -H "Authorization: Bearer ak_live_xxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{

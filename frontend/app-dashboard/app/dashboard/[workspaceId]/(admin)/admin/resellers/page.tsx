@@ -151,7 +151,7 @@ export default function ResellersPage() {
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-gray-900">{reseller.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{reseller.slug}.aerostic.com</p>
+                                                    <p className="text-xs text-muted-foreground">{reseller.slug}.aimstore.in</p>
                                                 </div>
                                             </div>
                                         </td>

@@ -149,10 +149,10 @@ We provide a helper script to automate the entire setup:
     ./deploy_aws.sh
     ```
 4.  **Access Your App**:
-    *   **Landing Page**: `https://aerostic.com`
-    *   **User Dashboard**: `https://app.aerostic.com`
-    *   **Platform Admin**: `https://admin.aerostic.com`
-    *   **Backend API**: `https://api.aerostic.com/api/` (Internal path: `/api/`)
+    *   **Landing Page**: `https://aimstore.in`
+    *   **User Dashboard**: `https://app.aimstore.in`
+    *   **Platform Admin**: `https://admin.aimstore.in`
+    *   **Backend API**: `https://api.aimstore.in/api/` (Internal path: `/api/`)
 
 ---
 

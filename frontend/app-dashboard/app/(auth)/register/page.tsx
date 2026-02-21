@@ -167,7 +167,7 @@ export default function RegisterPage() {
                 <div className="w-full max-w-lg">
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-                        <a href="https://aerostic.com" className="flex items-center justify-center gap-2">
+                        <a href="https://aimstore.in" className="flex items-center justify-center gap-2">
                             <img src="/logo.png" alt="Aerostic" className="w-12 h-12 object-contain" />
                             <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                                 Aerostic

@@ -13,7 +13,7 @@ export class NotificationService {
   ) {
     this.adminEmail = this.config.get<string>(
       "ADMIN_ALERT_EMAIL",
-      "security-alerts@aerostic.com",
+      "security-alerts@aimstore.in",
     );
   }
 

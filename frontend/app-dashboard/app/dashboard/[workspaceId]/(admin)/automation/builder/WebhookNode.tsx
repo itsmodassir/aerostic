@@ -6,7 +6,7 @@ import { TriggerNodeData } from '@/types/workflow';
 const WebhookNode = ({ data, id }: NodeProps<WorkflowUIFlowNode<TriggerNodeData>>) => {
     // Construct the webhook URL based on the current environment and workflow ID
     // In a real app, this might come from an env var or context
-    const webhookUrl = `https://api.aerostic.com/automation/webhooks/${(data as any).workflowId || 'WORKFLOW_ID'}`;
+    const webhookUrl = `https://api.aimstore.in/automation/webhooks/${(data as any).workflowId || 'WORKFLOW_ID'}`;
 
     return (
         <div className="bg-white border-2 border-pink-500 rounded-xl shadow-lg min-w-[300px] overflow-hidden">

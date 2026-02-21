@@ -252,7 +252,7 @@ export class AdminTenantService {
       });
       const email =
         config?.supportEmail ||
-        tenant.name.toLowerCase().replace(/\s/g, "") + "@aerostic.com";
+        tenant.name.toLowerCase().replace(/\s/g, "") + "@aimstore.in";
 
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();

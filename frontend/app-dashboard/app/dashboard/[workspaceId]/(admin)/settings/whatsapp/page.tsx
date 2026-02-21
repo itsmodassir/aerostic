@@ -122,7 +122,7 @@ export default function WhatsappSettingsPage() {
                             setMetaConfig({
                                 appId: process.env.NEXT_PUBLIC_META_APP_ID || FALLBACK_APP_ID,
                                 configId: process.env.NEXT_PUBLIC_META_CONFIG_ID || FALLBACK_CONFIG_ID,
-                                redirectUri: process.env.NEXT_PUBLIC_META_REDIRECT_URI || 'https://app.aerostic.com/meta/callback'
+                                redirectUri: process.env.NEXT_PUBLIC_META_REDIRECT_URI || 'https://app.aimstore.in/meta/callback'
                             });
                         }
                     }
@@ -203,7 +203,7 @@ export default function WhatsappSettingsPage() {
 
         // Explicitly define the redirect URI for the manual OAuth flow
         // Fallback or use what's in config
-        const redirectUri = metaConfig.redirectUri || 'https://app.aerostic.com/meta/callback';
+        const redirectUri = metaConfig.redirectUri || 'https://app.aimstore.in/meta/callback';
         const state = tenantId;
 
         console.log('[MetaDebug] Launching Manual OAuth Popup', { configId: metaConfig.configId, redirectUri });
@@ -751,7 +751,7 @@ export default function WhatsappSettingsPage() {
                         <h4 className="font-medium text-gray-900 group-hover:text-purple-600">API Credentials</h4>
                         <p className="text-sm text-gray-500">How to get your keys</p>
                     </a>
-                    <a href="mailto:support@aerostic.com" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">
+                    <a href="mailto:support@aimstore.in" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">
                         <Mail className="w-6 h-6 text-green-600 mb-2" />
                         <h4 className="font-medium text-gray-900 group-hover:text-green-600">Contact Support</h4>
                         <p className="text-sm text-gray-500">Get personalized help</p>

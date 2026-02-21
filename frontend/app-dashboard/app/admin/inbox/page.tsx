@@ -24,11 +24,11 @@ import { clsx } from 'clsx';
 import api from '@/lib/api';
 
 const MAILBOXES = [
-    { id: 'support', name: 'Support', email: 'support@aerostic.com', color: 'bg-blue-500' },
-    { id: 'sales', name: 'Sales', email: 'sales@aerostic.com', color: 'bg-green-500' },
-    { id: 'contact', name: 'Contact', email: 'contact@aerostic.com', color: 'bg-purple-500' },
-    { id: 'info', name: 'Info', email: 'info@aerostic.com', color: 'bg-orange-500' },
-    { id: 'customer', name: 'Customer', email: 'customer@aerostic.com', color: 'bg-indigo-500' },
+    { id: 'support', name: 'Support', email: 'support@aimstore.in', color: 'bg-blue-500' },
+    { id: 'sales', name: 'Sales', email: 'sales@aimstore.in', color: 'bg-green-500' },
+    { id: 'contact', name: 'Contact', email: 'contact@aimstore.in', color: 'bg-purple-500' },
+    { id: 'info', name: 'Info', email: 'info@aimstore.in', color: 'bg-orange-500' },
+    { id: 'customer', name: 'Customer', email: 'customer@aimstore.in', color: 'bg-indigo-500' },
 ];
 
 const FOLDERS = [

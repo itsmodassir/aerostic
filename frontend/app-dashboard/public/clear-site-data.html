@@ -22,14 +22,14 @@
             const eqPos = cookie.indexOf("=");
             const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
             document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.aerostic.com";
-            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=app.aerostic.com";
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.aimstore.in";
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=app.aimstore.in";
         }
         console.log('Cookies cleared');
 
         // Redirect to login
         setTimeout(() => {
-            window.location.href = 'https://app.aerostic.com/login';
+            window.location.href = 'https://app.aimstore.in/login';
         }, 1500);
     </script>
 </body>

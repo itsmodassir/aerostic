@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const { pathname, search } = request.nextUrl;
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aerostic.com';
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aimstore.in';
 
     // 1. Admin Subdomain
     if (hostname.startsWith(`admin.${baseDomain}`)) {
@@ -42,7 +42,7 @@ export function proxy(request: NextRequest) {
     }
 
     // 4. Tenant Subdomains (Wildcard)
-    // e.g. tenant.aerostic.com
+    // e.g. tenant.aimstore.in
     const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1');
 
     // Safety: only process subdomains of the base domain
@@ -60,18 +60,18 @@ export function proxy(request: NextRequest) {
             return NextResponse.next();
         }
 
-        // 1. Root landing page: tenant.aerostic.com/ -> /landing/[tenant]
+        // 1. Root landing page: tenant.aimstore.in/ -> /landing/[tenant]
         if (pathname === '/') {
             return NextResponse.rewrite(new URL(`/landing/${tenantSubdomain}${search}`, request.url));
         }
 
-        // 2. Client Dashboard: tenant.aerostic.com/user/dashboard -> /dashboard/[tenant]/user
+        // 2. Client Dashboard: tenant.aimstore.in/user/dashboard -> /dashboard/[tenant]/user
         if (pathname.startsWith('/user/dashboard')) {
             const clientPath = pathname.replace('/user/dashboard', '') || '/';
             return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}/user${clientPath}${search}`, request.url));
         }
 
-        // 3. Partner Console: tenant.aerostic.com/dashboard -> /dashboard/[tenant]
+        // 3. Partner Console: tenant.aimstore.in/dashboard -> /dashboard/[tenant]
         if (pathname.startsWith('/dashboard')) {
             const partnerPath = pathname.replace('/dashboard', '') || '/';
             return NextResponse.rewrite(new URL(`/dashboard/${tenantSubdomain}${partnerPath}${search}`, request.url));

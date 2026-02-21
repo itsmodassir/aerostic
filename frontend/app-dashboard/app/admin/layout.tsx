@@ -149,7 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Back to Main */}
                 <div className="p-4 border-t border-gray-800">
                     <a
-                        href="https://aerostic.com"
+                        href="https://aimstore.in"
                         className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all"
                     >
                         <LogOut className="w-5 h-5" />

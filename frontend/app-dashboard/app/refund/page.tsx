@@ -45,7 +45,7 @@ export default function RefundPolicyPage() {
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">How to Request a Refund</h2>
                     <ol className="list-decimal pl-6 space-y-2">
-                        <li>Email us at <strong>billing@aerostic.com</strong></li>
+                        <li>Email us at <strong>billing@aimstore.in</strong></li>
                         <li>Include your account email and reason for refund</li>
                         <li>We'll process your request within 3-5 business days</li>
                         <li>Refunds are credited to your original payment method</li>
@@ -98,7 +98,7 @@ export default function RefundPolicyPage() {
                         Have questions about refunds? Contact our billing team:
                     </p>
                     <p className="mt-4">
-                        <strong>Email:</strong> billing@aerostic.com<br />
+                        <strong>Email:</strong> billing@aimstore.in<br />
                         <strong>WhatsApp:</strong> +91 99999 99999<br />
                         <strong>Hours:</strong> Monday-Saturday, 10 AM - 7 PM IST
                     </p>

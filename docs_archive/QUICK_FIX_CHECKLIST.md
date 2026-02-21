@@ -40,7 +40,7 @@
 
 **Add to .env:**
 ```env
-ALLOWED_ORIGINS=https://app.aerostic.com,https://admin.aerostic.com
+ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in
 ```
 
 ✅ **After fixing:** CORS only allows configured domains
@@ -214,7 +214,7 @@ After each fix, verify:
 curl -H "Origin: https://evil.com" http://localhost:3001/api/
 
 # Should SUCCEED (200 OK)
-curl -H "Origin: https://app.aerostic.com" http://localhost:3001/api/
+curl -H "Origin: https://app.aimstore.in" http://localhost:3001/api/
 ```
 
 ### Encryption Key Test
@@ -253,7 +253,7 @@ done
 
 ### Security Headers Test
 ```bash
-curl -I https://aerostic.com | grep -i "strict\|x-frame\|content-security"
+curl -I https://aimstore.in | grep -i "strict\|x-frame\|content-security"
 # Should show multiple security headers
 ```
 

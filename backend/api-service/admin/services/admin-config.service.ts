@@ -48,7 +48,7 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
     isSecret: false,
   },
   "meta.redirect_uri": {
-    value: "https://app.aerostic.com/meta/callback",
+    value: "https://app.aimstore.in/meta/callback",
     description: "Meta OAuth Redirect URI",
     category: "whatsapp",
     isSecret: false,
@@ -96,7 +96,7 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
 
   // Platform
   "platform.app_url": {
-    value: "https://app.aerostic.com",
+    value: "https://app.aimstore.in",
     description: "Application URL",
     category: "platform",
     isSecret: false,

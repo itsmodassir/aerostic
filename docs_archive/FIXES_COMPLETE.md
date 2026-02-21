@@ -201,11 +201,11 @@ for i in {1..6}; do curl -X POST http://localhost:3001/api/v1/auth/login -H "Con
 ### 4. Verify in Production
 ```bash
 # Check security headers
-curl -I https://aerostic.com | grep -i "strict\|x-frame\|content-security"
+curl -I https://aimstore.in | grep -i "strict\|x-frame\|content-security"
 # Should show all security headers
 
 # Verify API versioning
-curl https://api.aerostic.com/api/v1/status
+curl https://api.aimstore.in/api/v1/status
 # Should work (v1 prefix)
 
 # Verify no console output

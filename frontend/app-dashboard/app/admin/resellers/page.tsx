@@ -117,7 +117,7 @@ export default function ResellersPage() {
     const handleRedirect = (slug: string) => {
         const isProduction = window.location.hostname !== 'localhost';
         const url = isProduction
-            ? `https://${slug}.aerostic.com/dashboard`
+            ? `https://${slug}.aimstore.in/dashboard`
             : `http://${slug}.localhost:3000/dashboard`;
         window.open(url, '_blank');
     };
@@ -337,7 +337,7 @@ export default function ResellersPage() {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-gray-900 text-base">{reseller.name}</p>
-                                                    <p className="text-xs text-blue-600 font-medium tracking-tight">@{reseller.slug}.aerostic.com</p>
+                                                    <p className="text-xs text-blue-600 font-medium tracking-tight">@{reseller.slug}.aimstore.in</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -564,7 +564,7 @@ export default function ResellersPage() {
                                                 onChange={(e) => selectedReseller.newSlug = e.target.value}
                                                 className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold"
                                             />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">.aerostic.com</span>
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">.aimstore.in</span>
                                         </div>
                                     </div>
                                     <div>
@@ -655,7 +655,7 @@ export default function ResellersPage() {
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest border-l-4 border-orange-600 pl-3 mt-8">Security & Operations</h4>
                                 <div className="grid grid-cols-2 gap-4">
                                     <button
-                                        onClick={() => handleRegeneratePassword(selectedReseller.id, selectedResellerOwner?.email || selectedReseller.email || 'partner@aerostic.com')}
+                                        onClick={() => handleRegeneratePassword(selectedReseller.id, selectedResellerOwner?.email || selectedReseller.email || 'partner@aimstore.in')}
                                         className="p-4 bg-orange-50 border border-orange-100 rounded-2xl text-left hover:bg-orange-100 transition-all group"
                                     >
                                         <Shield className="w-5 h-5 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
@@ -805,7 +805,7 @@ export default function ResellersPage() {
                                                         className="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-600/20 font-bold transition-all"
                                                         placeholder="partner-slug"
                                                     />
-                                                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">.aerostic.com</span>
+                                                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">.aimstore.in</span>
                                                 </div>
                                             </div>
                                             <div className="col-span-2">

@@ -36,7 +36,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // Use base URL since frontend and backend are on same host but different ports/paths
         // In local: localhost:3001
-        // In production: api.aerostic.com or same host
+        // In production: api.aimstore.in or same host
         const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
         const socketInstance = io(socketUrl, {

@@ -81,7 +81,7 @@ export default function AdminLoginPage() {
                                     type="email"
                                     required
                                     className="w-full pl-4 pr-10 py-3 bg-gray-900/50 border border-gray-700 rounded-xl focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all outline-none text-white placeholder-gray-600"
-                                    placeholder="admin@aerostic.com"
+                                    placeholder="admin@aimstore.in"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                 />
@@ -137,7 +137,7 @@ export default function AdminLoginPage() {
                             <br />
                             IP Address: Recorded
                         </p>
-                        <a href="https://aerostic.com" className="text-gray-400 hover:text-white text-xs transition-colors flex items-center justify-center gap-2">
+                        <a href="https://aimstore.in" className="text-gray-400 hover:text-white text-xs transition-colors flex items-center justify-center gap-2">
                             <ArrowRight className="w-3 h-3 rotate-180" />
                             Return to marketing site
                         </a>

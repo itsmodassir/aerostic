@@ -98,7 +98,7 @@ export default function TermsOfServicePage() {
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">13. Contact</h2>
                     <p>
-                        Questions? Contact us at <strong>legal@aerostic.com</strong>
+                        Questions? Contact us at <strong>legal@aimstore.in</strong>
                     </p>
                 </div>
             </main>

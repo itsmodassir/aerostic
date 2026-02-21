@@ -43,7 +43,7 @@ export class EmailService {
       const info = await this.transporter.sendMail({
         from:
           process.env.SMTP_FROM ||
-          '"Aerostic Automation" <no-reply@aerostic.com>',
+          '"Aerostic Automation" <no-reply@aimstore.in>',
         to,
         subject,
         html,

@@ -134,7 +134,7 @@ export class AdminInboxService {
     // 5. Save to Sent folder
     const message = this.emailRepo.create({
       mailboxName: mailbox,
-      from: `${mailbox}@aerostic.com`,
+      from: `${mailbox}@aimstore.in`,
       to,
       subject,
       contentHtml: sanitizedContent,

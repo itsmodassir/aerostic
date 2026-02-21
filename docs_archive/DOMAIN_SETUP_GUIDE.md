@@ -1,10 +1,10 @@
 # 🌐 Aerostic Multi-Domain Setup Guide
 
 **Domains:**
-- `aerostic.com` → Landing page / Home
-- `app.aerostic.com` → User Dashboard (Frontend)
-- `admin.aerostic.com` → Admin Panel
-- `api.aerostic.com` → API Backend
+- `aimstore.in` → Landing page / Home
+- `app.aimstore.in` → User Dashboard (Frontend)
+- `admin.aimstore.in` → Admin Panel
+- `api.aimstore.in` → API Backend
 
 **EC2 Instance:** `13.63.63.170`
 
@@ -45,17 +45,17 @@ TTL: 3600
 
 ### Alternative (If using Route53 on AWS)
 ```
-Domain: aerostic.com → 13.63.63.170
-Domain: www.aerostic.com → 13.63.63.170
-Domain: app.aerostic.com → 13.63.63.170
-Domain: admin.aerostic.com → 13.63.63.170
-Domain: api.aerostic.com → 13.63.63.170
+Domain: aimstore.in → 13.63.63.170
+Domain: www.aimstore.in → 13.63.63.170
+Domain: app.aimstore.in → 13.63.63.170
+Domain: admin.aimstore.in → 13.63.63.170
+Domain: api.aimstore.in → 13.63.63.170
 ```
 
 **⏱️ Wait:** DNS changes typically take 5-30 minutes to propagate. You can verify with:
 ```bash
-nslookup aerostic.com
-nslookup app.aerostic.com
+nslookup aimstore.in
+nslookup app.aimstore.in
 ```
 
 ---
@@ -82,9 +82,9 @@ This will:
 **Expected output:**
 ```
 🎉 SSL Setup Complete!
-   Landing: https://aerostic.com
-   Dashboard: https://app.aerostic.com
-   Admin Panel: https://admin.aerostic.com
+   Landing: https://aimstore.in
+   Dashboard: https://app.aimstore.in
+   Admin Panel: https://admin.aimstore.in
 ```
 
 ---
@@ -116,24 +116,24 @@ docker compose restart nginx
 ### 4.1 Check DNS Resolution
 ```bash
 ssh -i ~/Downloads/aimstors.pem ubuntu@13.63.63.170
-nslookup aerostic.com
-nslookup app.aerostic.com
-nslookup admin.aerostic.com
+nslookup aimstore.in
+nslookup app.aimstore.in
+nslookup admin.aimstore.in
 ```
 
 ### 4.2 Test HTTPS Access
 ```bash
 # Landing page
-curl -I https://aerostic.com
+curl -I https://aimstore.in
 
 # Dashboard
-curl -I https://app.aerostic.com
+curl -I https://app.aimstore.in
 
 # Admin panel
-curl -I https://admin.aerostic.com
+curl -I https://admin.aimstore.in
 
 # API
-curl -I https://api.aerostic.com/api/v1/
+curl -I https://api.aimstore.in/api/v1/
 ```
 
 ### 4.3 Check SSL Certificates
@@ -145,8 +145,8 @@ sudo certbot certificates
 Expected output:
 ```
 Found the following certs:
-  Certificate Name: aerostic.com
-    Domains: aerostic.com, www.aerostic.com, app.aerostic.com, admin.aerostic.com, api.aerostic.com
+  Certificate Name: aimstore.in
+    Domains: aimstore.in, www.aimstore.in, app.aimstore.in, admin.aimstore.in, api.aimstore.in
     Expiry Date: YYYY-MM-DD
     Renewal: auto
 ```
@@ -166,10 +166,10 @@ The Nginx configuration automatically routes each domain:
 
 | Domain | Port | Service | Purpose |
 |--------|------|---------|---------|
-| `aerostic.com` | 443 | Static files | Landing page |
-| `app.aerostic.com` | 443 | Frontend (3000) | User dashboard |
-| `admin.aerostic.com` | 443 | Frontend (3000) | Admin panel |
-| `api.aerostic.com` | 443 | Backend API (3001) | REST API |
+| `aimstore.in` | 443 | Static files | Landing page |
+| `app.aimstore.in` | 443 | Frontend (3000) | User dashboard |
+| `admin.aimstore.in` | 443 | Frontend (3000) | Admin panel |
+| `api.aimstore.in` | 443 | Backend API (3001) | REST API |
 
 All HTTP requests (port 80) automatically redirect to HTTPS (port 443).
 
@@ -223,15 +223,15 @@ sudo certbot certificates
 ### DNS Not Resolving
 ```bash
 # Check DNS propagation
-nslookup aerostic.com
-dig aerostic.com
+nslookup aimstore.in
+dig aimstore.in
 # May take 5-30 minutes to propagate
 ```
 
 ### SSL Certificate Not Applied
 ```bash
 # Verify certificate files exist
-sudo ls -la /etc/letsencrypt/live/aerostic.com/
+sudo ls -la /etc/letsencrypt/live/aimstore.in/
 
 # Check Nginx errors
 docker compose logs nginx --tail 50
@@ -279,7 +279,7 @@ docker compose restart nginx
          ┌──────▼──────┐ ┌─▼──────┐ ┌▼────────────┐
          │ Landing Pg  │ │ App    │ │ Admin Panel │
          │  :443       │ │:443    │ │  :443       │
-         │aerostic.com │ │app.xxx │ │admin.xxx    │
+         │aimstore.in │ │app.xxx │ │admin.xxx    │
          └──────┬──────┘ └─┬──────┘ └┬────────────┘
                 │          │        │
                 └──────────┴────┬───┘
@@ -337,10 +337,10 @@ docker compose restart frontend
 ## 🚀 Live URLs
 
 After setup:
-- **Landing Page:** https://aerostic.com
-- **User Dashboard:** https://app.aerostic.com
-- **Admin Panel:** https://admin.aerostic.com
-- **API Backend:** https://api.aerostic.com/api/v1/
+- **Landing Page:** https://aimstore.in
+- **User Dashboard:** https://app.aimstore.in
+- **Admin Panel:** https://admin.aimstore.in
+- **API Backend:** https://api.aimstore.in/api/v1/
 
 ---
 
@@ -352,10 +352,10 @@ After setup:
 - [ ] Nginx configuration deployed
 - [ ] HTTPS working on all domains
 - [ ] HTTP automatically redirects to HTTPS
-- [ ] Security headers present (`curl -I https://aerostic.com`)
-- [ ] Frontend accessible at `app.aerostic.com`
-- [ ] API accessible at `api.aerostic.com`
-- [ ] Admin panel accessible at `admin.aerostic.com`
+- [ ] Security headers present (`curl -I https://aimstore.in`)
+- [ ] Frontend accessible at `app.aimstore.in`
+- [ ] API accessible at `api.aimstore.in`
+- [ ] Admin panel accessible at `admin.aimstore.in`
 
 ---
 

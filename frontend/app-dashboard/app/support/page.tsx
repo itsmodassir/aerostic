@@ -107,7 +107,7 @@ export default function SupportPage() {
                             </div>
                             <div>
                                 <h3 className="font-semibold">Email Support</h3>
-                                <p className="text-sm text-gray-500">support@aerostic.com</p>
+                                <p className="text-sm text-gray-500">support@aimstore.in</p>
                             </div>
                         </Link>
                         <Link
