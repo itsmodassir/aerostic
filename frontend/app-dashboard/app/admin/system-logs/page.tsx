@@ -66,7 +66,7 @@ export default function LogsPage() {
             if (categoryFilter !== 'all') params.append('category', categoryFilter);
             if (searchTerm) params.append('search', searchTerm);
 
-            const res = await fetch(`/api/v1/admin/platform/audit-logs?${params}`, {
+            const res = await fetch(`/api/v1/admin/platform/system-logs?${params}`, {
                 credentials: 'include'
             });
 

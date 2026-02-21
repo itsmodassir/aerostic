@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const fetchStats = async () => {
         try {
-            const res = await fetch(`/api/v1/admin/stats`, {
+            const res = await fetch(`/api/v1/admin/platform/stats`, {
                 credentials: 'include'
             });
             const data = await res.json();

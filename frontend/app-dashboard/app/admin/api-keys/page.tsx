@@ -65,7 +65,7 @@ export default function ApiKeysPage() {
 
     const fetchApiKeys = async () => {
         try {
-            const res = await fetch(`/api/v1/admin/api-keys`, {
+            const res = await fetch(`/api/v1/admin/billing/api-keys`, {
                 credentials: 'include',
             });
             if (res.ok) {
@@ -81,8 +81,8 @@ export default function ApiKeysPage() {
 
     const fetchTenants = async () => {
         try {
-            // Reusing existing admin endpoint for users/tenants
-            const res = await fetch(`/api/v1/admin/users`, {
+            // Reusing existing admin endpoint for tenants management
+            const res = await fetch(`/api/v1/admin/tenants`, {
                 credentials: 'include',
             });
             if (res.ok) {
@@ -136,7 +136,7 @@ export default function ApiKeysPage() {
         try {
             // Assuming delete endpoint works or specific revoke endpoint
             // My implementation used DELETE /:id with tenantId query param
-            const res = await fetch(`/api/v1/admin/api-keys/${id}?tenantId=${tenantId}`, {
+            const res = await fetch(`/api/v1/admin/billing/api-keys/${id}?tenantId=${tenantId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });

@@ -15,7 +15,7 @@ export default function AdminWebhooksPage() {
     const fetchWebhooks = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/v1/admin/webhooks`, {
+            const res = await fetch(`/api/v1/admin/billing/webhooks`, {
                 credentials: 'include'
             });
             const data = await res.json();

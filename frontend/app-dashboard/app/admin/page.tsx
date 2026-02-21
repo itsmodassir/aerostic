@@ -31,8 +31,8 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`/api/v1/admin/stats`, { credentials: 'include' });
-            const trendsRes = await fetch(`/api/v1/admin/stats/trends?range=${timeRange}`, { credentials: 'include' });
+            const res = await fetch(`/api/v1/admin/platform/stats`, { credentials: 'include' });
+            const trendsRes = await fetch(`/api/v1/admin/platform/stats/trends?range=${timeRange}`, { credentials: 'include' });
 
             if (!res.ok) throw new Error(`API returned ${res.status}`);
             const data = await res.json();
