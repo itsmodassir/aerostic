@@ -105,7 +105,7 @@ export default function InboxPage() {
                         id: user.id || '1',
                         name: user.name || user.email?.split('@')[0] || 'User',
                         email: user.email || '',
-                        role: user.globalRole === 'super_admin' ? 'admin' : 'agent',
+                        role: user.role === 'super_admin' ? 'admin' : 'agent',
                         status: 'online',
                     });
 
