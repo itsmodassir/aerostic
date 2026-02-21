@@ -4,6 +4,8 @@ import { UsageEvent } from "@shared/database/entities/billing/usage-event.entity
 import { WalletTransaction } from "@shared/database/entities/billing/wallet-transaction.entity";
 import { UsageMetric } from "./entities/usage-metric.entity";
 import { Subscription } from "@shared/database/entities/billing/subscription.entity";
+import { Wallet } from "@shared/database/entities/billing/wallet.entity";
+import { WalletAccount } from "@shared/database/entities/billing/wallet-account.entity";
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";
 import { ApiKeyRiskEvent } from "./entities/api-key-risk-event.entity";
 import { WebhookEndpoint } from "./entities/webhook-endpoint.entity";
@@ -11,6 +13,7 @@ import { RazorpayEvent } from "./entities/razorpay-event.entity";
 import { TenantsModule } from "../tenants/tenants.module";
 import { RazorpayService } from "./razorpay.service";
 import { BillingService } from "./billing.service";
+import { WalletService } from "./wallet.service";
 import { PlansService } from "./plans.service";
 import { BillingController } from "./billing.controller";
 import { BillingWebhookController } from "./controllers/billing-webhook.controller";
@@ -39,6 +42,8 @@ import { Invoice } from "./entities/invoice.entity";
       Tenant,
       Invoice,
       UsageEvent,
+      Wallet,
+      WalletAccount,
       WalletTransaction,
       ApiKeyRiskEvent,
     ]),
@@ -57,9 +62,10 @@ import { Invoice } from "./entities/invoice.entity";
   providers: [
     RazorpayService,
     BillingService,
+    WalletService,
     RazorpayWebhookGuard,
     PlansService,
   ],
-  exports: [RazorpayService, BillingService, PlansService],
+  exports: [RazorpayService, BillingService, WalletService, PlansService],
 })
-export class BillingModule {}
+export class BillingModule { }

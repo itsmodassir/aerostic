@@ -32,17 +32,17 @@ export class ApiKey {
   @Column({ name: "key_hash" })
   keyHash: string; // Hashed full key
 
-  @Column("simple-array", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   permissions: string[]; // ['messages:read', 'messages:write', 'contacts:read']
 
   @Column({ name: "is_active", default: true })
   @Index()
   isActive: boolean;
 
-  @Column({ name: "last_used_at", nullable: true })
+  @Column({ name: "last_used_at", type: "timestamptz", nullable: true })
   lastUsedAt: Date;
 
-  @Column({ name: "expires_at", nullable: true })
+  @Column({ name: "expires_at", type: "timestamptz", nullable: true })
   expiresAt: Date;
 
   @Column({ name: "rate_limit", default: 100 })
@@ -64,10 +64,10 @@ export class ApiKey {
   @Index()
   killSwitchActive: boolean;
 
-  @Column({ name: "kill_reason", nullable: true })
+  @Column({ name: "kill_reason", type: "text", nullable: true })
   killReason: string | null;
 
-  @Column({ name: "last_risk_event", nullable: true })
+  @Column({ name: "last_risk_event", type: "timestamptz", nullable: true })
   lastRiskEvent: Date | null;
 
   @CreateDateColumn({ name: "created_at" })

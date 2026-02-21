@@ -22,8 +22,10 @@ import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { Invoice } from "./entities/invoice.entity";
 import { UsageMetric } from "./entities/usage-metric.entity";
 
-import { UsageEvent } from "./entities/usage-event.entity";
-import { WalletTransaction } from "./entities/wallet-transaction.entity";
+import { UsageEvent } from "@shared/database/entities/billing/usage-event.entity";
+import { WalletTransaction, TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
+import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
+import { WalletService } from "./wallet.service";
 
 @Injectable()
 export class BillingService {
@@ -57,7 +59,8 @@ export class BillingService {
     private mailService: MailService,
     private usersService: UsersService,
     private kafkaService: KafkaService,
-  ) {}
+    private walletService: WalletService,
+  ) { }
 
   // ============ WEBHOOK HANDLING & IDEMPOTENCY ============
 
@@ -618,17 +621,66 @@ export class BillingService {
     const periodStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const periodEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    // 1. Create Ledger Entry (UsageEvent) - FOR SCALABILITY & AUDIT
+    // 1. Get Subscription and Limits
+    const subscription = await this.getSubscription(tenantId);
+    let isOverage = false;
+    let overageAmount = 0;
+
+    if (subscription) {
+      const usage = await this.usageMetricRepo.findOne({
+        where: { tenantId, metric, periodStart },
+      });
+      const currentUsage = usage?.value || 0;
+
+      let limit = 0;
+      if (metric === "messages_sent") limit = subscription.monthlyMessages;
+      else if (metric === "ai_credits") limit = subscription.aiCredits;
+
+      if (limit > 0 && currentUsage + amount > limit) {
+        isOverage = true;
+        overageAmount = (currentUsage + amount) - limit;
+        if (overageAmount > amount) overageAmount = amount; // Don't charge more than the current increment
+      }
+    } else {
+      // No subscription? Charge everything to wallet if it's a paid metric
+      isOverage = true;
+      overageAmount = amount;
+    }
+
+    // 2. Handle Overage via Wallet
+    if (isOverage && overageAmount > 0) {
+      const walletAccountType = metric === "ai_credits"
+        ? WalletAccountType.AI_CREDITS
+        : WalletAccountType.MAIN_BALANCE;
+
+      // Charge rate (example: 0.10 INR per message overage, or 1 AI credit per unit)
+      const rate = metric === "ai_credits" ? 1 : 0.10;
+      const chargeAmount = overageAmount * rate;
+
+      await this.walletService.processTransaction(
+        tenantId,
+        walletAccountType,
+        chargeAmount,
+        TransactionType.DEBIT,
+        {
+          referenceType: "USAGE_OVERAGE",
+          referenceId: referenceId || `usage_${Date.now()}`,
+          description: `Overage charge for ${overageAmount} ${metric}`,
+        }
+      );
+    }
+
+    // 3. Create Ledger Entry (UsageEvent)
     const event = this.usageEventRepo.create({
       tenantId,
       metric,
       amount,
       referenceId,
-      metadata,
+      metadata: { ...metadata, isOverage, overageAmount },
     });
     await this.usageEventRepo.save(event);
 
-    // 2. Update aggregate metric - FOR PERFORMANCE
+    // 4. Update aggregate metric
     let usage = await this.usageMetricRepo.findOne({
       where: { tenantId, metric, periodStart },
     });
@@ -646,12 +698,14 @@ export class BillingService {
     usage.value += amount;
     await this.usageMetricRepo.save(usage);
 
-    // 3. Emit to Kafka for real-time tracking
+    // 5. Emit to Kafka
     this.kafkaService.emit("aerostic.usage.events", {
       eventId: event.id,
       tenantId: event.tenantId,
       metric: event.metric,
       amount: event.amount,
+      isOverage,
+      overageAmount,
       referenceId: event.referenceId,
       timestamp: event.createdAt?.getTime() || Date.now(),
       metadata: event.metadata,

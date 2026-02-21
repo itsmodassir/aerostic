@@ -10,14 +10,12 @@ export class PartitionMessages1710000000000 implements MigrationInterface {
             CREATE TABLE "messages" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "tenant_id" uuid NOT NULL,
-                "conversation_id" uuid,
+                "conversation_id" uuid NOT NULL,
                 "direction" character varying NOT NULL,
                 "type" character varying NOT NULL DEFAULT 'text',
-                "body" text,
-                "media_url" character varying,
-                "providerMessageId" character varying,
-                "status" character varying NOT NULL DEFAULT 'sent',
-                "metadata" jsonb,
+                "content" jsonb,
+                "status" character varying,
+                "meta_message_id" character varying,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_messages" PRIMARY KEY ("id", "created_at")
             ) PARTITION BY RANGE (created_at)
@@ -28,21 +26,25 @@ export class PartitionMessages1710000000000 implements MigrationInterface {
     const currentMonth = new Date().getMonth() + 1;
 
     // Dynamic partition for current month
+    const yearMonthNext = currentMonth === 12
+      ? `${currentYear + 1}-01-01`
+      : `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`;
+
     await queryRunner.query(`
-            CREATE TABLE "messages_y${currentYear}m${currentMonth}" 
+            CREATE TABLE IF NOT EXISTS "messages_y${currentYear}m${currentMonth}" 
             PARTITION OF "messages" 
-            FOR VALUES FROM ('${currentYear}-${currentMonth}-01') TO ('${currentYear}-${currentMonth + 1}-01')
+            FOR VALUES FROM ('${currentYear}-${currentMonth.toString().padStart(2, '0')}-01') TO ('${yearMonthNext}')
         `);
 
     // Default partition for safety
     await queryRunner.query(
-      `CREATE TABLE "messages_default" PARTITION OF "messages" DEFAULT`,
+      `CREATE TABLE IF NOT EXISTS "messages_default" PARTITION OF "messages" DEFAULT`,
     );
 
     // 4. Move data from old to new (using INSERT INTO ... SELECT)
     await queryRunner.query(`
-            INSERT INTO "messages" ("id", "tenant_id", "conversation_id", "direction", "type", "body", "media_url", "providerMessageId", "status", "metadata", "created_at")
-            SELECT "id", "tenant_id", "conversation_id", "direction", "type", "body", "media_url", "providerMessageId", "status", "metadata", "created_at"
+            INSERT INTO "messages" ("id", "tenant_id", "conversation_id", "direction", "type", "content", "status", "meta_message_id", "created_at")
+            SELECT "id", "tenant_id", "conversation_id", "direction", "type", "content", "status", "meta_message_id", "created_at"
             FROM "messages_old"
         `);
 

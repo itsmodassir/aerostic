@@ -9,7 +9,12 @@ export const AppDataSource = new DataSource({
   url: process.env.DATABASE_URL,
   synchronize: false,
   logging: true,
-  entities: [join(__dirname, "/entities/**/*.entity{.ts,.js}")],
+  entities: [
+    join(__dirname, "/entities/**/*.entity{.ts,.js}"),
+    join(__dirname, "../../api-service/**/*.entity{.ts,.js}"),
+    join(__dirname, "../../webhook-service/**/*.entity{.ts,.js}"),
+    join(__dirname, "../../worker-service/**/*.entity{.ts,.js}"),
+  ],
   migrations: [join(__dirname, "/migrations/*{.ts,.js}")],
   subscribers: [],
 });

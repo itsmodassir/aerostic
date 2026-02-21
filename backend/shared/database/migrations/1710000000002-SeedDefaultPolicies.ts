@@ -91,6 +91,13 @@ export class SeedDefaultPolicies1710000000002 implements MigrationInterface {
       },
     ];
 
+    // Check if policies table exists before seeding
+    const hasTable = await queryRunner.hasTable("policies");
+    if (!hasTable) {
+      console.warn("Policies table missing, skipping SeedDefaultPolicies");
+      return;
+    }
+
     for (const policy of policies) {
       await queryRunner.query(`
                 INSERT INTO "policies" 

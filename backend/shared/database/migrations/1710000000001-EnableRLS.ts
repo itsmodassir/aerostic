@@ -24,9 +24,16 @@ export class EnableRLS1710000000001 implements MigrationInterface {
       "api_keys",
       "subscriptions",
       "usage_events",
+      "wallets",
+      "wallet_accounts",
+      "wallet_transactions",
     ];
 
     for (const table of tables) {
+      // Check if table exists
+      const hasTable = await queryRunner.hasTable(table);
+      if (!hasTable) continue;
+
       // 1. Enable RLS
       await queryRunner.query(
         `ALTER TABLE "${table}" ENABLE ROW LEVEL SECURITY`,
@@ -38,6 +45,10 @@ export class EnableRLS1710000000001 implements MigrationInterface {
       // 2. Create Policy
       const column =
         table === "tenants" || table === "users" ? "id" : "tenant_id";
+
+      await queryRunner.query(`
+                DROP POLICY IF EXISTS tenant_isolation_policy ON "${table}"
+            `);
 
       await queryRunner.query(`
                 CREATE POLICY tenant_isolation_policy ON "${table}"

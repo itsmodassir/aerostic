@@ -28,14 +28,16 @@ npm ci --production=false --legacy-peer-deps
 
 # 3. Build Backend
 echo "🏗️ Building Backend..."
-cd apps/backend
+cd backend
 npm install --production=false --legacy-peer-deps
-npm run build
-cd ../..
+npx nest build api
+npx nest build webhook
+npx nest build worker
+cd ..
 
 # 4. Build Frontend
 echo "🏗️ Building Frontend..."
-cd apps/frontend
+cd frontend/app-dashboard
 npm install --production=false --legacy-peer-deps
 # Ensure NEXT_PUBLIC endpoints are baked in
 if [ -f "../../.env" ]; then
@@ -48,18 +50,20 @@ cd ../..
 
 # 5. Run Migrations
 echo "🗄️ Running Database Migrations..."
-cd apps/backend
-npm run typeorm migration:run -- -d src/data-source.ts
-cd ../..
+cd backend
+npm run migration:run
+cd ..
 
 # 6. Restart Services
 echo "🔄 Restarting Services..."
-if pm2 list | grep -q "aerostic-backend"; then
+if pm2 list | grep -q "aerostic-api"; then
     pm2 restart all --update-env
 else
     echo "⚠️ PM2 services not found. Starting fresh..."
-    pm2 start apps/backend/dist/main.js --name aerostic-backend
-    pm2 start apps/frontend/node_modules/next/dist/bin/next --name aerostic-frontend -- start -p 3000
+    pm2 start backend/dist/api-service/main.js --name aerostic-api
+    pm2 start backend/dist/webhook-service/main.js --name aerostic-webhook
+    pm2 start backend/dist/worker-service/main.js --name aerostic-worker
+    pm2 start "npm --prefix frontend/app-dashboard run start" --name aerostic-frontend
     pm2 save
 fi
 
