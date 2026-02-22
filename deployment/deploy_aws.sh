@@ -63,14 +63,18 @@ cd ../..
 
 # 4.3 Admin Panel
 echo "👨‍💼 Building Admin Panel..."
-cd frontend/admin-panel
-npm install --production=false --legacy-peer-deps
-if [ -f "../../.env" ]; then
-    export $(grep -v '^#' ../../.env | xargs)
+if [ -f "frontend/admin-panel/package.json" ]; then
+    cd frontend/admin-panel
+    npm install --production=false --legacy-peer-deps
+    if [ -f "../../.env" ]; then
+        export $(grep -v '^#' ../../.env | xargs)
+    fi
+    export NEXT_JS_IGNORE_ESLINT=1
+    npm run build
+    cd ../..
+else
+    echo "⚠️ Admin Panel package.json not found. Skipping build."
 fi
-export NEXT_JS_IGNORE_ESLINT=1
-npm run build
-cd ../..
 
 # 5. Run Migrations
 echo "🗄️ Running Database Migrations..."
@@ -89,7 +93,11 @@ pm2 start backend/dist/worker-service/main.js --name aerostic-worker
 
 # Frontend
 PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aerostic-frontend
-PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aerostic-admin
+if [ -f "frontend/admin-panel/.next/standalone/server.js" ]; then
+    PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aerostic-admin
+else
+    echo "⚠️ Admin Panel server.js not found. Skipping PM2 start."
+fi
 
 # Nginx (Docker)
 cd infrastructure/docker
