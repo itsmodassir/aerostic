@@ -98,6 +98,15 @@ export class SeedDefaultPolicies1710000000002 implements MigrationInterface {
       return;
     }
 
+    // Check if subject_type column exists
+    const hasColumn = await queryRunner.hasColumn("policies", "subject_type");
+    if (!hasColumn) {
+      console.warn(
+        "Policies table does not support subject_type, skipping SeedDefaultPolicies",
+      );
+      return;
+    }
+
     for (const policy of policies) {
       await queryRunner.query(`
                 INSERT INTO "policies" 
