@@ -40,15 +40,34 @@ npx nest build webhook
 npx nest build worker
 cd ..
 
-# 4. Build Frontend
-echo "🏗️ Building Frontend..."
+# 4. Build Frontends
+echo "🏗️ Building Frontends..."
+
+# 4.1 Landing Page
+echo "🌐 Building Landing Page..."
+cd frontend/landing
+npm install --production=false --legacy-peer-deps
+npm run build
+cd ../..
+
+# 4.2 App Dashboard
+echo "📱 Building App Dashboard..."
 cd frontend/app-dashboard
 npm install --production=false --legacy-peer-deps
-# Ensure NEXT_PUBLIC endpoints are baked in
 if [ -f "../../.env" ]; then
     export $(grep -v '^#' ../../.env | xargs)
 fi
-# Skip linting during build to prevent build failures on warnings
+export NEXT_JS_IGNORE_ESLINT=1
+npm run build
+cd ../..
+
+# 4.3 Admin Panel
+echo "👨‍💼 Building Admin Panel..."
+cd frontend/admin-panel
+npm install --production=false --legacy-peer-deps
+if [ -f "../../.env" ]; then
+    export $(grep -v '^#' ../../.env | xargs)
+fi
 export NEXT_JS_IGNORE_ESLINT=1
 npm run build
 cd ../..
@@ -56,19 +75,28 @@ cd ../..
 # 5. Run Migrations
 echo "🗄️ Running Database Migrations..."
 cd backend
-# Use robust migration command for alias resolution (@shared)
 npx ts-node -P tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d shared/database/data-source.ts
 cd ..
 
 # 6. Restart Services
 echo "🔄 Restarting Services..."
 pm2 delete all || true
+
+# Backend
 pm2 start backend/dist/api-service/main.js --name aerostic-api
 pm2 start backend/dist/webhook-service/main.js --name aerostic-webhook
 pm2 start backend/dist/worker-service/main.js --name aerostic-worker
-# Use standalone server for Next.js
+
+# Frontend
 PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aerostic-frontend
+PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aerostic-admin
+
+# Nginx (Docker)
+cd infrastructure/docker
+docker-compose up -d --force-recreate nginx
+cd ../..
+
 pm2 save
 
-echo "✅ Deployment Complete!"
+echo "✅ Production Fix Deployment Complete!"
 pm2 status
