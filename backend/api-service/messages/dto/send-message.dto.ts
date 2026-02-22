@@ -21,4 +21,11 @@ export class SendMessageDto {
 
   @IsNotEmpty()
   payload: any; // content: { text: "..." } or template object
+
+  @IsOptional()
+  skipBilling?: boolean;
+
+  @IsOptional()
+  @IsUUID()
+  campaignId?: string;
 }

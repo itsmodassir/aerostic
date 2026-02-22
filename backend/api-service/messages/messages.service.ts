@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -17,6 +18,10 @@ import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
 import { EncryptionService } from "@shared/encryption.service";
 import { BillingService } from "../billing/billing.service";
 import { AdminConfigService } from "../admin/services/admin-config.service";
+import { WalletService } from "../billing/wallet.service";
+import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
+import { TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
+
 
 @Injectable()
 export class MessagesService {
@@ -36,7 +41,8 @@ export class MessagesService {
     private encryptionService: EncryptionService,
     private billingService: BillingService,
     private adminConfigService: AdminConfigService,
-  ) {}
+    private walletService: WalletService,
+  ) { }
 
   async send(dto: SendMessageDto) {
     // 1. Resolve Tenant's WhatsApp Account
@@ -111,7 +117,34 @@ export class MessagesService {
       body.template = dto.payload;
     }
 
-    // 5. Send Request
+    // 5. Pre-send Wallet Deduction (Only for Templates and not skipped)
+    let transactionRecord = null;
+    let templateRate = 0;
+    if (dto.type === "template" && dto.tenantId && !dto.skipBilling) {
+      try {
+        const rateStr = await this.adminConfigService.getConfigValue(
+          "whatsapp.template_rate_inr",
+          dto.tenantId
+        );
+        templateRate = parseFloat(rateStr || "0.80");
+
+        transactionRecord = await this.walletService.processTransaction(
+          dto.tenantId,
+          WalletAccountType.MAIN_BALANCE,
+          templateRate,
+          TransactionType.DEBIT,
+          {
+            referenceType: "TEMPLATE_MESSAGE_SEND",
+            referenceId: `msg_${Date.now()}`,
+            description: `Template message sent to ${dto.to}`,
+          }
+        );
+      } catch (error) {
+        throw new BadRequestException("Insufficient wallet balance for template message");
+      }
+    }
+
+    // 6. Send Request
     try {
       const response = await axios.post(url, body, {
         headers: {
@@ -122,7 +155,7 @@ export class MessagesService {
 
       const metaId = response.data.messages?.[0]?.id;
 
-      // 6. Save Outbound Message to DB
+      // 7. Save Outbound Message to DB
       const message = this.messageRepo.create({
         tenantId: dto.tenantId,
         conversationId: conversation.id,
@@ -131,6 +164,9 @@ export class MessagesService {
         content: dto.type === "text" ? { body: dto.payload.text } : dto.payload,
         metaMessageId: metaId,
         status: "sent",
+        campaignId: dto.campaignId,
+        // Associate transaction info to metadata if needed
+        metadata: transactionRecord ? { transactionId: transactionRecord.id, cost: templateRate } : {},
       });
       await this.messageRepo.save(message);
 
@@ -175,6 +211,25 @@ export class MessagesService {
 
       return { sent: true, metaId, messageId: message.id };
     } catch (error) {
+      // Rollback deduction if Meta API fails
+      if (transactionRecord && dto.tenantId) {
+        try {
+          await this.walletService.processTransaction(
+            dto.tenantId,
+            WalletAccountType.MAIN_BALANCE,
+            templateRate,
+            TransactionType.CREDIT,
+            {
+              referenceType: "TEMPLATE_MESSAGE_REFUND",
+              referenceId: transactionRecord.id, // Link to original debit
+              description: `Refund for failed template message to ${dto.to}`,
+            }
+          );
+        } catch (rollbackError) {
+          console.error("Critical: Failed to rollback template charge", rollbackError);
+        }
+      }
+
       console.error("Meta API Error:", error.response?.data || error.message);
       throw new InternalServerErrorException("Failed to send WhatsApp message");
     }

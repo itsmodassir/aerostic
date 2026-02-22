@@ -33,6 +33,10 @@ export class Message {
   @JoinColumn({ name: "conversation_id" })
   conversation: Conversation;
 
+  @Column({ name: "campaign_id", type: "uuid", nullable: true })
+  @Index()
+  campaignId: string;
+
   @Column()
   direction: string; // inbound, outbound
 

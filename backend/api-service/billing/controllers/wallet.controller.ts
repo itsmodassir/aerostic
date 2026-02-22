@@ -12,6 +12,7 @@ import { RazorpayService } from "../razorpay.service";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { UserTenant } from "../../auth/decorators/user-tenant.decorator";
 import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
+import { AdminConfigService } from "../../admin/services/admin-config.service";
 
 @UseGuards(JwtAuthGuard)
 @Controller("billing/wallet")
@@ -19,6 +20,7 @@ export class WalletController {
     constructor(
         private walletService: WalletService,
         private razorpayService: RazorpayService,
+        private adminConfigService: AdminConfigService,
     ) { }
 
     @Get("balance")
@@ -28,7 +30,9 @@ export class WalletController {
     ) {
         if (!tenantId) throw new UnauthorizedException("Tenant ID required");
         const balance = await this.walletService.getBalance(tenantId, type);
-        return { balance, type };
+        const rateStr = await this.adminConfigService.getConfigValue("whatsapp.template_rate_inr", tenantId);
+        const templateRate = parseFloat(rateStr || "0.80");
+        return { balance, type, templateRate };
     }
 
     @Get("transactions")

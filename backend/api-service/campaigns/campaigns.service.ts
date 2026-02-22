@@ -1,14 +1,18 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Campaign } from "./entities/campaign.entity";
 import { ContactsService } from "../contacts/contacts.service";
 import { MessagesService } from "../messages/messages.service";
 import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
-import { AuditLog } from "@shared/database/entities/core/audit-log.entity";
+import { WalletService } from "../billing/wallet.service";
+import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
+import { TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
 
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
+
+import { AdminConfigService } from "../admin/services/admin-config.service";
 
 @Injectable()
 export class CampaignsService {
@@ -19,7 +23,9 @@ export class CampaignsService {
     private messagesService: MessagesService,
     @InjectQueue("campaign-queue") private campaignQueue: Queue,
     private auditService: AuditService,
-  ) {}
+    private walletService: WalletService,
+    private adminConfigService: AdminConfigService,
+  ) { }
 
   async create(tenantId: string, data: any) {
     const campaign = this.campaignRepo.create({
@@ -67,11 +73,36 @@ export class CampaignsService {
       throw new Error("No contacts found for this campaign");
     }
 
+    // 2. Fetch Rate & Pre-charge Wallet
+    const rateStr = await this.adminConfigService.getConfigValue(
+      "whatsapp.template_rate_inr",
+      tenantId
+    );
+    const templateRate = parseFloat(rateStr || "0.80");
+    const totalCost = contacts.length * templateRate;
+
+    try {
+      await this.walletService.processTransaction(
+        tenantId,
+        WalletAccountType.MAIN_BALANCE,
+        totalCost,
+        TransactionType.DEBIT,
+        {
+          referenceType: "CAMPAIGN_BROADCAST",
+          referenceId: campaignId,
+          description: `Template broadcast to ${contacts.length} recipients. Rate: ₹${templateRate}/msg`,
+        }
+      );
+    } catch (error) {
+      throw new BadRequestException("Insufficient wallet balance for this campaign broadcast");
+    }
+
     campaign.totalContacts = contacts.length;
+    campaign.totalCost = totalCost;
     campaign.status = "sending";
     await this.campaignRepo.save(campaign);
 
-    // 2. Add to Queue
+    // 3. Add to Queue
     const jobs = contacts.map((contact) => ({
       name: "send-message",
       data: {

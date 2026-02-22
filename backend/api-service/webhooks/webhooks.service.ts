@@ -9,10 +9,15 @@ import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
 import { Contact } from "@shared/database/entities/core/contact.entity";
 import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
 import { Message } from "@shared/database/entities/messaging/message.entity";
+import { Campaign } from "../campaigns/entities/campaign.entity";
+import { WalletService } from "../billing/wallet.service";
+import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
+import { TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
 import { AutomationService } from "../automation/automation.service";
 import { AiService } from "../ai/ai.service";
 import { MessagesGateway } from "../messages/messages.gateway";
 import { WorkflowsService } from "../automation/workflows.service";
+import { AdminConfigService } from "../admin/services/admin-config.service";
 
 @Injectable()
 export class WebhooksService {
@@ -28,13 +33,17 @@ export class WebhooksService {
     private conversationRepo: Repository<Conversation>,
     @InjectRepository(Message)
     private messageRepo: Repository<Message>,
+    @InjectRepository(Campaign)
+    private campaignRepo: Repository<Campaign>,
     @InjectQueue("whatsapp-webhooks")
     private webhookQueue: Queue,
     private automationService: AutomationService,
     private workflowsService: WorkflowsService,
     private aiService: AiService,
     private messagesGateway: MessagesGateway,
-  ) {}
+    private walletService: WalletService,
+    private adminConfigService: AdminConfigService,
+  ) { }
 
   verifyWebhook(mode: string, token: string, challenge: string): string {
     const verifyToken = this.configService.get("META_WEBHOOK_VERIFY_TOKEN");
@@ -203,8 +212,49 @@ export class WebhooksService {
       });
 
       if (message) {
+        // Prevent double counting if status comes out of order
+        const wasDelivered = message.status === "delivered" || message.status === "read";
+        const wasRead = message.status === "read";
+        const wasFailed = message.status === "failed";
+
         message.status = newStatus;
         await this.messageRepo.save(message);
+
+        // Update Campaign Analytics
+        if (message.campaignId) {
+          if (newStatus === "delivered" && !wasDelivered && !wasFailed) {
+            await this.campaignRepo.increment({ id: message.campaignId }, "deliveredCount", 1);
+          } else if (newStatus === "read" && !wasRead && !wasFailed) {
+            await this.campaignRepo.increment({ id: message.campaignId }, "readCount", 1);
+          } else if (newStatus === "failed" && !wasFailed) {
+            await this.campaignRepo.increment({ id: message.campaignId }, "failedCount", 1);
+          }
+        }
+
+        // Issue Refund for Failed Templates
+        if (newStatus === "failed" && message.type === "template" && !wasFailed) {
+          try {
+            const rateStr = await this.adminConfigService.getConfigValue(
+              "whatsapp.template_rate_inr",
+              message.tenantId
+            );
+            const templateRate = parseFloat(rateStr || "0.80");
+
+            await this.walletService.processTransaction(
+              message.tenantId,
+              WalletAccountType.MAIN_BALANCE,
+              templateRate,
+              TransactionType.CREDIT,
+              {
+                referenceType: "TEMPLATE_MESSAGE_REFUND",
+                referenceId: metaMessageId,
+                description: `Refund for failed template delivery`,
+              }
+            );
+          } catch (refundError) {
+            this.logger.error("Failed to process refund for rejected template message", refundError);
+          }
+        }
 
         this.messagesGateway.emitMessageStatus(message.tenantId, {
           messageId: message.id,

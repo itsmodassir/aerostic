@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building, Search, Plus, MoreHorizontal, Edit, Trash2, Eye, Filter, Loader2, X, Check, ExternalLink } from 'lucide-react';
+import { Building, Search, Plus, MoreHorizontal, Edit, Trash2, Eye, Filter, Loader2, X, Check, ExternalLink, Banknote } from 'lucide-react';
 import Link from 'next/link';
 
 interface Tenant {
@@ -30,9 +30,11 @@ export default function TenantsPage() {
     const [editStatus, setEditStatus] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
-
-
-    useEffect(() => {
+    // Add Funds Modal State
+    const [fundTenant, setFundTenant] = useState<Tenant | null>(null);
+    const [amountToAdd, setAmountToAdd] = useState('');
+    const [fundDescription, setFundDescription] = useState('Admin account credited funds');
+    const [isFunding, setIsFunding] = useState(false); useEffect(() => {
         fetchTenants();
     }, []);
 
@@ -108,6 +110,35 @@ export default function TenantsPage() {
         } catch (error) {
             console.error('Impersonation error:', error);
             alert('Failed to login as tenant');
+        }
+    };
+
+    const handleAddFunds = async () => {
+        if (!fundTenant || !amountToAdd) return;
+        setIsFunding(true);
+        try {
+            const res = await fetch(`/api/v1/admin/billing/wallets/${fundTenant.id}/fund`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    amount: parseFloat(amountToAdd),
+                    description: fundDescription
+                })
+            });
+
+            if (!res.ok) throw new Error('Fund transfer failed');
+
+            alert(`Successfully added ₹${amountToAdd} to ${fundTenant.name}'s wallet`);
+            setFundTenant(null);
+            setAmountToAdd('');
+        } catch (e) {
+            console.error(e);
+            alert('Failed to add funds');
+        } finally {
+            setIsFunding(false);
         }
     };
 
@@ -232,6 +263,17 @@ export default function TenantsPage() {
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => {
+                                                    setFundTenant(tenant);
+                                                    setAmountToAdd('');
+                                                    setFundDescription('Admin account credited funds');
+                                                }}
+                                                className="p-2 hover:bg-green-50 text-green-600 rounded-lg"
+                                                title="Add Funds"
+                                            >
+                                                <Banknote className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => {
                                                     setSelectedTenant(tenant);
                                                     setEditPlan(tenant.currentPlan || 'starter');
                                                     setEditStatus(tenant.status || 'active');
@@ -332,6 +374,74 @@ export default function TenantsPage() {
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                     'Save Changes'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Funds Modal */}
+            {fundTenant && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <div>
+                                <h3 className="font-bold text-gray-900">Add Wallet Funds</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Crediting {fundTenant.name}</p>
+                            </div>
+                            <button
+                                onClick={() => setFundTenant(null)}
+                                className="p-2 hover:bg-white rounded-full text-gray-400 hover:text-gray-600 transition-colors shadow-sm border border-transparent hover:border-gray-200"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 block text-sm">Amount (INR)</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium font-mono">₹</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        value={amountToAdd}
+                                        onChange={(e) => setAmountToAdd(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all font-medium text-gray-700"
+                                        placeholder="Enter amount"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 block text-sm">Description (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={fundDescription}
+                                    onChange={(e) => setFundDescription(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all font-medium text-gray-700"
+                                    placeholder="e.g. Admin account credited funds"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                            <button
+                                onClick={() => setFundTenant(null)}
+                                className="flex-1 px-4 py-2.5 text-gray-700 font-semibold hover:bg-gray-100 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAddFunds}
+                                disabled={isFunding || !amountToAdd || parseFloat(amountToAdd) <= 0}
+                                className="flex-1 px-4 py-2.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2"
+                            >
+                                {isFunding ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    'Credit Funds'
                                 )}
                             </button>
                         </div>

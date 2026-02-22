@@ -78,6 +78,12 @@ export default function InboxPage() {
     const [showContactDetails, setShowContactDetails] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const [walletBalance, setWalletBalance] = useState<number>(0);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [templateRate, setTemplateRate] = useState<number>(0.80);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const params = useParams();
@@ -112,9 +118,17 @@ export default function InboxPage() {
                     // Join tenant room
                     joinTenant(tid);
 
-                    // Fetch real team members
+                    // Join tenant room
+                    joinTenant(tid);
+
+                    // Fetch real team members, wallet, and templates
                     try {
-                        const teamRes = await api.get(`/users?tenantId=${tid}`);
+                        const [teamRes, walletRes, templatesRes] = await Promise.all([
+                            api.get(`/users?tenantId=${tid}`),
+                            api.get(`/billing/wallet?tenantId=${tid}`),
+                            api.get(`/templates?tenantId=${tid}`)
+                        ]);
+
                         if (teamRes.data && mounted) {
                             setTeamMembers(teamRes.data.map((u: any) => ({
                                 id: u.id,
@@ -124,8 +138,20 @@ export default function InboxPage() {
                                 status: 'online'
                             })));
                         }
+
+                        if (walletRes.data && mounted) {
+                            setWalletBalance(walletRes.data.mainBalance || 0);
+                            if (walletRes.data.templateRate !== undefined) {
+                                setTemplateRate(walletRes.data.templateRate);
+                            }
+                        }
+
+                        if (templatesRes.data && mounted) {
+                            setTemplates(templatesRes.data.filter((t: any) => t.status === 'APPROVED'));
+                        }
+
                     } catch (e) {
-                        console.error('Failed to fetch team');
+                        console.error('Failed to fetch inbox initial data');
                     }
                 }
             } catch (e) {
@@ -255,7 +281,7 @@ export default function InboxPage() {
     // Scroll to bottom on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, selectedConversation?.id]);
 
     // Filter conversations
     const filteredConversations = conversations.filter(conv => {
@@ -295,6 +321,62 @@ export default function InboxPage() {
             });
 
             // Update message status
+            setMessages(prev => prev.map(m =>
+                m.id === newMessage.id ? { ...m, status: 'delivered' } : m
+            ));
+        } catch (e) {
+            setMessages(prev => prev.map(m =>
+                m.id === newMessage.id ? { ...m, status: 'failed' } : m
+            ));
+        }
+    };
+
+    const handleSendTemplate = async (template: any) => {
+        if (!selectedConversation) return;
+
+        if (walletBalance < templateRate) {
+            alert(`Insufficient wallet balance. Sending a template costs ₹${templateRate.toFixed(2)}.`);
+            return;
+        }
+
+        setShowTemplates(false);
+
+        const payload = {
+            name: template.name,
+            language: { code: template.language || 'en_US' },
+            components: [
+                {
+                    type: "body",
+                    parameters: [
+                        { type: "text", text: selectedConversation.contact.name || "Customer" }
+                    ]
+                }
+            ]
+        };
+
+        const tempMsgId = `temp-${Date.now()}`;
+        const newMessage: Message = {
+            id: tempMsgId,
+            direction: 'out',
+            type: 'template',
+            content: payload,
+            status: 'sent',
+            createdAt: new Date().toISOString(),
+            sender: currentUser || undefined,
+        };
+        setMessages(prev => [...prev, newMessage]);
+
+        try {
+            await api.post('/messages/send', {
+                tenantId,
+                to: selectedConversation.contact.phoneNumber,
+                type: 'template',
+                payload,
+            });
+
+            // Deduct local state to reflect transaction
+            setWalletBalance(prev => prev - templateRate);
+
             setMessages(prev => prev.map(m =>
                 m.id === newMessage.id ? { ...m, status: 'delivered' } : m
             ));
@@ -742,7 +824,7 @@ export default function InboxPage() {
                         </div>
 
                         {/* Message Input */}
-                        <div className="p-4 bg-white border-t">
+                        <div className="p-4 bg-white border-t relative">
                             {/* Quick Replies */}
                             {showQuickReplies && (
                                 <div className="mb-3 flex flex-wrap gap-2">
@@ -758,15 +840,63 @@ export default function InboxPage() {
                                 </div>
                             )}
 
+                            {/* Templates Drawer */}
+                            {showTemplates && (
+                                <div className="absolute bottom-full left-0 w-full bg-white border-t border-b p-4 max-h-64 overflow-y-auto shadow-lg z-10">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-blue-600" />
+                                            WhatsApp Templates
+                                        </h4>
+                                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                            Balance: ₹{walletBalance.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {templates.map(t => (
+                                            <div key={t.id} className="border rounded-lg p-3 hover:border-blue-300 transition-colors bg-gray-50 flex flex-col justify-between">
+                                                <div>
+                                                    <p className="font-medium text-sm text-gray-900 break-all">{t.name}</p>
+                                                    <p className="text-xs text-gray-500 mb-2 truncate">{t.components?.find((c: any) => c.type === 'BODY')?.text}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleSendTemplate(t)}
+                                                    className="w-full mt-2 py-1.5 bg-blue-100 text-blue-700 text-xs font-bold rounded hover:bg-blue-200 flex justify-center items-center gap-1"
+                                                >
+                                                    <Send size={12} /> Send (₹{templateRate.toFixed(2)})
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {templates.length === 0 && (
+                                            <p className="text-sm text-gray-500">No approved templates found.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-end gap-3">
-                                {/* Attachment */}
+                                {/* Attachment & Tools */}
                                 <div className="flex gap-1">
                                     <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                                         <Paperclip className="w-5 h-5" />
                                     </button>
                                     <button
-                                        onClick={() => setShowQuickReplies(!showQuickReplies)}
+                                        onClick={() => {
+                                            setShowTemplates(!showTemplates);
+                                            setShowQuickReplies(false);
+                                        }}
+                                        className={`p-2.5 rounded-lg transition-colors ${showTemplates ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                                        title="WhatsApp Templates"
+                                    >
+                                        <FileText className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowQuickReplies(!showQuickReplies);
+                                            setShowTemplates(false);
+                                        }}
                                         className={`p-2.5 rounded-lg transition-colors ${showQuickReplies ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                                        title="Quick Replies"
                                     >
                                         <Smile className="w-5 h-5" />
                                     </button>

@@ -60,6 +60,16 @@ export class Campaign {
   @Column("jsonb", { nullable: true })
   recipients: any[]; // Stores array of { name, phoneNumber } if CSV/MANUAL
 
+  // New Fields for Broadcasting Analytics & Billing
+  @Column({ default: 0 })
+  deliveredCount: number;
+
+  @Column({ default: 0 })
+  readCount: number;
+
+  @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
+  totalCost: number;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 }

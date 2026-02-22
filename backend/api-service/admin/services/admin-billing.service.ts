@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";
@@ -7,6 +7,10 @@ import {
   SubscriptionStatus,
 } from "@shared/database/entities/billing/subscription.entity";
 import { WebhookEndpoint } from "../../billing/entities/webhook-endpoint.entity";
+import { AdminConfigService } from "./admin-config.service";
+import { WalletService } from "../../billing/wallet.service";
+import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
+import { TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
 
 @Injectable()
 export class AdminBillingService {
@@ -17,7 +21,62 @@ export class AdminBillingService {
     private subscriptionRepo: Repository<Subscription>,
     @InjectRepository(WebhookEndpoint)
     private webhookEndpointRepo: Repository<WebhookEndpoint>,
+    private adminConfigService: AdminConfigService,
+    private walletService: WalletService,
   ) { }
+
+  async getTemplateRate(tenantId?: string): Promise<number> {
+    const rateStr = await this.adminConfigService.getConfigValue(
+      "whatsapp.template_rate_inr",
+      tenantId
+    );
+    return parseFloat(rateStr || "0.80");
+  }
+
+  async setTemplateRate(rate: number, tenantId?: string): Promise<void> {
+    if (rate < 0) throw new BadRequestException("Rate cannot be negative");
+    await this.adminConfigService.setConfig(
+      { "whatsapp.template_rate_inr": rate.toString() },
+      "Admin",
+      tenantId
+    );
+  }
+
+  async transferAdminFunds(
+    targetTenantId: string,
+    amount: number,
+    description?: string
+  ) {
+    if (amount <= 0) throw new BadRequestException("Amount must be positive");
+
+    // Retrieve the System Tenant to act as the massive reserve OR simply bypass the debit
+    // if the admin constitutes an infinite fiat source. For full financial auditing, we debit a "System" tenant.
+    const systemTenantId = "system-wallet-fiat"; // Using a phantom ID or a real UUID if System tenant exists
+
+    // We can also just credit the user directly with a specific reference type instead of routing through a debit.
+    // We will do a direct CREDIT to the SubTenant, logged as an ADMIN_FUNDING event.
+    const idempotencyKey = `admin_fund_${targetTenantId}_${Date.now()}`;
+
+    const tx = await this.walletService.processTransaction(
+      targetTenantId,
+      WalletAccountType.MAIN_BALANCE,
+      amount,
+      TransactionType.CREDIT,
+      {
+        referenceType: "ADMIN_FUND_TRANSFER",
+        referenceId: "ADMIN_SYSTEM", // Indicate it came from System
+        description: description || `Admin funded ₹${amount}`,
+        idempotencyKey,
+      }
+    );
+
+    return {
+      success: true,
+      transactionId: tx.id,
+      amount: tx.amount,
+      newBalance: tx.balanceAfter
+    };
+  }
 
   async getAllApiKeys(limit: number = 20, offset: number = 0) {
     const [keys, total] = await this.apiKeyRepo.findAndCount({

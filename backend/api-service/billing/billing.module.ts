@@ -29,6 +29,7 @@ import { User } from "@shared/database/entities/core/user.entity";
 import { Plan } from "@shared/database/entities/billing/plan.entity";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { Invoice } from "./entities/invoice.entity";
+import { AdminModule } from "../admin/admin.module";
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { Invoice } from "./entities/invoice.entity";
     AuditModule,
     UsersModule,
     TenantsModule,
+    AdminModule,
   ],
   controllers: [
     BillingController,

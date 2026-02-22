@@ -51,6 +51,9 @@ export default function SystemPage() {
         'platform.trial_days': '14',
         'platform.message_rate_limit': '100',
         'platform.max_tenants': '1000',
+
+        // WhatsApp Pricing (Global)
+        'whatsapp.template_rate_inr': '0.80',
     });
 
     // Fetch existing configuration on mount
@@ -335,7 +338,7 @@ export default function SystemPage() {
                                 <div className="flex items-center justify-between mb-2">
                                     <label className="block text-sm font-medium text-gray-700">WhatsApp Configuration ID</label>
                                     <div className="flex items-center gap-2">
-                                        <SourceBadge source={configMeta['meta.config_id']?.source} />
+                                        <SourceBadge source={configMeta['meta.config_id']?.source || 'default'} />
                                         {configMeta['meta.config_id']?.source === 'database' && (
                                             <button onClick={() => handleReset('meta.config_id')} className="text-[10px] text-red-500 hover:underline">Reset</button>
                                         )}
@@ -349,6 +352,33 @@ export default function SystemPage() {
                                     placeholder="925810693206943"
                                     autoComplete="off"
                                 />
+                            </div>
+                            <div className="md:col-span-2 pt-4 border-t border-gray-100">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Global Template Message Rate (INR)</label>
+                                        <p className="text-xs text-gray-500 mt-1">Default cost deducted per WhatsApp template message sent by tenants.</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <SourceBadge source={configMeta['whatsapp.template_rate_inr']?.source || 'default'} />
+                                        {configMeta['whatsapp.template_rate_inr']?.source === 'database' && (
+                                            <button onClick={() => handleReset('whatsapp.template_rate_inr')} className="text-[10px] text-red-500 hover:underline">Reset</button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="relative w-full md:w-1/2">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₹</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={config['whatsapp.template_rate_inr']}
+                                        onChange={(e) => updateConfig('whatsapp.template_rate_inr', e.target.value)}
+                                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        placeholder="0.80"
+                                        autoComplete="off"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </section>

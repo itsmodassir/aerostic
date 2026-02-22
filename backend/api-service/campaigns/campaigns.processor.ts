@@ -24,6 +24,8 @@ export class CampaignProcessor extends WorkerHost {
         to,
         type,
         payload,
+        skipBilling: true,
+        campaignId,
       });
       // Update stats (Naive approach: DB write per message.
       // Better: Redis increment then bulk update, but keeping simple for MVP)

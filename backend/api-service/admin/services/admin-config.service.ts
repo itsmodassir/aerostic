@@ -59,6 +59,12 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
     category: "whatsapp",
     isSecret: false,
   },
+  "whatsapp.template_rate_inr": {
+    value: "0.80",
+    description: "Charge per WhatsApp Template message (INR)",
+    category: "whatsapp",
+    isSecret: false,
+  },
 
   // Razorpay
   "razorpay.key_id": {

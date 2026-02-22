@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Plus, Send, Copy, AlertCircle, FileSpreadsheet, Users, UserCheck, ChevronRight, ChevronLeft, Upload } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import Papa from 'papaparse';
+const Papa = require('papaparse');
 
 interface Campaign {
     id: string;
@@ -12,6 +12,9 @@ interface Campaign {
     status: string;
     sentCount: number;
     failedCount: number;
+    deliveredCount: number;
+    readCount: number;
+    totalCost: number;
     totalContacts: number;
     createdAt: string;
     recipientType: string;
@@ -24,6 +27,9 @@ export default function CampaignsPage() {
     const params = useParams();
 
     const [templates, setTemplates] = useState<any[]>([]);
+    const [walletBalance, setWalletBalance] = useState<number>(0);
+    const [templateRate, setTemplateRate] = useState<number>(0.80);
+    const [totalContactsCount, setTotalContactsCount] = useState<number>(0);
 
     // Wizard State
     const [step, setStep] = useState(1);
@@ -53,6 +59,7 @@ export default function CampaignsPage() {
                     setTenantId(tid);
                     fetchCampaigns(tid);
                     fetchTemplates(tid);
+                    fetchWalletAndContacts(tid);
                 }
             } catch (e) {
                 console.error('Failed to resolve tenant');
@@ -60,6 +67,22 @@ export default function CampaignsPage() {
         };
         initTenant();
     }, [params.workspaceId]);
+
+    const fetchWalletAndContacts = async (tid: string) => {
+        try {
+            const [walletRes, contactsRes] = await Promise.all([
+                api.get(`/billing/wallet?tenantId=${tid}`),
+                api.get(`/contacts?tenantId=${tid}`)
+            ]);
+            setWalletBalance(walletRes.data.mainBalance || 0);
+            if (walletRes.data.templateRate !== undefined) {
+                setTemplateRate(walletRes.data.templateRate);
+            }
+            setTotalContactsCount(contactsRes.data.length || 0);
+        } catch (e) {
+            console.error('Failed to load wallet or contacts');
+        }
+    };
 
     const fetchTemplates = async (tid: string) => {
         try {
@@ -82,11 +105,11 @@ export default function CampaignsPage() {
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
-            complete: (results) => {
+            complete: (results: any) => {
                 const validRows = results.data.map((row: any) => ({
                     name: row.name || row.Name || 'Valued Customer',
                     phoneNumber: row.phone || row.Phone || row.mobile || row.Mobile || ''
-                })).filter(r => r.phoneNumber);
+                })).filter((r: any) => r.phoneNumber);
 
                 setCsvPreview(validRows.slice(0, 5)); // Show top 5
                 setFormData({ ...formData, recipients: validRows });
@@ -241,6 +264,10 @@ export default function CampaignsPage() {
         </div>
     );
 
+    const estimatedContacts = formData.recipientType === 'ALL' ? totalContactsCount : formData.recipients.length;
+    const estimatedCost = estimatedContacts * templateRate;
+    const canLaunch = walletBalance >= estimatedCost;
+
     const renderStep3 = () => (
         <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
@@ -253,20 +280,42 @@ export default function CampaignsPage() {
                     <span className="font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">{formData.templateName}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Target Audience:</span>
+                    <span className="text-gray-500">Total Recipients:</span>
                     <span className="font-medium flex items-center gap-1">
                         {formData.recipientType === 'ALL' ? <Users size={14} /> : <FileSpreadsheet size={14} />}
-                        {formData.recipientType === 'ALL' ? 'All Contacts' : `${formData.recipients.length} Recipients`}
+                        {estimatedContacts} Recipients
                     </span>
                 </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 flex gap-3">
-                <AlertCircle className="text-yellow-600 flex-shrink-0" size={16} />
-                <p className="text-xs text-yellow-800">
-                    Always ensure you have explicit consent from recipients. Unsolicited messages may lead to number bans.
-                </p>
+            <div className="bg-white border rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Billing Breakdown</h3>
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Rate per Template:</span>
+                    <span className="font-medium text-gray-700">₹{templateRate.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold pt-2 border-t">
+                    <span className="text-gray-900">Total Estimated Charges:</span>
+                    <span className="text-gray-900">₹{estimatedCost.toFixed(2)}</span>
+                </div>
             </div>
+
+            {!canLaunch ? (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3 flex gap-3 items-start">
+                    <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={16} />
+                    <div className="text-xs text-red-800">
+                        <strong className="block mb-1 text-red-900">Insufficient Wallet Balance</strong>
+                        Your current balance is <strong>₹{walletBalance.toFixed(2)}</strong>, but this campaign requires <strong>₹{estimatedCost.toFixed(2)}</strong>. Please top up your wallet to proceed.
+                    </div>
+                </div>
+            ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 flex gap-3">
+                    <AlertCircle className="text-yellow-600 flex-shrink-0" size={16} />
+                    <p className="text-xs text-yellow-800">
+                        ₹{estimatedCost.toFixed(2)} will be deducted from your wallet upon launch. Unsolicited messages may lead to number bans.
+                    </p>
+                </div>
+            )}
         </div>
     );
 
@@ -298,9 +347,27 @@ export default function CampaignsPage() {
                                 </span>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-gray-900">{camp.totalContacts}</p>
-                            <p className="text-xs text-gray-500 uppercase">Targeted</p>
+                        <div className="flex items-center gap-6 text-right">
+                            <div className="text-center">
+                                <p className="text-lg font-bold text-green-600">{((camp.deliveredCount || 0) / Math.max(camp.totalContacts || 1, 1) * 100).toFixed(0)}%</p>
+                                <p className="text-xs text-gray-500 uppercase">Delivered</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-lg font-bold text-blue-600">{((camp.readCount || 0) / Math.max(camp.totalContacts || 1, 1) * 100).toFixed(0)}%</p>
+                                <p className="text-xs text-gray-500 uppercase">Read</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-lg font-bold text-red-600">{camp.failedCount || 0}</p>
+                                <p className="text-xs text-gray-500 uppercase">Failed</p>
+                            </div>
+                            <div className="text-right border-l pl-6 border-r pr-6">
+                                <p className="text-lg font-bold text-gray-900">₹{Number(camp.totalCost || 0).toFixed(2)}</p>
+                                <p className="text-xs text-gray-500 uppercase">Spend</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-2xl font-bold text-gray-900">{camp.totalContacts || 0}</p>
+                                <p className="text-xs text-gray-500 uppercase">Targeted</p>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -339,8 +406,9 @@ export default function CampaignsPage() {
                             ) : (
                                 <button
                                     onClick={handleLaunch}
-                                    disabled={loading}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                                    disabled={loading || !canLaunch}
+                                    className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 transition ${loading || !canLaunch ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                                        }`}
                                 >
                                     {loading ? 'Launching...' : <><Send size={16} /> Launch Campaign</>}
                                 </button>
