@@ -62,16 +62,13 @@ cd ..
 
 # 6. Restart Services
 echo "🔄 Restarting Services..."
-if pm2 list | grep -q "aerostic-api"; then
-    pm2 restart all --update-env
-else
-    echo "⚠️ PM2 services not found. Starting fresh..."
-    pm2 start backend/dist/api-service/main.js --name aerostic-api
-    pm2 start backend/dist/webhook-service/main.js --name aerostic-webhook
-    pm2 start backend/dist/worker-service/main.js --name aerostic-worker
-    pm2 start "npm --prefix frontend/app-dashboard run start" --name aerostic-frontend
-    pm2 save
-fi
+pm2 delete all || true
+pm2 start backend/dist/api-service/main.js --name aerostic-api
+pm2 start backend/dist/webhook-service/main.js --name aerostic-webhook
+pm2 start backend/dist/worker-service/main.js --name aerostic-worker
+# Use standalone server for Next.js
+PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aerostic-frontend
+pm2 save
 
 echo "✅ Deployment Complete!"
 pm2 status
