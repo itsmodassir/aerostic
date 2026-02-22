@@ -56,7 +56,8 @@ cd ../..
 # 5. Run Migrations
 echo "🗄️ Running Database Migrations..."
 cd backend
-npm run migration:run
+# Use robust migration command for alias resolution (@shared)
+npx ts-node -P tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d shared/database/data-source.ts
 cd ..
 
 # 6. Restart Services
