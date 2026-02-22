@@ -349,7 +349,7 @@ export default function WhatsappSettingsPage() {
 
             {/* Connection Status Card */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
                     <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${connectionStatus === 'connected' ? 'bg-green-100' :
                             connectionStatus === 'pending' ? 'bg-amber-100' : 'bg-red-100'
@@ -373,11 +373,11 @@ export default function WhatsappSettingsPage() {
                         </div>
                     </div>
                     {connectionStatus === 'connected' && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                             <button
                                 onClick={handleSyncAccount}
                                 disabled={syncing}
-                                className="px-4 py-2 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-50 font-medium text-sm disabled:opacity-50 flex items-center gap-2"
+                                className="px-4 py-2 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-50 font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2 w-full sm:w-auto"
                             >
                                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                                 {syncing ? 'Syncing...' : 'Sync Account'}
@@ -385,7 +385,7 @@ export default function WhatsappSettingsPage() {
                             <button
                                 onClick={handleDisconnect}
                                 disabled={loading}
-                                className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm disabled:opacity-50"
+                                className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium text-sm disabled:opacity-50 w-full sm:w-auto"
                             >
                                 {loading ? 'Disconnecting...' : 'Disconnect'}
                             </button>
@@ -396,7 +396,7 @@ export default function WhatsappSettingsPage() {
                 {connectionStatus === 'connected' && (
                     <div className="mt-6 pt-6 border-t border-gray-100">
                         <h4 className="font-semibold text-gray-900 mb-3">Test Connection</h4>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <input
                                 type="tel"
                                 placeholder="Recipient Phone (e.g. 919999999999)"
@@ -407,7 +407,7 @@ export default function WhatsappSettingsPage() {
                             <button
                                 onClick={handleSendTest}
                                 disabled={sendingTest || !testNumber}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 <Send className="w-4 h-4" />
                                 {sendingTest ? 'Sending...' : 'Send Test'}
@@ -435,9 +435,9 @@ export default function WhatsappSettingsPage() {
 
             {/* Notification Preferences */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
                     <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${soundEnabled ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                        <div className={`w-12 h-12 rounded-xl flex shrink-0 items-center justify-center ${soundEnabled ? 'bg-blue-100' : 'bg-gray-100'}`}>
                             {soundEnabled ? (
                                 <Volume2 className="w-6 h-6 text-blue-600" />
                             ) : (
@@ -476,7 +476,7 @@ export default function WhatsappSettingsPage() {
                     />
 
                     {/* Account Health - Quality Rating & Messaging Limits */}
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <QualityRatingIndicator rating={accountDetails.qualityRating} />
                         <MessagingLimitsCard
                             messagingLimit={accountDetails.messagingLimit}
@@ -497,7 +497,7 @@ export default function WhatsappSettingsPage() {
                 <>
                     <h3 className="text-lg font-semibold text-gray-900">Choose Connection Method</h3>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Method 1: Facebook Embedded SDK */}
                         <div
                             className={`bg-white rounded-2xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg ${connectionMethod === 'facebook' ? 'border-blue-500 ring-4 ring-blue-100' : 'border-gray-200'
@@ -580,11 +580,11 @@ export default function WhatsappSettingsPage() {
 
             {/* Facebook Connect Section */}
             {connectionMethod === 'facebook' && connectionStatus === 'disconnected' && (
-                <div className="bg-gradient-to-r from-[#1877F2] to-[#166fe5] rounded-2xl p-8 text-white">
-                    <div className="flex items-center justify-between">
+                <div className="bg-gradient-to-r from-[#1877F2] to-[#166fe5] rounded-2xl p-6 sm:p-8 text-white">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div>
                             <h3 className="text-xl font-bold mb-2">Connect with Facebook</h3>
-                            <p className="text-blue-100 max-w-lg">
+                            <p className="text-blue-100 max-w-lg text-sm sm:text-base">
                                 You'll be redirected to Facebook to authorize Aerostic to access your WhatsApp Business Account.
                                 This is the fastest way to get started.
                             </p>
@@ -592,9 +592,9 @@ export default function WhatsappSettingsPage() {
                         <button
                             onClick={handleFacebookConnect}
                             disabled={!tenantId || loading}
-                            className={`flex items-center gap-3 px-8 py-4 bg-white text-[#1877F2] font-bold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                            className={`flex justify-center items-center w-full md:w-auto gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#1877F2] font-bold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0`}
                         >
-                            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                             </svg>
                             {loading ? 'Connecting...' : 'Login with Facebook'}
@@ -602,7 +602,7 @@ export default function WhatsappSettingsPage() {
                         </button>
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-blue-400/30 grid grid-cols-3 gap-4 text-sm">
+                    <div className="mt-6 pt-6 border-t border-blue-400/30 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                         <div className="flex items-center gap-2">
                             <Shield className="w-4 h-4" />
                             <span>Secure OAuth 2.0</span>
@@ -740,7 +740,7 @@ export default function WhatsappSettingsPage() {
             {/* Help Section */}
             <div className="bg-gray-50 rounded-2xl p-6">
                 <h3 className="font-bold text-gray-900 mb-4">Need Help?</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <a href="/docs/getting-started" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">
                         <Globe className="w-6 h-6 text-blue-600 mb-2" />
                         <h4 className="font-medium text-gray-900 group-hover:text-blue-600">Setup Guide</h4>

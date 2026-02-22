@@ -83,7 +83,7 @@ export default function ProfilePage() {
                 <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32" />
                 <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/10 rounded-full translate-y-24 -translate-x-24" />
 
-                <div className="relative flex items-center gap-6">
+                <div className="relative flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
                     <div className="relative">
                         <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-4xl font-bold">
                             {name[0]?.toUpperCase() || 'U'}
@@ -95,7 +95,7 @@ export default function ProfilePage() {
                     <div>
                         <h1 className="text-3xl font-bold">{name || 'User'}</h1>
                         <p className="text-white/80 mt-1">{email}</p>
-                        <div className="flex items-center gap-2 mt-3">
+                        <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mt-3">
                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${planInfo.badge}`}>
                                 <Crown className="w-3 h-3 inline mr-1" />
                                 {userPlan.charAt(0).toUpperCase() + userPlan.slice(1)} Plan
@@ -111,7 +111,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-4 gap-4 mt-8 relative">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 relative">
                     <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
                         <p className="text-2xl font-bold">{stats.messagesSent.toLocaleString()}</p>
                         <p className="text-sm text-white/70 flex items-center justify-center gap-1">
@@ -155,7 +155,7 @@ export default function ProfilePage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-6">Personal Information</h2>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                         <div className="relative">
@@ -259,33 +259,33 @@ export default function ProfilePage() {
                 <h2 className="text-lg font-bold text-gray-900 mb-6">Account Information</h2>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 py-3 border-b border-gray-100">
                         <div>
                             <p className="font-medium text-gray-900">Member Since</p>
                             <p className="text-sm text-gray-500">{joinedDate || 'January 2026'}</p>
                         </div>
-                        <Calendar className="w-5 h-5 text-gray-400" />
+                        <Calendar className="w-5 h-5 text-gray-400 hidden sm:block" />
                     </div>
 
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 py-3 border-b border-gray-100">
                         <div>
                             <p className="font-medium text-gray-900">Current Plan</p>
                             <p className="text-sm text-gray-500">{userPlan.charAt(0).toUpperCase() + userPlan.slice(1)} - ₹{userPlan === 'starter' ? '1,999' : userPlan === 'growth' ? '4,999' : '14,999'}/mo</p>
                         </div>
                         <Link
                             href="/dashboard/billing"
-                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors text-sm"
+                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors text-sm w-full sm:w-auto text-center"
                         >
                             Manage
                         </Link>
                     </div>
 
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 py-3">
                         <div>
                             <p className="font-medium text-gray-900">Account Security</p>
                             <p className="text-sm text-gray-500">Password last changed 30 days ago</p>
                         </div>
-                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm flex items-center gap-2">
+                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2 w-full sm:w-auto">
                             <Key className="w-4 h-4" />
                             Change Password
                         </button>

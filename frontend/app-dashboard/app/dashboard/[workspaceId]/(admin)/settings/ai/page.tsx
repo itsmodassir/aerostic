@@ -30,7 +30,7 @@ export default function AiSettingsPage() {
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
                     <div>
                         <h3 className="font-medium text-gray-900">Enable AI Agent</h3>
                         <p className="text-sm text-gray-500">Allow AI to reply when no automation rules match.</p>

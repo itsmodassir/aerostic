@@ -18,8 +18,9 @@
 *   **External Nodes**: Native integration with Google Sheets, Google Drive (OAuth2), and generic HTTP Request nodes.
 
 ### 💼 Multi-Tier Reseller Ecosystem
-*   **White-Label Support**: Dynamic branding (logos, colors) and custom domain routing per reseller.
-*   **Credit/Wallet Ledger**: Ledger-based billing system for precise credit allocation and usage tracking across sub-tenants.
+*   **White-Label Support**: Dynamic branding (logos, colors) and custom domain routing per reseller via Next.js Edge Middleware (`middleware.ts`).
+*   **Credit/Wallet Ledger**: Ledger-based billing system for precise credit allocation, actively supporting dynamic per-tenant WhatsApp template pricing controls.
+*   **Automated Refunds**: Failed template message deliveries automatically compute and return raw ledger credits directly to a tenant's wallet using real-time Webhook telemetry.
 
 ---
 
@@ -34,6 +35,9 @@ backend/
 │   ├── anomaly-worker/         # Real-time Cluster & Similarity Engine
 │   └── campaign-worker/        # High-throughput Messaging Engine
 └── shared/                     # Reusable Core (Kafka, Redis, Encryption)
+
+frontend/
+└── app-dashboard/              # React/Next.js UI & Subdomain Edge Routing (`app.*`, `admin.*`, `api.*`)
 
 infrastructure/                 # Kafka Cluster, Redis, Nginx & Docker configs
 ```

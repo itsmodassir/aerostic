@@ -136,7 +136,7 @@ export default function BillingPage() {
             </div>
 
             {/* Current Plan Overview */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-sm">
                 <div className="flex flex-col md:flex-row justify-between gap-8">
                     <div className="flex-1">
                         <div className="flex items-center gap-4 mb-4">
@@ -312,8 +312,8 @@ export default function BillingPage() {
             </div>
 
             {/* Invoices */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-8">
+                <div className="p-4 sm:p-6 border-b border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                         <FileText className="w-5 h-5 text-gray-500" />
                         Billing History

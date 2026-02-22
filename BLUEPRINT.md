@@ -16,18 +16,20 @@ The security layer is the project's foundation, ensuring total data isolation an
 
 ### 🌐 System Infrastructure
 - **API Service**: Handles core REST requests, reseller logic, and campaign management.
+- **Frontend Edge Routing**: Next.js `middleware.ts` enforces strict subdomain multitenancy (`app.*`, `admin.*`, `api.*`) at the edge layer.
 - **ML Service**: Dedicated Python engine for real-time anomaly inference and feature engineering.
-- **Webhook Service**: High-throughput service specifically for Meta Graph API webhooks.
+- **Webhook Service**: High-throughput service specifically for Meta Graph API webhooks and automated wallet refunds for failed messages.
 - **Worker Clusters**: Regional BullMQ workers handling bulk campaigns, AI processing, and usage metrics per-tenant.
 - **Event Bus (Kafka)**: The backbone for sub-second security telemetry and platform-wide correlation.
 
 ## 🔄 Business Logic Flows
 
-### 1. The Billing Cycle (Ledger-Based)
+### 1. The Billing Cycle (Ledger-Based & Real-Time)
 Instead of mutable balance fields, Aerostic uses an immutable `UsageEvent` ledger.
 - **Events**: `outgoing_message`, `ai_agent_call`, `document_storage`.
 - **Worker**: `usage-worker` processes events and updates `TenantDailyMetrics`.
 - **Validation**: API checks historical ledger sums before allowing high-cost actions.
+- **Dynamic Pricing**: WhatsApp template messaging costs are fully configurable per tenant via the Admin panel, actively deducting from wallets prior to broadcasts and automatically refunding failed payload deliveries via native webhook parsing.
 
 ### 2. The Automation Engine
 A recursive execution engine that processes visual workflows.

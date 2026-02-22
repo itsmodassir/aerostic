@@ -323,6 +323,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                onClick={() => setIsSidebarOpen(false)}
                                 className={clsx(
                                     'flex items-center rounded-lg text-sm font-medium transition-all duration-200',
                                     isSidebarCollapsed ? 'justify-center p-2.5 mx-2' : 'gap-3 px-3 py-2.5',
@@ -494,7 +495,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                     <div className="py-2">
                                         <Link
                                             href={`/dashboard/${workspaceId}/profile`}
-                                            onClick={() => setShowProfileMenu(false)}
+                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
                                             <User className="w-4 h-4 text-gray-400" />
@@ -502,7 +503,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                         </Link>
                                         <Link
                                             href={`/dashboard/${workspaceId}/billing`}
-                                            onClick={() => setShowProfileMenu(false)}
+                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
                                             <CreditCard className="w-4 h-4 text-gray-400" />
@@ -510,7 +511,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                         </Link>
                                         <Link
                                             href={`/dashboard/${workspaceId}/settings/whatsapp`}
-                                            onClick={() => setShowProfileMenu(false)}
+                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
                                             <Settings className="w-4 h-4 text-gray-400" />
@@ -518,7 +519,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                         </Link>
                                         <Link
                                             href="/docs"
-                                            onClick={() => setShowProfileMenu(false)}
+                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
                                             <HelpCircle className="w-4 h-4 text-gray-400" />
@@ -541,7 +542,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                 </header>
-                <main className="flex-1 p-8 overflow-auto">
+                <main className="flex-1 p-4 md:p-8 overflow-auto">
                     {children}
                 </main>
             </div>
