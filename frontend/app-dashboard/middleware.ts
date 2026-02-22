@@ -1,25 +1,30 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const { pathname, search } = request.nextUrl;
     const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aimstore.in';
 
+    // 0. API Subdomain
+    if (hostname.startsWith(`api.${baseDomain}`)) {
+        if (!pathname.startsWith('/api')) {
+            return NextResponse.rewrite(new URL(`/api${pathname}${search}`, request.url));
+        }
+        return NextResponse.next();
+    }
+
     // 1. Admin Subdomain
     if (hostname.startsWith(`admin.${baseDomain}`)) {
-        if (pathname === '/login') {
-            return NextResponse.rewrite(new URL('/admin/login', request.url));
-        }
-        if (pathname === '/') {
-            return NextResponse.redirect(new URL('/admin', request.url));
+        if (!pathname.startsWith('/admin')) {
+            return NextResponse.rewrite(new URL(`/admin${pathname === '/' ? '' : pathname}${search}`, request.url));
         }
         return NextResponse.next();
     }
 
     // 2. App Subdomain (Main Dashboard / Landing for logged in users)
     if (hostname.startsWith(`app.${baseDomain}`)) {
-        // If visiting root on app subdomain, redirect to a default dashboard or login
+        // If visiting root on app subdomain, redirect to a default dashboard
         if (pathname === '/') {
             return NextResponse.redirect(new URL('/dashboard/default', request.url));
         }
@@ -28,15 +33,14 @@ export function proxy(request: NextRequest) {
 
     // 3. Marketing Domain (Root)
     if (hostname === baseDomain || hostname === `www.${baseDomain}`) {
-        // Redirect explicit dashboard/admin access attempts to correct subdomains
+        // Redirect explicit admin logic to admin subdomain
         if (pathname.startsWith('/admin')) {
-            return NextResponse.redirect(new URL(`https://admin.${baseDomain}${pathname}${search}`, request.url));
+            const strippedPath = pathname.replace('/admin', '') || '/';
+            return NextResponse.redirect(new URL(`https://admin.${baseDomain}${strippedPath}${search}`, request.url));
         }
-        if (pathname.startsWith('/dashboard')) {
-            return NextResponse.redirect(new URL(`https://app.${baseDomain}/dashboard/default`, request.url));
-        }
-        if (pathname === '/login' || pathname === '/register') {
-            return NextResponse.redirect(new URL(`https://app.${baseDomain}${pathname}`, request.url));
+        // Redirect user app logic to app subdomain
+        if (pathname.startsWith('/dashboard') || pathname === '/login' || pathname === '/register') {
+            return NextResponse.redirect(new URL(`https://app.${baseDomain}${pathname}${search}`, request.url));
         }
         return NextResponse.next();
     }
