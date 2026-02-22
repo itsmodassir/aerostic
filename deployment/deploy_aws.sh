@@ -21,7 +21,14 @@ else
     git pull origin main
 fi
 
-# 2. Install Dependencies
+# 2. Sync Environment Variables
+echo "🔑 Syncing environment variables..."
+if [ ! -f ".env" ] && [ -f "apps/backend/.env" ]; then
+    cp apps/backend/.env .env
+    echo "✅ Migrated .env from legacy apps/backend"
+fi
+
+# 2.1 Install Dependencies
 echo "📦 Root dependencies skipped (Monorepo structure)..."
 
 # 3. Build Backend
