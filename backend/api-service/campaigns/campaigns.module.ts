@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { CampaignsService } from "./campaigns.service";
 import { CampaignsController } from "./campaigns.controller";
@@ -9,6 +9,8 @@ import { MessagesModule } from "../messages/messages.module";
 import { BullModule } from "@nestjs/bullmq";
 import { CampaignProcessor } from "./campaigns.processor";
 import { AuditModule } from "../audit/audit.module";
+import { AdminModule } from "../admin/admin.module";
+import { BillingModule } from "../billing/billing.module";
 
 @Module({
   imports: [
@@ -19,8 +21,10 @@ import { AuditModule } from "../audit/audit.module";
     ContactsModule,
     MessagesModule,
     AuditModule,
+    forwardRef(() => AdminModule),
+    forwardRef(() => BillingModule),
   ],
   controllers: [CampaignsController],
   providers: [CampaignsService, CampaignProcessor],
 })
-export class CampaignsModule {}
+export class CampaignsModule { }

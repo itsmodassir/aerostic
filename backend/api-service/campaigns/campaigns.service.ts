@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Campaign } from "./entities/campaign.entity";
@@ -23,7 +23,9 @@ export class CampaignsService {
     private messagesService: MessagesService,
     @InjectQueue("campaign-queue") private campaignQueue: Queue,
     private auditService: AuditService,
+    @Inject(forwardRef(() => WalletService))
     private walletService: WalletService,
+    @Inject(forwardRef(() => AdminConfigService))
     private adminConfigService: AdminConfigService,
   ) { }
 
