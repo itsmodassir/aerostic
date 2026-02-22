@@ -55,6 +55,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { name: 'Messages', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
         { name: 'Campaigns', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
         { name: 'Templates', href: `/dashboard/${workspaceId}/templates`, icon: FileText, permission: 'campaigns:read' },
+        { name: 'Wallet', href: `/dashboard/${workspaceId}/wallet`, icon: CreditCard },
         { name: 'Leads', href: `/dashboard/${workspaceId}/leads`, icon: Target },
         { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
         { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },

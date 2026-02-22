@@ -227,6 +227,22 @@ export class WalletService {
     }
 
     /**
+     * Get transaction history for a tenant
+     */
+    async getTransactions(
+        tenantId: string,
+        limit: number = 20,
+        offset: number = 0
+    ): Promise<[WalletTransaction[], number]> {
+        return this.transactionRepo.findAndCount({
+            where: { tenantId },
+            order: { createdAt: "DESC" },
+            take: limit,
+            skip: offset,
+        });
+    }
+
+    /**
      * Generate SHA-256 for ledger integrity
      */
     private generateTransactionHash(tx: WalletTransaction): string {

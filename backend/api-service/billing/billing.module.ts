@@ -21,6 +21,7 @@ import { BillingSubscriptionController } from "./controllers/billing-subscriptio
 import { BillingApiKeysController } from "./controllers/billing-api-keys.controller";
 import { AdminApiKeysController } from "./controllers/admin-api-keys.controller";
 import { PlansController } from "./controllers/plans.controller";
+import { WalletController } from "./controllers/wallet.controller";
 import { RazorpayWebhookGuard } from "./guards/razorpay-webhook.guard";
 import { AuditModule } from "../audit/audit.module";
 import { UsersModule } from "../users/users.module";
@@ -58,6 +59,7 @@ import { Invoice } from "./entities/invoice.entity";
     BillingApiKeysController,
     AdminApiKeysController,
     PlansController,
+    WalletController,
   ],
   providers: [
     RazorpayService,

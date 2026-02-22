@@ -89,6 +89,7 @@ export default function DashboardPage() {
     const [userName, setUserName] = useState('');
     const [greeting, setGreeting] = useState('');
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
+    const [walletBalance, setWalletBalance] = useState<number>(0);
     const [activeTab, setActiveTab] = useState<'overview' | 'developer' | 'team' | 'settings'>('overview');
     const [membership, setMembership] = useState<any>(null);
     const [resellerStats, setResellerStats] = useState<any>(null);
@@ -141,9 +142,10 @@ export default function DashboardPage() {
 
     const fetchRegularData = async () => {
         try {
-            const [analyticsRes, subscriptionRes] = await Promise.all([
+            const [analyticsRes, subscriptionRes, walletRes] = await Promise.all([
                 api.get('/analytics/overview'),
-                api.get('/billing/subscription')
+                api.get('/billing/subscription'),
+                api.get('/billing/wallet/balance')
             ]);
 
             if (analyticsRes.data) {
@@ -158,6 +160,10 @@ export default function DashboardPage() {
             if (subscriptionRes.data) {
                 const sub = subscriptionRes.data;
                 setUserPlan(sub.plan?.toLowerCase() || 'starter');
+            }
+
+            if (walletRes.data) {
+                setWalletBalance(Number(walletRes.data.balance));
             }
         } catch (e) { }
     };
@@ -246,6 +252,7 @@ export default function DashboardPage() {
                     recentMsgs={recentMsgs}
                     recentCampaigns={recentCampaigns}
                     userPlan={userPlan}
+                    walletBalance={walletBalance}
                 />
             )}
             {activeTab === 'developer' && planFeatures.apiAccess && (
@@ -368,7 +375,7 @@ function PartnerDashboardView({ stats }: { stats: any }) {
 }
 
 // Overview Tab Component
-function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, userPlan }: any) {
+function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, userPlan, walletBalance }: any) {
     const params = useParams();
     const workspaceId = params?.workspaceId || 'default';
     return (
@@ -420,6 +427,26 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                         </div>
                     </div>
                 </div>
+
+                {/* Wallet Balance Card */}
+                <Link href={`/dashboard/${workspaceId}/wallet`} className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-5 text-white relative overflow-hidden group hover:shadow-xl transition-all">
+                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform" />
+                    <div className="relative">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <CreditCard className="w-5 h-5" />
+                                <h3 className="font-bold">Wallet Balance</h3>
+                            </div>
+                            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                        </div>
+                        <div className="flex items-end gap-2 mb-2">
+                            <span className="text-3xl font-extrabold text-white">₹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="text-[10px] uppercase tracking-widest font-bold text-indigo-200">
+                            Available for overages & AI
+                        </div>
+                    </div>
+                </Link>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -427,6 +454,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                 <QuickAction icon={Users2} label="Add Contact" href={`/dashboard/${workspaceId}/contacts`} color="bg-green-500" />
                 <QuickAction icon={Bot} label="AI Agents" href={`/dashboard/${workspaceId}/agents`} color="bg-purple-500" available={planFeatures.aiAgents > 0} />
                 <QuickAction icon={Zap} label="Automation" href={`/dashboard/${workspaceId}/automation`} color="bg-amber-500" />
+                <QuickAction icon={CreditCard} label="My Wallet" href={`/dashboard/${workspaceId}/wallet`} color="bg-indigo-500" />
                 <QuickAction icon={FileText} label="Templates" href={`/dashboard/${workspaceId}/templates`} color="bg-pink-500" />
             </div>
 
