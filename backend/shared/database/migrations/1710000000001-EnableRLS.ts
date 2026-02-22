@@ -46,6 +46,13 @@ export class EnableRLS1710000000001 implements MigrationInterface {
       const column =
         table === "tenants" || table === "users" ? "id" : "tenant_id";
 
+      // Check if column exists
+      const hasColumn = await queryRunner.hasColumn(table, column);
+      if (!hasColumn) {
+        console.warn(`⚠️ Skipping RLS policy for ${table}: column ${column} not found`);
+        continue;
+      }
+
       await queryRunner.query(`
                 DROP POLICY IF EXISTS tenant_isolation_policy ON "${table}"
             `);
