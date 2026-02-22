@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { UsageEvent } from "@shared/database/entities/billing/usage-event.entity";
 import { WalletTransaction } from "@shared/database/entities/billing/wallet-transaction.entity";
@@ -52,7 +52,7 @@ import { AdminModule } from "../admin/admin.module";
     AuditModule,
     UsersModule,
     TenantsModule,
-    AdminModule,
+    forwardRef(() => AdminModule),
   ],
   controllers: [
     BillingController,

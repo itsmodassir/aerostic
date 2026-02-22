@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AdminService } from "./admin.service";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
@@ -72,7 +72,7 @@ import { PlatformAnomalyCluster } from "@shared/database/entities/analytics/plat
       TenantDailyMetric,
     ]),
     AuditModule,
-    BillingModule,
+    forwardRef(() => BillingModule),
     AuthModule,
     UsersModule,
   ],
@@ -109,4 +109,4 @@ import { PlatformAnomalyCluster } from "@shared/database/entities/analytics/plat
     RiskGateway,
   ],
 })
-export class AdminModule {}
+export class AdminModule { }
