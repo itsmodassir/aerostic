@@ -92,9 +92,9 @@ pm2 start backend/dist/webhook-service/main.js --name aerostic-webhook
 pm2 start backend/dist/worker-service/main.js --name aerostic-worker
 
 # Frontend
-PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aerostic-frontend
-if [ -f "frontend/admin-panel/.next/standalone/server.js" ]; then
-    PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aerostic-admin
+PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/frontend/app-dashboard/server.js --name aerostic-frontend
+if [ -f "frontend/admin-panel/.next/standalone/frontend/admin-panel/server.js" ]; then
+    PORT=3002 pm2 start frontend/admin-panel/.next/standalone/frontend/admin-panel/server.js --name aerostic-admin
 else
     echo "⚠️ Admin Panel server.js not found. Skipping PM2 start."
 fi
