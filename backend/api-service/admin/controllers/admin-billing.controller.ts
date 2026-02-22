@@ -29,14 +29,14 @@ export class AdminBillingController {
     return this.billingService.getAllWebhooks();
   }
 
-  @Get("pricing/:tenantId?")
+  @Get(["pricing", "pricing/:tenantId"])
   @SuperAdminOnly()
   async getPricing(@Param("tenantId") tenantId?: string) {
     const rate = await this.billingService.getTemplateRate(tenantId);
     return { templateRate: rate, tenantId: tenantId || "global" };
   }
 
-  @Post("pricing/:tenantId?")
+  @Post(["pricing", "pricing/:tenantId"])
   @SuperAdminOnly()
   async setPricing(
     @Body("rate") rate: number,
