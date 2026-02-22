@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Inject, forwardRef } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -133,10 +133,11 @@ export class AdminService {
     @InjectRepository(WebhookEndpoint)
     private webhookEndpointRepo: Repository<WebhookEndpoint>,
     private auditService: AuditService,
+    @Inject(forwardRef(() => BillingService))
     private billingService: BillingService,
     private configService: ConfigService,
     private encryptionService: EncryptionService,
-  ) {}
+  ) { }
 
   async getAllTenants() {
     return this.tenantRepo.find({
@@ -449,7 +450,7 @@ export class AdminService {
       name: sub.tenant?.name || "Unknown",
       plan: sub.plan
         ? (sub.plan as string).charAt(0).toUpperCase() +
-          (sub.plan as string).slice(1)
+        (sub.plan as string).slice(1)
         : "Starter",
       messages: "0", // We would need a more complex join to get message count per tenant here
       revenue: `₹${sub.priceInr.toLocaleString()}`,

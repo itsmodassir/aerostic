@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";
@@ -22,6 +22,7 @@ export class AdminBillingService {
     @InjectRepository(WebhookEndpoint)
     private webhookEndpointRepo: Repository<WebhookEndpoint>,
     private adminConfigService: AdminConfigService,
+    @Inject(forwardRef(() => WalletService))
     private walletService: WalletService,
   ) { }
 

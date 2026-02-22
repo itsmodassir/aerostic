@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
@@ -38,9 +40,10 @@ export class AdminTenantService {
     @InjectRepository(ResellerConfig)
     private resellerConfigRepo: Repository<ResellerConfig>,
     private auditService: AuditService,
+    @Inject(forwardRef(() => BillingService))
     private billingService: BillingService,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   /**
    * Generates a cryptographically secure random password.
@@ -82,7 +85,7 @@ export class AdminTenantService {
       queryBuilder.andWhere(
         "(tenant.name ILIKE :search OR tenant.slug ILIKE :search)",
         {
-          search: `%${search}%`,
+          search: `% ${search}% `,
         },
       );
     }
@@ -137,10 +140,10 @@ export class AdminTenantService {
       ...tenant,
       owner: owner
         ? {
-            id: owner.id,
-            name: owner.name,
-            email: owner.email,
-          }
+          id: owner.id,
+          name: owner.name,
+          email: owner.email,
+        }
         : null,
     };
   }
@@ -171,7 +174,7 @@ export class AdminTenantService {
       "admin",
       "Administrator",
       "UPDATE_TENANT_PLAN",
-      `Tenant: ${tenant.name}`,
+      `Tenant: ${tenant.name} `,
       tenant.id,
       { oldPlan, newPlan: plan, status },
     );
@@ -225,7 +228,7 @@ export class AdminTenantService {
       "admin",
       "Administrator",
       "REGENERATE_RESELLER_PASSWORD",
-      `User: ${user.email}`,
+      `User: ${user.email} `,
       id,
     );
 
@@ -368,7 +371,7 @@ export class AdminTenantService {
           "admin",
           "Administrator",
           "ONBOARD_RESELLER",
-          `Partner: ${name}`,
+          `Partner: ${name} `,
           savedTenant.id,
           { email, planId, initialCredits },
         )
@@ -408,7 +411,7 @@ export class AdminTenantService {
       "admin",
       "Administrator",
       "UPDATE_TENANT_LIMITS",
-      `Tenant: ${tenant.name}`,
+      `Tenant: ${tenant.name} `,
       tenant.id,
       dto,
     );
@@ -459,7 +462,7 @@ export class AdminTenantService {
           "admin",
           "Administrator",
           "UPDATE_RESELLER",
-          `Partner: ${tenant.name}`,
+          `Partner: ${tenant.name} `,
           tenant.id,
           dto,
         )

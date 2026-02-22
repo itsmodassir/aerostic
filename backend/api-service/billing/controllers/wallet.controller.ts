@@ -6,6 +6,8 @@ import {
     UseGuards,
     UnauthorizedException,
     Query,
+    Inject,
+    forwardRef,
 } from "@nestjs/common";
 import { WalletService } from "../wallet.service";
 import { RazorpayService } from "../razorpay.service";
@@ -20,6 +22,7 @@ export class WalletController {
     constructor(
         private walletService: WalletService,
         private razorpayService: RazorpayService,
+        @Inject(forwardRef(() => AdminConfigService))
         private adminConfigService: AdminConfigService,
     ) { }
 
