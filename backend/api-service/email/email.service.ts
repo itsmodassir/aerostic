@@ -56,4 +56,47 @@ export class EmailService {
       throw error;
     }
   }
+
+  async sendEmailWithConfig(
+    to: string,
+    subject: string,
+    html: string,
+    smtpConfig: {
+      host: string;
+      port: number;
+      secure: boolean;
+      auth: { user: string; pass: string };
+      fromEmail?: string;
+      fromName?: string;
+    },
+  ) {
+    const dynamicTransporter = nodemailer.createTransport({
+      host: smtpConfig.host,
+      port: smtpConfig.port,
+      secure: smtpConfig.secure,
+      auth: {
+        user: smtpConfig.auth.user,
+        pass: smtpConfig.auth.pass,
+      },
+    });
+
+    try {
+      const from = smtpConfig.fromEmail
+        ? `"${smtpConfig.fromName || "Aerostic"}" <${smtpConfig.fromEmail}>`
+        : process.env.SMTP_FROM || '"Aerostic" <no-reply@aimstore.in>';
+
+      const info = await dynamicTransporter.sendMail({
+        from,
+        to,
+        subject,
+        html,
+      });
+
+      this.logger.log(`Email sent via dynamic SMTP: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      this.logger.error(`Failed to send email via dynamic SMTP: ${error.message}`);
+      throw error;
+    }
+  }
 }

@@ -16,6 +16,7 @@ import { MessagesService } from "../messages/messages.service";
 import { AutomationGateway } from "./automation.gateway";
 import { ApiRequestExecutor } from "./executors/api-request.executor";
 import { ActionExecutor } from "./executors/action.executor";
+import { EmailExecutor } from "./executors/email.executor";
 import { ConditionExecutor } from "./executors/condition.executor";
 import { GeminiExecutor } from "./executors/gemini.executor";
 import { LeadUpdateExecutor } from "./executors/lead-update.executor";
@@ -41,13 +42,14 @@ export class WorkflowRunnerService {
     private automationGateway: AutomationGateway,
     private apiExecutor: ApiRequestExecutor,
     private actionExecutor: ActionExecutor,
+    private emailExecutor: EmailExecutor,
     private conditionExecutor: ConditionExecutor,
     private geminiExecutor: GeminiExecutor,
     private leadUpdateExecutor: LeadUpdateExecutor,
     private memoryExecutor: MemoryExecutor,
     private knowledgeExecutor: KnowledgeExecutor,
     private dagService: DAGTraversalService,
-  ) {}
+  ) { }
 
   /**
    * Entry point for executing a workflow
@@ -237,6 +239,9 @@ export class WorkflowRunnerService {
 
       case "action":
         return this.actionExecutor.execute(node, context);
+
+      case "email":
+        return this.emailExecutor.execute(node, context);
 
       case "api_request":
       case "api":

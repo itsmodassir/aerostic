@@ -22,6 +22,7 @@ import { GoogleModule } from "../google/google.module";
 import { AutomationWebhooksController } from "./webhooks.controller";
 import { ApiRequestExecutor } from "./executors/api-request.executor";
 import { ActionExecutor } from "./executors/action.executor";
+import { EmailExecutor } from "./executors/email.executor";
 import { ConditionExecutor } from "./executors/condition.executor";
 import { GeminiExecutor } from "./executors/gemini.executor";
 import { LeadUpdateExecutor } from "./executors/lead-update.executor";
@@ -31,6 +32,8 @@ import { AutomationGateway } from "./automation.gateway";
 
 import { WorkflowVersion } from "./entities/workflow-version.entity";
 import { AutomationExecution } from "./entities/automation-execution.entity";
+import { EmailTemplate } from "./entities/email-template.entity";
+import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
 
 @Module({
   imports: [
@@ -42,6 +45,8 @@ import { AutomationExecution } from "./entities/automation-execution.entity";
       WorkflowMemory,
       WorkflowVersion,
       AutomationExecution,
+      EmailTemplate,
+      Mailbox,
     ]),
     MessagesModule,
     AuditModule,
@@ -62,6 +67,7 @@ import { AutomationExecution } from "./entities/automation-execution.entity";
     VariableResolverService,
     ApiRequestExecutor,
     ActionExecutor,
+    EmailExecutor,
     ConditionExecutor,
     GeminiExecutor,
     LeadUpdateExecutor,
@@ -78,6 +84,7 @@ import { AutomationExecution } from "./entities/automation-execution.entity";
     VariableResolverService,
     ApiRequestExecutor,
     ActionExecutor,
+    EmailExecutor,
     ConditionExecutor,
     GeminiExecutor,
     LeadUpdateExecutor,
@@ -88,4 +95,4 @@ import { AutomationExecution } from "./entities/automation-execution.entity";
     AutomationGateway,
   ],
 })
-export class AutomationModule {}
+export class AutomationModule { }
