@@ -23,7 +23,8 @@ export function proxy(request: NextRequest) {
     }
 
     // 2. App Subdomain (Main Dashboard / Landing for logged in users)
-    if (hostname.startsWith(`app.${baseDomain}`)) {
+    console.log(`[Proxy] Request: ${hostname}${pathname} | Base: ${baseDomain}`);
+    if (hostname.startsWith('app.')) {
         // If visiting root on app subdomain, redirect to a default dashboard
         if (pathname === '/') {
             return NextResponse.redirect(new URL('/dashboard/default', request.url));
