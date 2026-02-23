@@ -24,43 +24,55 @@ export class EmailExecutor implements NodeExecutor {
         const data = node.data; // EmailNodeData
         const tenantId = context.tenantId;
 
+        const smtpSource = data.smtpSource || "system"; // system | personal
+        const contentSource = data.contentSource || "direct"; // direct | template
+
         let to = this.variableResolver.resolve(data.to || "{{contact.email}}", context);
-        let subject = this.variableResolver.resolve(data.subject || "", context);
+        let subject = data.subject || "";
         let body = "";
 
-        // 1. Resolve Body (from Template or direct input)
-        if (data.templateId) {
+        // 1. Resolve Content
+        if (contentSource === "template" && data.templateId) {
             const template = await this.templateRepo.findOne({
                 where: { id: data.templateId, tenantId },
             });
             if (!template) {
                 throw new Error(`Email template not found: ${data.templateId}`);
             }
-            subject = subject || this.variableResolver.resolve(template.subject, context);
-            body = this.variableResolver.resolve(template.content, context);
+            subject = subject || template.subject;
+            body = template.content;
         } else {
-            body = this.variableResolver.resolve(data.body || "", context);
+            body = data.body || "";
         }
+
+        // Resolve variables in final subject and body
+        subject = this.variableResolver.resolve(subject, context);
+        body = this.variableResolver.resolve(body, context);
 
         if (!to || !to.includes("@")) {
             this.logger.warn(`Invalid or missing recipient email: ${to}`);
             return { status: "skipped", reason: "invalid_email" };
         }
 
-        // 2. Fetch Mailbox Config
-        const mailbox = await this.mailboxRepo.findOne({
-            where: {
-                tenantId,
-                isActive: true,
-                ...(data.mailboxId ? { id: data.mailboxId } : {})
-            },
-        });
+        // 2. Fetch Mailbox Config based on smtpSource
+        let mailbox = null;
+        if (smtpSource === "personal") {
+            mailbox = await this.mailboxRepo.findOne({
+                where: {
+                    tenantId,
+                    isActive: true,
+                    ...(data.mailboxId ? { id: data.mailboxId } : {})
+                },
+            });
+        }
 
         if (!mailbox || !mailbox.smtpConfig) {
-            this.logger.warn(`No active mailbox configured for tenant: ${tenantId}`);
-            // Fallback to default system email if configured
+            if (smtpSource === "personal") {
+                this.logger.warn(`Personal mailbox not found or inactive for tenant ${tenantId}. Falling back to default.`);
+            }
+            // Use system default
             await this.emailService.sendEmail(to, subject, body, tenantId);
-            return { status: "sent", provider: "default" };
+            return { status: "sent", provider: "system_default", to, subject };
         }
 
         // 3. Send via Dynamic SMTP
@@ -82,7 +94,7 @@ export class EmailExecutor implements NodeExecutor {
             status: "sent",
             to,
             subject,
-            provider: "dynamic_smtp",
+            provider: "personal_smtp",
             mailbox: mailbox.emailAddress,
         };
     }

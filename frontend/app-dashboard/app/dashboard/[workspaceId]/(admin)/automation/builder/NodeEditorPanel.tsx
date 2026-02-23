@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import api from '@/lib/api';
 import { X, ChevronRight, Info, Zap, Settings2, MessageSquare, Globe, Bot, Cpu, Sparkles, Users, FileSpreadsheet, Mail, Megaphone, Braces, Plus } from 'lucide-react';
 import { WorkflowUIFlowNode } from './page';
 import { VariableInput } from './VariableInput';
@@ -14,9 +15,26 @@ interface NodeEditorPanelProps {
 
 export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, onUpdate, onClose }) => {
     const [localData, setLocalData] = useState(node.data);
+    const [mailboxes, setMailboxes] = useState<any[]>([]);
+    const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
 
     useEffect(() => {
         setLocalData(node.data);
+        if (node.type === 'email') {
+            const fetchData = async () => {
+                try {
+                    const [mbRes, tpRes] = await Promise.all([
+                        api.get('/mailboxes'),
+                        api.get('/email-templates')
+                    ]);
+                    setMailboxes(mbRes.data);
+                    setEmailTemplates(tpRes.data);
+                } catch (err) {
+                    console.error('Failed to fetch email data', err);
+                }
+            };
+            fetchData();
+        }
     }, [node.id, node.data]);
 
     const handleChange = (field: string, value: any) => {
@@ -347,6 +365,133 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
         </div>
     );
 
+    const renderEmailConfig = () => (
+        <div className="space-y-6">
+            <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+                <button
+                    onClick={() => {
+                        handleChange('smtpSource', 'system');
+                        handleChange('mailboxId', null);
+                    }}
+                    className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all ${localData.smtpSource === 'system' || !localData.smtpSource ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    System Email
+                </button>
+                <button
+                    onClick={() => handleChange('smtpSource', 'personal')}
+                    className={`flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all ${localData.smtpSource === 'personal' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    Personal SMTP
+                </button>
+            </div>
+
+            {localData.smtpSource === 'personal' && (
+                <div className="animate-in slide-in-from-top-2 duration-200">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block italic text-blue-500">Choose SMTP</label>
+                    <select
+                        value={localData.mailboxId || ''}
+                        onChange={(e) => handleChange('mailboxId', e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white font-medium"
+                    >
+                        <option value="">Default Active SMTP</option>
+                        {mailboxes.map(mb => (
+                            <option key={mb.id} value={mb.id}>{mb.name} ({mb.emailAddress})</option>
+                        ))}
+                    </select>
+                    {mailboxes.length === 0 && (
+                        <p className="mt-1 text-[10px] text-amber-600 font-medium">No SMTP configurations found in settings.</p>
+                    )}
+                </div>
+            )}
+
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">To (Recipient)</label>
+                <VariableInput
+                    value={localData.to || ''}
+                    onChange={(v) => handleChange('to', v)}
+                    nodes={nodes}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm shadow-sm"
+                    placeholder="{{contact.email}}"
+                />
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Content Source</label>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleChange('contentSource', 'direct')}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${localData.contentSource === 'direct' || !localData.contentSource ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'}`}
+                        >
+                            MESSAGE
+                        </button>
+                        <button
+                            onClick={() => handleChange('contentSource', 'template')}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${localData.contentSource === 'template' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'}`}
+                        >
+                            TEMPLATE
+                        </button>
+                    </div>
+                </div>
+
+                {(localData.contentSource === 'template') ? (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block italic text-purple-500">Select Template</label>
+                            <select
+                                value={localData.templateId || ''}
+                                onChange={(e) => handleChange('templateId', e.target.value)}
+                                className="w-full p-3 rounded-xl border-2 border-purple-100 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all text-sm bg-white font-bold text-purple-900"
+                            >
+                                <option value="">Choose Template...</option>
+                                {emailTemplates.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                            {emailTemplates.length === 0 && (
+                                <p className="mt-1 text-[10px] text-amber-600 font-medium">No email templates found.</p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Subject Overlay</label>
+                            <VariableInput
+                                value={localData.subject || ''}
+                                onChange={(v) => handleChange('subject', v)}
+                                nodes={nodes}
+                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                                placeholder="Overrides template subject if provided"
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Subject</label>
+                            <VariableInput
+                                value={localData.subject || ''}
+                                onChange={(v) => handleChange('subject', v)}
+                                nodes={nodes}
+                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm shadow-sm"
+                                placeholder="Email subject..."
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">HTML / Text Body</label>
+                            <VariableInput
+                                value={localData.body || ''}
+                                onChange={(v) => handleChange('body', v)}
+                                nodes={nodes}
+                                textarea
+                                className="w-full min-h-[150px] p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-mono resize-none bg-gray-50/50"
+                                placeholder="<h1>Hello!</h1>..."
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
     const getIcon = () => {
         switch (node.type) {
             case 'action': return <MessageSquare className="text-blue-600" />;
@@ -411,6 +556,7 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     {node.type === 'lead_update' && renderLeadConfig()}
                     {node.type === 'memory' && renderMemoryConfig()}
                     {node.type === 'knowledge_query' && renderKnowledgeConfig()}
+                    {node.type === 'email' && renderEmailConfig()}
                 </div>
             </div>
 

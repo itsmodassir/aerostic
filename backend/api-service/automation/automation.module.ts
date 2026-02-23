@@ -13,6 +13,8 @@ import { VariableResolverService } from "./variable-resolver.service";
 import { WorkflowExecutionService } from "./workflow-execution.service";
 import { DAGTraversalService } from "./dag-traversal.service";
 import { WorkflowsController } from "./workflows.controller";
+import { EmailTemplatesController } from "./email-templates.controller";
+import { EmailTemplatesService } from "./email-templates.service";
 import { MessagesModule } from "../messages/messages.module";
 import { AuditModule } from "../audit/audit.module";
 import { AiModule } from "../ai/ai.module";
@@ -58,11 +60,13 @@ import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
   controllers: [
     AutomationController,
     WorkflowsController,
+    EmailTemplatesController,
     AutomationWebhooksController,
   ],
   providers: [
     AutomationService,
     WorkflowsService,
+    EmailTemplatesService,
     WorkflowRunnerService,
     VariableResolverService,
     ApiRequestExecutor,
@@ -80,6 +84,7 @@ import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
   exports: [
     AutomationService,
     WorkflowsService,
+    EmailTemplatesService,
     WorkflowRunnerService,
     VariableResolverService,
     ApiRequestExecutor,
