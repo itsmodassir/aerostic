@@ -32,8 +32,6 @@ services:
       - /var/www/aerostic/frontend/landing/dist:/usr/share/nginx/html/landing:ro
       - /var/www/aerostic/frontend/app-dashboard/.next/static:/usr/share/nginx/html/app/_next/static:ro
       - /var/www/aerostic/frontend/app-dashboard/public:/usr/share/nginx/html/app/public:ro
-      - /var/www/aerostic/frontend/admin-panel/.next/static:/usr/share/nginx/html/admin/_next/static:ro
-      - /var/www/aerostic/frontend/admin-panel/public:/usr/share/nginx/html/admin/public:ro
 
   redis:
     image: redis:7-alpine
