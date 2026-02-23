@@ -18,6 +18,7 @@ else
     echo "🔄 Pulling latest changes..."
     cd $APP_DIR
     git checkout main
+    git reset --hard origin/main
     git pull origin main
 fi
 
