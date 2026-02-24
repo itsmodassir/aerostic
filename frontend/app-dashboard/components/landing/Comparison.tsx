@@ -19,7 +19,7 @@ export default function Comparison() {
             <div className="max-w-7xl mx-auto px-6">
                 <div className="text-center max-w-3xl mx-auto mb-20">
                     <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={false}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         className="text-4xl font-bold text-gray-900 mb-6"
@@ -49,7 +49,7 @@ export default function Comparison() {
                             {comparisons.map((row, idx) => (
                                 <motion.tr
                                     key={idx}
-                                    initial={{ opacity: 0, y: 10 }}
+                                    initial={false}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: idx * 0.05 }}

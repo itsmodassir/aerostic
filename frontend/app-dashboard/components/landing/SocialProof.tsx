@@ -40,7 +40,7 @@ export default function SocialProof() {
                     {stats.map((stat, idx) => (
                         <motion.div
                             key={idx}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
@@ -55,7 +55,7 @@ export default function SocialProof() {
                 {/* Testimonials */}
                 <div className="text-center max-w-3xl mx-auto mb-20">
                     <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={false}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
@@ -71,7 +71,7 @@ export default function SocialProof() {
                     {testimonials.map((t, idx) => (
                         <motion.div
                             key={idx}
-                            initial={{ opacity: 0, scale: 0.9 }}
+                            initial={false}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}

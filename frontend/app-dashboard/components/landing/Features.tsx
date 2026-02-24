@@ -63,7 +63,7 @@ export default function Features() {
             <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <div className="text-center max-w-3xl mx-auto mb-20">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
+                        initial={false}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full mb-6"
@@ -72,7 +72,7 @@ export default function Features() {
                         <span className="text-emerald-500 text-sm font-bold uppercase tracking-wider">Powerful Features</span>
                     </motion.div>
                     <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={false}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         className="text-4xl md:text-5xl font-bold text-white mb-6"
@@ -91,7 +91,7 @@ export default function Features() {
                     {features.map((feature, idx) => (
                         <motion.div
                             key={idx}
-                            initial={{ opacity: 0, y: 30 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
@@ -110,7 +110,7 @@ export default function Features() {
                 </div>
 
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     className="mt-20 p-8 rounded-[32px] bg-gradient-to-r from-emerald-500 to-teal-600 flex flex-col md:flex-row items-center justify-between shadow-2xl shadow-emerald-500/20 overflow-hidden relative"

@@ -34,7 +34,7 @@ export default function Problem() {
                 <div className="grid lg:grid-cols-2 gap-16 items-center">
                     <div>
                         <motion.div
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             className="inline-block px-4 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-sm font-bold uppercase tracking-wider mb-6"
@@ -43,7 +43,7 @@ export default function Problem() {
                         </motion.div>
 
                         <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
@@ -62,7 +62,7 @@ export default function Problem() {
                             {painPoints.map((point, idx) => (
                                 <motion.div
                                     key={idx}
-                                    initial={{ opacity: 0, x: -20 }}
+                                    initial={false}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: 0.2 + idx * 0.1 }}
@@ -81,7 +81,7 @@ export default function Problem() {
                     </div>
 
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
+                        initial={false}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
                         className="relative"

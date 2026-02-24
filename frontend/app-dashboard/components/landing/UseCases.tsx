@@ -67,7 +67,7 @@ export default function UseCases() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
                     <div className="max-w-2xl">
                         <motion.h2
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
@@ -95,7 +95,7 @@ export default function UseCases() {
                     {cases.map((item, idx) => (
                         <motion.div
                             key={idx}
-                            initial={{ opacity: 0, scale: 0.95 }}
+                            initial={false}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.05 }}

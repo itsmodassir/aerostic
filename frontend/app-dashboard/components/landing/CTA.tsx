@@ -9,7 +9,7 @@ export default function CTA() {
         <section className="py-24 bg-white relative overflow-hidden">
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={false}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     className="bg-gray-900 rounded-[48px] p-12 md:p-24 text-center relative overflow-hidden shadow-2xl"
@@ -20,7 +20,7 @@ export default function CTA() {
 
                     <div className="relative z-10 max-w-3xl mx-auto">
                         <motion.div
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full mb-8"
@@ -30,7 +30,7 @@ export default function CTA() {
                         </motion.div>
 
                         <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
@@ -43,7 +43,7 @@ export default function CTA() {
                         </motion.h2>
 
                         <motion.p
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.2 }}
@@ -54,7 +54,7 @@ export default function CTA() {
                         </motion.p>
 
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.3 }}
@@ -76,7 +76,7 @@ export default function CTA() {
                         </motion.div>
 
                         <motion.div
-                            initial={{ opacity: 0 }}
+                            initial={false}
                             whileInView={{ opacity: 1 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.5 }}

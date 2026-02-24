@@ -15,7 +15,7 @@ export default function Hero() {
                 <div className="text-center max-w-4xl mx-auto">
                     {/* Badge */}
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                         className="inline-flex items-center space-x-2 bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full mb-8"
@@ -26,7 +26,7 @@ export default function Hero() {
 
                     {/* Headline */}
                     <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
                         className="text-4xl md:text-7xl font-bold tracking-tight text-gray-900 mb-8"
@@ -39,7 +39,7 @@ export default function Hero() {
 
                     {/* Subheading */}
                     <motion.p
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-xl text-gray-600 mb-12 leading-relaxed max-w-2xl mx-auto"
@@ -50,7 +50,7 @@ export default function Hero() {
 
                     {/* CTAs */}
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.3 }}
                         className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-16"
@@ -73,7 +73,7 @@ export default function Hero() {
 
                     {/* Trust Badges */}
                     <motion.div
-                        initial={{ opacity: 0 }}
+                        initial={false}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 1, delay: 0.5 }}
                         className="flex flex-wrap items-center justify-center gap-8 md:gap-12"

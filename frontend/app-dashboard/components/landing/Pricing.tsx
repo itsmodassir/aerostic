@@ -112,7 +112,7 @@ export default function Pricing() {
             <div className="max-w-7xl mx-auto px-6">
                 <div className="text-center max-w-3xl mx-auto mb-20">
                     <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={false}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
@@ -129,7 +129,7 @@ export default function Pricing() {
                     {plans.map((plan, idx) => (
                         <motion.div
                             key={idx}
-                            initial={{ opacity: 0, y: 30 }}
+                            initial={false}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
@@ -198,7 +198,7 @@ export default function Pricing() {
                 <div className="grid lg:grid-cols-2 gap-12">
                     {/* Enterprise Card */}
                     <motion.div
-                        initial={{ opacity: 0, x: -20 }}
+                        initial={false}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden"
@@ -225,7 +225,7 @@ export default function Pricing() {
 
                     {/* Add-ons List */}
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={false}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         className="bg-white rounded-3xl p-10 border border-gray-100 shadow-xl"
