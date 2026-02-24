@@ -46,6 +46,8 @@ export class ResellerController {
     return this.resellerService.updateBranding(req.user.tenantId, dto);
   }
 
+  @Post("allocate-credits")
+  @Roles(TenantRole.OWNER)
   async allocateCredits(
     @Request() req: any,
     @Body("targetTenantId") targetTenantId: string,

@@ -46,6 +46,9 @@ export class ResellerService {
     });
 
     if (!reseller) throw new NotFoundException("Reseller not found");
+    if (reseller.type !== TenantType.RESELLER) {
+      throw new BadRequestException("Tenant is not a reseller");
+    }
 
     const [clients, count] = await this.tenantsRepository.findAndCount({
       where: { resellerId },
@@ -190,6 +193,15 @@ export class ResellerService {
     targetTenantId: string,
     amount: number,
   ) {
+    const normalizedAmount = Number(amount);
+    if (
+      !Number.isFinite(normalizedAmount) ||
+      normalizedAmount <= 0 ||
+      !Number.isInteger(normalizedAmount)
+    ) {
+      throw new BadRequestException("Amount must be a positive integer");
+    }
+
     const reseller = await this.tenantsRepository.findOne({
       where: { id: resellerId },
     });
@@ -198,14 +210,17 @@ export class ResellerService {
     });
 
     if (!reseller || !target) throw new NotFoundException("Tenant not found");
+    if (reseller.type !== TenantType.RESELLER) {
+      throw new BadRequestException("Invalid reseller");
+    }
     if (target.resellerId !== resellerId)
       throw new BadRequestException("Tenant does not belong to this reseller");
 
-    if (reseller.resellerCredits < amount)
+    if (reseller.resellerCredits < normalizedAmount)
       throw new BadRequestException("Insufficient credits");
 
-    reseller.resellerCredits -= amount;
-    target.resellerCredits = (target.resellerCredits || 0) + amount;
+    reseller.resellerCredits -= normalizedAmount;
+    target.resellerCredits = (target.resellerCredits || 0) + normalizedAmount;
 
     await this.tenantsRepository.save([reseller, target]);
     return { success: true, remainingCredits: reseller.resellerCredits };
