@@ -78,6 +78,20 @@ const PLAN_FEATURES = {
     },
 };
 
+function normalizePlan(planName: string | undefined): 'starter' | 'growth' | 'enterprise' {
+    const normalized = (planName || '').toLowerCase().trim();
+    if (normalized.includes('growth')) return 'growth';
+    if (
+        normalized.includes('enterprise') ||
+        normalized.includes('professional') ||
+        normalized.includes('pro') ||
+        normalized.includes('agency')
+    ) {
+        return 'enterprise';
+    }
+    return 'starter';
+}
+
 export default function DashboardPage() {
     const [stats, setStats] = useState<any>(null);
     const [recentMsgs, setRecentMsgs] = useState<any[]>([]);
@@ -93,6 +107,8 @@ export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState<'overview' | 'developer' | 'team' | 'settings'>('overview');
     const [membership, setMembership] = useState<any>(null);
     const [resellerStats, setResellerStats] = useState<any>(null);
+    const [resellerStatsLoading, setResellerStatsLoading] = useState(false);
+    const [resellerStatsError, setResellerStatsError] = useState<string | null>(null);
     const params = useParams();
     const workspaceId = params?.workspaceId || 'default';
 
@@ -116,11 +132,13 @@ export default function DashboardPage() {
                     const memData = await memRes.json();
                     setMembership(memData);
 
-                    if (memData.tenantType === 'reseller') {
+                    if (memData?.tenantType === 'reseller') {
                         fetchResellerData();
                     } else {
                         fetchRegularData();
                     }
+                } else {
+                    fetchRegularData();
                 }
             } catch (e) {
                 console.error('Init failed', e);
@@ -132,12 +150,20 @@ export default function DashboardPage() {
     }, [workspaceId]);
 
     const fetchResellerData = async () => {
+        setResellerStatsLoading(true);
+        setResellerStatsError(null);
         try {
             const res = await fetch('/api/v1/reseller/stats', { credentials: 'include' });
             if (res.ok) {
                 setResellerStats(await res.json());
+            } else {
+                setResellerStatsError('Could not load reseller stats.');
             }
-        } catch (e) { }
+        } catch (e) {
+            setResellerStatsError('Could not load reseller stats.');
+        } finally {
+            setResellerStatsLoading(false);
+        }
     };
 
     const fetchRegularData = async () => {
@@ -159,7 +185,7 @@ export default function DashboardPage() {
 
             if (subscriptionRes.data) {
                 const sub = subscriptionRes.data;
-                setUserPlan(sub.plan?.toLowerCase() || 'starter');
+                setUserPlan(normalizePlan(sub.plan));
             }
 
             if (walletRes.data) {
@@ -168,7 +194,7 @@ export default function DashboardPage() {
         } catch (e) { }
     };
 
-    const planFeatures = PLAN_FEATURES[userPlan];
+    const planFeatures = PLAN_FEATURES[userPlan] || PLAN_FEATURES.starter;
     const usagePercent = planFeatures.messagesLimit > 0
         ? Math.min((messagesUsed / planFeatures.messagesLimit) * 100, 100)
         : 0;
@@ -188,7 +214,14 @@ export default function DashboardPage() {
     }
 
     if (membership?.tenantType === 'reseller') {
-        return <PartnerDashboardView stats={resellerStats} />;
+        return (
+            <PartnerDashboardView
+                stats={resellerStats}
+                isLoading={resellerStatsLoading}
+                error={resellerStatsError}
+                onRetry={fetchResellerData}
+            />
+        );
     }
 
     return (
@@ -268,15 +301,39 @@ export default function DashboardPage() {
     );
 }
 
-function PartnerDashboardView({ stats }: { stats: any }) {
+function PartnerDashboardView({
+    stats,
+    isLoading,
+    error,
+    onRetry,
+}: {
+    stats: any;
+    isLoading: boolean;
+    error: string | null;
+    onRetry: () => void;
+}) {
     const params = useParams();
     const workspaceId = params?.workspaceId || 'default';
 
-    if (!stats) return (
+    if (isLoading && !stats) return (
         <div className="flex items-center justify-center min-h-[300px]">
             <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
         </div>
     );
+
+    if (!stats) {
+        return (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+                <p className="text-sm text-red-700">{error || 'Unable to load partner dashboard.'}</p>
+                <button
+                    onClick={onRetry}
+                    className="mt-3 inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                >
+                    Try again
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

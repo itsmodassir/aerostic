@@ -35,6 +35,7 @@ import * as bcrypt from "bcrypt";
 import { Throttle } from "@nestjs/throttler";
 import { Domain } from "@shared/database/entities/core/domain.entity";
 import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
+import { validate as isUuid } from "uuid";
 
 class LoginDto {
   @IsNotEmpty()
@@ -494,19 +495,46 @@ export class AuthController {
   ) {
     this.logger.debug(`HEADERS: ${JSON.stringify(req.headers)}`);
     res.setHeader("Cache-Control", "no-store");
+
+    // TenantGuard enforces isolation but does not hydrate membership details.
+    // Resolve membership here to ensure frontend always gets tenant context.
+    const tenantId = req.user?.tenantId;
+    const whereClause =
+      tenantId && isUuid(tenantId)
+        ? { userId: req.user?.id, tenantId }
+        : { userId: req.user?.id };
+
+    const membership = await this.membershipRepo.findOne({
+      where: whereClause as any,
+      relations: [
+        "tenant",
+        "tenant.reseller",
+        "tenant.reseller.resellerConfig",
+        "tenant.resellerConfig",
+        "roleEntity",
+        "roleEntity.rolePermissions",
+        "roleEntity.rolePermissions.permission",
+      ],
+      order: { createdAt: "ASC" },
+    });
+
     const branding =
-      req.membership?.tenant?.type === "reseller"
-        ? req.membership?.tenant?.resellerConfig
-        : req.membership?.tenant?.reseller?.resellerConfig;
+      membership?.tenant?.type === TenantType.RESELLER
+        ? membership?.tenant?.resellerConfig
+        : membership?.tenant?.reseller?.resellerConfig;
+    const permissions =
+      membership?.roleEntity?.rolePermissions?.map(
+        (rp: any) => rp.permission?.key,
+      )?.filter(Boolean) || [];
 
     this.logger.log(
-      `Returning membership for ${req.membership?.tenant?.slug} (Type: ${req.membership?.tenant?.type})`,
+      `Returning membership for ${membership?.tenant?.slug} (Type: ${membership?.tenant?.type})`,
     );
     return {
-      ...req.membership,
-      tenantType: req.membership?.tenant?.type,
+      ...membership,
+      tenantType: membership?.tenant?.type,
       branding,
-      permissions: req.permissions, // Resolved in TenantGuard
+      permissions,
     };
   }
 
