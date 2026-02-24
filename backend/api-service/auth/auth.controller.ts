@@ -16,11 +16,10 @@ import {
 import type { Response } from "express";
 import { AuthService } from "./auth.service";
 import { UsersService } from "../users/users.service";
-import { TenantsService } from "../tenants/tenants.service";
 import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
 import { AuditLog } from "@shared/database/entities/core/audit-log.entity";
 import { MailService } from "@shared/mail.service";
-import { IsNotEmpty, IsEmail, Matches } from "class-validator";
+import { IsNotEmpty, IsEmail, Matches, MinLength } from "class-validator";
 import {
   TenantMembership,
   TenantRole,
@@ -31,9 +30,11 @@ import { Repository, DataSource } from "typeorm";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { TenantGuard } from "@shared/guards/tenant.guard";
 import { User, UserRole } from "@shared/database/entities/core/user.entity";
-import { Tenant } from "@shared/database/entities/core/tenant.entity";
+import { Tenant, TenantType } from "@shared/database/entities/core/tenant.entity";
 import * as bcrypt from "bcrypt";
 import { Throttle } from "@nestjs/throttler";
+import { Domain } from "@shared/database/entities/core/domain.entity";
+import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
 
 class LoginDto {
   @IsNotEmpty()
@@ -76,6 +77,25 @@ class RegisterDto {
   otp?: string; // Optional for initiation, required for finalization
 }
 
+class ForgotPasswordDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+}
+
+class ResetPasswordDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  otp: string;
+
+  @IsNotEmpty()
+  @MinLength(8)
+  newPassword: string;
+}
+
 @Controller("auth")
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -86,6 +106,12 @@ export class AuthController {
     private membershipRepo: Repository<TenantMembership>,
     @InjectRepository(Role)
     private roleRepo: Repository<Role>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
+    @InjectRepository(Domain)
+    private domainRepo: Repository<Domain>,
+    @InjectRepository(ResellerConfig)
+    private resellerConfigRepo: Repository<ResellerConfig>,
     private auditService: AuditService,
     private dataSource: DataSource,
     private mailService: MailService,
@@ -351,6 +377,113 @@ export class AuthController {
       }
       throw error;
     }
+  }
+
+  @Get("branding")
+  async getBranding(@Query("host") host?: string) {
+    const fallback = {
+      brandName: "Aerostic",
+      logo: null,
+      favicon: null,
+      primaryColor: "#2563eb",
+      supportEmail: "support@aimstore.in",
+    };
+
+    const normalizedHost = host?.toLowerCase().split(":")[0]?.trim();
+    if (!normalizedHost) {
+      return fallback;
+    }
+
+    const baseDomain = (process.env.BASE_DOMAIN || "aimstore.in").toLowerCase();
+    const firstPartyHosts = new Set([
+      baseDomain,
+      `www.${baseDomain}`,
+      `app.${baseDomain}`,
+      `admin.${baseDomain}`,
+      `api.${baseDomain}`,
+    ]);
+
+    if (
+      firstPartyHosts.has(normalizedHost) ||
+      normalizedHost === "localhost" ||
+      normalizedHost.endsWith(".localhost")
+    ) {
+      return fallback;
+    }
+
+    let config = await this.resellerConfigRepo.findOne({
+      where: { domain: normalizedHost },
+    });
+
+    if (!config) {
+      const domain = await this.domainRepo.findOne({
+        where: { hostname: normalizedHost },
+        relations: ["tenant", "tenant.reseller"],
+      });
+
+      if (domain?.tenant) {
+        const brandingTenantId =
+          domain.tenant.type === TenantType.RESELLER
+            ? domain.tenant.id
+            : domain.tenant.resellerId;
+
+        if (brandingTenantId) {
+          config = await this.resellerConfigRepo.findOne({
+            where: { tenantId: brandingTenantId },
+          });
+        }
+      }
+    }
+
+    if (!config) {
+      return fallback;
+    }
+
+    return {
+      brandName: config.brandName || fallback.brandName,
+      logo: config.logo || fallback.logo,
+      favicon: config.favicon || fallback.favicon,
+      primaryColor: config.primaryColor || fallback.primaryColor,
+      supportEmail: config.supportEmail || fallback.supportEmail,
+    };
+  }
+
+  @Post("password/forgot")
+  @Throttle({ auth: { limit: 5, ttl: 3600000 } })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const user = await this.usersService.findOneByEmail(dto.email);
+
+    // Avoid account enumeration: always return success, only send OTP for known users.
+    if (user) {
+      const otp = await this.authService.generateOtp(dto.email);
+      await this.mailService.sendOtpEmail(dto.email, otp);
+    }
+
+    return {
+      success: true,
+      message: "If an account exists, a reset code has been sent.",
+    };
+  }
+
+  @Post("password/reset")
+  @Throttle({ auth: { limit: 5, ttl: 3600000 } })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const isValidOtp = await this.authService.verifyOtp(dto.email, dto.otp);
+    if (!isValidOtp) {
+      throw new BadRequestException("Invalid or expired verification code");
+    }
+
+    const user = await this.usersService.findOneByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException("Invalid reset request");
+    }
+
+    const salt = await bcrypt.genSalt();
+    user.passwordHash = await bcrypt.hash(dto.newPassword, salt);
+    await this.userRepo.save(user);
+    await this.authService.revokeAllSessionsForUser(user.id);
+
+    return { success: true, message: "Password reset successfully" };
   }
 
   @Get("membership")

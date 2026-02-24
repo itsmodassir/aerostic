@@ -73,6 +73,8 @@ services:
       dockerfile: ml-service/Dockerfile
     container_name: aerostic-ml
     restart: always
+    ports:
+      - "8000:8000"
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379

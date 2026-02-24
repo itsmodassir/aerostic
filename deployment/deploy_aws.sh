@@ -80,9 +80,9 @@ pm2 start backend/dist/worker-service/main.js --name aerostic-worker
 # Frontend
 PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/frontend/app-dashboard/server.js --name aerostic-frontend
 
-# Nginx (Docker)
+# Nginx + ML Service (Docker)
 cd infrastructure/docker
-docker-compose up -d --force-recreate nginx
+docker-compose up -d --build --force-recreate nginx ml-service redis postgres kafka zookeeper
 cd ../..
 
 pm2 save

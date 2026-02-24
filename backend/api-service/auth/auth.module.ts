@@ -15,6 +15,9 @@ import { AuditModule } from "../audit/audit.module";
 import { UserSession } from "./entities/user-session.entity";
 import { AuthorizationModule } from "@shared/authorization/authorization.module";
 import { CommonModule } from "@shared/common.module";
+import { User } from "@shared/database/entities/core/user.entity";
+import { Domain } from "@shared/database/entities/core/domain.entity";
+import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
 
 @Module({
   imports: [
@@ -23,7 +26,14 @@ import { CommonModule } from "@shared/common.module";
     AuditModule,
     CommonModule,
     AuthorizationModule,
-    TypeOrmModule.forFeature([TenantMembership, Role, UserSession]), // Required for AuthController and AuthService injection
+    TypeOrmModule.forFeature([
+      TenantMembership,
+      Role,
+      UserSession,
+      User,
+      Domain,
+      ResellerConfig,
+    ]), // Required for AuthController and AuthService injection
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
