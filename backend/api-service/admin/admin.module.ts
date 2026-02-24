@@ -20,6 +20,7 @@ import { TenantDailyMetric } from "@shared/database/entities/analytics/tenant-da
 
 import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
 import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
+import { Wallet } from "@shared/database/entities/billing/wallet.entity";
 
 import { BillingModule } from "../billing/billing.module";
 
@@ -70,6 +71,7 @@ import { PlatformAnomalyCluster } from "@shared/database/entities/analytics/plat
       PlatformAnomalyCluster,
       SystemDailyMetric,
       TenantDailyMetric,
+      Wallet,
     ]),
     AuditModule,
     forwardRef(() => BillingModule),
