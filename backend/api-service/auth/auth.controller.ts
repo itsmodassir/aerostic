@@ -187,10 +187,11 @@ export class AuthController {
         workspaceName: membership?.tenant?.name,
       };
     } catch (error) {
-      this.logger.error("Login CRASH:", error.stack);
       if (error instanceof UnauthorizedException) {
+        this.logger.warn(`Failed login attempt for ${loginDto.email}: ${error.message}`);
         throw error;
       }
+      this.logger.error("Login CRASH:", error.stack);
       throw new Error("Internal server error during login");
     }
   }
