@@ -25,7 +25,7 @@ export class AuthService {
     private membershipRepository: Repository<TenantMembership>,
     @InjectRepository(UserSession)
     private sessionRepo: Repository<UserSession>,
-  ) {}
+  ) { }
 
   async generateOtp(email: string): Promise<string> {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -82,13 +82,14 @@ export class AuthService {
     req: Request,
     isImpersonation = false,
     impersonatedBy?: string,
+    tenantId?: string,
   ): Promise<{ session: UserSession; refreshToken: string }> {
     const refreshToken = crypto.randomBytes(40).toString("hex");
     const refreshTokenHash = this.hashToken(refreshToken);
 
     const session = this.sessionRepo.create({
       userId: user.id,
-      tenantId: user.tenantId,
+      tenantId: tenantId || user.tenantId,
       refreshTokenHash,
       ipAddress: (req as any).ip,
       userAgent: (req as any).headers["user-agent"],
@@ -107,6 +108,7 @@ export class AuthService {
       req,
       extraPayload.isImpersonation,
       extraPayload.impersonatedBy,
+      extraPayload.tenantId || user.tenantId,
     );
 
     const payload: JwtPayload = {
@@ -114,7 +116,7 @@ export class AuthService {
       sub: user.id,
       id: user.id,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: extraPayload.tenantId || user.tenantId,
       sessionId: session.id,
       tokenVersion: user.tokenVersion,
       ...extraPayload,

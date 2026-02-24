@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { Tenant } from "../../tenants/entities/tenant.entity";
+import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { Conversation } from "./conversation.entity";
 
 @Entity("messages")

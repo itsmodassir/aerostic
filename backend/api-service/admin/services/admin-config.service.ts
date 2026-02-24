@@ -61,8 +61,44 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
   },
   "whatsapp.template_rate_inr": {
     value: "0.80",
-    description: "Charge per WhatsApp Template message (INR)",
-    category: "whatsapp",
+    description: "Global Charge per WhatsApp Template message (INR)",
+    category: "billing",
+    isSecret: false,
+  },
+  "whatsapp.marketing_rate_meta": {
+    value: "0.72",
+    description: "Meta Price for Marketing Template (INR)",
+    category: "billing",
+    isSecret: false,
+  },
+  "whatsapp.marketing_rate_custom": {
+    value: "0.80",
+    description: "Platform Price for Marketing Template (INR)",
+    category: "billing",
+    isSecret: false,
+  },
+  "whatsapp.utility_rate_meta": {
+    value: "0.30",
+    description: "Meta Price for Utility Template (INR)",
+    category: "billing",
+    isSecret: false,
+  },
+  "whatsapp.utility_rate_custom": {
+    value: "0.40",
+    description: "Platform Price for Utility Template (INR)",
+    category: "billing",
+    isSecret: false,
+  },
+  "whatsapp.auth_rate_meta": {
+    value: "0.30",
+    description: "Meta Price for Authentication Template (INR)",
+    category: "billing",
+    isSecret: false,
+  },
+  "whatsapp.auth_rate_custom": {
+    value: "0.35",
+    description: "Platform Price for Authentication Template (INR)",
+    category: "billing",
     isSecret: false,
   },
 

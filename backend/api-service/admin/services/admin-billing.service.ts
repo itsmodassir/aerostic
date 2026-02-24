@@ -9,6 +9,7 @@ import {
 import { WebhookEndpoint } from "../../billing/entities/webhook-endpoint.entity";
 import { AdminConfigService } from "./admin-config.service";
 import { WalletService } from "../../billing/wallet.service";
+import { Wallet } from "@shared/database/entities/billing/wallet.entity";
 import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
 import { TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
 
@@ -24,6 +25,8 @@ export class AdminBillingService {
     private adminConfigService: AdminConfigService,
     @Inject(forwardRef(() => WalletService))
     private walletService: WalletService,
+    @InjectRepository(Wallet)
+    private walletRepo: Repository<Wallet>,
   ) { }
 
   async getTemplateRate(tenantId?: string): Promise<number> {
@@ -239,5 +242,48 @@ export class AdminBillingService {
       })),
       recentTransactions,
     };
+  }
+  async getAllWallets(limit: number = 50, offset: number = 0) {
+    const [wallets, total] = await this.walletRepo.findAndCount({
+      relations: ["tenant", "accounts"],
+      order: { createdAt: "DESC" },
+      take: limit,
+      skip: offset,
+    });
+
+    return {
+      total,
+      limit,
+      offset,
+      wallets: wallets.map(w => ({
+        id: w.id,
+        tenantId: w.tenantId,
+        tenantName: w.tenant?.name || "Unknown",
+        status: w.status,
+        balances: w.accounts?.map((a: any) => ({
+          type: a.type,
+          balance: parseFloat(a.balance.toString())
+        })) || []
+      }))
+    };
+  }
+
+  async getTemplatePricing() {
+    const keys = [
+      "whatsapp.marketing_rate_meta", "whatsapp.marketing_rate_custom",
+      "whatsapp.utility_rate_meta", "whatsapp.utility_rate_custom",
+      "whatsapp.auth_rate_meta", "whatsapp.auth_rate_custom",
+      "whatsapp.template_rate_inr"
+    ];
+
+    const result: any = {};
+    for (const key of keys) {
+      result[key] = await this.adminConfigService.getConfigValue(key);
+    }
+    return result;
+  }
+
+  async updateTemplatePricing(updates: Record<string, string>, actorId: string) {
+    return this.adminConfigService.setConfig(updates, actorId);
   }
 }

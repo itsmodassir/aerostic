@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { User, UserRole } from "./entities/user.entity";
+import { User, UserRole } from "@shared/database/entities/core/user.entity";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
 import * as bcrypt from "bcrypt";

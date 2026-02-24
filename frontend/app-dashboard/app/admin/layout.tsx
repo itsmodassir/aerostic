@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    LayoutDashboard, Users, CreditCard, BarChart3, Settings, Shield,
+    LayoutDashboard, Users, CreditCard, DollarSign, BarChart3, Settings, Shield,
     FileText, Activity, Bell, Database, Globe, Key, Webhook,
     MessageSquare, AlertTriangle, Server, LogOut, Menu, X
 } from 'lucide-react';
@@ -67,7 +67,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Tenants', href: '/admin/tenants', icon: Users },
         { name: 'Resellers', href: '/admin/resellers', icon: Globe },
         { name: 'Plans', href: '/admin/plans', icon: Shield },
+        { name: 'Wallets', href: '/admin/wallets', icon: CreditCard },
         { name: 'Billing & Revenue', href: '/admin/billing', icon: CreditCard },
+        { name: 'Pricing', href: '/admin/billing/pricing', icon: DollarSign },
         { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
         { name: 'Security Command', href: '/admin/risk', icon: Shield },
         { name: 'Messages', href: '/admin/messages', icon: MessageSquare },

@@ -14,8 +14,8 @@ import {
   Tenant,
   TenantType,
 } from "@shared/database/entities/core/tenant.entity";
-import { ResellerConfig } from "../../tenants/entities/reseller-config.entity";
-import { User, UserRole } from "../../users/entities/user.entity";
+import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
+import { User, UserRole } from "@shared/database/entities/core/user.entity";
 import { AuditService } from "../../audit/audit.service";
 import { BillingService } from "../../billing/billing.service";
 import {

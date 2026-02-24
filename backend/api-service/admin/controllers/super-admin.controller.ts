@@ -97,6 +97,7 @@ export class SuperAdminController {
       {
         impersonatedBy: adminUser.id,
         isImpersonation: true,
+        tenantId: tenantId,
       },
     );
 

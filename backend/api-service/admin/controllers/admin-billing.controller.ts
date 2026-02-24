@@ -17,6 +17,24 @@ export class AdminBillingController {
     return this.billingService.getBillingStats();
   }
 
+  @Get("wallets")
+  @SuperAdminOnly()
+  async getWallets() {
+    return this.billingService.getAllWallets();
+  }
+
+  @Get("pricing")
+  @SuperAdminOnly()
+  async getPricing() {
+    return this.billingService.getTemplatePricing();
+  }
+
+  @Post("pricing")
+  @SuperAdminOnly()
+  async updatePricing(@Body() updates: Record<string, string>) {
+    return this.billingService.updateTemplatePricing(updates, "admin");
+  }
+
   @Get("api-keys")
   @SuperAdminOnly()
   async getApiKeys() {
@@ -27,23 +45,6 @@ export class AdminBillingController {
   @SuperAdminOnly()
   async getWebhooks() {
     return this.billingService.getAllWebhooks();
-  }
-
-  @Get(["pricing", "pricing/:tenantId"])
-  @SuperAdminOnly()
-  async getPricing(@Param("tenantId") tenantId?: string) {
-    const rate = await this.billingService.getTemplateRate(tenantId);
-    return { templateRate: rate, tenantId: tenantId || "global" };
-  }
-
-  @Post(["pricing", "pricing/:tenantId"])
-  @SuperAdminOnly()
-  async setPricing(
-    @Body("rate") rate: number,
-    @Param("tenantId") tenantId?: string
-  ) {
-    await this.billingService.setTemplateRate(rate, tenantId);
-    return { success: true, rate, tenantId: tenantId || "global" };
   }
 
   @Post("wallets/:tenantId/fund")

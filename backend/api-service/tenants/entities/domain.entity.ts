@@ -8,7 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { Tenant } from "./tenant.entity";
+import { Tenant } from "@shared/database/entities/core/tenant.entity";
 
 @Entity("domains")
 export class Domain {

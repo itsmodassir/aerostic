@@ -10,6 +10,7 @@ import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
 import { Message } from "@shared/database/entities/messaging/message.entity";
 import { Contact } from "@shared/database/entities/core/contact.entity";
 import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
+import { Template } from "../templates/entities/template.entity";
 import { MetaToken } from "../meta/entities/meta-token.entity"; // Need to decrypt
 import { SendMessageDto } from "./dto/send-message.dto";
 import axios from "axios";
@@ -36,6 +37,8 @@ export class MessagesService {
     private contactRepo: Repository<Contact>,
     @InjectRepository(Conversation)
     private conversationRepo: Repository<Conversation>,
+    @InjectRepository(Template)
+    private templateRepo: Repository<Template>,
     private messagesGateway: MessagesGateway,
     private auditService: AuditService,
     private encryptionService: EncryptionService,
@@ -122,8 +125,26 @@ export class MessagesService {
     let templateRate = 0;
     if (dto.type === "template" && dto.tenantId && !dto.skipBilling) {
       try {
+        // 1. Resolve Template Category
+        const templateName = dto.payload.name;
+        const template = await this.templateRepo.findOne({
+          where: { tenantId: dto.tenantId, name: templateName }
+        });
+
+        const category = template?.category?.toLowerCase() || "marketing"; // Fallback to marketing
+
+        // 2. Map Category to Rate Key
+        let rateKey = "whatsapp.template_rate_inr";
+        if (category === "marketing") {
+          rateKey = "whatsapp.marketing_rate_custom";
+        } else if (category === "utility") {
+          rateKey = "whatsapp.utility_rate_custom";
+        } else if (category === "authentication") {
+          rateKey = "whatsapp.auth_rate_custom";
+        }
+
         const rateStr = await this.adminConfigService.getConfigValue(
-          "whatsapp.template_rate_inr",
+          rateKey,
           dto.tenantId
         );
         templateRate = parseFloat(rateStr || "0.80");
@@ -136,7 +157,7 @@ export class MessagesService {
           {
             referenceType: "TEMPLATE_MESSAGE_SEND",
             referenceId: `msg_${Date.now()}`,
-            description: `Template message sent to ${dto.to}`,
+            description: `Template (${category}) sent to ${dto.to}`,
           }
         );
       } catch (error) {

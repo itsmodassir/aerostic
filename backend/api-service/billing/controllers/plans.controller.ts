@@ -9,14 +9,14 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { PlansService } from "../plans.service";
-import { Plan } from "../entities/plan.entity";
+import { Plan } from "@shared/database/entities/billing/plan.entity";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { SuperAdminGuard } from "@shared/guards/super-admin.guard";
 
 @Controller("admin/plans")
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
 export class PlansController {
-  constructor(private readonly plansService: PlansService) {}
+  constructor(private readonly plansService: PlansService) { }
 
   @Get()
   findAll() {
