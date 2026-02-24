@@ -268,7 +268,7 @@ export class AdminBillingService {
     };
   }
 
-  async getTemplatePricing() {
+  async getTemplatePricing(tenantId?: string) {
     const keys = [
       "whatsapp.marketing_rate_meta", "whatsapp.marketing_rate_custom",
       "whatsapp.utility_rate_meta", "whatsapp.utility_rate_custom",
@@ -278,12 +278,22 @@ export class AdminBillingService {
 
     const result: any = {};
     for (const key of keys) {
-      result[key] = await this.adminConfigService.getConfigValue(key);
+      result[key] = await this.adminConfigService.getConfigValue(key, tenantId);
     }
     return result;
   }
 
-  async updateTemplatePricing(updates: Record<string, string>, actorId: string) {
-    return this.adminConfigService.setConfig(updates, actorId);
+  async updateTemplatePricing(updates: Record<string, string>, actorId: string, tenantId?: string) {
+    return this.adminConfigService.setConfig(updates, actorId, tenantId);
+  }
+
+  async resetTemplatePricing(tenantId: string) {
+    const keys = [
+      "whatsapp.marketing_rate_meta", "whatsapp.marketing_rate_custom",
+      "whatsapp.utility_rate_meta", "whatsapp.utility_rate_custom",
+      "whatsapp.auth_rate_meta", "whatsapp.auth_rate_custom",
+      "whatsapp.template_rate_inr"
+    ];
+    return this.adminConfigService.removeConfig(keys, tenantId);
   }
 }

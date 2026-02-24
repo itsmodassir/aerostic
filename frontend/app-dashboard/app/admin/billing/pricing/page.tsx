@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import {
     DollarSign, Save, Loader2, RefreshCw, AlertCircle,
     CheckCircle2, Info, ArrowRight, ShieldCheck, Zap,
-    MessageSquare, Smartphone, Key
+    MessageSquare, Smartphone, Key, Search, User, X,
+    ChevronDown, Globe
 } from 'lucide-react';
 
 interface PricingConfig {
@@ -23,10 +24,19 @@ export default function AdminPricingPage() {
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-    const fetchPricing = async () => {
+    const [selectedTenant, setSelectedTenant] = useState<{ id: string, name: string } | null>(null);
+    const [tenantSearch, setTenantSearch] = useState('');
+    const [tenants, setTenants] = useState<{ id: string, name: string }[]>([]);
+    const [searchingTenants, setSearchingTenants] = useState(false);
+    const [showTenantDropdown, setShowTenantDropdown] = useState(false);
+
+    const fetchPricing = async (tenantId?: string) => {
         setLoading(true);
         try {
-            const res = await fetch('/api/v1/admin/billing/pricing', { credentials: 'include' });
+            const url = tenantId
+                ? `/api/v1/admin/billing/pricing?tenantId=${tenantId}`
+                : '/api/v1/admin/billing/pricing';
+            const res = await fetch(url, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch pricing');
             const data = await res.json();
             setConfig(data);
@@ -38,16 +48,56 @@ export default function AdminPricingPage() {
         }
     };
 
+    const searchTenants = async (query: string) => {
+        if (query.length < 2) {
+            setTenants([]);
+            return;
+        }
+        setSearchingTenants(true);
+        try {
+            const res = await fetch(`/api/v1/admin/tenants?search=${query}&limit=5`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTenants(data.data || []);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSearchingTenants(false);
+        }
+    };
+
     useEffect(() => {
-        fetchPricing();
+        const handleClickOutside = (event: MouseEvent) => {
+            const tenantSelector = document.getElementById('tenant-selector');
+            if (tenantSelector && !tenantSelector.contains(event.target as Node)) {
+                setShowTenantDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        fetchPricing(selectedTenant?.id);
+    }, [selectedTenant?.id]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (tenantSearch) searchTenants(tenantSearch);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [tenantSearch]);
 
     const handleUpdate = async () => {
         if (!config) return;
         setSaving(true);
         setStatus(null);
         try {
-            const res = await fetch('/api/v1/admin/billing/pricing', {
+            const url = selectedTenant?.id
+                ? `/api/v1/admin/billing/pricing?tenantId=${selectedTenant.id}`
+                : '/api/v1/admin/billing/pricing';
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -56,11 +106,35 @@ export default function AdminPricingPage() {
 
             if (!res.ok) throw new Error('Update failed');
 
-            setStatus({ type: 'success', message: 'Pricing updated successfully!' });
+            setStatus({ type: 'success', message: `${selectedTenant ? 'Tenant' : 'Global'} pricing updated successfully!` });
             setTimeout(() => setStatus(null), 3000);
         } catch (error) {
             console.error(error);
             setStatus({ type: 'error', message: 'Failed to save changes' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleReset = async () => {
+        if (!selectedTenant) return;
+        if (!confirm(`Are you sure you want to reset pricing for ${selectedTenant.name} to global defaults?`)) return;
+
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/v1/admin/billing/pricing?tenantId=${selectedTenant.id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('Reset failed');
+
+            setStatus({ type: 'success', message: 'Tenant pricing reset to global defaults' });
+            fetchPricing(selectedTenant.id);
+            setTimeout(() => setStatus(null), 3000);
+        } catch (error) {
+            console.error(error);
+            setStatus({ type: 'error', message: 'Failed to reset pricing' });
         } finally {
             setSaving(false);
         }
@@ -114,27 +188,137 @@ export default function AdminPricingPage() {
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight font-[Outfit]">Template Pricing</h1>
-                    <p className="text-gray-500 mt-1 font-medium italic">Configure the margins between Meta costs and platform charges.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight font-[Outfit]">Template Pricing</h1>
+                        {selectedTenant ? (
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold border border-amber-100 uppercase tracking-wider">
+                                <User className="w-3 h-3" />
+                                Tenant Override
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold border border-blue-100 uppercase tracking-wider">
+                                <Globe className="w-3 h-3" />
+                                Global Defaults
+                            </div>
+                        )}
+                    </div>
+                    <p className="text-gray-500 font-medium italic">
+                        {selectedTenant ? `Customizing rates for ${selectedTenant.name}` : 'Configure fallback margins for the entire platform.'}
+                    </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    {status && (
-                        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold animate-in zoom-in-95 duration-200 ${status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'
-                            }`}>
-                            {status.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                            {status.message}
+
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Tenant Selector */}
+                    <div className="relative" id="tenant-selector">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all min-w-[240px]">
+                            <Search className="w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search tenant..."
+                                value={selectedTenant ? selectedTenant.name : tenantSearch}
+                                onChange={(e) => {
+                                    if (selectedTenant) {
+                                        setSelectedTenant(null);
+                                        setTenantSearch('');
+                                    } else {
+                                        setTenantSearch(e.target.value);
+                                        setShowTenantDropdown(true);
+                                    }
+                                }}
+                                onFocus={() => !selectedTenant && setShowTenantDropdown(true)}
+                                className="bg-transparent border-none outline-none text-sm font-medium w-full"
+                            />
+                            {selectedTenant && (
+                                <button onClick={() => { setSelectedTenant(null); setTenantSearch(''); }} className="p-1 hover:bg-gray-100 rounded-full">
+                                    <X className="w-3 h-3 text-gray-500" />
+                                </button>
+                            )}
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showTenantDropdown ? 'rotate-180' : ''}`} />
                         </div>
+
+                        {showTenantDropdown && !selectedTenant && (
+                            <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                                    <button
+                                        onClick={() => { setSelectedTenant(null); setShowTenantDropdown(false); }}
+                                        className="w-full flex items-center justify-between px-3 py-2 hover:bg-blue-50 rounded-xl transition-colors text-left group"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                <Globe className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-sm font-bold text-gray-700 group-hover:text-blue-700">Global Defaults</span>
+                                        </div>
+                                        {!selectedTenant && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                                    </button>
+
+                                    <div className="h-px bg-gray-50 my-1 mx-2" />
+
+                                    {searchingTenants ? (
+                                        <div className="p-4 text-center">
+                                            <Loader2 className="w-5 h-5 animate-spin text-gray-400 mx-auto" />
+                                        </div>
+                                    ) : tenants.length > 0 ? (
+                                        tenants.map(t => (
+                                            <button
+                                                key={t.id}
+                                                onClick={() => { setSelectedTenant(t); setShowTenantDropdown(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-xl transition-colors text-left group"
+                                            >
+                                                <div className="p-1.5 bg-gray-100 text-gray-500 rounded-lg group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">
+                                                    <User className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">{t.name}</span>
+                                                    <span className="text-[10px] text-gray-400 font-medium truncate max-w-[150px]">{t.id}</span>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : tenantSearch.length >= 2 ? (
+                                        <div className="p-4 text-center text-gray-400 text-xs font-medium italic">No tenants found</div>
+                                    ) : (
+                                        <div className="p-4 text-center text-gray-400 text-[10px] font-bold uppercase tracking-wider">Type to find tenant...</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {selectedTenant && (
+                        <button
+                            onClick={handleReset}
+                            disabled={saving}
+                            className="flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl font-bold transition-all disabled:opacity-50"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${saving ? 'animate-spin' : ''}`} />
+                            Reset to Global
+                        </button>
                     )}
-                    <button
-                        onClick={handleUpdate}
-                        disabled={saving}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 active:scale-95"
-                    >
-                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                        Save Changes
-                    </button>
+
+                    <div className="h-8 w-px bg-gray-200 mx-1 hidden md:block" />
+
+                    <div className="flex items-center gap-3">
+                        {status && (
+                            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold animate-in zoom-in-95 duration-200 ${status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'
+                                }`}>
+                                {status.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                {status.message}
+                            </div>
+                        )}
+                        <button
+                            onClick={handleUpdate}
+                            disabled={saving}
+                            className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50 ${selectedTenant
+                                ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200'
+                                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+                                }`}
+                        >
+                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            {selectedTenant ? 'Save Override' : 'Save Changes'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -143,14 +327,14 @@ export default function AdminPricingPage() {
                 {categories.map((cat) => (
                     <div key={cat.id} className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col group hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 relative overflow-hidden">
                         <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cat.color === 'blue' ? 'from-blue-400 to-blue-600' :
-                                cat.color === 'emerald' ? 'from-emerald-400 to-emerald-600' :
-                                    'from-purple-400 to-purple-600'
+                            cat.color === 'emerald' ? 'from-emerald-400 to-emerald-600' :
+                                'from-purple-400 to-purple-600'
                             }`} />
 
                         <div className="flex items-center gap-4 mb-6">
                             <div className={`p-3 rounded-2xl ${cat.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                                    cat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
-                                        'bg-purple-50 text-purple-600'
+                                cat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                                    'bg-purple-50 text-purple-600'
                                 } group-hover:scale-110 transition-transform duration-500`}>
                                 <cat.icon className="w-6 h-6" />
                             </div>
@@ -186,14 +370,14 @@ export default function AdminPricingPage() {
                                 <div className="flex justify-between items-center px-1">
                                     <label className="text-xs font-bold text-blue-500 uppercase tracking-widest">Our Price (Selling)</label>
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${cat.color === 'blue' ? 'bg-blue-100 text-blue-700' :
-                                            cat.color === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
-                                                'bg-purple-100 text-purple-700'
+                                        cat.color === 'emerald' ? 'bg-emerald-100 text-emerald-700' :
+                                            'bg-purple-100 text-purple-700'
                                         }`}>Margin</span>
                                 </div>
                                 <div className="relative">
                                     <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-bold ${cat.color === 'blue' ? 'text-blue-600' :
-                                            cat.color === 'emerald' ? 'text-emerald-600' :
-                                                'text-purple-600'
+                                        cat.color === 'emerald' ? 'text-emerald-600' :
+                                            'text-purple-600'
                                         }`}>₹</span>
                                     <input
                                         type="number"
@@ -201,8 +385,8 @@ export default function AdminPricingPage() {
                                         value={config?.[cat.customKey as keyof PricingConfig] || ''}
                                         onChange={(e) => handleChange(cat.customKey as keyof PricingConfig, e.target.value)}
                                         className={`w-full pl-8 pr-4 py-4 border-2 rounded-2xl focus:bg-white outline-none transition-all font-extrabold text-xl ${cat.color === 'blue' ? 'bg-blue-50/30 border-blue-100 text-blue-700 focus:border-blue-400' :
-                                                cat.color === 'emerald' ? 'bg-emerald-50/30 border-emerald-100 text-emerald-700 focus:border-emerald-400' :
-                                                    'bg-purple-50/30 border-purple-100 text-purple-700 focus:border-purple-400'
+                                            cat.color === 'emerald' ? 'bg-emerald-50/30 border-emerald-100 text-emerald-700 focus:border-emerald-400' :
+                                                'bg-purple-50/30 border-purple-100 text-purple-700 focus:border-purple-400'
                                             }`}
                                         placeholder="0.00"
                                     />

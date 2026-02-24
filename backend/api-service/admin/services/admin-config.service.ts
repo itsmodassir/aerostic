@@ -268,6 +268,23 @@ export class AdminConfigService implements OnModuleInit {
   /**
    * Internal method to get the actual value, uses Redis cache.
    */
+  async removeConfig(keys: string[], tenantId: string): Promise<{ success: boolean; removed: string[] }> {
+    const removed: string[] = [];
+    for (const key of keys) {
+      const config = await this.configRepo.findOne({
+        where: { key, tenantId },
+      });
+
+      if (config) {
+        await this.configRepo.remove(config);
+        const cacheKey = tenantId ? `${tenantId}:${key}` : key;
+        await this.redisService.del(`${this.CACHE_PREFIX}${cacheKey}`);
+        removed.push(key);
+      }
+    }
+    return { success: true, removed };
+  }
+
   async getConfigValue(key: string, tenantId?: string): Promise<string | null> {
     // Check Env first (Strict Priority)
     const envMap: Record<string, string> = {

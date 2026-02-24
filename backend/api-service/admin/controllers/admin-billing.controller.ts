@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards, Query, Delete } from "@nestjs/common";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import {
   PlatformAdminOnly,
@@ -25,14 +25,23 @@ export class AdminBillingController {
 
   @Get("pricing")
   @SuperAdminOnly()
-  async getPricing() {
-    return this.billingService.getTemplatePricing();
+  async getPricing(@Query("tenantId") tenantId?: string) {
+    return this.billingService.getTemplatePricing(tenantId);
   }
 
   @Post("pricing")
   @SuperAdminOnly()
-  async updatePricing(@Body() updates: Record<string, string>) {
-    return this.billingService.updateTemplatePricing(updates, "admin");
+  async updatePricing(
+    @Body() updates: Record<string, string>,
+    @Query("tenantId") tenantId?: string
+  ) {
+    return this.billingService.updateTemplatePricing(updates, "admin", tenantId);
+  }
+
+  @Delete("pricing")
+  @SuperAdminOnly()
+  async resetPricing(@Query("tenantId") tenantId: string) {
+    return this.billingService.resetTemplatePricing(tenantId);
   }
 
   @Get("api-keys")
