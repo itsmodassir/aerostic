@@ -30,6 +30,7 @@ import { Plan } from "@shared/database/entities/billing/plan.entity";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { Invoice } from "./entities/invoice.entity";
 import { AdminModule } from "../admin/admin.module";
+import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AdminModule } from "../admin/admin.module";
       WalletAccount,
       WalletTransaction,
       ApiKeyRiskEvent,
+      ResellerConfig,
     ]),
     AuditModule,
     UsersModule,

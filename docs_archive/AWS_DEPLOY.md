@@ -1,6 +1,6 @@
 # AWS Deployment Guide ☁️
 
-Follow these steps to deploy the Aerostic platform to an AWS EC2 instance.
+Follow these steps to deploy the Aimstors Solution platform to an AWS EC2 instance.
 
 ## 1. Launch EC2 Instance
 1.  Go to AWS Console -> EC2 -> **Launch Instance**.
@@ -37,8 +37,8 @@ Download the deployment script (or clone the repo manually first if private):
 
 ```bash
 # Clone the repository (you may need to set up SSH keys or use HTTPS with a token)
-git clone https://github.com/itsmodassir/aerostic-whatsapp-automation.git aerostic
-cd aerostic
+git clone https://github.com/itsmodassir/aimstors-whatsapp-automation.git aimstors
+cd aimstors
 
 # Copy your .env file into the project
 cp ../.env .

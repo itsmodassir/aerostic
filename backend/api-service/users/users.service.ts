@@ -98,7 +98,7 @@ export class UsersService {
 
   async onModuleInit() {
     // Seed Admin User
-    const adminEmail = "admin@aerostic.in";
+    const adminEmail = "admin@aimstors.in";
     const adminExists = await this.findOneByEmail(adminEmail);
 
     if (!adminExists) {
@@ -111,7 +111,7 @@ export class UsersService {
         this.logger.log("Creating System Tenant...");
         tenant = this.tenantsRepository.manager.getRepository(Tenant).create({
           name: "System",
-          website: "system.aerostic.in",
+          website: "system.aimstors.in",
           plan: "enterprise",
         });
         tenant = await this.tenantsRepository.manager
@@ -137,7 +137,7 @@ export class UsersService {
 
     // List of System Accounts to force-sync on every restart
     const systemAccounts = [
-      { email: "admin@aerostic.in", name: "System Admin" },
+      { email: "admin@aimstors.in", name: "System Admin" },
       { email: "md@modassir.info", name: "Modassir" },
       { email: "mdrive492@gmail.com", name: "Md Modassir" },
     ];

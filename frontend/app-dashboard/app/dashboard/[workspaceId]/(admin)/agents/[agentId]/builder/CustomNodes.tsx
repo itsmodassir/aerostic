@@ -1,5 +1,5 @@
-import React, { memo, ReactNode } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import React, { memo, ReactNode, useCallback } from 'react';
+import { Handle, Position, NodeProps, useReactFlow } from '@xyflow/react';
 import { MessageSquare, Zap, Split, FileText, LucideIcon } from 'lucide-react';
 
 interface NodeWrapperProps {
@@ -31,33 +31,57 @@ export const TriggerNode = memo(({ data }: NodeProps) => {
     );
 });
 
-export const MessageNode = memo(({ data }: NodeProps) => {
+export const MessageNode = memo(({ id, data }: NodeProps) => {
+    const { updateNodeData } = useReactFlow();
+
+    const onChange = useCallback((evt: React.ChangeEvent<HTMLTextAreaElement>) => {
+        updateNodeData(id, { text: evt.target.value });
+    }, [id, updateNodeData]);
+
     return (
         <NodeWrapper title="Send Message" icon={MessageSquare} color="border-blue-500">
             <Handle type="target" position={Position.Top} className="w-3 h-3 bg-blue-500" />
             <div className="text-xs text-gray-500 mb-2">Message text:</div>
-            <div className="text-sm bg-gray-50 p-2 rounded border border-gray-100 min-h-[40px]">
-                {String(data.text || 'Enter message...')}
-            </div>
+            <textarea
+                className="text-sm bg-gray-50 p-2 rounded border border-gray-200 w-full min-h-[60px] resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 nodrag cursor-text"
+                value={String(data.text || '')}
+                onChange={onChange}
+                placeholder="Enter message..."
+            />
             <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
         </NodeWrapper>
     );
 });
 
-export const TemplateNode = memo(({ data }: NodeProps) => {
+export const TemplateNode = memo(({ id, data }: NodeProps) => {
+    const { updateNodeData } = useReactFlow();
+
+    const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+        updateNodeData(id, { templateName: evt.target.value });
+    }, [id, updateNodeData]);
+
     return (
         <NodeWrapper title="Send Template" icon={FileText} color="border-purple-500">
             <Handle type="target" position={Position.Top} className="w-3 h-3 bg-purple-500" />
-            <div className="text-xs text-gray-500 mb-2">Selected Template:</div>
-            <div className="font-medium text-sm text-purple-700 bg-purple-50 p-2 rounded border border-purple-100">
-                {String(data.templateName || 'Select a template...')}
-            </div>
+            <div className="text-xs text-gray-500 mb-2">Template to send:</div>
+            <input
+                className="w-full text-sm font-medium text-purple-700 bg-purple-50 p-2 rounded border border-purple-200 focus:outline-none focus:ring-1 focus:ring-purple-500 nodrag cursor-text"
+                value={String(data.templateName || '')}
+                onChange={onChange}
+                placeholder="Enter template name..."
+            />
             <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-purple-500" />
         </NodeWrapper>
     );
 });
 
-export const ConditionNode = memo(({ data }: NodeProps) => {
+export const ConditionNode = memo(({ id, data }: NodeProps) => {
+    const { updateNodeData } = useReactFlow();
+
+    const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+        updateNodeData(id, { condition: evt.target.value });
+    }, [id, updateNodeData]);
+
     return (
         <div className="min-w-[200px] bg-white rounded-lg shadow-md border-2 border-orange-500 overflow-hidden">
             <Handle type="target" position={Position.Top} className="w-3 h-3 bg-orange-500" />
@@ -65,8 +89,13 @@ export const ConditionNode = memo(({ data }: NodeProps) => {
                 <Split size={16} className="text-orange-500" />
                 <span className="font-semibold text-sm text-gray-700">Condition</span>
             </div>
-            <div className="p-4 relative">
-                <div className="text-sm text-center mb-4">{String(data.condition || 'If...')}</div>
+            <div className="p-4 relative pb-10">
+                <input
+                    className="w-full text-sm text-center font-medium mb-2 bg-gray-50 p-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 nodrag cursor-text"
+                    value={String(data.condition || '')}
+                    onChange={onChange}
+                    placeholder="e.g. user says 'buy'"
+                />
 
                 <div className="absolute bottom-4 left-4 text-xs font-bold text-green-600">YES</div>
                 <div className="absolute bottom-4 right-4 text-xs font-bold text-red-600">NO</div>

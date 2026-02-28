@@ -13,7 +13,7 @@ const About = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              About Aerostic AI
+              About Aimstors Solution AI
             </h1>
             <p className="text-xl text-gray-600">
               Empowering creators with AI-powered content generation
@@ -22,7 +22,7 @@ const About = () => {
 
           <div className="prose prose-lg max-w-none mb-12">
             <p className="text-gray-700 leading-relaxed mb-6">
-              Aerostic AI is a revolutionary platform that combines the power of artificial intelligence 
+              Aimstors Solution AI is a revolutionary platform that combines the power of artificial intelligence 
               with intuitive design to help content creators, bloggers, and businesses build their online 
               presence effortlessly. Our mission is to democratize content creation and make professional 
               blogging accessible to everyone.
@@ -32,7 +32,7 @@ const About = () => {
               Founded in 2025, we recognized that creating quality content consistently was one of the biggest 
               challenges facing digital creators. Whether you're a solo entrepreneur, small business owner, 
               or content creator, the time and expertise required to produce engaging blogs, websites, and 
-              digital content can be overwhelming. That's where Aerostic AI comes in.
+              digital content can be overwhelming. That's where Aimstors Solution AI comes in.
             </p>
             
             <p className="text-gray-700 leading-relaxed">
@@ -67,7 +67,7 @@ const About = () => {
               Our Complete AI Toolkit
             </h2>
             <p className="text-gray-600 text-center mb-8 max-w-3xl mx-auto">
-              Aerostic AI offers a comprehensive suite of AI-powered tools designed to transform how you create, 
+              Aimstors Solution AI offers a comprehensive suite of AI-powered tools designed to transform how you create, 
               manage, and publish content. Each tool is built with cutting-edge artificial intelligence to deliver 
               professional results in seconds.
             </p>
@@ -296,7 +296,7 @@ const About = () => {
 
           <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-8 mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-              Why Choose Aerostic AI?
+              Why Choose Aimstors Solution AI?
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="text-center">
@@ -339,7 +339,7 @@ const About = () => {
             </h2>
             <div className="prose max-w-none">
               <p className="text-gray-700 leading-relaxed mb-4">
-                Aerostic AI is built on state-of-the-art machine learning models and cloud infrastructure. 
+                Aimstors Solution AI is built on state-of-the-art machine learning models and cloud infrastructure. 
                 Our AI systems are trained on diverse, high-quality datasets to ensure accurate, relevant, 
                 and engaging content generation across various industries and topics.
               </p>
@@ -377,7 +377,7 @@ const About = () => {
               Ready to Get Started?
             </h2>
             <p className="text-gray-600 mb-6">
-              Join thousands of creators who are already using Aerostic AI to build their online presence.
+              Join thousands of creators who are already using Aimstors Solution AI to build their online presence.
             </p>
             <Link 
               to="/auth" 

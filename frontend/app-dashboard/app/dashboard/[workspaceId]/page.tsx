@@ -78,6 +78,11 @@ const PLAN_FEATURES = {
     },
 };
 
+function resolveWorkspaceId(value: string | string[] | undefined): string {
+    if (Array.isArray(value)) return value[0] || 'default';
+    return value || 'default';
+}
+
 function normalizePlan(planName: string | undefined): 'starter' | 'growth' | 'enterprise' {
     const normalized = (planName || '').toLowerCase().trim();
     if (normalized.includes('growth')) return 'growth';
@@ -93,7 +98,7 @@ function normalizePlan(planName: string | undefined): 'starter' | 'growth' | 'en
 }
 
 export default function DashboardPage() {
-    const [stats, setStats] = useState<any>(null);
+    const [stats, setStats] = useState<any>({ totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0, totalAgents: 0 });
     const [recentMsgs, setRecentMsgs] = useState<any[]>([]);
     const [recentCampaigns, setRecentCampaigns] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -110,7 +115,7 @@ export default function DashboardPage() {
     const [resellerStatsLoading, setResellerStatsLoading] = useState(false);
     const [resellerStatsError, setResellerStatsError] = useState<string | null>(null);
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -133,15 +138,16 @@ export default function DashboardPage() {
                     setMembership(memData);
 
                     if (memData?.tenantType === 'reseller') {
-                        fetchResellerData();
+                        await fetchResellerData();
                     } else {
-                        fetchRegularData();
+                        await fetchRegularData();
                     }
                 } else {
-                    fetchRegularData();
+                    await fetchRegularData();
                 }
             } catch (e) {
                 console.error('Init failed', e);
+                setStats({ totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0, totalAgents: 0 });
             } finally {
                 setLoading(false);
             }
@@ -167,13 +173,9 @@ export default function DashboardPage() {
     };
 
     const fetchRegularData = async () => {
+        // Fetch Analytics
         try {
-            const [analyticsRes, subscriptionRes, walletRes] = await Promise.all([
-                api.get('/analytics/overview'),
-                api.get('/billing/subscription'),
-                api.get('/billing/wallet/balance')
-            ]);
-
+            const analyticsRes = await api.get('/analytics/overview');
             if (analyticsRes.data) {
                 const data = analyticsRes.data;
                 setStats(data.stats || { totalContacts: 0, totalSent: 0, totalReceived: 0, activeCampaigns: 0 });
@@ -182,16 +184,30 @@ export default function DashboardPage() {
                 setMessagesUsed(data.stats?.totalSent || 0);
                 setAiCreditsUsed(data.stats?.aiCreditsUsed || 0);
             }
+        } catch (e) {
+            console.error('[Dashboard] Analytics fetch failed', e);
+        }
 
+        // Fetch Subscription
+        try {
+            const subscriptionRes = await api.get('/billing/subscription');
             if (subscriptionRes.data) {
                 const sub = subscriptionRes.data;
                 setUserPlan(normalizePlan(sub.plan));
             }
+        } catch (e) {
+            console.error('[Dashboard] Subscription fetch failed', e);
+        }
 
+        // Fetch Wallet Balance
+        try {
+            const walletRes = await api.get('/billing/wallet/balance');
             if (walletRes.data) {
-                setWalletBalance(Number(walletRes.data.balance));
+                setWalletBalance(Number(walletRes.data.balance || 0));
             }
-        } catch (e) { }
+        } catch (e) {
+            console.error('[Dashboard] Wallet fetch failed', e);
+        }
     };
 
     const planFeatures = PLAN_FEATURES[userPlan] || PLAN_FEATURES.starter;
@@ -286,6 +302,7 @@ export default function DashboardPage() {
                     recentCampaigns={recentCampaigns}
                     userPlan={userPlan}
                     walletBalance={walletBalance}
+                    membership={membership}
                 />
             )}
             {activeTab === 'developer' && planFeatures.apiAccess && (
@@ -295,7 +312,7 @@ export default function DashboardPage() {
                 <TeamTab planFeatures={planFeatures} />
             )}
             {activeTab === 'settings' && (
-                <SettingsTab planFeatures={planFeatures} userPlan={userPlan} />
+                <SettingsTab planFeatures={planFeatures} userPlan={userPlan} membership={membership} />
             )}
         </div>
     );
@@ -313,7 +330,7 @@ function PartnerDashboardView({
     onRetry: () => void;
 }) {
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
 
     if (isLoading && !stats) return (
         <div className="flex items-center justify-center min-h-[300px]">
@@ -432,9 +449,9 @@ function PartnerDashboardView({
 }
 
 // Overview Tab Component
-function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, userPlan, walletBalance }: any) {
+function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, userPlan, walletBalance, membership }: any) {
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     return (
         <div className="space-y-6">
             {/* Usage Banners */}
@@ -590,7 +607,9 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                 <FeatureCard title="Webhooks" description="Real-time events" icon={Webhook} available={planFeatures.webhooks} href={`/dashboard/${workspaceId}/developer`} />
                 <FeatureCard title="Team Inbox" description="Collaborate" icon={Users} available={planFeatures.teamCollaboration} href={`/dashboard/${workspaceId}/inbox`} />
                 <FeatureCard title="Custom Templates" description="Brand templates" icon={Palette} available={planFeatures.customTemplates} href={`/dashboard/${workspaceId}/templates`} />
-                <FeatureCard title="White Label" description="Your brand" icon={Building2} available={planFeatures.whiteLabel} href={`/dashboard/${workspaceId}/settings`} />
+                {membership?.tenantType === 'reseller' && (
+                    <FeatureCard title="White Label" description="Your brand" icon={Building2} available={planFeatures.whiteLabel} href={`/dashboard/${workspaceId}/settings`} />
+                )}
             </div>
         </div >
     );
@@ -648,7 +667,7 @@ function DeveloperTab({ planFeatures }: any) {
             console.log('Using fallback data');
             setApiKeys([{ id: '1', name: 'Production Key', key: 'ak_live_xxxxxxxxxxxxxxxxxxxxx', createdAt: new Date().toISOString(), status: 'active' }]);
             setWebhooks([
-                { id: '1', url: 'https://api.example.com/webhooks/aerostic', events: ['message.received', 'message.delivered'], status: 'active' }
+                { id: '1', url: 'https://api.example.com/webhooks/aimstors', events: ['message.received', 'message.delivered'], status: 'active' }
             ]);
         } finally {
             setLoading(false);
@@ -942,7 +961,7 @@ function DeveloperTab({ planFeatures }: any) {
 // Team Tab Component - Connected to Backend APIs
 function TeamTab({ planFeatures }: any) {
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [conversations, setConversations] = useState<any[]>([]);
     const [inboxStats, setInboxStats] = useState({ unassigned: 0, inProgress: 0, resolved: 0 });
@@ -953,8 +972,6 @@ function TeamTab({ planFeatures }: any) {
     const [saving, setSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
     useEffect(() => {
         fetchData();
     }, []);
@@ -962,8 +979,6 @@ function TeamTab({ planFeatures }: any) {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const headers: any = {};
-            let tenantId = 'demo-tenant';
             let currentUser = {
                 name: 'You',
                 email: 'user@example.com',
@@ -977,7 +992,6 @@ function TeamTab({ planFeatures }: any) {
                 const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
                 if (res.ok) {
                     const user = await res.json();
-                    tenantId = user.tenantId || 'demo-tenant';
                     currentUser = {
                         name: user.name || 'You',
                         email: user.email || 'user@example.com',
@@ -988,8 +1002,8 @@ function TeamTab({ planFeatures }: any) {
                 }
             } catch (e) { }
 
-            // Fetch conversations from backend
-            const convoRes = await fetch(`${API_URL}/messages/conversations?tenantId=${tenantId}`, { headers, credentials: 'include' });
+            // Fetch conversations from backend (tenant is derived server-side from auth token)
+            const convoRes = await fetch('/api/v1/messages/conversations', { credentials: 'include' });
             if (convoRes.ok) {
                 const convoData = await convoRes.json();
                 setConversations(convoData);
@@ -999,13 +1013,12 @@ function TeamTab({ planFeatures }: any) {
                 const resolved = convoData.filter((c: any) => c.status === 'closed').length;
                 setInboxStats({ unassigned, inProgress, resolved });
             } else {
-                // Use fallback data
-                setInboxStats({ unassigned: 24, inProgress: 12, resolved: 156 });
+                setInboxStats({ unassigned: 0, inProgress: 0, resolved: 0 });
             }
 
             // Fetch team members
             try {
-                const usersRes = await fetch(`${API_URL}/users?tenantId=${tenantId}`, { headers, credentials: 'include' });
+                const usersRes = await fetch('/api/v1/users', { credentials: 'include' });
                 if (usersRes.ok) {
                     const usersData = await usersRes.json();
                     setTeamMembers(usersData.map((u: any) => ({
@@ -1267,9 +1280,9 @@ function TeamTab({ planFeatures }: any) {
 }
 
 // Settings Tab Component - Connected to Backend APIs
-function SettingsTab({ planFeatures, userPlan }: any) {
+function SettingsTab({ planFeatures, userPlan, membership }: any) {
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     const [whatsappConfig, setWhatsappConfig] = useState({
         phoneNumberId: '',
         wabaId: '',
@@ -1284,8 +1297,6 @@ function SettingsTab({ planFeatures, userPlan }: any) {
     const [saving, setSaving] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState('');
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
     useEffect(() => {
         fetchConfig();
     }, []);
@@ -1294,18 +1305,13 @@ function SettingsTab({ planFeatures, userPlan }: any) {
         setLoading(true);
         try {
             // Get current user/tenant from auth
-            let tenantId = '';
             try {
-                const authRes = await fetch('/api/auth/me', { credentials: 'include' });
-                if (authRes.ok) {
-                    const user = await authRes.json();
-                    tenantId = user.tenantId;
-                }
+                await fetch('/api/v1/auth/me', { credentials: 'include' });
             } catch (e) { }
 
             // Fetch WhatsApp account config
-            // Use status endpoint as it returns the actual connected account details
-            const waRes = await fetch(`${API_URL}/whatsapp/status?tenantId=${tenantId}`, { credentials: 'include' });
+            // Tenant is derived on server from auth context.
+            const waRes = await fetch('/api/v1/whatsapp/status', { credentials: 'include' });
             if (waRes.ok) {
                 const waData = await waRes.json();
                 if (waData.connected) {
@@ -1318,7 +1324,7 @@ function SettingsTab({ planFeatures, userPlan }: any) {
             }
 
             // Fetch AI config from system config
-            const configRes = await fetch(`${API_URL}/admin/config`, { credentials: 'include' });
+            const configRes = await fetch('/api/v1/admin/config', { credentials: 'include' });
             if (configRes.ok) {
                 const configData = await configRes.json();
                 setAiConfig({
@@ -1337,7 +1343,7 @@ function SettingsTab({ planFeatures, userPlan }: any) {
     const saveWhatsAppConfig = async () => {
         setSaving('whatsapp');
         try {
-            const res = await fetch(`${API_URL}/whatsapp/configure`, {
+            const res = await fetch('/api/v1/whatsapp/configure', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -1363,7 +1369,7 @@ function SettingsTab({ planFeatures, userPlan }: any) {
     const saveAIConfig = async () => {
         setSaving('ai');
         try {
-            await fetch(`${API_URL}/admin/config`, {
+            await fetch('/api/v1/admin/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -1459,93 +1465,45 @@ function SettingsTab({ planFeatures, userPlan }: any) {
                 </button>
             </div>
 
-            {/* AI Agent Configuration */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900">AI Agent Configuration</h3>
-                        <p className="text-sm text-gray-500">Configure your AI chatbot settings</p>
-                    </div>
-                </div>
 
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
-                        <select
-                            value={aiConfig.model}
-                            onChange={(e) => setAiConfig({ ...aiConfig, model: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50"
-                        >
-                            <option value="gemini-2.0-flash">Google Gemini 2.0 Flash</option>
-                            <option value="gpt-4o">GPT-4o</option>
-                            <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">System Prompt</label>
-                        <textarea
-                            value={aiConfig.systemPrompt}
-                            onChange={(e) => setAiConfig({ ...aiConfig, systemPrompt: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 h-32 focus:ring-2 focus:ring-purple-500 focus:bg-white"
-                            placeholder="Enter your AI agent's instructions..."
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Knowledge Base</label>
-                        <textarea
-                            value={aiConfig.knowledgeBase}
-                            onChange={(e) => setAiConfig({ ...aiConfig, knowledgeBase: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 h-24 focus:ring-2 focus:ring-purple-500 focus:bg-white"
-                            placeholder="Add business context, FAQs, product info..."
-                        />
-                    </div>
-                </div>
-                <button
-                    onClick={saveAIConfig}
-                    disabled={saving === 'ai'}
-                    className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50"
-                >
-                    {saving === 'ai' ? 'Saving...' : 'Save AI Settings'}
-                </button>
-            </div>
+            {/* White Label - Only for Resellers */}
+            {membership?.tenantType === 'reseller' && (
+                <>
+                    {planFeatures.whiteLabel ? (
+                        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                                    <Palette className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900">White Label Branding</h3>
+                                    <p className="text-sm text-gray-500">Customize with your brand</p>
+                                </div>
+                            </div>
 
-            {/* White Label */}
-            {planFeatures.whiteLabel ? (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                            <Palette className="w-5 h-5 text-amber-600" />
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Brand Name</label>
+                                    <input type="text" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" placeholder="Your Company" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Custom Domain</label>
+                                    <input type="text" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" placeholder="chat.yourdomain.com" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+                                    <input type="color" className="w-full h-10 rounded-lg border border-gray-300" defaultValue="#3B82F6" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                                    <input type="text" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" placeholder="https://..." />
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="font-bold text-gray-900">White Label Branding</h3>
-                            <p className="text-sm text-gray-500">Customize with your brand</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Brand Name</label>
-                            <input type="text" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" placeholder="Your Company" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Custom Domain</label>
-                            <input type="text" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" placeholder="chat.yourdomain.com" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
-                            <input type="color" className="w-full h-10 rounded-lg border border-gray-300" defaultValue="#3B82F6" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
-                            <input type="text" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" placeholder="https://..." />
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <LockedFeatureCard title="White Label Branding" description="Add your own logo, colors, and custom domain" icon={Palette} plan="Enterprise" />
+                    ) : (
+                        <LockedFeatureCard title="White Label Branding" description="Add your own logo, colors, and custom domain" icon={Palette} plan="Enterprise" />
+                    )}
+                </>
             )}
 
             {/* Plan Summary */}
@@ -1672,7 +1630,7 @@ function AIAgentCard({ name, status, conversations, resolutionRate }: any) {
 
 function FeatureCard({ title, description, icon: Icon, available, href }: any) {
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     return (
         <Link href={available ? href : `/dashboard/${workspaceId}/billing`} className={`relative p-4 rounded-xl border transition-all ${available ? 'bg-white hover:shadow-md' : 'bg-gray-50 border-dashed'}`}>
             {!available && <Lock className="absolute top-2 right-2 w-3 h-3 text-gray-400" />}
@@ -1688,7 +1646,7 @@ function FeatureCard({ title, description, icon: Icon, available, href }: any) {
 
 function LockedFeatureCard({ title, description, icon: Icon, plan }: any) {
     const params = useParams();
-    const workspaceId = params?.workspaceId || 'default';
+    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     return (
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

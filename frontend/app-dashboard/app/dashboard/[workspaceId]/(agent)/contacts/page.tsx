@@ -69,12 +69,26 @@ export default function ContactsPage() {
     const handleAddContact = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/contacts', { ...newContact, tenantId });
+            // Clean up empty optional fields so they don't break backend validation
+            const payload = { ...newContact, tenantId };
+            if (!payload.email) {
+                delete (payload as any).email;
+            }
+
+            await api.post('/contacts', payload);
             setShowAddModal(false);
             setNewContact({ name: '', phoneNumber: '', email: '' });
             fetchContacts(tenantId); // Refresh list
-        } catch (error) {
-            alert('Failed to add contact. Ensure phone number is unique.');
+        } catch (error: any) {
+            console.error('Contact creation failed:', error);
+            const serverMsg = error.response?.data?.message;
+            if (Array.isArray(serverMsg)) {
+                alert(`Error: ${serverMsg.join(', ')}`);
+            } else if (typeof serverMsg === 'string') {
+                alert(`Error: ${serverMsg}`);
+            } else {
+                alert('Failed to add contact. Ensure phone number is unique and details are valid.');
+            }
         }
     };
 

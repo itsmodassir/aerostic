@@ -5,13 +5,13 @@ import { Check, X } from 'lucide-react';
 
 export default function Comparison() {
     const comparisons = [
-        { feature: "Official Meta API Access", aerostic: true, others: false },
-        { feature: "Zero Risk of Number Bans", aerostic: true, others: false },
-        { feature: "AI Chatbot Agents (Gemini Pro)", aerostic: true, others: "Extra Cost" },
-        { feature: "Multi-Agent Shared Inbox", aerostic: true, others: true },
-        { feature: "Advanced Lead Matching", aerostic: true, others: false },
-        { feature: "24/7 Dedicated Support", aerostic: true, others: false },
-        { feature: "No Performance Lag", aerostic: true, others: false },
+        { feature: "Official Meta API Access", aimstors: true, others: false },
+        { feature: "Zero Risk of Number Bans", aimstors: true, others: false },
+        { feature: "AI Chatbot Agents (Gemini Pro)", aimstors: true, others: "Extra Cost" },
+        { feature: "Multi-Agent Shared Inbox", aimstors: true, others: true },
+        { feature: "Advanced Lead Matching", aimstors: true, others: false },
+        { feature: "24/7 Dedicated Support", aimstors: true, others: false },
+        { feature: "No Performance Lag", aimstors: true, others: false },
     ];
 
     return (
@@ -24,7 +24,7 @@ export default function Comparison() {
                         viewport={{ once: true }}
                         className="text-4xl font-bold text-gray-900 mb-6"
                     >
-                        Why Choose <span className="text-emerald-500">Aerostic?</span>
+                        Why Choose <span className="text-emerald-500">Aimstors Solution?</span>
                     </motion.h2>
                     <p className="text-xl text-gray-600">
                         See how we compare against generic WhatsApp automation tools and unofficial chrome extensions.
@@ -38,7 +38,7 @@ export default function Comparison() {
                                 <th className="py-6 px-8 text-left text-lg font-bold text-gray-900">Platform Features</th>
                                 <th className="py-6 px-8 text-center bg-emerald-50/50 rounded-t-3xl">
                                     <div className="flex flex-col items-center">
-                                        <span className="text-emerald-600 font-black text-xl mb-1">AEROSTIC</span>
+                                        <span className="text-emerald-600 font-black text-xl mb-1">AIMSTORS</span>
                                         <span className="text-emerald-500 text-xs font-bold uppercase tracking-widest">The Leader</span>
                                     </div>
                                 </th>

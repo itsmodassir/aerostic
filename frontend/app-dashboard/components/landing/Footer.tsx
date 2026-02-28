@@ -42,7 +42,7 @@ export default function Footer() {
                             <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
                                 <span className="text-white font-bold text-xl">A</span>
                             </div>
-                            <span className="text-xl font-bold tracking-tight text-gray-900 uppercase">AEROSTIC</span>
+                            <span className="text-xl font-bold tracking-tight text-gray-900 uppercase">AIMSTORS</span>
                         </Link>
                         <p className="text-gray-500 text-lg leading-relaxed max-w-sm font-medium">
                             The official WhatsApp Marketing & Automation Platform for high-growth businesses.
@@ -120,7 +120,7 @@ export default function Footer() {
                     </div>
                     <div className="flex flex-col items-center md:items-end space-y-2">
                         <p className="text-sm text-gray-400 font-medium">
-                            &copy; {currentYear} Aerostic Platform. All rights reserved.
+                            &copy; {currentYear} Aimstors Solution Platform. All rights reserved.
                         </p>
                         <div className="flex items-center space-x-1 text-[10px] font-black text-emerald-500/50 uppercase tracking-tighter">
                             <ShieldCheck className="w-3 h-3" />

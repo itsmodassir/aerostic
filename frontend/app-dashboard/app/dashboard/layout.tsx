@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
+import api from '@/lib/api';
 
 
 import { useSocket } from '@/context/SocketContext';
@@ -43,6 +44,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const [showNotifications, setShowNotifications] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
     const profileRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -55,22 +57,31 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { name: 'Messages', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
         { name: 'Campaigns', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
         { name: 'Templates', href: `/dashboard/${workspaceId}/templates`, icon: FileText, permission: 'campaigns:read' },
-        { name: 'Wallet', href: `/dashboard/${workspaceId}/wallet`, icon: CreditCard },
         { name: 'Leads', href: `/dashboard/${workspaceId}/leads`, icon: Target },
         { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
         { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
         { name: 'AI Agent', href: `/dashboard/${workspaceId}/agents`, icon: Bot, permission: 'automation:create' },
-        { name: 'Knowledge Base', href: `/dashboard/${workspaceId}/knowledge`, icon: Globe, permission: 'automation:create' },
         { name: 'Scheduler', href: `/dashboard/${workspaceId}/scheduler`, icon: Calendar },
-        { name: 'Settings', href: `/dashboard/${workspaceId}/settings/whatsapp`, icon: Settings, permission: 'billing:manage' },
-        { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals`, icon: Gift },
+        {
+            name: 'Settings',
+            icon: Settings,
+            permission: 'billing:manage',
+            children: [
+                { name: 'WhatsApp', href: `/dashboard/${workspaceId}/settings/whatsapp` },
+                { name: 'Email Flow', href: `/dashboard/${workspaceId}/settings/email` },
+                { name: 'AI Models', href: `/dashboard/${workspaceId}/settings/ai` },
+                { name: 'Wallet', href: `/dashboard/${workspaceId}/wallet` },
+                { name: 'Knowledge Base', href: `/dashboard/${workspaceId}/knowledge`, permission: 'automation:create' },
+                { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals` },
+                { name: 'Branding', href: `/dashboard/${workspaceId}/reseller/branding`, resellerOnly: true }
+            ]
+        },
         // Platform Admin - only for super_admin or specific platform admins
         { name: 'Platform Admin', href: `/dashboard/${workspaceId}/admin`, icon: Shield, adminOnly: true },
         { name: 'Resellers', href: `/dashboard/${workspaceId}/admin/resellers`, icon: Users2, adminOnly: true },
 
         // Reseller Specific
         { name: 'My Clients', href: `/dashboard/${workspaceId}/reseller/clients`, icon: Users2, resellerOnly: true },
-        { name: 'Branding', href: `/dashboard/${workspaceId}/reseller/branding`, icon: Globe, resellerOnly: true },
     ];
 
     const { socket, isConnected } = useSocket();
@@ -146,28 +157,27 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         const fetchData = async () => {
             try {
                 // 1. Fetch Membership
-                const memResponse = await fetch('/api/v1/auth/membership', {
-                    credentials: 'include'
-                });
-                if (memResponse.ok) {
-                    const data = await memResponse.json();
-                    setMembership(data);
+                const memResponse = await api.get('/auth/membership');
+                if (memResponse.status === 200) {
+                    setMembership(memResponse.data);
                 }
 
                 // 2. Fetch Subscription (Guard)
                 if (!isAdmin) {
-                    const subResponse = await fetch('/api/v1/billing/subscription', {
-                        credentials: 'include'
-                    });
-                    if (subResponse.ok) {
-                        const subData = await subResponse.json();
-                        // If no subscription or trial/active status, redirect to onboarding
-                        const validStatuses = ['trial', 'active'];
-                        if (!subData || !validStatuses.includes(subData.status)) {
+                    try {
+                        const subResponse = await api.get('/billing/subscription');
+                        if (subResponse.status === 200) {
+                            const subData = subResponse.data;
+                            // If no subscription or trial/active status, redirect to onboarding
+                            const validStatuses = ['trial', 'active'];
+                            if (!subData || !validStatuses.includes(subData.status)) {
+                                router.push('/onboarding');
+                            }
+                        }
+                    } catch (subErr: any) {
+                        if (subErr.response?.status === 401 || subErr.response?.status === 404) {
                             router.push('/onboarding');
                         }
-                    } else if (subResponse.status === 401 || subResponse.status === 404) {
-                        router.push('/onboarding');
                     }
                 }
             } catch (error) {
@@ -225,25 +235,39 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }, []);
 
     // Filter navigation items based on context
-    const permissions = membership?.permissions || [];
-    const visibleNavigation = navigation.filter(item => {
-        // If we are in a reseller context, only show Reseller items + Dashboard
+    const permissions = user?.permissions || membership?.permissions || [];
+    const visibleNavigation = navigation.map(item => {
+        if (item.children) {
+            const visibleChildren = item.children.filter(child => {
+                if (isReseller) {
+                    const resellerFeatures = ['Branding'];
+                    if (!resellerFeatures.includes(child.name)) return false;
+                }
+                if (isAdmin && !isReseller) return true;
+                if ((child as any).adminOnly) return false;
+                if ((child as any).resellerOnly && !isReseller) return false;
+                if (child.permission && !permissions.includes(child.permission)) return false;
+                return true;
+            });
+            return { ...item, children: visibleChildren };
+        }
+        return item;
+    }).filter(item => {
         if (isReseller) {
-            const resellerFeatures = ['Dashboard', 'My Clients', 'Branding'];
+            const resellerFeatures = ['Dashboard', 'My Clients', 'Settings'];
             if (!resellerFeatures.includes(item.name)) return false;
         }
 
-        // Feature Gates for Client Dashboard
         if (!isReseller && !isAdmin) {
             const tenant = membership?.tenant;
             if (item.name === 'Developer API' && !tenant?.apiAccessEnabled) return false;
-            // Other feature gates can go here based on reseller-set limits
         }
 
-        if (isAdmin && !isReseller) return true; // Super Admin sees everything in main app
-        if (item.adminOnly) return false;
+        if (item.children && item.children.length === 0) return false;
+        if (isAdmin && !isReseller) return true;
+        if ((item as any).adminOnly) return false;
         if ((item as any).resellerOnly && !isReseller) return false;
-        if (item.permission && !permissions.includes(item.permission)) return false;
+        if ((item as any).permission && !permissions.includes((item as any).permission)) return false;
         return true;
     });
 
@@ -316,27 +340,84 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     <WorkspaceSwitcher isCollapsed={isSidebarCollapsed} />
                 </div>
                 <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                    {visibleNavigation.map((item) => {
-                        const isActive = pathname === item.href ||
-                            (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                    {visibleNavigation.map((item: any) => {
+                        const hasChildren = item.children && item.children.length > 0;
+                        const isChildActive = hasChildren && item.children.some((c: any) => pathname === c.href || (c.href !== '/dashboard' && pathname.startsWith(c.href)));
+                        const isActive = (item.href && pathname === item.href) || (item.href && item.href !== '/dashboard' && pathname.startsWith(item.href)) || isChildActive;
+
+                        if (hasChildren) {
+                            const isOpen = openSubMenus[item.name] || isChildActive;
+
+                            return (
+                                <div key={item.name} className="flex flex-col mb-1">
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setOpenSubMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
+                                        }}
+                                        className={clsx(
+                                            'flex justify-between items-center rounded-lg text-sm font-medium transition-all duration-200 w-full',
+                                            isSidebarCollapsed ? 'justify-center p-2.5 mx-2' : 'px-3 py-2.5',
+                                            isActive && !openSubMenus[item.name]
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                                            item.adminOnly && !isActive && 'border border-purple-200 bg-purple-50/50'
+                                        )}
+                                        title={isSidebarCollapsed ? item.name : undefined}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <item.icon className={clsx("w-4 h-4 shrink-0", (isActive && !openSubMenus[item.name]) ? "text-primary" : "text-muted-foreground")} />
+                                            {!isSidebarCollapsed && <span>{item.name}</span>}
+                                        </div>
+                                        {!isSidebarCollapsed && (
+                                            <ChevronDown className={clsx("w-4 h-4 transition-transform", isOpen ? "rotate-180" : "")} />
+                                        )}
+                                    </button>
+
+                                    {isOpen && !isSidebarCollapsed && (
+                                        <div className="flex flex-col gap-1 pl-9 pr-2 border-l-2 border-muted ml-4 mt-1 mb-2">
+                                            {item.children.map((child: any) => {
+                                                const isChildItemActive = pathname === child.href || (child.href !== '/dashboard' && pathname.startsWith(child.href));
+                                                return (
+                                                    <Link
+                                                        key={child.name}
+                                                        href={child.href}
+                                                        onClick={() => setIsSidebarOpen(false)}
+                                                        className={clsx(
+                                                            'flex items-center rounded-md text-sm transition-all duration-200 py-2 px-3',
+                                                            isChildItemActive
+                                                                ? 'bg-primary text-primary-foreground shadow-sm font-medium'
+                                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                                        )}
+                                                    >
+                                                        <span>{child.name}</span>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.name}
-                                href={item.href}
+                                href={item.href as string}
                                 onClick={() => setIsSidebarOpen(false)}
                                 className={clsx(
-                                    'flex items-center rounded-lg text-sm font-medium transition-all duration-200',
+                                    'flex items-center rounded-lg text-sm font-medium transition-all duration-200 mb-1',
                                     isSidebarCollapsed ? 'justify-center p-2.5 mx-2' : 'gap-3 px-3 py-2.5',
                                     isActive
                                         ? 'bg-primary text-primary-foreground shadow-md'
                                         : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                                    (item as any).adminOnly && !isActive && 'border border-purple-200 bg-purple-50/50'
+                                    item.adminOnly && !isActive && 'border border-purple-200 bg-purple-50/50'
                                 )}
                                 title={isSidebarCollapsed ? item.name : undefined}
                             >
                                 <item.icon className={clsx("w-4 h-4 shrink-0", isActive ? "text-white" : "text-muted-foreground")} />
                                 {!isSidebarCollapsed && <span>{item.name}</span>}
-                                {(item as any).adminOnly && !isActive && !isSidebarCollapsed && (
+                                {item.adminOnly && !isActive && !isSidebarCollapsed && (
                                     <Shield className="w-3 h-3 text-purple-500 ml-auto" />
                                 )}
                             </Link>

@@ -33,15 +33,20 @@ export class MailService {
 
   async sendMail(to: string, subject: string, html: string, text?: string) {
     if (!this.transporter) {
-      this.logger.error("Transporter not initialized. Cannot send email.");
-      return;
+      this.logger.warn("=================================================");
+      this.logger.warn("FALLBACK: SMTP Transporter not initialized.");
+      this.logger.warn(`EMAIL TO: ${to}`);
+      this.logger.warn(`SUBJECT: ${subject}`);
+      this.logger.warn(`HTML CONTENT: ${html.substring(0, 500)}...`);
+      this.logger.warn("=================================================");
+      return { success: true, mock: true, messageId: `mock-${Date.now()}` };
     }
 
     try {
       const info = await this.transporter.sendMail({
         from: this.configService.get<string>(
           "SMTP_FROM",
-          '"Aerostic" <noreply@aimstore.in>',
+          '"Aimstors Solution" <noreply@aimstore.in>',
         ),
         to,
         subject,
@@ -57,9 +62,9 @@ export class MailService {
   }
 
   async sendWelcomeEmail(to: string, name: string) {
-    const subject = "Welcome to Aerostic - Your Workspace is Ready!";
+    const subject = "Welcome to Aimstors Solution - Your Workspace is Ready!";
     const html = `
-      <h1>Welcome to Aerostic, ${name}!</h1>
+      <h1>Welcome to Aimstors Solution, ${name}!</h1>
       <p>We're excited to have you on board. Your workspace has been successfully created.</p>
       <p>Next steps:</p>
       <ul>
@@ -70,13 +75,13 @@ export class MailService {
       <p>If you have any questions, feel free to reply to this email or reach out to our support team.</p>
       <br>
       <p>Cheers,</p>
-      <p>The Aerostic Team</p>
+      <p>The Aimstors Solution Team</p>
     `;
     return this.sendMail(to, subject, html);
   }
 
   async sendOtpEmail(to: string, otp: string) {
-    const subject = `${otp} is your Aerostic verification code`;
+    const subject = `${otp} is your Aimstors Solution verification code`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto;">
         <h1 style="color: #2563eb;">Verify your login</h1>
@@ -88,7 +93,7 @@ export class MailService {
           This code will expire in 5 minutes. If you didn't request this, please ignore this email.
         </p>
         <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
-        <p style="color: #9ca3af; font-size: 12px;">The Aerostic Team</p>
+        <p style="color: #9ca3af; font-size: 12px;">The Aimstors Solution Team</p>
       </div>
     `;
     return this.sendMail(to, subject, html);
@@ -98,7 +103,7 @@ export class MailService {
     to: string,
     invoiceData: { id: string; amount: number; date: string },
   ) {
-    const subject = `Invoice for Aerostic Subscription: ${invoiceData.id}`;
+    const subject = `Invoice for Aimstors Solution Subscription: ${invoiceData.id}`;
     const html = `
       <h1>Your Invoice is Ready</h1>
       <p>A new invoice has been generated for your recent subscription payment.</p>
@@ -109,7 +114,7 @@ export class MailService {
       </div>
       <p>You can find the attached PDF invoice for your records.</p>
       <br>
-      <p>Thank you for using Aerostic!</p>
+      <p>Thank you for using Aimstors Solution!</p>
     `;
     // For now, we'll send without attachment until PDF generation is implemented
     return this.sendMail(to, subject, html);

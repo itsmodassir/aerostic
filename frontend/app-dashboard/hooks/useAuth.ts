@@ -8,6 +8,7 @@ export interface User {
     email: string;
     name: string;
     role: 'super_admin' | 'admin' | 'user';
+    permissions?: string[];
 }
 
 export function useAuth() {

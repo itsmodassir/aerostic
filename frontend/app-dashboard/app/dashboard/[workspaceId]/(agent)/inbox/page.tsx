@@ -10,9 +10,13 @@ import {
     Check, CheckCheck, Clock, AlertCircle, Smile, Paperclip,
     Archive, Star, Tag, UserPlus, ChevronDown, Bot, MessageSquare,
     RefreshCw, ArrowLeft, Settings2, Bell, Users, Inbox,
-    Circle, Mic, Image, FileText, X, Plus
+    Circle, Mic, Image, FileText, X, Plus, Zap, Pause, Play, Timer
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import {
+    getCachedConversations, setCachedConversations,
+    getCachedMessages, setCachedMessages
+} from '@/lib/indexedDB';
 
 interface TeamMember {
     id: string;
@@ -82,7 +86,17 @@ export default function InboxPage() {
     const [walletBalance, setWalletBalance] = useState<number>(0);
     const [templates, setTemplates] = useState<any[]>([]);
     const [showTemplates, setShowTemplates] = useState(false);
-    const [templateRate, setTemplateRate] = useState<number>(0.80);
+    const [templateRates, setTemplateRates] = useState<any>({ marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 });
+
+    // AI mode + 24h window state
+    const [aiStatus, setAiStatus] = useState<{
+        aiMode: 'ai' | 'human' | 'paused';
+        pauseSecondsLeft: number;
+        windowSecondsLeft: number | null;
+        windowExpired: boolean;
+        defaultPauseMinutes: number;
+    } | null>(null);
+    const [aiModeLoading, setAiModeLoading] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +110,13 @@ export default function InboxPage() {
         const initInbox = async () => {
             const workspaceSlug = params.workspaceId as string;
             if (!workspaceSlug || !user) return;
+
+            // Request Notification Permissions
+            if (typeof window !== 'undefined' && 'Notification' in window) {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }
 
             try {
                 // Resolve tenant
@@ -114,19 +135,12 @@ export default function InboxPage() {
                         role: user.role === 'super_admin' ? 'admin' : 'agent',
                         status: 'online',
                     });
-
-                    // Join tenant room
-                    joinTenant(tid);
-
-                    // Join tenant room
-                    joinTenant(tid);
-
                     // Fetch real team members, wallet, and templates
                     try {
                         const [teamRes, walletRes, templatesRes] = await Promise.all([
-                            api.get(`/users?tenantId=${tid}`),
-                            api.get(`/billing/wallet?tenantId=${tid}`),
-                            api.get(`/templates?tenantId=${tid}`)
+                            api.get(`/users?tenantId=${tid}`).catch(e => ({ data: [] })),
+                            api.get(`/billing/wallet/balance?tenantId=${tid}`).catch(e => ({ data: { balance: 0, rates: { marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 } } })),
+                            api.get(`/templates?tenantId=${tid}`).catch(e => ({ data: [] }))
                         ]);
 
                         if (teamRes.data && mounted) {
@@ -140,10 +154,8 @@ export default function InboxPage() {
                         }
 
                         if (walletRes.data && mounted) {
-                            setWalletBalance(walletRes.data.mainBalance || 0);
-                            if (walletRes.data.templateRate !== undefined) {
-                                setTemplateRate(walletRes.data.templateRate);
-                            }
+                            setWalletBalance(walletRes.data.balance || 0);
+                            setTemplateRates(walletRes.data.rates || { default: walletRes.data.templateRate || 0.80 });
                         }
 
                         if (templatesRes.data && mounted) {
@@ -151,11 +163,11 @@ export default function InboxPage() {
                         }
 
                     } catch (e) {
-                        console.error('Failed to fetch inbox initial data');
+                        console.error('Failed to fetch inbox initial data', e);
                     }
                 }
             } catch (e) {
-                console.error('Failed to init inbox');
+                console.error('Failed to init inbox', e);
             }
         };
 
@@ -168,12 +180,53 @@ export default function InboxPage() {
         };
     }, [user, params.workspaceId]); // Removed tenantId, joinTenant, leaveTenant if they change frequently
 
-    // Handle Leave Tenant on unmount or tenantId change
+    // Handle Join / Leave Tenant when connected
     useEffect(() => {
-        if (tenantId) {
+        if (tenantId && isConnected) {
+            joinTenant(tenantId);
             return () => leaveTenant(tenantId);
         }
-    }, [tenantId, leaveTenant]);
+    }, [tenantId, isConnected, joinTenant, leaveTenant]);
+
+    // Fetch AI status when conversation changes, refresh every 60s
+    const fetchAiStatus = async (convId: string) => {
+        try {
+            const res = await api.get(`/messages/conversations/${convId}/status`);
+            setAiStatus(res.data);
+        } catch (e) {
+            console.error('Failed to fetch AI status', e);
+        }
+    };
+
+    useEffect(() => {
+        if (!selectedConversation) { setAiStatus(null); return; }
+        fetchAiStatus(selectedConversation.id);
+        const interval = setInterval(() => fetchAiStatus(selectedConversation.id), 30000);
+        return () => clearInterval(interval);
+    }, [selectedConversation?.id]);
+
+    const handleSetAiMode = async (mode: 'ai' | 'human' | 'paused', pauseMinutes?: number) => {
+        if (!selectedConversation) return;
+        setAiModeLoading(true);
+        try {
+            await api.post(`/messages/conversations/${selectedConversation.id}/ai-mode`, { mode, pauseMinutes });
+            await fetchAiStatus(selectedConversation.id);
+        } catch (e) {
+            console.error('Failed to set AI mode', e);
+        } finally {
+            setAiModeLoading(false);
+        }
+    };
+
+    const formatSeconds = (secs: number) => {
+        if (secs <= 0) return '0s';
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        if (h > 0) return `${h}h ${m}m`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+    };
 
     // Handle Real-time Socket Events
     useEffect(() => {
@@ -181,6 +234,10 @@ export default function InboxPage() {
 
         const handleNewMessage = (payload: any) => {
             console.log('[Inbox] New Socket Message:', payload);
+
+            // Ignore outbound messages only if they are from a human agent (already added optimistically)
+            // AI replies (no agentId) should be shown!
+            if (payload.direction === 'out' && payload.agentId) return;
 
             // 1. Update messages list if this conversation is active
             if (selectedConversation?.id === payload.conversationId) {
@@ -192,23 +249,39 @@ export default function InboxPage() {
                     status: 'received',
                     createdAt: payload.timestamp || new Date().toISOString(),
                 };
-                setMessages(prev => [...prev, newMessage]);
+                setMessages(prev => {
+                    const newMessages = [...prev, newMessage];
+                    setCachedMessages(payload.conversationId, newMessages);
+                    return newMessages;
+                });
+            } else {
+                // Show browser notification for incoming messages in non-active conversations
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification(`New message from ${payload.phone || 'Customer'}`, {
+                        body: payload.content?.body || 'Received a file or image',
+                        icon: '/favicon.ico'
+                    });
+                }
             }
 
-            // 2. Update conversations list (last message, unread count)
-            setConversations(prev => prev.map(conv => {
-                if (conv.id === payload.conversationId) {
-                    return {
-                        ...conv,
-                        lastMessage: payload.content.body || payload.type,
-                        lastMessageAt: payload.timestamp || new Date().toISOString(),
-                        unreadCount: selectedConversation?.id === payload.conversationId
-                            ? conv.unreadCount
-                            : conv.unreadCount + 1
-                    };
-                }
-                return conv;
-            }));
+            // 2. Update conversations list (last message, unread count for non-active convs)
+            setConversations(prev => {
+                const newConvs = prev.map(conv => {
+                    if (conv.id === payload.conversationId) {
+                        return {
+                            ...conv,
+                            lastMessage: payload.content?.body || payload.type,
+                            lastMessageAt: payload.timestamp || new Date().toISOString(),
+                            unreadCount: selectedConversation?.id === payload.conversationId
+                                ? conv.unreadCount
+                                : conv.unreadCount + 1
+                        };
+                    }
+                    return conv;
+                });
+                if (tenantId) setCachedConversations(tenantId, newConvs);
+                return newConvs;
+            });
         };
 
         const handleMessageStatus = (payload: any) => {
@@ -233,6 +306,12 @@ export default function InboxPage() {
     useEffect(() => {
         if (!tenantId) return;
         const fetchConvs = async () => {
+            // Check cache first for instant load
+            const cached = await getCachedConversations(tenantId);
+            if (cached) {
+                setConversations(cached);
+            }
+
             try {
                 const res = await api.get(`/messages/conversations?tenantId=${tenantId}`);
                 if (res.data) {
@@ -244,12 +323,13 @@ export default function InboxPage() {
                         channel: 'whatsapp',
                     }));
                     setConversations(mapped);
+                    setCachedConversations(tenantId, mapped);
                 } else {
                     setConversations([]);
                 }
             } catch (e) {
                 console.error('Failed to fetch conversations');
-                setConversations([]);
+                if (!cached) setConversations([]);
             }
         };
         fetchConvs();
@@ -263,15 +343,22 @@ export default function InboxPage() {
         }
 
         const fetchMsgs = async () => {
+            // Check cache first
+            const cached = await getCachedMessages(selectedConversation.id);
+            if (cached) {
+                setMessages(cached);
+            }
+
             try {
                 const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
                 if (res.data) {
                     setMessages(res.data);
+                    setCachedMessages(selectedConversation.id, res.data);
                 } else {
                     setMessages([]);
                 }
             } catch (e) {
-                setMessages([]);
+                if (!cached) setMessages([]);
             }
         };
 
@@ -308,7 +395,11 @@ export default function InboxPage() {
             createdAt: new Date().toISOString(),
             sender: currentUser || undefined,
         };
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => {
+            const newMessages = [...prev, newMessage];
+            setCachedMessages(selectedConversation.id, newMessages);
+            return newMessages;
+        });
         setInputText('');
         setShowQuickReplies(false);
 
@@ -321,21 +412,32 @@ export default function InboxPage() {
             });
 
             // Update message status
-            setMessages(prev => prev.map(m =>
-                m.id === newMessage.id ? { ...m, status: 'delivered' } : m
-            ));
+            setMessages(prev => {
+                const updated = prev.map(m =>
+                    m.id === newMessage.id ? { ...m, status: 'delivered' } : m
+                );
+                setCachedMessages(selectedConversation.id, updated as Message[]);
+                return updated as Message[];
+            });
         } catch (e) {
-            setMessages(prev => prev.map(m =>
-                m.id === newMessage.id ? { ...m, status: 'failed' } : m
-            ));
+            setMessages(prev => {
+                const updated = prev.map(m =>
+                    m.id === newMessage.id ? { ...m, status: 'failed' } : m
+                );
+                setCachedMessages(selectedConversation.id, updated as Message[]);
+                return updated as Message[];
+            });
         }
     };
 
     const handleSendTemplate = async (template: any) => {
         if (!selectedConversation) return;
 
+        const category = (template.category || 'marketing').toLowerCase();
+        const templateRate = templateRates[category] || templateRates.default || 0.80;
+
         if (walletBalance < templateRate) {
-            alert(`Insufficient wallet balance. Sending a template costs ₹${templateRate.toFixed(2)}.`);
+            alert(`Insufficient wallet balance. Sending a ${category} template costs ₹${templateRate.toFixed(2)}.`);
             return;
         }
 
@@ -760,6 +862,61 @@ export default function InboxPage() {
                             </div>
                         </div>
 
+                        {/* AI Mode Status Bar */}
+                        {aiStatus && (
+                            <div className={`px-4 py-2 border-b flex items-center justify-between text-xs ${aiStatus.aiMode === 'human' ? 'bg-amber-50 border-amber-200' :
+                                aiStatus.aiMode === 'paused' ? 'bg-orange-50 border-orange-200' :
+                                    'bg-emerald-50 border-emerald-200'
+                                }`}>
+                                <div className="flex items-center gap-3">
+                                    {/* AI Mode Badge */}
+                                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold ${aiStatus.aiMode === 'ai' ? 'bg-emerald-100 text-emerald-700' :
+                                        aiStatus.aiMode === 'paused' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-amber-100 text-amber-700'
+                                        }`}>
+                                        {aiStatus.aiMode === 'ai' && <><Zap className="w-3 h-3" /> AI Active</>}
+                                        {aiStatus.aiMode === 'paused' && <><Pause className="w-3 h-3" /> AI Paused ({formatSeconds(aiStatus.pauseSecondsLeft)})</>}
+                                        {aiStatus.aiMode === 'human' && <><User className="w-3 h-3" /> Human Mode</>}
+                                    </span>
+
+                                    {/* 24h Window Timer */}
+                                    {aiStatus.windowSecondsLeft !== null && (
+                                        <span className={`flex items-center gap-1 ${aiStatus.windowExpired ? 'text-red-600 font-semibold' :
+                                            (aiStatus.windowSecondsLeft < 3600) ? 'text-orange-600' : 'text-gray-500'
+                                            }`}>
+                                            <Timer className="w-3 h-3" />
+                                            {aiStatus.windowExpired
+                                                ? '24h window expired'
+                                                : `24h window: ${formatSeconds(aiStatus.windowSecondsLeft)} left`
+                                            }
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Toggle Controls */}
+                                <div className="flex items-center gap-2">
+                                    {aiStatus.aiMode !== 'ai' && (
+                                        <button
+                                            onClick={() => handleSetAiMode('ai')}
+                                            disabled={aiModeLoading}
+                                            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded-full text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                                        >
+                                            <Play className="w-3 h-3" /> Resume AI
+                                        </button>
+                                    )}
+                                    {aiStatus.aiMode === 'ai' && (
+                                        <button
+                                            onClick={() => handleSetAiMode('human')}
+                                            disabled={aiModeLoading}
+                                            className="flex items-center gap-1 px-2.5 py-1 bg-amber-500 text-white rounded-full text-xs font-semibold hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                        >
+                                            <User className="w-3 h-3" /> Take Over
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Messages */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-4">
                             {messages.map((msg) => {
@@ -863,7 +1020,7 @@ export default function InboxPage() {
                                                     onClick={() => handleSendTemplate(t)}
                                                     className="w-full mt-2 py-1.5 bg-blue-100 text-blue-700 text-xs font-bold rounded hover:bg-blue-200 flex justify-center items-center gap-1"
                                                 >
-                                                    <Send size={12} /> Send (₹{templateRate.toFixed(2)})
+                                                    <Send size={12} /> Send (₹{(t.category?.toLowerCase() === 'utility' ? (templateRates.utility || templateRates.default) : t.category?.toLowerCase() === 'authentication' ? (templateRates.authentication || templateRates.default) : (templateRates.marketing || templateRates.default)).toFixed(2)})
                                                 </button>
                                             </div>
                                         ))}

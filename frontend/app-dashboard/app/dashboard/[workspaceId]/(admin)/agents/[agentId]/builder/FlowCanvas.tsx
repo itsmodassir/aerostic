@@ -38,10 +38,15 @@ const initialNodes: Node[] = [
     },
 ];
 
+interface FlowCanvasProps {
+    agentId?: string;
+    workspaceId?: string;
+}
+
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-export default function FlowCanvas() {
+export default function FlowCanvas({ agentId, workspaceId }: FlowCanvasProps) {
     const reactFlowWrapper = useRef(null);
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);

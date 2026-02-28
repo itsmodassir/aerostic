@@ -107,7 +107,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Have intelligent conversations with our AI assistant powered by Aerostic AI.
+                  Have intelligent conversations with our AI assistant powered by Aimstors Solution AI.
                 </p>
               </CardContent>
             </Card>

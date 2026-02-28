@@ -366,7 +366,7 @@ export default function DeveloperPage() {
             <div className="mt-8 bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 text-white">
                 <h3 className="text-xl font-bold mb-2">API Documentation</h3>
                 <p className="text-gray-300 mb-4">
-                    Learn how to integrate with Aerostic API to send messages, manage contacts, and automate workflows.
+                    Learn how to integrate with Aimstors Solution API to send messages, manage contacts, and automate workflows.
                 </p>
                 <a
                     href="/docs"

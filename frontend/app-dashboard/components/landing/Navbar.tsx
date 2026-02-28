@@ -36,7 +36,7 @@ export default function Navbar() {
                     <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center transform group-hover:rotate-6 transition-transform shadow-lg shadow-emerald-200">
                         <span className="text-white font-bold text-xl">A</span>
                     </div>
-                    <span className="text-xl font-bold tracking-tight text-gray-900">AEROSTIC</span>
+                    <span className="text-xl font-bold tracking-tight text-gray-900">AIMSTORS</span>
                 </Link>
 
                 {/* Desktop Nav */}

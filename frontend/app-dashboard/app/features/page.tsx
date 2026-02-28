@@ -75,7 +75,7 @@ export default function FeaturesPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                     <Link href="/register" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Start Free Trial
@@ -97,7 +97,7 @@ export default function FeaturesPage() {
                         </span>
                     </h1>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        From bulk campaigns to AI chatbots, Aerostic gives you all the tools
+                        From bulk campaigns to AI chatbots, Aimstors Solution gives you all the tools
                         to engage customers, convert leads, and grow your business.
                     </p>
                 </div>
@@ -135,7 +135,7 @@ export default function FeaturesPage() {
                         Integrates with your favorite tools
                     </h2>
                     <p className="text-xl text-gray-600 mb-12">
-                        Connect Aerostic with your CRM, helpdesk, and other business tools via webhooks and API.
+                        Connect Aimstors Solution with your CRM, helpdesk, and other business tools via webhooks and API.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-8">
                         {['Salesforce', 'HubSpot', 'Zoho', 'Freshdesk', 'Zapier', 'Google Sheets'].map((tool) => (
@@ -164,7 +164,7 @@ export default function FeaturesPage() {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

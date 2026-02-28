@@ -1,33 +1,40 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700', '800'],
+    display: 'swap',
+});
 
 export const metadata: Metadata = {
-    title: 'Aerostic - WhatsApp Marketing & Automation Platform',
-    description: 'India\'s #1 WhatsApp Marketing Platform. Send bulk campaigns, deploy AI chatbots, automate customer support, and grow your business with Aerostic.',
+    title: 'Aimstors Solution - WhatsApp Marketing & Automation Platform',
+    description: 'India\'s #1 WhatsApp Marketing Platform. Send bulk campaigns, deploy AI chatbots, automate customer support, and grow your business with Aimstors Solution.',
     keywords: 'whatsapp marketing, whatsapp api, whatsapp automation, bulk whatsapp, whatsapp crm, whatsapp chatbot, india',
-    authors: [{ name: 'Aerostic' }],
-    creator: 'Aerostic',
-    publisher: 'Aerostic',
+    authors: [{ name: 'Aimstors Solution' }],
+    creator: 'Aimstors Solution',
+    publisher: 'Aimstors Solution',
     robots: 'index, follow',
     openGraph: {
         type: 'website',
         locale: 'en_IN',
         url: 'https://aimstore.in',
-        siteName: 'Aerostic',
-        title: 'Aerostic - WhatsApp Marketing & Automation Platform',
+        siteName: 'Aimstors Solution',
+        title: 'Aimstors Solution - WhatsApp Marketing & Automation Platform',
         description: 'Turn WhatsApp into your sales machine with AI-powered automation. Join 2,500+ businesses.',
         images: [
             {
                 url: '/og-image.png',
                 width: 1200,
                 height: 630,
-                alt: 'Aerostic - WhatsApp Marketing Platform',
+                alt: 'Aimstors Solution - WhatsApp Marketing Platform',
             },
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Aerostic - WhatsApp Marketing Platform',
+        title: 'Aimstors Solution - WhatsApp Marketing Platform',
         description: 'AI-powered WhatsApp marketing for growing businesses',
         images: ['/og-image.png'],
     },
@@ -47,12 +54,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-            </head>
-            <body className="font-sans antialiased">
+            <body className={`${inter.className} font-sans antialiased`}>
                 {children}
             </body>
         </html>

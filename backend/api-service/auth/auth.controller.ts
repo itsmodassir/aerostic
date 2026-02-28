@@ -19,7 +19,14 @@ import { UsersService } from "../users/users.service";
 import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
 import { AuditLog } from "@shared/database/entities/core/audit-log.entity";
 import { MailService } from "@shared/mail.service";
-import { IsNotEmpty, IsEmail, Matches, MinLength } from "class-validator";
+import {
+  IsNotEmpty,
+  IsEmail,
+  Matches,
+  MinLength,
+  IsOptional,
+  IsString,
+} from "class-validator";
 import {
   TenantMembership,
   TenantRole,
@@ -75,6 +82,8 @@ class RegisterDto {
   })
   phone: string;
 
+  @IsOptional()
+  @IsString()
   otp?: string; // Optional for initiation, required for finalization
 }
 
@@ -383,7 +392,7 @@ export class AuthController {
   @Get("branding")
   async getBranding(@Query("host") host?: string) {
     const fallback = {
-      brandName: "Aerostic",
+      brandName: "Aimstors Solution",
       logo: null,
       favicon: null,
       primaryColor: "#2563eb",
@@ -524,7 +533,10 @@ export class AuthController {
         : membership?.tenant?.reseller?.resellerConfig;
     const permissions =
       membership?.roleEntity?.rolePermissions?.map(
-        (rp: any) => rp.permission?.key,
+        (rp: any) =>
+          rp.permission
+            ? `${rp.permission.resource}:${rp.permission.action}`
+            : null,
       )?.filter(Boolean) || [];
 
     this.logger.log(
@@ -555,12 +567,53 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     res.setHeader("Cache-Control", "no-store");
-    // Return the full user profile including global role
-    return {
+    const tenantId = req.user?.tenantId;
+    const whereClause =
+      tenantId && isUuid(tenantId)
+        ? { userId: req.user.id, tenantId }
+        : { userId: req.user.id };
+
+    const membership = await this.membershipRepo.findOne({
+      where: whereClause as any,
+      relations: [
+        "tenant",
+        "roleEntity",
+        "roleEntity.rolePermissions",
+        "roleEntity.rolePermissions.permission",
+      ],
+      order: { createdAt: "ASC" },
+    });
+
+    const permissions =
+      membership?.roleEntity?.rolePermissions?.map(
+        (rp: any) =>
+          rp.permission
+            ? `${rp.permission.resource}:${rp.permission.action}`
+            : null,
+      )?.filter(Boolean) || [];
+
+    // Return the full user profile plus active tenant context.
+    const payload = {
       id: req.user.id,
       email: req.user.email,
       name: req.user.name,
       role: req.user.role,
+      tenantId: membership?.tenantId || tenantId || null,
+      tenantSlug: membership?.tenant?.slug || null,
+      tenantName: membership?.tenant?.name || null,
+      tenantType: membership?.tenant?.type || null,
+      permissions,
     };
+
+    console.log(`--TRACE MEMB getProfile-- for ${req.user.email}`, {
+      permissions,
+      reqTenantId: tenantId,
+      payloadTenantId: payload.tenantId,
+      membershipFound: !!membership,
+      rolePermissionsCount: membership?.roleEntity?.rolePermissions?.length || 0
+    });
+
+    return payload;
   }
 }
+

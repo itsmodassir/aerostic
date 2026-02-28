@@ -37,7 +37,7 @@ const useSEO = (title: string, description: string, path: string) => {
 
 const ProjectStatus: React.FC = () => {
   useSEO(
-    "Project Status Dashboard | Aerostic",
+    "Project Status Dashboard | Aimstors Solution",
     "Project status dashboard showing health checks, Supabase and CI setup.",
     "/project-status"
   );

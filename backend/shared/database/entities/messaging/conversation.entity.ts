@@ -60,6 +60,23 @@ export class Conversation {
   @Column({ default: "open" })
   status: string;
 
+  /**
+   * AI Handover Mode:
+   * 'ai'     — AI is actively handling this conversation (default)
+   * 'human'  — Human taken over; AI permanently off until toggled back
+   * 'paused' — AI temporarily paused; resumes after aiPausedUntil
+   */
+  @Column({ name: "ai_mode", default: "ai" })
+  aiMode: string;
+
+  /** When AI pause expires (null = not paused or permanent human mode) */
+  @Column({ name: "ai_paused_until", type: "timestamp", nullable: true })
+  aiPausedUntil: Date | null;
+
+  /** Timestamp of first INBOUND message — for Meta 24h window tracking */
+  @Column({ name: "first_inbound_at", type: "timestamp", nullable: true })
+  firstInboundAt: Date | null;
+
   @Column({ type: "jsonb", nullable: true })
   metadata: any;
 

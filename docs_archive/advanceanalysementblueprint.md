@@ -1,6 +1,6 @@
-# Aerostic: Advanced Project Analysis & Blueprint
+# Aimstors Solution: Advanced Project Analysis & Blueprint
 
-Aerostic is a sophisticated, multi-tenant WhatsApp Marketing & Automation Platform designed for businesses and resellers. It features a modern micro-monolith architecture with specialized services for handling high-volume messaging, AI integrations, and reseller management.
+Aimstors Solution is a sophisticated, multi-tenant WhatsApp Marketing & Automation Platform designed for businesses and resellers. It features a modern micro-monolith architecture with specialized services for handling high-volume messaging, AI integrations, and reseller management.
 
 ## 🏗️ System Architecture
 
@@ -15,7 +15,7 @@ The infrastructure is organized into a clean, hierarchical structure for deploym
 
 ### 🏠 2. Frontend Layer
 ```text
-aerostic/
+aimstors/
 ├── frontend/
 │   ├── landing/                     # React + Vite
 │   │   ├── pages/
@@ -146,7 +146,7 @@ Fully integrated with Meta's **Embedded Signup** flow and high-volume Messaging 
 - **Scale-Ready Queues**: Six dedicated BullMQ queues with exponential backoff and failover.
 
 ### 3. AI-Driven Automation
-Aerostic leverages **Google Gemini** for:
+Aimstors Solution leverages **Google Gemini** for:
 - Contextual auto-replies and lead scoring.
 - Sentiment analysis and automated RAG-based supportbot flows.
 - High-level decision making in visual automation workflows.

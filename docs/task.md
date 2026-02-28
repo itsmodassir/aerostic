@@ -31,6 +31,6 @@
 - [x] Implement Real-Time Auto API Key Kill-Switch System
 - [x] Implement Platform-Wide Risk Scoring Dashboard
 - [ ] Implement Adaptive RL Threshold Intelligence
-- [x] Implement Python ML Anomaly Microservice (`aerostic-ml-service`)
+- [x] Implement Python ML Anomaly Microservice (`aimstors-ml-service`)
 - [x] Implement Cross-Tenant Anomaly Correlation (CTAC)
 - [x] Implement Automatic API Key Suspension Policy (ASA)

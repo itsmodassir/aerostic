@@ -144,7 +144,7 @@ export class KillSwitchService {
       metadata: { apiKeyId: apiKey.id, reason },
     });
 
-    await this.kafkaService.emit("aerostic.security.events", {
+    await this.kafkaService.emit("aimstors.security.events", {
       action: "API_KEY_SUSPENDED",
       apiKeyId: apiKey.id,
       tenantId: apiKey.tenantId,
@@ -188,7 +188,7 @@ export class KillSwitchService {
     });
 
     // Kafka Event for downstream services (Webhook, Campaign)
-    await this.kafkaService.emit("aerostic.security.events", {
+    await this.kafkaService.emit("aimstors.security.events", {
       action: "TENANT_SUSPENDED",
       tenantId,
       reason,

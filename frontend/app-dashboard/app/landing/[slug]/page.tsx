@@ -40,7 +40,7 @@ export default function ResellerLandingPage() {
         );
     }
 
-    const brandName = config?.resellerConfig?.brandName || config?.name || 'Aerostic Partner';
+    const brandName = config?.resellerConfig?.brandName || config?.name || 'Aimstors Solution Partner';
     const primaryColor = config?.resellerConfig?.primaryColor || '#3B82F6';
     const logo = config?.resellerConfig?.logo;
 
@@ -177,7 +177,7 @@ export default function ResellerLandingPage() {
                         <span className="font-black text-lg tracking-tighter uppercase">{brandName}</span>
                     </div>
                     <p className="text-sm text-gray-400 font-medium tracking-tight">
-                        © 2026 {brandName}. All rights reserved. Powered by Aerostic.
+                        © 2026 {brandName}. All rights reserved. Powered by Aimstors Solution.
                     </p>
                     <div className="flex gap-8 text-xs font-black text-gray-400 uppercase tracking-widest">
                         <a href="#" className="hover:text-gray-900 transition-colors">Privacy</a>

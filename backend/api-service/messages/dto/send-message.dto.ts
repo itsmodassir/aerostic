@@ -28,4 +28,9 @@ export class SendMessageDto {
   @IsOptional()
   @IsUUID()
   campaignId?: string;
+
+  /** ID of the human agent sending this message (triggers AI handover pause) */
+  @IsOptional()
+  @IsUUID()
+  agentId?: string;
 }

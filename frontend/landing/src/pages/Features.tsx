@@ -120,7 +120,7 @@ const Features = () => {
             <div className="bg-white/70 rounded-2xl p-8 max-w-2xl mx-auto">
               <h2 className="text-2xl font-bold mb-4">Ready to Experience These Features?</h2>
               <p className="text-gray-600 mb-6">
-                Start your free trial today and see how Aerostic AI can transform your blogging experience.
+                Start your free trial today and see how Aimstors Solution AI can transform your blogging experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 

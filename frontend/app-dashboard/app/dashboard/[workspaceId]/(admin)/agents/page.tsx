@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     Bot, Plus, Settings, Trash2, Play, Pause, MessageSquare, TrendingUp,
     Users, Lock, Crown, Sparkles, AlertCircle, CheckCircle, X,
-    Brain, Headphones, ShoppingCart, UserPlus, HelpCircle
+    Brain, Headphones, ShoppingCart, UserPlus, HelpCircle, Edit
 } from 'lucide-react';
 
 interface Agent {
@@ -53,7 +53,7 @@ export default function AgentsPage() {
     const [newAgentDescription, setNewAgentDescription] = useState('');
     const [newAgentPrompt, setNewAgentPrompt] = useState('');
     const [creating, setCreating] = useState(false);
-
+    const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
     useEffect(() => {
         const init = async () => {
             try {
@@ -116,7 +116,16 @@ export default function AgentsPage() {
         }
     };
 
-    const handleCreateAgent = async () => {
+    const openEditModal = (agent: Agent) => {
+        setEditingAgentId(agent.id);
+        setNewAgentName(agent.name || '');
+        setNewAgentType(agent.type || 'customer_support');
+        setNewAgentDescription(agent.description || '');
+        setNewAgentPrompt(agent.systemPrompt || '');
+        setShowCreateModal(true);
+    };
+
+    const handleSaveAgent = async () => {
         if (!newAgentName.trim()) {
             alert('Please enter an agent name');
             return;
@@ -124,8 +133,11 @@ export default function AgentsPage() {
 
         setCreating(true);
         try {
-            const res = await fetch('/api/v1/agents', {
-                method: 'POST',
+            const url = editingAgentId ? `/api/v1/agents/${editingAgentId}` : '/api/v1/agents';
+            const method = editingAgentId ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: newAgentName,
@@ -133,20 +145,24 @@ export default function AgentsPage() {
                     description: newAgentDescription,
                     systemPrompt: newAgentPrompt,
                     tenantId,
-                    isActive: true,
+                    isActive: true, // Depending on use case this could toggle
                 }),
             });
 
             if (res.ok) {
-                const newAgent = await res.json();
-                setAgents([...agents, newAgent]);
+                if (editingAgentId) {
+                    fetchAgents(tenantId);
+                } else {
+                    const newAgent = await res.json();
+                    setAgents([...agents, newAgent]);
+                }
                 setShowCreateModal(false);
                 resetForm();
             } else {
-                alert('Failed to create agent');
+                alert(`Failed to ${editingAgentId ? 'update' : 'create'} agent`);
             }
         } catch (error) {
-            console.error('Failed to create agent', error);
+            console.error('Failed to save agent', error);
         } finally {
             setCreating(false);
         }
@@ -163,6 +179,7 @@ export default function AgentsPage() {
         setNewAgentType('customer_support');
         setNewAgentDescription('');
         setNewAgentPrompt('');
+        setEditingAgentId(null);
     };
 
     const getTypeColor = (type: string) => {
@@ -373,6 +390,13 @@ export default function AgentsPage() {
                                     Configure
                                 </Link>
                                 <button
+                                    onClick={() => openEditModal(agent)}
+                                    className="p-2.5 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
+                                    title="Edit AI properties"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                </button>
+                                <button
                                     onClick={() => handleDeleteAgent(agent.id)}
                                     className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                                 >
@@ -411,7 +435,7 @@ export default function AgentsPage() {
                                     <Bot className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Create New Agent</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">{editingAgentId ? 'Edit AI Agent' : 'Create New Agent'}</h2>
                                     <p className="text-sm text-gray-500">Configure your AI assistant</p>
                                 </div>
                             </div>
@@ -501,17 +525,19 @@ export default function AgentsPage() {
                             </div>
 
                             {/* Plan Info */}
-                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                                <div className="text-sm">
-                                    <p className="font-medium text-blue-800">
-                                        {planLimits.name} Plan: {agents.length + 1} of {planLimits.maxAgents === -1 ? 'Unlimited' : planLimits.maxAgents} agents
-                                    </p>
-                                    <p className="text-blue-700">
-                                        You'll have {agentsRemaining === '∞' ? 'unlimited' : Number(agentsRemaining) - 1} slot{agentsRemaining !== 2 ? 's' : ''} remaining after creating this agent.
-                                    </p>
+                            {!editingAgentId && (
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                    <div className="text-sm">
+                                        <p className="font-medium text-blue-800">
+                                            {planLimits.name} Plan: {agents.length + 1} of {planLimits.maxAgents === -1 ? 'Unlimited' : planLimits.maxAgents} agents
+                                        </p>
+                                        <p className="text-blue-700">
+                                            You'll have {agentsRemaining === '∞' ? 'unlimited' : Number(agentsRemaining) - 1} slot{agentsRemaining !== 2 ? 's' : ''} remaining after creating this agent.
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Modal Footer */}
@@ -523,19 +549,19 @@ export default function AgentsPage() {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleCreateAgent}
+                                onClick={handleSaveAgent}
                                 disabled={!newAgentName.trim() || creating}
                                 className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {creating ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Creating...
+                                        {editingAgentId ? 'Saving...' : 'Creating...'}
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="w-5 h-5" />
-                                        Create Agent
+                                        {editingAgentId ? 'Save Changes' : 'Create Agent'}
                                     </>
                                 )}
                             </button>

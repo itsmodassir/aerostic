@@ -1,6 +1,6 @@
-# 🚀 Aerostic v2.7.0 - Series B Architecture
+# 🚀 Aimstors Solution v2.7.0 - Series B Architecture
 
-**Aerostic** is an enterprise-grade, production-ready, multi-tenant SaaS platform for WhatsApp Marketing & Automation. Built for **Series B scale**, it features a real-time event-driven architecture, a dedicated **Python ML Microservice** for sub-second anomaly detection, and platform-wide fraud correlation.
+**Aimstors Solution** is an enterprise-grade, production-ready, multi-tenant SaaS platform for WhatsApp Marketing & Automation. Built for **Series B scale**, it features a real-time event-driven architecture, a dedicated **Python ML Microservice** for sub-second anomaly detection, and platform-wide fraud correlation.
 
 ---
 
@@ -54,7 +54,7 @@ infrastructure/                 # Kafka Cluster, Redis, Nginx & Docker configs
 
 ## ☁️ Deployment
 
-Aerostic is optimized for high-availability clusters.
+Aimstors Solution is optimized for high-availability clusters.
 
 1.  **Kafka Cluster**: 3-broker Zookeeper/KRaft setup.
 2.  **Redis Cluster**: For sub-millisecond sliding window metrics.
@@ -76,4 +76,4 @@ Aerostic is optimized for high-availability clusters.
 ## ⚖️ License
 
 Private Property / UNLICENSED (Default)
-Copyright © 2026 Aerostic. All rights reserved.
+Copyright © 2026 Aimstors Solution. All rights reserved.

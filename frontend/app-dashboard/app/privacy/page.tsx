@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                 </div>
             </nav>
@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
                 <div className="prose prose-lg max-w-none text-gray-600">
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">1. Introduction</h2>
                     <p>
-                        Aerostic ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our WhatsApp Marketing SaaS platform.
+                        Aimstors Solution ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our WhatsApp Marketing SaaS platform.
                     </p>
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">2. Information We Collect</h2>
@@ -102,7 +102,7 @@ export default function PrivacyPolicyPage() {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

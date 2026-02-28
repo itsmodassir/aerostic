@@ -53,8 +53,8 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 touch-target">
-            <img src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" alt="Aerostic AI" className="h-10 md:h-12 w-auto transition-transform hover:scale-105" />
-            <span className="text-lg md:text-xl font-bold text-foreground">Aerostic</span>
+            <img src="/lovable-uploads/e47c9b5a-4447-4b53-9d63-ce43b0477e62.png" alt="Aimstors Solution AI" className="h-10 md:h-12 w-auto transition-transform hover:scale-105" />
+            <span className="text-lg md:text-xl font-bold text-foreground">Aimstors Solution</span>
           </Link>
 
           {/* Desktop Navigation */}

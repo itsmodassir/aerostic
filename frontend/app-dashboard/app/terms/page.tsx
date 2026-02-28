@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                 </div>
             </nav>
@@ -26,12 +26,12 @@ export default function TermsOfServicePage() {
                 <div className="prose prose-lg max-w-none text-gray-600">
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">1. Acceptance of Terms</h2>
                     <p>
-                        By accessing or using Aerostic's WhatsApp Marketing platform ("Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use our Service.
+                        By accessing or using Aimstors Solution's WhatsApp Marketing platform ("Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use our Service.
                     </p>
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">2. Description of Service</h2>
                     <p>
-                        Aerostic provides a SaaS platform for WhatsApp marketing automation, including bulk messaging, AI chatbots, campaign management, and analytics.
+                        Aimstors Solution provides a SaaS platform for WhatsApp marketing automation, including bulk messaging, AI chatbots, campaign management, and analytics.
                     </p>
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">3. Account Registration</h2>
@@ -68,12 +68,12 @@ export default function TermsOfServicePage() {
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">7. Intellectual Property</h2>
                     <p>
-                        All content, features, and functionality of Aerostic are owned by us and protected by intellectual property laws. You may not copy, modify, or distribute our software without permission.
+                        All content, features, and functionality of Aimstors Solution are owned by us and protected by intellectual property laws. You may not copy, modify, or distribute our software without permission.
                     </p>
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">8. Limitation of Liability</h2>
                     <p>
-                        Aerostic is provided "as is" without warranties. We are not liable for any indirect, incidental, or consequential damages. Our total liability is limited to the amount you paid in the last 12 months.
+                        Aimstors Solution is provided "as is" without warranties. We are not liable for any indirect, incidental, or consequential damages. Our total liability is limited to the amount you paid in the last 12 months.
                     </p>
 
                     <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">9. Service Availability</h2>
@@ -106,7 +106,7 @@ export default function TermsOfServicePage() {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

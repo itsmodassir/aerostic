@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
             <div className="w-full max-w-md p-8 relative z-10">
                 <div className="bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
                     <div className="text-center mb-8">
-                        <img src="/logo.png" alt="Aerostic Admin" className="w-16 h-16 object-contain mx-auto mb-6" />
+                        <img src="/logo.png" alt="Aimstors Solution Admin" className="w-16 h-16 object-contain mx-auto mb-6" />
                         <h1 className="text-2xl font-bold text-white mb-2">Admin Console</h1>
                         <p className="text-gray-400 text-sm">Restricted Access Area</p>
                     </div>

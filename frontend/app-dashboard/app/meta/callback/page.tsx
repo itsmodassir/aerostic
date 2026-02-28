@@ -32,8 +32,8 @@ function CallbackContent() {
         } else {
             setStatus('Invalid parameters. Returning to dashboard...');
             setTimeout(() => {
-                // Try to find a default workspace or go to login if everything fails
-                router.push('/dashboard/default');
+                // /dashboard route resolves the first workspace dynamically.
+                router.push('/dashboard');
             }, 2000);
         }
     }, [searchParams, router]);

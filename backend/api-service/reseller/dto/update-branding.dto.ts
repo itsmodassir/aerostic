@@ -28,4 +28,8 @@ export class UpdateBrandingDto {
   @IsString()
   @IsOptional()
   supportEmail?: string;
+
+  @IsObject()
+  @IsOptional()
+  paymentGateway?: Record<string, any>;
 }

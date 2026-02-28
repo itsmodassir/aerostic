@@ -14,7 +14,7 @@ export class EncryptionService {
       throw new Error("ENCRYPTION_KEY environment variable is required");
     }
     // Use scrypt to generate a 32-byte key from the secret
-    this.key = crypto.scryptSync(secret, "aerostic-salt", 32);
+    this.key = crypto.scryptSync(secret, "aimstors-salt", 32);
     EncryptionService.instance = this;
   }
 

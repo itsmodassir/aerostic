@@ -120,7 +120,7 @@ function verifyWebhookSignature(payload, signature, secret) {
 
 // Express.js middleware example
 app.post('/webhook', express.raw({ type: '*/*' }), (req, res) => {
-  const signature = req.headers['x-aerostic-signature'];
+  const signature = req.headers['x-aimstors-signature'];
   const isValid = verifyWebhookSignature(req.body, signature, WEBHOOK_SECRET);
   
   if (!isValid) {
@@ -152,7 +152,7 @@ app.post('/webhook', express.raw({ type: '*/*' }), (req, res) => {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                     <Link href="/docs" className="text-blue-600 hover:underline">← Back to Docs</Link>
                 </div>
@@ -190,7 +190,7 @@ app.post('/webhook', express.raw({ type: '*/*' }), (req, res) => {
                             </li>
                             <li>
                                 <strong>Verify signatures</strong><br />
-                                Always verify the webhook signature to ensure requests are from Aerostic.
+                                Always verify the webhook signature to ensure requests are from Aimstors Solution.
                             </li>
                         </ol>
                     </div>
@@ -242,7 +242,7 @@ app.post('/webhook', express.raw({ type: '*/*' }), (req, res) => {
                         </div>
                     </div>
                     <p className="text-gray-600 mb-4">
-                        Every webhook request includes an <code className="px-1 bg-gray-100 rounded">X-Aerostic-Signature</code> header.
+                        Every webhook request includes an <code className="px-1 bg-gray-100 rounded">X-Aimstors Solution-Signature</code> header.
                         Verify this signature using your webhook secret:
                     </p>
                     <div className="bg-gray-900 rounded-xl overflow-hidden">
@@ -331,7 +331,7 @@ app.post('/webhook', express.raw({ type: '*/*' }), (req, res) => {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

@@ -1,4 +1,4 @@
-# 🔒 Aerostic Security Audit - Complete Report Index
+# 🔒 Aimstors Solution Security Audit - Complete Report Index
 
 **Audit Date:** February 11, 2026  
 **Status:** ⚠️ **MODERATE RISK - ACTION REQUIRED**

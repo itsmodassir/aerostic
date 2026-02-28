@@ -2,6 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Razorpay from "razorpay";
 import * as crypto from "crypto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Tenant, TenantType } from "@shared/database/entities/core/tenant.entity";
+import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
 
 export interface CreateSubscriptionDto {
   tenantId: string;
@@ -66,7 +70,13 @@ export class RazorpayService {
     },
   ];
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(Tenant)
+    private tenantRepo: Repository<Tenant>,
+    @InjectRepository(ResellerConfig)
+    private configRepo: Repository<ResellerConfig>,
+  ) {
     const keyId = this.configService.get<string>("RAZORPAY_KEY_ID");
     const keySecret = this.configService.get<string>("RAZORPAY_KEY_SECRET");
 
@@ -87,6 +97,41 @@ export class RazorpayService {
 
   getPlanById(planId: string): RazorpayPlan | undefined {
     return RazorpayService.PLANS.find((p) => p.id === planId);
+  }
+
+  async getRazorpayClient(tenantId?: string): Promise<Razorpay> {
+    if (!tenantId) {
+      if (!this.razorpay) throw new Error("Global Razorpay not configured");
+      return this.razorpay;
+    }
+
+    try {
+      const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
+      if (tenant && tenant.type === TenantType.REGULAR && tenant.resellerId) {
+        const resellerConfig = await this.configRepo.findOne({
+          where: { tenantId: tenant.resellerId },
+        });
+
+        if (
+          resellerConfig &&
+          resellerConfig.paymentGateway &&
+          resellerConfig.paymentGateway.razorpayKeyId &&
+          resellerConfig.paymentGateway.razorpayKeySecret
+        ) {
+          // Initialize a dynamic Razorpay client for this reseller
+          return new Razorpay({
+            key_id: resellerConfig.paymentGateway.razorpayKeyId,
+            key_secret: resellerConfig.paymentGateway.razorpayKeySecret,
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error resolving Razorpay client for tenant ${tenantId}`, error);
+    }
+
+    // Fallback to global client
+    if (!this.razorpay) throw new Error("Global Razorpay not configured");
+    return this.razorpay;
   }
 
   async createCustomer(
@@ -114,8 +159,10 @@ export class RazorpayService {
         throw new Error(`Plan ${dto.planId} not found`);
       }
 
+      const client = await this.getRazorpayClient(dto.tenantId);
+
       // Create subscription link (short URL for payment)
-      const subscription = await this.razorpay.subscriptions.create({
+      const subscription = await client.subscriptions.create({
         plan_id: dto.planId,
         customer_notify: 1,
         total_count: 12, // 12 months
@@ -179,8 +226,9 @@ export class RazorpayService {
     tenantId: string,
   ): Promise<any> {
     try {
+      const client = await this.getRazorpayClient(tenantId);
       // Use any to bypass strict type checking for Razorpay SDK
-      const paymentLink = await (this.razorpay.paymentLink as any).create({
+      const paymentLink = await (client.paymentLink as any).create({
         amount: amount * 100, // Razorpay uses paise
         currency: "INR",
         description,

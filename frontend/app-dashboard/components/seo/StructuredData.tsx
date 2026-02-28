@@ -6,8 +6,8 @@ export function OrganizationSchema() {
         "@context": "https://schema.org",
         "@type": "Organization",
         "@id": "https://aimstore.in/#organization",
-        "name": "Aerostic",
-        "alternateName": "Aerostic WhatsApp Marketing",
+        "name": "Aimstors Solution",
+        "alternateName": "Aimstors Solution WhatsApp Marketing",
         "url": "https://aimstore.in",
         "logo": "https://aimstore.in/logo.png",
         "image": "https://aimstore.in/og-image.png",
@@ -18,7 +18,7 @@ export function OrganizationSchema() {
         "founders": [
             {
                 "@type": "Person",
-                "name": "Aerostic Team"
+                "name": "Aimstors Solution Team"
             }
         ],
         "address": {
@@ -52,10 +52,10 @@ export function OrganizationSchema() {
             }
         ],
         "sameAs": [
-            "https://twitter.com/aerostic",
-            "https://linkedin.com/company/aerostic",
-            "https://instagram.com/aerostic",
-            "https://facebook.com/aerostic"
+            "https://twitter.com/aimstors",
+            "https://linkedin.com/company/aimstors",
+            "https://instagram.com/aimstors",
+            "https://facebook.com/aimstors"
         ]
     };
 
@@ -72,7 +72,7 @@ export function LocalBusinessSchema() {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "@id": "https://aimstore.in/#software",
-        "name": "Aerostic",
+        "name": "Aimstors Solution",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web, iOS, Android",
         "offers": {
@@ -117,7 +117,7 @@ export function SoftwareApplicationSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "Aerostic WhatsApp Marketing Platform",
+        "name": "Aimstors Solution WhatsApp Marketing Platform",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web Browser",
         "offers": {
@@ -178,8 +178,8 @@ export function HowToSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "HowTo",
-        "name": "How to Set Up WhatsApp Marketing with Aerostic",
-        "description": "Step-by-step guide to start WhatsApp marketing campaigns with Aerostic",
+        "name": "How to Set Up WhatsApp Marketing with Aimstors Solution",
+        "description": "Step-by-step guide to start WhatsApp marketing campaigns with Aimstors Solution",
         "totalTime": "PT15M",
         "estimatedCost": {
             "@type": "MonetaryAmount",
@@ -240,11 +240,11 @@ export function ProductSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "Product",
-        "name": "Aerostic WhatsApp Marketing Platform",
+        "name": "Aimstors Solution WhatsApp Marketing Platform",
         "description": "Complete WhatsApp marketing automation solution with AI chatbots, bulk messaging, and analytics.",
         "brand": {
             "@type": "Brand",
-            "name": "Aerostic"
+            "name": "Aimstors Solution"
         },
         "offers": [
             {
@@ -293,7 +293,7 @@ export function ProductSchema() {
                     "name": "Rahul Sharma"
                 },
                 "datePublished": "2026-01-15",
-                "reviewBody": "Aerostic transformed our customer engagement. We went from 100 to 10,000 monthly conversations with the same team size.",
+                "reviewBody": "Aimstors Solution transformed our customer engagement. We went from 100 to 10,000 monthly conversations with the same team size.",
                 "reviewRating": {
                     "@type": "Rating",
                     "ratingValue": "5"
@@ -354,7 +354,7 @@ export function WebSiteSchema() {
         "@type": "WebSite",
         "@id": "https://aimstore.in/#website",
         "url": "https://aimstore.in",
-        "name": "Aerostic",
+        "name": "Aimstors Solution",
         "description": "India's #1 WhatsApp Marketing & Automation Platform",
         "publisher": {
             "@id": "https://aimstore.in/#organization"
@@ -383,7 +383,7 @@ export function ArticleSchema({
     description,
     datePublished,
     dateModified,
-    author = "Aerostic Team",
+    author = "Aimstors Solution Team",
     url
 }: {
     title: string;
@@ -431,10 +431,10 @@ export function PageSEO({
     breadcrumbs?: BreadcrumbItem[];
 }) {
     const defaultFaqs = [
-        { question: "What is Aerostic?", answer: "Aerostic is India's #1 WhatsApp Marketing & Automation Platform that helps businesses send bulk campaigns, deploy AI chatbots, and automate customer support." },
-        { question: "How much does Aerostic cost?", answer: "Aerostic offers three plans: Starter at ₹1,999/month, Growth at ₹4,999/month, and Enterprise at ₹14,999/month with a 14-day free trial." },
-        { question: "Do I need technical knowledge?", answer: "No, Aerostic is designed for non-technical users with an intuitive drag-and-drop interface. No coding required." },
-        { question: "Is Aerostic officially approved by Meta?", answer: "Yes, Aerostic uses the official WhatsApp Business API provided by Meta, ensuring compliance and reliability." }
+        { question: "What is Aimstors Solution?", answer: "Aimstors Solution is India's #1 WhatsApp Marketing & Automation Platform that helps businesses send bulk campaigns, deploy AI chatbots, and automate customer support." },
+        { question: "How much does Aimstors Solution cost?", answer: "Aimstors Solution offers three plans: Starter at ₹1,999/month, Growth at ₹4,999/month, and Enterprise at ₹14,999/month with a 14-day free trial." },
+        { question: "Do I need technical knowledge?", answer: "No, Aimstors Solution is designed for non-technical users with an intuitive drag-and-drop interface. No coding required." },
+        { question: "Is Aimstors Solution officially approved by Meta?", answer: "Yes, Aimstors Solution uses the official WhatsApp Business API provided by Meta, ensuring compliance and reliability." }
     ];
 
     return (

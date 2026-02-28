@@ -52,7 +52,7 @@ export class Message {
   @Column({ name: "media_url", nullable: true })
   mediaUrl: string;
 
-  @Column({ nullable: true })
+  @Column({ name: "provider_message_id", nullable: true })
   @Index()
   providerMessageId: string; // Meta message ID
 

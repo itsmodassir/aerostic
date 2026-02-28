@@ -33,9 +33,24 @@ export class WalletController {
     ) {
         if (!tenantId) throw new UnauthorizedException("Tenant ID required");
         const balance = await this.walletService.getBalance(tenantId, type);
-        const rateStr = await this.adminConfigService.getConfigValue("whatsapp.template_rate_inr", tenantId);
-        const templateRate = parseFloat(rateStr || "0.80");
-        return { balance, type, templateRate };
+        
+        const [rateStr, marketingStr, utilityStr, authStr] = await Promise.all([
+            this.adminConfigService.getConfigValue("whatsapp.template_rate_inr", tenantId),
+            this.adminConfigService.getConfigValue("whatsapp.marketing_rate_custom", tenantId),
+            this.adminConfigService.getConfigValue("whatsapp.utility_rate_custom", tenantId),
+            this.adminConfigService.getConfigValue("whatsapp.auth_rate_custom", tenantId),
+        ]);
+
+        const baseRate = parseFloat(rateStr || "0.80");
+
+        const rates = {
+            default: baseRate,
+            marketing: parseFloat(marketingStr || rateStr || "0.80"),
+            utility: parseFloat(utilityStr || rateStr || "0.80"),
+            authentication: parseFloat(authStr || rateStr || "0.80"),
+        };
+
+        return { balance, type, templateRate: baseRate, rates };
     }
 
     @Get("transactions")

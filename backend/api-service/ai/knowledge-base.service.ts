@@ -4,6 +4,8 @@ import { Repository } from "typeorm";
 import { KnowledgeBase } from "./entities/knowledge-base.entity";
 import { KnowledgeChunk } from "./entities/knowledge-chunk.entity";
 import { AiService } from "./ai.service";
+// @ts-ignore
+import * as pdfParse from "pdf-parse";
 
 @Injectable()
 export class KnowledgeBaseService {
@@ -15,7 +17,7 @@ export class KnowledgeBaseService {
     @InjectRepository(KnowledgeChunk)
     private chunkRepo: Repository<KnowledgeChunk>,
     private aiService: AiService,
-  ) {}
+  ) { }
 
   async createKnowledgeBase(
     tenantId: string,
@@ -64,6 +66,21 @@ export class KnowledgeBaseService {
       chunkCount: results.length,
       chunkIds: results,
     };
+  }
+
+  async ingestPdf(
+    knowledgeBaseId: string,
+    fileBuffer: Buffer,
+    metadata: any = {},
+  ) {
+    this.logger.log(`Ingesting PDF into KB: ${knowledgeBaseId}`);
+    try {
+      const data = await pdfParse(fileBuffer);
+      return this.ingestText(knowledgeBaseId, data.text, metadata);
+    } catch (error) {
+      this.logger.error("Failed to parse PDF document", error);
+      throw new Error("Failed to parse uploaded PDF");
+    }
   }
 
   /**

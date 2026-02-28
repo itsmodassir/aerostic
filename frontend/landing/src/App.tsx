@@ -46,7 +46,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="aerostic-theme">
+      <ThemeProvider defaultTheme="system" storageKey="aimstors-theme">
         <div className="min-h-screen bg-background text-foreground">
           <AuthProvider>
             <TooltipProvider>

@@ -20,8 +20,8 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const params = useParams();
-
-    const currentWorkspaceId = params?.workspaceId as string;
+    const rawWorkspaceId = params?.workspaceId as string | string[] | undefined;
+    const currentWorkspaceId = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
 
     useEffect(() => {
         const fetchWorkspaces = async () => {
@@ -33,7 +33,7 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                 if (response.ok) {
                     const data = await response.json();
                     // Adapter if backend still returns nested tenant object
-                    const flatWorkspaces = data.map((w: any) => ({
+                    const flatWorkspaces = (Array.isArray(data) ? data : []).map((w: any) => ({
                         id: w.tenant?.id || w.id,
                         name: w.tenant?.name || w.name,
                         slug: w.tenant?.slug || w.slug,
@@ -74,11 +74,12 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const activeWorkspace = workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0];
+    const activeWorkspace =
+        workspaces.find(w => w.slug === currentWorkspaceId || w.id === currentWorkspaceId) || workspaces[0];
 
     // 2. Optimized Switcher Logic
-    const switchWorkspace = (id: string) => {
-        router.push(`/dashboard/${id}`);
+    const switchWorkspace = (workspace: Workspace) => {
+        router.push(`/dashboard/${workspace.slug || workspace.id}`);
         setOpen(false);
     };
 
@@ -117,10 +118,10 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                         {workspaces.map((w) => (
                             <button
                                 key={w.id}
-                                onClick={() => switchWorkspace(w.id)}
+                                onClick={() => switchWorkspace(w)}
                                 className={clsx(
                                     "flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-muted transition-colors",
-                                    w.id === currentWorkspaceId && "bg-muted/50 font-medium"
+                                    (w.id === currentWorkspaceId || w.slug === currentWorkspaceId) && "bg-muted/50 font-medium"
                                 )}
                             >
                                 <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground">
@@ -130,7 +131,7 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                                     <p className="truncate text-foreground">{w.name}</p>
                                     <p className="text-[10px] text-muted-foreground capitalize">{w.role}</p>
                                 </div>
-                                {w.id === currentWorkspaceId && (
+                                {(w.id === currentWorkspaceId || w.slug === currentWorkspaceId) && (
                                     <Check className="w-4 h-4 text-primary" />
                                 )}
                             </button>

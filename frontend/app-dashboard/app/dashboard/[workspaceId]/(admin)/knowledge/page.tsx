@@ -206,7 +206,7 @@ export default function KnowledgeBasePage() {
                                         value={ingestText}
                                         onChange={(e) => setIngestText(e.target.value)}
                                         className="w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none resize-none font-sans"
-                                        placeholder="e.g. Aerostic Pricing Plan: Starter costs $29/mo, includes 1000 messages. Growth costs $99/mo..."
+                                        placeholder="e.g. Aimstors Solution Pricing Plan: Starter costs $29/mo, includes 1000 messages. Growth costs $99/mo..."
                                     />
                                     <div className="flex items-center justify-between pt-2">
                                         <div className="flex items-center gap-4">

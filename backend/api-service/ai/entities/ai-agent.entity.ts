@@ -67,7 +67,7 @@ export class AiAgent {
   maxContextMessages: number;
 
   // Model Settings
-  @Column({ default: "gemini-pro" })
+  @Column({ default: "gemini-1.5-flash" })
   model: string;
 
   @Column({ type: "decimal", precision: 2, scale: 1, default: 0.7 })
@@ -80,6 +80,12 @@ export class AiAgent {
   @Column({ name: "is_active", default: true })
   @Index()
   isActive: boolean;
+
+  @Column({ name: "intent_detection", default: false })
+  intentDetection: boolean;
+
+  @Column({ name: "personalization_enabled", default: false })
+  personalizationEnabled: boolean;
 
   @Column({ name: "handoff_enabled", default: true })
   handoffEnabled: boolean;

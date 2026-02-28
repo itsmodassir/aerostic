@@ -27,7 +27,7 @@ const LIBRARY_TEMPLATES: LibraryTemplate[] = [
     {
         name: 'welcome_message',
         category: 'MARKETING',
-        body: 'Hello {{1}}, welcome to Aerostic! We are excited to have you on board.',
+        body: 'Hello {{1}}, welcome to Aimstors Solution! We are excited to have you on board.',
         description: 'Warm welcome message for new customers.'
     },
     {

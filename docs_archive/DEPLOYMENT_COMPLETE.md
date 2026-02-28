@@ -1,4 +1,4 @@
-# 🚀 Aerostic 10/10 Production Deployment - COMPLETE
+# 🚀 Aimstors Solution 10/10 Production Deployment - COMPLETE
 
 **Date:** February 10, 2026  
 **Status:** ✅ SUCCESSFULLY DEPLOYED TO AWS EC2  
@@ -108,7 +108,7 @@ JWT_SECRET=828c3b5ac40953a5b3a8a8877106a390c179025c8d749af2cf70bdbebe5c426d
 ### Required Variables (Auto-loaded in docker-compose.yml)
 - `DB_USERNAME` → PostgreSQL user
 - `DB_PASSWORD` → PostgreSQL password
-- `DB_DATABASE` → Database name (default: aerostic)
+- `DB_DATABASE` → Database name (default: aimstors)
 - `ENCRYPTION_KEY` → Required for data encryption
 - `JWT_SECRET` → Required for token signing
 - `GEMINI_API_KEY` → Google Gemini API
@@ -154,7 +154,7 @@ All security fixes committed to GitHub:
 | `31045c8f` | 🐛 Fix duplicate useState | 1 file |
 | `1d109b7e` | 🔒 Add ENCRYPTION_KEY to docker-compose | Production config |
 
-**Repository:** https://github.com/itsmodassir/aerostic.git  
+**Repository:** https://github.com/itsmodassir/aimstors.git  
 **Branch:** main
 
 ---
@@ -240,10 +240,10 @@ docker stats
 ### Database Issues
 ```bash
 # Connect to database
-docker compose exec postgres psql -U postgres -d aerostic
+docker compose exec postgres psql -U postgres -d aimstors
 
 # Reset database (WARNING: data loss)
-docker compose exec postgres dropdb -U postgres aerostic
+docker compose exec postgres dropdb -U postgres aimstors
 docker compose down -v  # Remove volumes
 docker compose up -d    # Rebuild
 ```

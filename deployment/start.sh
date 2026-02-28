@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "🚀 Starting Aerostic..."
+echo "🚀 Starting Aimstors Solution..."
 cd infrastructure/docker
 docker-compose down
 docker-compose up --build -d

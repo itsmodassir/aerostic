@@ -83,7 +83,7 @@ export default function DocsPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                         <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">Docs</span>
                     </Link>
                     <div className="flex items-center gap-4">
@@ -98,7 +98,7 @@ export default function DocsPage() {
                             />
                         </div>
                         <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
-                        <a href="https://github.com/aerostic" target="_blank" rel="noopener" className="text-gray-600 hover:text-gray-900">
+                        <a href="https://github.com/aimstors" target="_blank" rel="noopener" className="text-gray-600 hover:text-gray-900">
                             GitHub
                         </a>
                     </div>
@@ -112,7 +112,7 @@ export default function DocsPage() {
                         <Book className="w-4 h-4" />
                         <span>Developer Documentation</span>
                     </div>
-                    <h1 className="text-5xl font-extrabold mb-4">Aerostic API Documentation</h1>
+                    <h1 className="text-5xl font-extrabold mb-4">Aimstors Solution API Documentation</h1>
                     <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-8">
                         Everything you need to integrate WhatsApp messaging into your applications.
                         RESTful APIs, webhooks, and AI-powered automation.
@@ -229,9 +229,9 @@ export default function DocsPage() {
                                 <span className="ml-2">send-message.js</span>
                             </div>
                             <pre className="p-4 text-sm text-gray-100 overflow-x-auto">
-                                <code>{`const Aerostic = require('@aerostic/sdk');
+                                <code>{`const Aimstors Solution = require('@aimstors/sdk');
 
-const client = new Aerostic({
+const client = new Aimstors Solution({
   apiKey: 'ak_live_xxxxx'
 });
 
@@ -270,12 +270,12 @@ console.log('Message sent:', response.id);`}</code>
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
                     <div className="text-center">
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">Need Help?</h2>
-                        <p className="text-gray-600 mb-6">Our team is here to help you integrate Aerostic</p>
+                        <p className="text-gray-600 mb-6">Our team is here to help you integrate Aimstors Solution</p>
                         <div className="flex justify-center gap-4">
                             <Link href="/support" className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">
                                 Contact Support
                             </Link>
-                            <a href="https://discord.gg/aerostic" className="px-6 py-3 bg-white text-gray-900 rounded-xl font-medium hover:bg-gray-100 border border-gray-200">
+                            <a href="https://discord.gg/aimstors" className="px-6 py-3 bg-white text-gray-900 rounded-xl font-medium hover:bg-gray-100 border border-gray-200">
                                 Join Discord
                             </a>
                         </div>
@@ -286,7 +286,7 @@ console.log('Message sent:', response.id);`}</code>
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

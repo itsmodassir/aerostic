@@ -4,12 +4,12 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: aerostic-postgres
+    container_name: aimstors-postgres
     restart: always
     environment:
-      POSTGRES_USER: aerostic
+      POSTGRES_USER: aimstors
       POSTGRES_PASSWORD: strongpassword
-      POSTGRES_DB: aerostic
+      POSTGRES_DB: aimstors
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -17,11 +17,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4g
+          memory: 512m
 
   nginx:
     image: nginx:alpine
-    container_name: aerostic-nginx
+    container_name: aimstors-nginx
     restart: always
     network_mode: host
     volumes:
@@ -29,13 +29,13 @@ services:
       - ../nginx/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       # Static Assets Mounts
-      - /var/www/aerostic/frontend/landing/dist:/usr/share/nginx/html/landing:ro
-      - /var/www/aerostic/frontend/app-dashboard/.next/static:/usr/share/nginx/html/app/_next/static:ro
-      - /var/www/aerostic/frontend/app-dashboard/public:/usr/share/nginx/html/app/public:ro
+      - /var/www/aimstors/frontend/landing/dist:/usr/share/nginx/html/landing:ro
+      - /var/www/aimstors/frontend/app-dashboard/.next/static:/usr/share/nginx/html/app/_next/static:ro
+      - /var/www/aimstors/frontend/app-dashboard/public:/usr/share/nginx/html/app/public:ro
 
   redis:
     image: redis:7-alpine
-    container_name: aerostic-redis
+    container_name: aimstors-redis
     restart: always
     command: redis-server --maxmemory 1gb --maxmemory-policy noeviction
     volumes:
@@ -45,7 +45,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: aerostic-zookeeper
+    container_name: aimstors-zookeeper
     restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -53,7 +53,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: aerostic-kafka
+    container_name: aimstors-kafka
     restart: always
     ports:
       - "127.0.0.1:9092:9092"
@@ -71,7 +71,7 @@ services:
     build:
       context: ../../
       dockerfile: ml-service/Dockerfile
-    container_name: aerostic-ml
+    container_name: aimstors-ml
     restart: always
     ports:
       - "127.0.0.1:8000:8000"

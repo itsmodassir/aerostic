@@ -16,7 +16,7 @@ import { DataSource } from "typeorm";
 export class TenantIsolationInterceptor implements NestInterceptor {
   private readonly logger = new Logger(TenantIsolationInterceptor.name);
 
-  constructor(private dataSource: DataSource) {}
+  constructor(private dataSource: DataSource) { }
 
   async intercept(
     context: ExecutionContext,
@@ -24,6 +24,7 @@ export class TenantIsolationInterceptor implements NestInterceptor {
   ): Promise<Observable<any>> {
     const request = context.switchToHttp().getRequest();
     const tenantId =
+      request.targetTenantId ||
       request.headers["x-tenant-id"] ||
       request.query.tenantId ||
       request.body?.tenantId;

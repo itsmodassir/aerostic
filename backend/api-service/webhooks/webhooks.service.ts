@@ -142,10 +142,14 @@ export class WebhooksService {
           phoneNumberId: phoneNumberId,
           status: "open",
           lastMessageAt: new Date(),
+          firstInboundAt: new Date(),
         });
         await this.conversationRepo.save(conversation);
       } else {
         conversation.lastMessageAt = new Date();
+        if (!conversation.firstInboundAt) {
+          conversation.firstInboundAt = new Date();
+        }
         await this.conversationRepo.save(conversation);
       }
 
@@ -184,22 +188,48 @@ export class WebhooksService {
       });
 
       // 🔥 Trigger New Visual Automation Workflows
-      await this.workflowsService.executeTrigger(
+      const workflowHandled = await this.workflowsService.executeTrigger(
         account.tenantId,
         "new_message",
         {
           from,
           messageBody: messageData.text?.body || "",
           contactId: contact.id,
+          conversationId: conversation.id,
         },
       );
 
       // Legacy fallback
-      await this.automationService.evaluate(
+      const legacyHandled = await this.automationService.evaluate(
         account.tenantId,
         from,
         messageData.text?.body || "",
       );
+
+      // 🔥 AI Handover Gate
+      const isPaused = conversation.aiMode === 'paused' && conversation.aiPausedUntil && conversation.aiPausedUntil > new Date();
+      const isHumanMode = conversation.aiMode === 'human';
+
+      if (!workflowHandled && !legacyHandled && !isHumanMode && !isPaused) {
+        try {
+          // Un-pause if the timer has expired
+          if (conversation.aiMode === 'paused') {
+            conversation.aiMode = 'ai';
+            conversation.aiPausedUntil = null;
+            await this.conversationRepo.save(conversation);
+          }
+
+          await this.aiService.process(
+            account.tenantId,
+            from,
+            messageData.text?.body || "",
+          );
+        } catch (aiError) {
+          this.logger.error(`AI processing failed: ${aiError.message}`);
+        }
+      } else if (isHumanMode || isPaused) {
+        this.logger.log(`AI skipped for ${from}. Mode: ${conversation.aiMode}`);
+      }
     }
 
     if (value?.statuses) {

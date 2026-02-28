@@ -7,12 +7,15 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function ResellersPage() {
     const [resellers, setResellers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showOnboardModal, setShowOnboardModal] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
+    const [formData, setFormData] = useState({ name: '', ownerEmail: '', ownerName: '', planId: '' });
+    const [creating, setCreating] = useState(false);
 
     useEffect(() => {
         fetchResellers();
@@ -24,7 +27,7 @@ export default function ResellersPage() {
             const res = await fetch('/api/v1/admin/tenants?type=reseller', { credentials: 'include' });
             if (res.ok) {
                 const data = await res.json();
-                setResellers(data);
+                setResellers(Array.isArray(data) ? data : (data.data || []));
             }
         } catch (error) {
             console.error('Failed to fetch resellers:', error);
@@ -42,6 +45,35 @@ export default function ResellersPage() {
             }
         } catch (error) {
             console.error('Failed to fetch plans:', error);
+        }
+    };
+
+    const handleCreatePartner = async () => {
+        if (!formData.name || !formData.ownerEmail || !formData.ownerName || !formData.planId) {
+            toast.error('Please fill all fields');
+            return;
+        }
+        setCreating(true);
+        try {
+            const res = await fetch('/api/v1/reseller/onboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) {
+                toast.success('Reseller onboarded successfully');
+                setShowOnboardModal(false);
+                setFormData({ name: '', ownerEmail: '', ownerName: '', planId: '' });
+                fetchResellers();
+            } else {
+                const errData = await res.json();
+                toast.error(errData.message || 'Failed to onboard reseller');
+            }
+        } catch (error) {
+            toast.error('An error occurred');
+        } finally {
+            setCreating(false);
         }
     };
 
@@ -72,7 +104,7 @@ export default function ResellersPage() {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Total Resellers</p>
-                            <p className="text-2xl font-bold text-gray-900">{resellers.length}</p>
+                            <p className="text-2xl font-bold text-gray-900">{Array.isArray(resellers) ? resellers.length : 0}</p>
                         </div>
                     </div>
                 </div>
@@ -84,7 +116,7 @@ export default function ResellersPage() {
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
                             <p className="text-2xl font-bold text-gray-900">
-                                {resellers.reduce((acc, r) => acc + (r.subTenants?.length || 0), 0)}
+                                {Array.isArray(resellers) ? resellers.reduce((acc, r) => acc + (r.subTenants?.length || 0), 0) : 0}
                             </p>
                         </div>
                     </div>
@@ -135,7 +167,7 @@ export default function ResellersPage() {
                                         Loading resellers...
                                     </td>
                                 </tr>
-                            ) : resellers.length === 0 ? (
+                            ) : !Array.isArray(resellers) || resellers.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                                         No resellers found. Onboard your first partner to get started.
@@ -209,15 +241,20 @@ export default function ResellersPage() {
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                                <input type="text" className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. Digital Agents Co." />
+                                <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. Digital Agents Co." />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Owner Name</label>
+                                <input type="text" value={formData.ownerName} onChange={e => setFormData({ ...formData, ownerName: e.target.value })} className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. Jane Doe" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Owner Email</label>
-                                <input type="email" className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20" placeholder="owner@company.com" />
+                                <input type="email" value={formData.ownerEmail} onChange={e => setFormData({ ...formData, ownerEmail: e.target.value })} className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20" placeholder="owner@company.com" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Reseller Plan</label>
-                                <select className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20">
+                                <select value={formData.planId} onChange={e => setFormData({ ...formData, planId: e.target.value })} className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20">
+                                    <option value="">Select a plan</option>
                                     {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
                             </div>
@@ -229,8 +266,8 @@ export default function ResellersPage() {
                             >
                                 Cancel
                             </button>
-                            <button className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium">
-                                Create Partner
+                            <button onClick={handleCreatePartner} disabled={creating} className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50">
+                                {creating ? 'Creating...' : 'Create Partner'}
                             </button>
                         </div>
                     </div>

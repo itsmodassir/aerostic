@@ -44,12 +44,10 @@ export default function Error({
                         Go to Home
                     </Link>
                 </div>
-                {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-8 text-left p-4 bg-gray-100 rounded-lg overflow-auto max-h-40">
-                        <p className="text-xs font-mono text-red-700">{error.message}</p>
-                        <p className="text-[10px] font-mono text-gray-500 mt-2">{error.stack}</p>
-                    </div>
-                )}
+                <div className="mt-8 text-left p-4 bg-gray-100 rounded-lg overflow-auto max-h-40">
+                    <p className="text-xs font-mono text-red-700">{error.message}</p>
+                    <p className="text-[10px] font-mono text-gray-500 mt-2">{error.stack}</p>
+                </div>
             </div>
         </div>
     );

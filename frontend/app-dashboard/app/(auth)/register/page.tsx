@@ -112,8 +112,8 @@ export default function RegisterPage() {
                 <div className="relative z-10 flex flex-col justify-center p-16">
                     {/* Logo */}
                     <div className="flex items-center gap-3 mb-12">
-                        <img src="/logo.png" alt="Aerostic" className="w-14 h-14 object-contain" />
-                        <span className="text-3xl font-bold text-white">Aerostic</span>
+                        <img src="/logo.png" alt="Aimstors Solution" className="w-14 h-14 object-contain" />
+                        <span className="text-3xl font-bold text-white">Aimstors Solution</span>
                     </div>
 
                     {/* Headline */}
@@ -156,7 +156,7 @@ export default function RegisterPage() {
                             ))}
                         </div>
                         <p className="text-purple-200 text-sm">
-                            <span className="text-white font-semibold">2,500+</span> businesses growing with Aerostic
+                            <span className="text-white font-semibold">2,500+</span> businesses growing with Aimstors Solution
                         </p>
                     </div>
                 </div>
@@ -168,9 +168,9 @@ export default function RegisterPage() {
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
                         <a href="https://aimstore.in" className="flex items-center justify-center gap-2">
-                            <img src="/logo.png" alt="Aerostic" className="w-12 h-12 object-contain" />
+                            <img src="/logo.png" alt="Aimstors Solution" className="w-12 h-12 object-contain" />
                             <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                                Aerostic
+                                Aimstors Solution
                             </span>
                         </a>
                     </div>

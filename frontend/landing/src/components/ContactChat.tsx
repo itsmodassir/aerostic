@@ -18,7 +18,7 @@ const ContactChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hi! 👋 Welcome to Aerostic AI! How can I help you today?",
+      text: "Hi! 👋 Welcome to Aimstors Solution AI! How can I help you today?",
       sender: 'support',
       timestamp: new Date()
     }
@@ -75,7 +75,7 @@ const ContactChat = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-primary text-primary-foreground rounded-t-lg">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Bot className="h-4 w-4" />
-              Aerostic AI Support
+              Aimstors Solution AI Support
             </CardTitle>
             <Button
               variant="ghost"

@@ -49,7 +49,7 @@ export default function CTA() {
                             transition={{ delay: 0.2 }}
                             className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed"
                         >
-                            Join 2,500+ businesses who trust Aerostic to handle their mission-critical
+                            Join 2,500+ businesses who trust Aimstors Solution to handle their mission-critical
                             WhatsApp communication. 14-day free trial on all plans.
                         </motion.p>
 

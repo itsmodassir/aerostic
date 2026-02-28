@@ -11,8 +11,8 @@ export default defineConfig({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
             manifest: {
-                name: 'Aerostic AI - AI Chat Assistant',
-                short_name: 'Aerostic AI',
+                name: 'Aimstors Solution AI - AI Chat Assistant',
+                short_name: 'Aimstors Solution AI',
                 description: 'AI chatbot and chat assistant for content creation.',
                 theme_color: '#7c3aed',
                 background_color: '#ffffff',

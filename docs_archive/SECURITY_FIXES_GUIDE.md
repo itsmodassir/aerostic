@@ -1,4 +1,4 @@
-# Aerostic Security Fixes - Implementation Guide
+# Aimstors Solution Security Fixes - Implementation Guide
 
 ## 🎯 Priority Order (Fix in this order)
 
@@ -61,7 +61,7 @@ ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in,https://aimsto
 
 **Current:**
 ```typescript
-const secret = this.configService.get<string>('ENCRYPTION_KEY') || 'aerostic-prod-encryption-default-secret';
+const secret = this.configService.get<string>('ENCRYPTION_KEY') || 'aimstors-prod-encryption-default-secret';
 ```
 
 **Fixed:**
@@ -463,7 +463,7 @@ After implementing fixes, test:
 **`.env.production.example`:**
 ```env
 # Database
-DATABASE_URL=postgresql://postgres:STRONG_PASSWORD@postgres:5432/aerostic
+DATABASE_URL=postgresql://postgres:STRONG_PASSWORD@postgres:5432/aimstors
 DB_SSL=true
 
 # Redis

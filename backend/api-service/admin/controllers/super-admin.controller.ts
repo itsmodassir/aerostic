@@ -19,6 +19,7 @@ import { AdminTenantService } from "../services/admin-tenant.service";
 import { AdminService } from "../admin.service";
 import { AuthService } from "../../auth/auth.service";
 import { AuditService } from "../../audit/audit.service";
+import { EmailService } from "@api/email/email.service";
 
 @Controller("admin/system")
 @SuperAdminOnly()
@@ -30,6 +31,7 @@ export class SuperAdminController {
     private readonly legacyAdminService: AdminService,
     private readonly authService: AuthService,
     private readonly auditService: AuditService,
+    private readonly emailService: EmailService,
   ) { }
 
   // ============ Database Explorer ============
@@ -70,7 +72,11 @@ export class SuperAdminController {
     return this.configService.getEnv();
   }
 
-  // ============ System Operations ============
+  @Post("email/test")
+  async testEmailConnection() {
+    return this.emailService.testConnection();
+  }
+
   @Post("tokens/rotate")
   async rotateSystemTokens() {
     return this.legacyAdminService.rotateSystemTokens();

@@ -20,7 +20,7 @@ sudo apt-get install -y certbot python3-certbot-nginx
 # 2. Stop Nginx to free port 80
 echo ""
 echo "🛑 Stopping Nginx container..."
-cd /home/ubuntu/aerostic
+cd /home/ubuntu/aimstors
 sudo docker compose stop nginx
 
 sleep 2

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Save, RefreshCw, AlertTriangle, CheckCircle, Database, Globe, Key, Loader2, FileText, Search, Lock, Terminal } from 'lucide-react';
+import { Settings, Save, RefreshCw, AlertTriangle, CheckCircle, Database, Globe, Key, Loader2, FileText, Search, Lock, Terminal, Mail, CheckCheck, XCircle } from 'lucide-react';
 
 interface ConfigItem {
     value: string;
@@ -54,6 +54,19 @@ export default function SystemPage() {
 
         // WhatsApp Pricing (Global)
         'whatsapp.template_rate_inr': '0.80',
+
+        // Email / SMTP
+        'email.smtp_host': '',
+        'email.smtp_port': '587',
+        'email.smtp_secure': 'false',
+        'email.smtp_user': '',
+        'email.smtp_pass': '',
+        'email.from_name': 'Aerostic',
+        'email.from_email': 'no-reply@aimstore.in',
+        'email.otp_enabled': 'true',
+        'email.welcome_enabled': 'true',
+        'email.forgot_password_enabled': 'true',
+        'email.promotional_enabled': 'false',
     });
 
     // Fetch existing configuration on mount
@@ -183,6 +196,43 @@ export default function SystemPage() {
         ev.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ev.value.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const TestEmailButton = () => {
+        const [testing, setTesting] = useState(false);
+        const [result, setResult] = useState<{ success: boolean; error?: string } | null>(null);
+        const test = async () => {
+            setTesting(true);
+            setResult(null);
+            try {
+                const res = await fetch('/api/v1/admin/system/email/test', { method: 'POST', credentials: 'include' });
+                const data = await res.json();
+                setResult(data);
+            } catch (e: any) {
+                setResult({ success: false, error: 'Request failed' });
+            } finally {
+                setTesting(false);
+            }
+        };
+        return (
+            <div className="flex items-center gap-3">
+                <button
+                    onClick={test}
+                    disabled={testing}
+                    className="flex items-center gap-2 px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50"
+                >
+                    {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    {testing ? 'Testing...' : 'Test SMTP Connection'}
+                </button>
+                {result && (
+                    result.success
+                        ? <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCheck className="w-4 h-4" /> Connected!</span>
+                        : <span className="flex items-center gap-1 text-red-600 text-sm"><XCircle className="w-4 h-4" /> {result.error || 'Failed'}</span>
+                )}
+            </div>
+        );
+    };
+
+
 
     if (loading) {
         return (
@@ -596,6 +646,145 @@ export default function SystemPage() {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     autoComplete="off"
                                 />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Email Configuration */}
+                    <section className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-rose-100 text-rose-600 rounded-lg">
+                                <Mail className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-semibold">Email Configuration</h2>
+                                <p className="text-gray-500 text-sm">SMTP settings for OTP, welcome, forgot-password & promotional emails</p>
+                            </div>
+                        </div>
+
+                        {/* SMTP Credentials */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">SMTP Host</label>
+                                    <SourceBadge source={configMeta['email.smtp_host']?.source} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={config['email.smtp_host']}
+                                    onChange={(e) => updateConfig('email.smtp_host', e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="smtp.gmail.com"
+                                    autoComplete="off"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">SMTP Port</label>
+                                    <SourceBadge source={configMeta['email.smtp_port']?.source} />
+                                </div>
+                                <select
+                                    value={config['email.smtp_port']}
+                                    onChange={(e) => {
+                                        const port = e.target.value;
+                                        updateConfig('email.smtp_port', port);
+                                        updateConfig('email.smtp_secure', port === '465' ? 'true' : 'false');
+                                    }}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="587">587 — STARTTLS (Recommended)</option>
+                                    <option value="465">465 — SSL</option>
+                                    <option value="25">25 — Unencrypted</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">SMTP Username</label>
+                                    <SourceBadge source={configMeta['email.smtp_user']?.source} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={config['email.smtp_user']}
+                                    onChange={(e) => updateConfig('email.smtp_user', e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="you@gmail.com"
+                                    autoComplete="off"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">SMTP Password / App Password</label>
+                                    <SourceBadge source={configMeta['email.smtp_pass']?.source} />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={config['email.smtp_pass']}
+                                    onChange={(e) => updateConfig('email.smtp_pass', e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    autoComplete="new-password"
+                                    placeholder="••••••••••••"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">Sender Name</label>
+                                    <SourceBadge source={configMeta['email.from_name']?.source} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={config['email.from_name']}
+                                    onChange={(e) => updateConfig('email.from_name', e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Aerostic"
+                                    autoComplete="off"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">From Email Address</label>
+                                    <SourceBadge source={configMeta['email.from_email']?.source} />
+                                </div>
+                                <input
+                                    type="email"
+                                    value={config['email.from_email']}
+                                    onChange={(e) => updateConfig('email.from_email', e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="no-reply@aimstore.in"
+                                    autoComplete="off"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Test Connection */}
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <TestEmailButton />
+                        </div>
+
+                        {/* Email Type Toggles */}
+                        <div className="mt-6 pt-4 border-t border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-700 mb-4">Email Type Settings</h3>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {([
+                                    { key: 'email.otp_enabled', label: 'OTP / Verification Emails', desc: 'Send OTP codes for account verification' },
+                                    { key: 'email.welcome_enabled', label: 'Welcome Emails', desc: 'Greet new users when they sign up' },
+                                    { key: 'email.forgot_password_enabled', label: 'Forgot Password Emails', desc: 'Password reset link emails' },
+                                    { key: 'email.promotional_enabled', label: 'Promotional Emails', desc: 'Marketing & promotional messages' },
+                                ] as { key: keyof typeof config; label: string; desc: string }[]).map(({ key, label, desc }) => (
+                                    <label key={key} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-800">{label}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateConfig(key, config[key] === 'true' ? 'false' : 'true')}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config[key] === 'true' ? 'bg-green-500' : 'bg-gray-300'
+                                                }`}
+                                        >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${config[key] === 'true' ? 'translate-x-6' : 'translate-x-1'
+                                                }`} />
+                                        </button>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     </section>

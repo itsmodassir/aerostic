@@ -11,7 +11,7 @@ export default function AboutPage() {
     ];
 
     const milestones = [
-        { year: '2024', event: 'Aerostic Founded', desc: 'Started with a vision to democratize WhatsApp marketing' },
+        { year: '2024', event: 'Aimstors Solution Founded', desc: 'Started with a vision to democratize WhatsApp marketing' },
         { year: '2024', event: 'Meta Partnership', desc: 'Became official Meta Business Partner' },
         { year: '2025', event: '2,500+ Customers', desc: 'Trusted by thousands of businesses across India' },
         { year: '2026', event: 'AI Agents Launch', desc: 'Revolutionary AI-powered chatbots for automation' },
@@ -26,7 +26,7 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                     <Link href="/register" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         Get Started
@@ -44,7 +44,7 @@ export default function AboutPage() {
                         </span>
                     </h1>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Aerostic is India's leading WhatsApp marketing platform, empowering businesses
+                        Aimstors Solution is India's leading WhatsApp marketing platform, empowering businesses
                         to connect with customers at scale through intelligent automation.
                     </p>
                 </div>
@@ -76,11 +76,11 @@ export default function AboutPage() {
                         <div>
                             <h2 className="text-4xl font-extrabold text-gray-900 mb-6">Our Story</h2>
                             <p className="text-lg text-gray-600 mb-4">
-                                Aerostic was born from a simple observation: businesses were struggling to leverage
+                                Aimstors Solution was born from a simple observation: businesses were struggling to leverage
                                 WhatsApp's massive reach for marketing and customer support.
                             </p>
                             <p className="text-lg text-gray-600 mb-4">
-                                We built Aerostic to bridge this gap—providing an enterprise-grade platform that's
+                                We built Aimstors Solution to bridge this gap—providing an enterprise-grade platform that's
                                 simple to use, affordable, and powered by cutting-edge AI.
                             </p>
                             <p className="text-lg text-gray-600">
@@ -133,7 +133,7 @@ export default function AboutPage() {
             <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                 <div className="max-w-4xl mx-auto px-6 text-center">
                     <h2 className="text-4xl font-extrabold mb-4">Join our growing community</h2>
-                    <p className="text-xl text-blue-100 mb-8">Start your free trial today and see why 2,500+ businesses trust Aerostic.</p>
+                    <p className="text-xl text-blue-100 mb-8">Start your free trial today and see why 2,500+ businesses trust Aimstors Solution.</p>
                     <Link
                         href="/register"
                         className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-bold hover:shadow-lg transition-all"
@@ -146,7 +146,7 @@ export default function AboutPage() {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

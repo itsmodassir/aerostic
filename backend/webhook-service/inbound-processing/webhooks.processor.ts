@@ -13,7 +13,7 @@ export class WebhooksProcessor extends WorkerHost {
 
   async process(job: Job<any, any, string>): Promise<any> {
     const { body } = job.data;
-    this.logger.log("Processing enqueued webhook event");
+    this.logger.log(`Processing enqueued webhook event: ${JSON.stringify(body)}`);
 
     try {
       // We call a dedicated internal method to avoid re-enqueuing

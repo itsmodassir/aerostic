@@ -57,7 +57,7 @@ export default function LoginPage() {
             // Redirect to workspace-specific dashboard
             const workspaceId = res.data.workspaceId;
             if (workspaceId) {
-                router.push(`/dashboard/${workspaceId}`);
+                router.push('/dashboard');
             } else {
                 router.push('/workspaces/new');
             }
@@ -124,10 +124,10 @@ export default function LoginPage() {
                     <div className="flex items-center gap-3 mb-12">
                         <img
                             src={branding?.logo || "/logo.png"}
-                            alt={branding?.brandName || "Aerostic"}
+                            alt={branding?.brandName || "Aimstors Solution"}
                             className="w-14 h-14 object-contain"
                         />
-                        <span className="text-3xl font-bold text-white">{branding?.brandName || "Aerostic"}</span>
+                        <span className="text-3xl font-bold text-white">{branding?.brandName || "Aimstors Solution"}</span>
                     </div>
 
                     {/* Headline */}
@@ -162,7 +162,7 @@ export default function LoginPage() {
                             ))}
                         </div>
                         <p className="text-white/90 text-sm mb-4">
-                            "Aerostic helped us 10x our customer response rate. The AI agents handle everything!"
+                            "Aimstors Solution helped us 10x our customer response rate. The AI agents handle everything!"
                         </p>
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold">
@@ -182,9 +182,9 @@ export default function LoginPage() {
                 <div className="w-full max-w-md">
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-                        <img src="/logo.png" alt="Aerostic" className="w-12 h-12 object-contain" />
+                        <img src="/logo.png" alt="Aimstors Solution" className="w-12 h-12 object-contain" />
                         <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Aerostic
+                            Aimstors Solution
                         </span>
                     </div>
 
@@ -290,7 +290,7 @@ export default function LoginPage() {
                                 <div className="w-full border-t border-gray-200"></div>
                             </div>
                             <div className="relative flex justify-center">
-                                <span className="px-4 bg-white text-gray-500 text-sm">New to Aerostic?</span>
+                                <span className="px-4 bg-white text-gray-500 text-sm">New to Aimstors Solution?</span>
                             </div>
                         </div>
 

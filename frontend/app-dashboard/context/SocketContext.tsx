@@ -34,10 +34,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             return;
         }
 
-        // Use base URL since frontend and backend are on same host but different ports/paths
-        // In local: localhost:3001
-        // In production: api.aimstore.in or same host
-        const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        // In production, Nginx proxies /socket.io/ → localhost:3001.
+        // So the browser just connects to the same origin (wss://app.aimstore.in/).
+        // For local dev, we fall back to localhost:3001 directly.
+        let socketUrl: string;
+        if (process.env.NEXT_PUBLIC_WS_URL) {
+            socketUrl = process.env.NEXT_PUBLIC_WS_URL;
+        } else if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+            socketUrl = window.location.origin;  // Nginx proxies /socket.io/ to API
+        } else {
+            socketUrl = 'http://localhost:3001';
+        }
 
         const socketInstance = io(socketUrl, {
             transports: ['websocket'],

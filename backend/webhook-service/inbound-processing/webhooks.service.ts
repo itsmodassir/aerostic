@@ -34,7 +34,7 @@ export class WebhooksService {
     private workflowsService: WorkflowsService,
     private aiService: AiService,
     private messagesGateway: MessagesGateway,
-  ) {}
+  ) { }
 
   verifyWebhook(mode: string, token: string, challenge: string): string {
     const verifyToken = this.configService.get("META_WEBHOOK_VERIFY_TOKEN");
@@ -101,6 +101,7 @@ export class WebhooksService {
         this.logger.error(`No tenant found for PhoneID: ${phoneNumberId}`);
         return;
       }
+      this.logger.log(`Found account for PhoneID: ${phoneNumberId}, TenantID: ${account.tenantId}`);
 
       let contact = await this.contactRepo.findOneBy({
         tenantId: account.tenantId,
@@ -108,6 +109,7 @@ export class WebhooksService {
       });
 
       if (!contact) {
+        this.logger.log(`Contact not found for ${from}, creating...`);
         const profileName = value.contacts?.[0]?.profile?.name || "Unknown";
         contact = this.contactRepo.create({
           tenantId: account.tenantId,
@@ -115,6 +117,9 @@ export class WebhooksService {
           name: profileName,
         });
         await this.contactRepo.save(contact);
+        this.logger.log(`Contact created: ${contact.id}`);
+      } else {
+        this.logger.log(`Found contact: ${contact.id}`);
       }
 
       let conversation = await this.conversationRepo.findOne({
@@ -127,16 +132,25 @@ export class WebhooksService {
       });
 
       if (!conversation) {
+        this.logger.log(`Conversation not found for contact ${contact.id}, creating...`);
         conversation = this.conversationRepo.create({
           tenantId: account.tenantId,
           contactId: contact.id,
           phoneNumberId: phoneNumberId,
           status: "open",
           lastMessageAt: new Date(),
+          firstInboundAt: new Date(),  // Track 24h window start
+          aiMode: 'ai',  // Start in AI mode by default
         });
         await this.conversationRepo.save(conversation);
+        this.logger.log(`Conversation created: ${conversation.id}`);
       } else {
+        this.logger.log(`Found open conversation: ${conversation.id}`);
         conversation.lastMessageAt = new Date();
+        // Record first inbound time if not yet set
+        if (!conversation.firstInboundAt) {
+          conversation.firstInboundAt = new Date();
+        }
         await this.conversationRepo.save(conversation);
       }
 
@@ -151,6 +165,7 @@ export class WebhooksService {
         return;
       }
 
+      this.logger.log(`Attempting to save message with MetaID: ${messageData.id}`);
       const messageContent = messageData[messageData.type] || {};
       const message = this.messageRepo.create({
         tenantId: account.tenantId,
@@ -163,6 +178,7 @@ export class WebhooksService {
       });
 
       await this.messageRepo.save(message);
+      this.logger.log(`Message saved successfully: ${message.id}`);
 
       this.messagesGateway.emitNewMessage(account.tenantId, {
         conversationId: conversation.id,
@@ -182,15 +198,47 @@ export class WebhooksService {
           from,
           messageBody: messageData.text?.body || "",
           contactId: contact.id,
+          conversationId: conversation.id,  // Pass conversationId for handoff checks
         },
       );
 
-      // Legacy fallback
-      await this.automationService.evaluate(
+      // Legacy fallback: keyword-based automation rules
+      const automationHandled = await this.automationService.evaluate(
         account.tenantId,
         from,
         messageData.text?.body || "",
       );
+
+      // ─── AI Fallback ─────────────────────────────────────────────────────
+      // Only trigger AI if:
+      // 1. Message is a text message
+      // 2. No keyword automation rule handled it
+      // 3. Conversation is in 'ai' mode (not 'human' or 'paused')
+      // 4. AI pause hasn't expired yet
+      if (!automationHandled && messageData.text?.body) {
+        const aiMode = conversation.aiMode || 'ai';
+        const now = new Date();
+        const pauseExpired = !conversation.aiPausedUntil || conversation.aiPausedUntil <= now;
+
+        if (aiMode === 'ai' || (aiMode === 'paused' && pauseExpired)) {
+          if (aiMode === 'paused' && pauseExpired) {
+            // Auto-resume AI after pause expires
+            conversation.aiMode = 'ai';
+            conversation.aiPausedUntil = null;
+            await this.conversationRepo.save(conversation);
+            this.logger.log(`AI pause expired for conversation ${conversation.id}, resuming AI`);
+          }
+
+          this.logger.log(`Triggering AI for conversation ${conversation.id}, mode: ${aiMode}`);
+          await this.aiService.process(
+            account.tenantId,
+            from,
+            messageData.text.body
+          );
+        } else {
+          this.logger.log(`AI skipped for conversation ${conversation.id}: mode=${aiMode}, pausedUntil=${conversation.aiPausedUntil}`);
+        }
+      }
     }
 
     if (value?.statuses) {

@@ -1,6 +1,6 @@
-# Aerostic: Master Architecture Blueprint (v2.6.0)
+# Aimstors Solution: Master Architecture Blueprint (v2.6.0)
 
-Aerostic is a high-performance, multi-tenant WhatsApp Automation platform featuring a modern micro-monolith architecture. It is designed to scale to 5,000,000+ users with strict security and multi-tenant isolation.
+Aimstors Solution is a high-performance, multi-tenant WhatsApp Automation platform featuring a modern micro-monolith architecture. It is designed to scale to 5,000,000+ users with strict security and multi-tenant isolation.
 
 ## 🏗️ Core Architecture Components
 
@@ -25,7 +25,7 @@ The security layer is the project's foundation, ensuring total data isolation an
 ## 🔄 Business Logic Flows
 
 ### 1. The Billing Cycle (Ledger-Based & Real-Time)
-Instead of mutable balance fields, Aerostic uses an immutable `UsageEvent` ledger.
+Instead of mutable balance fields, Aimstors Solution uses an immutable `UsageEvent` ledger.
 - **Events**: `outgoing_message`, `ai_agent_call`, `document_storage`.
 - **Worker**: `usage-worker` processes events and updates `TenantDailyMetrics`.
 - **Validation**: API checks historical ledger sums before allowing high-cost actions.

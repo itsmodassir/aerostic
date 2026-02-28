@@ -7,7 +7,7 @@ import {
     Globe, Palette, Link as LinkIcon, Mail,
     Save, ArrowLeft, CheckCircle, Upload,
     Image as ImageIcon, RefreshCcw, Layout,
-    ExternalLink, AlertCircle, Building2
+    ExternalLink, AlertCircle, Building2, CreditCard
 } from 'lucide-react';
 
 export default function ResellerBrandingPage() {
@@ -25,7 +25,11 @@ export default function ResellerBrandingPage() {
         logo: '',
         favicon: '',
         domain: '',
-        supportEmail: ''
+        supportEmail: '',
+        paymentGateway: {
+            razorpayKeyId: '',
+            razorpayKeySecret: ''
+        }
     });
 
     useEffect(() => {
@@ -46,7 +50,11 @@ export default function ResellerBrandingPage() {
                         logo: data.branding.logo || '',
                         favicon: data.branding.favicon || '',
                         domain: data.branding.domain || '',
-                        supportEmail: data.branding.supportEmail || ''
+                        supportEmail: data.branding.supportEmail || '',
+                        paymentGateway: data.branding.paymentGateway || {
+                            razorpayKeyId: '',
+                            razorpayKeySecret: ''
+                        }
                     });
                 }
             }
@@ -243,7 +251,45 @@ export default function ResellerBrandingPage() {
                         </div>
                     </div>
                 </div>
-
+                <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="p-6 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                            <CreditCard className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <h3 className="font-bold text-gray-900">Payment Gateway Configuration</h3>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Razorpay Key ID</label>
+                                <input
+                                    type="text"
+                                    value={branding.paymentGateway.razorpayKeyId}
+                                    onChange={(e) => setBranding({
+                                        ...branding,
+                                        paymentGateway: { ...branding.paymentGateway, razorpayKeyId: e.target.value }
+                                    })}
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="rzp_live_abc123"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Razorpay Key Secret</label>
+                                <input
+                                    type="password"
+                                    value={branding.paymentGateway.razorpayKeySecret}
+                                    onChange={(e) => setBranding({
+                                        ...branding,
+                                        paymentGateway: { ...branding.paymentGateway, razorpayKeySecret: e.target.value }
+                                    })}
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="••••••••••••"
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500">Provide your Razorpay Live credentials to directly bill your sub-tenants.</p>
+                    </div>
+                </div>
                 <div className="flex justify-end gap-3 pt-4">
                     <button
                         type="button"

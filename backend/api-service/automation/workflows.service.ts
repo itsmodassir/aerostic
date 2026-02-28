@@ -25,7 +25,7 @@ export class WorkflowsService {
     private auditService: AuditService,
     private messagesGateway: MessagesGateway,
     private googleService: GoogleService,
-  ) {}
+  ) { }
 
   async create(tenantId: string, data: Partial<Workflow>) {
     const workflow = this.workflowRepo.create({ ...data, tenantId });
@@ -50,6 +50,15 @@ export class WorkflowsService {
 
   async delete(id: string, tenantId: string) {
     return this.workflowRepo.delete({ id, tenantId });
+  }
+
+  /**
+   * Returns the number of active workflows that contain an ai_agent node.
+   * Used by the webhook handler to avoid double-sending AI responses.
+   */
+  async getActiveAiWorkflows(tenantId: string): Promise<number> {
+    const workflows = await this.workflowRepo.find({ where: { tenantId, isActive: true } });
+    return workflows.filter(w => w.nodes?.some((n: any) => n.type === 'ai_agent')).length;
   }
 
   async executeTest(tenantId: string, workflowId: string, message: string) {
@@ -183,10 +192,12 @@ export class WorkflowsService {
     }
   }
 
-  async executeTrigger(tenantId: string, triggerType: string, context: any) {
+  async executeTrigger(tenantId: string, triggerType: string, context: any): Promise<boolean> {
     const activeWorkflows = await this.workflowRepo.find({
       where: { tenantId, isActive: true },
     });
+
+    let handled = false;
 
     for (const workflow of activeWorkflows) {
       const triggerNode = workflow.nodes.find(
@@ -212,11 +223,14 @@ export class WorkflowsService {
         );
         try {
           await this.runNode(workflow, triggerNode.id, context, 0);
+          handled = true;
         } catch (error) {
           this.logger.error(`Workflow ${workflow.id} failed: ${error.message}`);
         }
       }
     }
+
+    return handled;
   }
 
   private async runNode(

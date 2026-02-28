@@ -19,7 +19,7 @@ export class PythonMLResultWorker implements OnModuleInit {
 
     await this.kafkaService.subscribe(
       "python-ml-result-group",
-      "aerostic.anomaly.results",
+      "aimstors.anomaly.results",
       async ({ message }) => {
         if (!message.value) return;
         const result = JSON.parse(message.value.toString());

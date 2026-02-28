@@ -26,7 +26,7 @@ export class EmailController {
         try {
             await this.emailService.sendEmailWithConfig(
                 config.fromEmail || config.user,
-                "Aerostic SMTP Test",
+                "Aimstors Solution SMTP Test",
                 "<h1>SMTP Connection Successful!</h1><p>Your SMTP settings are working correctly.</p>",
                 {
                     host: config.host,
@@ -37,7 +37,7 @@ export class EmailController {
                         pass: config.pass,
                     },
                     fromEmail: config.fromEmail || config.user,
-                    fromName: "Aerostic Test",
+                    fromName: "Aimstors Solution Test",
                 }
             );
             return { success: true, message: "Connection successful" };

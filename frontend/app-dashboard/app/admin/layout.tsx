@@ -102,8 +102,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Logo */}
                 <div className="flex h-16 items-center px-6 border-b border-gray-800">
                     <Link href="/" className="flex items-center gap-2 font-bold text-xl text-white">
-                        <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain" />
-                        <span>Aerostic</span>
+                        <img src="/logo.png" alt="Aimstors Solution" className="w-8 h-8 object-contain" />
+                        <span>Aimstors Solution</span>
                     </Link>
                 </div>
 

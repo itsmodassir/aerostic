@@ -16,8 +16,8 @@ import MessagingLimitsCard from '@/components/whatsapp/MessagingLimitsCard';
 import FeatureMatrixTable from '@/components/whatsapp/FeatureMatrixTable';
 import PaymentSetupCard from '@/components/whatsapp/PaymentSetupCard';
 
-const FALLBACK_APP_ID = '782076418251038';
-const FALLBACK_CONFIG_ID = '1093745902865717';
+const FALLBACK_APP_ID = '1507294274063502';
+const FALLBACK_CONFIG_ID = '1704866660475462';
 
 export default function WhatsappSettingsPage() {
     const [loading, setLoading] = useState(false);
@@ -76,7 +76,7 @@ export default function WhatsappSettingsPage() {
             // Auto-redirect if URL is malformed (e.g. 'billing' treated as workspace)
             if (workspaceSlug === 'billing' || workspaceSlug === 'settings') {
                 console.warn('Malformed URL detected, redirecting to default workspace');
-                window.location.href = '/dashboard/default/settings/whatsapp';
+                window.location.href = '/dashboard';
                 return;
             }
 
@@ -585,7 +585,7 @@ export default function WhatsappSettingsPage() {
                         <div>
                             <h3 className="text-xl font-bold mb-2">Connect with Facebook</h3>
                             <p className="text-blue-100 max-w-lg text-sm sm:text-base">
-                                You'll be redirected to Facebook to authorize Aerostic to access your WhatsApp Business Account.
+                                You'll be redirected to Facebook to authorize Aimstors Solution to access your WhatsApp Business Account.
                                 This is the fastest way to get started.
                             </p>
                         </div>

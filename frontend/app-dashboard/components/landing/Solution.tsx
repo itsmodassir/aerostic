@@ -41,7 +41,7 @@ export default function Solution() {
                         viewport={{ once: true }}
                         className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-sm font-bold uppercase tracking-wider mb-6"
                     >
-                        The Aerostic Edge
+                        The Aimstors Solution Edge
                     </motion.div>
                     <motion.h2
                         initial={false}

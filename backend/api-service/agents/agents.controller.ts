@@ -6,39 +6,45 @@ import {
   Patch,
   Param,
   Delete,
-  Query,
+  UseGuards,
 } from "@nestjs/common";
 import { AgentsService } from "./agents.service";
+import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
+import { UserTenant } from "@api/auth/decorators/user-tenant.decorator";
 
 @Controller("agents")
+@UseGuards(JwtAuthGuard)
 export class AgentsController {
   constructor(private readonly agentsService: AgentsService) {}
 
   @Post()
-  create(@Body() createAgentDto: any) {
-    // Assuming tenantId is passed in body for now, or extracted from user context
-    const { tenantId, ...data } = createAgentDto;
+  create(@UserTenant() tenantId: string, @Body() createAgentDto: any) {
+    const { tenantId: _tenantId, ...data } = createAgentDto;
     return this.agentsService.create(tenantId, data);
   }
 
   @Get()
-  findAll(@Query("tenantId") tenantId: string) {
+  findAll(@UserTenant() tenantId: string) {
     return this.agentsService.findAll(tenantId);
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string, @Query("tenantId") tenantId: string) {
+  findOne(@Param("id") id: string, @UserTenant() tenantId: string) {
     return this.agentsService.findOne(id, tenantId);
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() updateAgentDto: any) {
-    const { tenantId, ...data } = updateAgentDto;
+  update(
+    @Param("id") id: string,
+    @UserTenant() tenantId: string,
+    @Body() updateAgentDto: any,
+  ) {
+    const { tenantId: _tenantId, ...data } = updateAgentDto;
     return this.agentsService.update(id, tenantId, data);
   }
 
   @Delete(":id")
-  remove(@Param("id") id: string, @Query("tenantId") tenantId: string) {
+  remove(@Param("id") id: string, @UserTenant() tenantId: string) {
     return this.agentsService.remove(id, tenantId);
   }
 }

@@ -699,7 +699,7 @@ export class BillingService {
     await this.usageMetricRepo.save(usage);
 
     // 5. Emit to Kafka
-    this.kafkaService.emit("aerostic.usage.events", {
+    this.kafkaService.emit("aimstors.usage.events", {
       eventId: event.id,
       tenantId: event.tenantId,
       metric: event.metric,

@@ -9,7 +9,7 @@ const BlogEditorHeader = () => {
         AI Blog Editor
       </h1>
       <p className="text-xl text-muted-foreground">
-        Create professional blog posts in seconds with Aerostic AI
+        Create professional blog posts in seconds with Aimstors Solution AI
       </p>
     </div>
   );

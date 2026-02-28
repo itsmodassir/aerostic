@@ -16,7 +16,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   constructor(private configService: ConfigService) {
     this.kafka = new Kafka({
-      clientId: "aerostic-cluster",
+      clientId: "aimstors-cluster",
       brokers: this.configService
         .get<string>("KAFKA_BROKERS", "localhost:9092")
         .split(","),

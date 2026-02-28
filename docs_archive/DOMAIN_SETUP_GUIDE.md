@@ -1,4 +1,4 @@
-# 🌐 Aerostic Multi-Domain Setup Guide
+# 🌐 Aimstors Solution Multi-Domain Setup Guide
 
 **Domains:**
 - `aimstore.in` → Landing page / Home
@@ -66,7 +66,7 @@ Once DNS is configured, run the SSL setup script on the EC2 instance:
 
 ```bash
 ssh -i ~/Downloads/aimstors.pem ubuntu@13.63.63.170
-cd aerostic
+cd aimstors
 sudo chmod +x setup_ssl.sh
 ./setup_ssl.sh
 ```
@@ -95,14 +95,14 @@ Push the updated configuration to production:
 
 ```bash
 # On your local machine
-cd ~/Documents/aerostic
+cd ~/Documents/aimstors
 git add setup_ssl.sh nginx.conf
 git commit -m "🌐 Configure multi-domain setup with SSL"
 git push origin main
 
 # On EC2 instance
 ssh -i ~/Downloads/aimstors.pem ubuntu@13.63.63.170
-cd aerostic
+cd aimstors
 git pull origin main
 
 # Restart Nginx to apply new config
@@ -154,7 +154,7 @@ Found the following certs:
 ### 4.4 Check Nginx Status
 ```bash
 ssh -i ~/Downloads/aimstors.pem ubuntu@13.63.63.170
-cd aerostic
+cd aimstors
 docker compose logs nginx --tail 20
 ```
 
@@ -195,7 +195,7 @@ All domains include:
 Edit the configuration on EC2:
 ```bash
 ssh -i ~/Downloads/aimstors.pem ubuntu@13.63.63.170
-sudo nano aerostic/nginx.conf
+sudo nano aimstors/nginx.conf
 # Make changes
 docker compose restart nginx
 ```
@@ -306,7 +306,7 @@ docker compose restart nginx
 ### View running services
 ```bash
 ssh -i ~/Downloads/aimstors.pem ubuntu@13.63.63.170
-cd aerostic
+cd aimstors
 docker compose ps
 ```
 

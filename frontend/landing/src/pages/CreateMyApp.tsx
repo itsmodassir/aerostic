@@ -61,7 +61,7 @@ const CreateMyApp: React.FC = () => {
 
       const context = [
         "Return a SINGLE, self-contained HTML file.",
-        "Must include: <head> with meta viewport, title, meta description; inline CSS using a clean, minimal style matching Aerostic's visual identity; and a <main> with a simple hero section and 2-3 feature cards.",
+        "Must include: <head> with meta viewport, title, meta description; inline CSS using a clean, minimal style matching Aimstors Solution's visual identity; and a <main> with a simple hero section and 2-3 feature cards.",
         "No external assets or images. Keep JS minimal. Include semantic HTML and accessible ARIA where appropriate.",
       ].join("\n");
 

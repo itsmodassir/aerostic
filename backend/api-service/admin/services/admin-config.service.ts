@@ -161,7 +161,88 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
     category: "platform",
     isSecret: false,
   },
+  "platform.ai_pause_minutes": {
+    value: "30",
+    description: "Minutes to pause AI when a human agent replies (Handover Mode)",
+    category: "platform",
+    isSecret: false,
+  },
+  "platform.ai_enabled": {
+    value: "true",
+    description: "Enable global AI auto-reply for all tenants",
+    category: "platform",
+    isSecret: false,
+  },
+
+  // Email / SMTP
+  "email.smtp_host": {
+    value: "",
+    description: "SMTP Server Host (e.g. smtp.gmail.com)",
+    category: "email",
+    isSecret: false,
+  },
+  "email.smtp_port": {
+    value: "587",
+    description: "SMTP Server Port (587 for TLS, 465 for SSL)",
+    category: "email",
+    isSecret: false,
+  },
+  "email.smtp_secure": {
+    value: "false",
+    description: "Use SSL (true for port 465, false for STARTTLS on 587)",
+    category: "email",
+    isSecret: false,
+  },
+  "email.smtp_user": {
+    value: "",
+    description: "SMTP Authentication Username / Email",
+    category: "email",
+    isSecret: false,
+  },
+  "email.smtp_pass": {
+    value: "",
+    description: "SMTP Authentication Password / App Password",
+    category: "email",
+    isSecret: true,
+  },
+  "email.from_name": {
+    value: "Aerostic",
+    description: "Sender name shown in 'From' field",
+    category: "email",
+    isSecret: false,
+  },
+  "email.from_email": {
+    value: "no-reply@aimstore.in",
+    description: "Sender email address shown in 'From' field",
+    category: "email",
+    isSecret: false,
+  },
+  "email.otp_enabled": {
+    value: "true",
+    description: "Send OTP verification emails",
+    category: "email",
+    isSecret: false,
+  },
+  "email.welcome_enabled": {
+    value: "true",
+    description: "Send welcome emails to new users",
+    category: "email",
+    isSecret: false,
+  },
+  "email.forgot_password_enabled": {
+    value: "true",
+    description: "Send forgot password reset emails",
+    category: "email",
+    isSecret: false,
+  },
+  "email.promotional_enabled": {
+    value: "false",
+    description: "Send promotional / marketing emails",
+    category: "email",
+    isSecret: false,
+  },
 };
+
 
 const PROTECTED_KEYS = new Set(Object.keys(DEFAULT_CONFIG));
 
@@ -285,10 +366,16 @@ export class AdminConfigService implements OnModuleInit {
     return { success: true, removed };
   }
 
+  /** Short alias for getConfigValue — used by EmailService and other services */
+  async getValue(key: string, tenantId?: string): Promise<string | null> {
+    return this.getConfigValue(key, tenantId);
+  }
+
   async getConfigValue(key: string, tenantId?: string): Promise<string | null> {
     // Check Env first (Strict Priority)
     const envMap: Record<string, string> = {
       "meta.app_id": "META_APP_ID",
+
       "meta.app_secret": "META_APP_SECRET",
       "meta.webhook_verify_token": "META_WEBHOOK_VERIFY_TOKEN",
       "meta.config_id": "META_CONFIG_ID",

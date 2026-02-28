@@ -34,6 +34,7 @@ import { AdminDatabaseService } from "./services/admin-database.service";
 import { AdminInboxService } from "./services/admin-inbox.service";
 import { AdminRiskService } from "./services/admin-risk.service";
 import { RiskGateway } from "./gateways/risk.gateway";
+import { EmailService } from "@api/email/email.service";
 
 // New Controllers
 import { PlatformAdminController } from "./controllers/platform-admin.controller";
@@ -77,6 +78,7 @@ import { PlatformAnomalyCluster } from "@shared/database/entities/analytics/plat
     forwardRef(() => BillingModule),
     AuthModule,
     UsersModule,
+    forwardRef(() => import("@api/email/email.module").then(m => m.EmailModule)),
   ],
   controllers: [
     PlatformAdminController,

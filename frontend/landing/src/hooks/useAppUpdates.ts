@@ -29,7 +29,7 @@ export const useAppUpdates = (config: UpdateConfig = {}) => {
   const {
     checkInterval = 60, // Check every hour by default
     forceUpdate = false,
-    storeUrl = 'https://apps.apple.com/app/aerostic/id123456789' // Replace with actual App Store URL
+    storeUrl = 'https://apps.apple.com/app/aimstors/id123456789' // Replace with actual App Store URL
   } = config;
 
   const getCurrentVersion = async () => {

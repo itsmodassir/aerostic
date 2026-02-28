@@ -48,7 +48,7 @@ export default function SupportPage() {
             <nav className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <Link href="/" className="text-2xl font-bold text-blue-600">
-                        Aerostic
+                        Aimstors Solution
                     </Link>
                     <div className="flex items-center gap-4">
                         <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>

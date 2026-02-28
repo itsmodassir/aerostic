@@ -3,6 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -26,6 +27,8 @@ import { TransactionType } from "@shared/database/entities/billing/wallet-transa
 
 @Injectable()
 export class MessagesService {
+  private readonly logger = new Logger(MessagesService.name);
+
   constructor(
     @InjectRepository(WhatsappAccount)
     private whatsappAccountRepo: Repository<WhatsappAccount>,
@@ -85,22 +88,30 @@ export class MessagesService {
       await this.conversationRepo.save(conversation);
     } else {
       conversation.lastMessageAt = new Date();
+
+      // ─── Human Handover Auto-Pause ─────────────────────────────────────
+      // When a human agent sends a reply from the dashboard, pause AI for
+      // the configured number of minutes to allow the human to handle it.
+      if (dto.agentId && (conversation.aiMode !== 'human')) {
+        const pauseMinsStr = await this.adminConfigService.getConfigValue('platform.ai_pause_minutes');
+        const pauseMins = parseInt(pauseMinsStr || '30', 10);
+        const pauseUntil = new Date(Date.now() + pauseMins * 60 * 1000);
+        conversation.aiMode = 'paused';
+        conversation.aiPausedUntil = pauseUntil;
+        this.logger.log(`Human agent ${dto.agentId} replied — AI paused for ${pauseMins}m on conv ${conversation.id}`);
+      }
+
       await this.conversationRepo.save(conversation);
     }
 
-    // 3. Get System Token
-    const tokenRecord = await this.metaTokenRepo.findOne({
-      where: { tokenType: "system" },
-      order: { createdAt: "DESC" },
-    });
-
-    if (!tokenRecord) {
+    // 3. Get Tenant's Access Token
+    if (!account.accessToken) {
       throw new InternalServerErrorException(
-        "System token configuration missing",
+        "WhatsApp access token missing for this account.",
       );
     }
 
-    const token = this.encryptionService.decrypt(tokenRecord.encryptedToken);
+    const token = this.encryptionService.decrypt(account.accessToken);
 
     // 4. Construct Meta Graph API Payload
     const apiVersion =
@@ -200,6 +211,7 @@ export class MessagesService {
         type: dto.type,
         content: dto.type === "text" ? { body: dto.payload.text } : dto.payload,
         timestamp: new Date(),
+        agentId: dto.agentId, // Include agentId to help frontend distinguish human vs bot
       });
 
       // 7. Track Usage
@@ -320,5 +332,83 @@ export class MessagesService {
       .execute();
 
     return { deleted: result.affected || 0 };
+  }
+
+  // ─── AI Handover Mode Methods ─────────────────────────────────────────────
+
+  /**
+   * Set the AI mode for a conversation.
+   * mode: 'ai' = AI active, 'human' = human took over, 'paused' = AI paused temporarily
+   * pauseMinutes: only used when mode = 'paused'
+   */
+  async setAiMode(
+    conversationId: string,
+    tenantId: string,
+    mode: 'ai' | 'human' | 'paused',
+    pauseMinutes?: number,
+  ) {
+    const conversation = await this.conversationRepo.findOne({
+      where: { id: conversationId, tenantId },
+    });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    conversation.aiMode = mode;
+    if (mode === 'paused' && pauseMinutes) {
+      conversation.aiPausedUntil = new Date(Date.now() + pauseMinutes * 60 * 1000);
+    } else if (mode === 'ai' || mode === 'human') {
+      conversation.aiPausedUntil = null;
+    }
+    await this.conversationRepo.save(conversation);
+    return { conversationId, aiMode: conversation.aiMode, aiPausedUntil: conversation.aiPausedUntil };
+  }
+
+  /**
+   * Get AI status + 24h window info for a conversation (for frontend timers)
+   */
+  async getConversationStatus(conversationId: string, tenantId: string) {
+    const conversation = await this.conversationRepo.findOne({
+      where: { id: conversationId, tenantId },
+    });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    const now = new Date();
+    const pauseMinsStr = await this.adminConfigService.getConfigValue('platform.ai_pause_minutes');
+    const pauseMins = parseInt(pauseMinsStr || '30', 10);
+
+    // Compute 24h window
+    let windowExpiresAt: Date | null = null;
+    let windowExpired = false;
+    if (conversation.firstInboundAt) {
+      windowExpiresAt = new Date(conversation.firstInboundAt.getTime() + 24 * 60 * 60 * 1000);
+      windowExpired = windowExpiresAt <= now;
+    }
+
+    // Compute AI pause
+    let aiMode = conversation.aiMode || 'ai';
+    let pauseSecondsLeft = 0;
+    if (aiMode === 'paused' && conversation.aiPausedUntil) {
+      const diff = conversation.aiPausedUntil.getTime() - now.getTime();
+      if (diff <= 0) {
+        // Pause has expired — auto-resume
+        aiMode = 'ai';
+        conversation.aiMode = 'ai';
+        conversation.aiPausedUntil = null;
+        await this.conversationRepo.save(conversation);
+      } else {
+        pauseSecondsLeft = Math.floor(diff / 1000);
+      }
+    }
+
+    return {
+      conversationId,
+      aiMode,
+      aiPausedUntil: conversation.aiPausedUntil,
+      pauseSecondsLeft,
+      firstInboundAt: conversation.firstInboundAt,
+      windowExpiresAt,
+      windowExpired,
+      windowSecondsLeft: windowExpiresAt ? Math.max(0, Math.floor((windowExpiresAt.getTime() - now.getTime()) / 1000)) : null,
+      defaultPauseMinutes: pauseMins,
+    };
   }
 }

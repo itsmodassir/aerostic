@@ -1,6 +1,6 @@
-# 🚀 Aerostic - WhatsApp Marketing SaaS
+# 🚀 Aimstors Solution - WhatsApp Marketing SaaS
 
-**Aerostic** is a production-ready, multi-tenant SaaS platform for WhatsApp Marketing & Automation. It is built to scale, featuring Meta Embedded Signup, AI-powered responses, and a complete CRM dashboard.
+**Aimstors Solution** is a production-ready, multi-tenant SaaS platform for WhatsApp Marketing & Automation. It is built to scale, featuring Meta Embedded Signup, AI-powered responses, and a complete CRM dashboard.
 
 ---
 
@@ -144,7 +144,7 @@ We provide a helper script to automate the entire setup:
 2.  **Configure Security Group**: Allow Inbound on Ports `80` (HTTP), `443` (HTTPS), and `22` (SSH).
 3.  **Run the Auto-Deploy Script**:
     ```bash
-    curl -o deploy_aws.sh https://raw.githubusercontent.com/itsmodassir/aerostic-whatsapp-automation/main/deploy_aws.sh
+    curl -o deploy_aws.sh https://raw.githubusercontent.com/itsmodassir/aimstors-whatsapp-automation/main/deploy_aws.sh
     chmod +x deploy_aws.sh
     ./deploy_aws.sh
     ```
@@ -172,8 +172,8 @@ We provide a helper script to automate the entire setup:
 
 1.  **Clone the Repo**:
     ```bash
-    git clone https://github.com/itsmodassir/aerostic-whatsapp-automation.git
-    cd aerostic
+    git clone https://github.com/itsmodassir/aimstors-whatsapp-automation.git
+    cd aimstors
     ```
 
 2.  **Start Services**:
@@ -212,7 +212,7 @@ If you plan to make this repository **Public** on GitHub, please follow this che
 4.  Select **Make public** and confirm.
 
 ### 💬 Enabling GitHub Discussions
-To build a community around Aerostic:
+To build a community around Aimstors Solution:
 1.  Go to **Settings** > **General**.
 2.  Under **Features**, check the box for **Discussions**.
 3.  Click **Set up discussions** to create initial categories (General, Ideas, Q&A).

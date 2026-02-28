@@ -6,7 +6,8 @@ import {
   OnGatewayDisconnect,
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { Logger } from "@nestjs/common";
+import { Logger, OnModuleInit } from "@nestjs/common";
+import { RedisService } from "@shared/redis.service";
 
 @WebSocketGateway({
   cors: {
@@ -14,12 +15,31 @@ import { Logger } from "@nestjs/common";
   },
 })
 export class MessagesGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(MessagesGateway.name);
+
+  constructor(private redisService: RedisService) { }
+
+  async onModuleInit() {
+    const subscriber = this.redisService.createSubscriber();
+    await subscriber.subscribe("chat_events");
+
+    subscriber.on("message", (channel, message) => {
+      try {
+        if (channel === "chat_events") {
+          const { event, tenantId, payload } = JSON.parse(message);
+          this.server.to(tenantId).emit(event, payload);
+        }
+      } catch (err) {
+        this.logger.error("Failed to parse redis chat_events message", err);
+      }
+    });
+
+    this.logger.log("📡 MessagesGateway bridged to Redis Pub/Sub");
+  }
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -44,24 +64,24 @@ export class MessagesGateway
   }
 
   /**
-   * Emit a new message event to all clients in a tenant room
+   * Emit a new message event to all clients in a tenant room (via Redis)
    */
   emitNewMessage(tenantId: string, payload: any) {
-    this.server.to(tenantId).emit("newMessage", payload);
+    this.redisService.publish("chat_events", { event: "newMessage", tenantId, payload });
   }
 
   /**
    * Emit a message status update to all clients in a tenant room
    */
   emitMessageStatus(tenantId: string, payload: any) {
-    this.server.to(tenantId).emit("messageStatus", payload);
+    this.redisService.publish("chat_events", { event: "messageStatus", tenantId, payload });
   }
 
   /**
    * Emit a conversation update to all clients in a tenant room
    */
   emitConversationUpdate(tenantId: string, payload: any) {
-    this.server.to(tenantId).emit("conversationUpdate", payload);
+    this.redisService.publish("chat_events", { event: "conversationUpdate", tenantId, payload });
   }
 
   /**
@@ -77,12 +97,11 @@ export class MessagesGateway
       result?: any;
     },
   ) {
-    this.server.to(tenantId).emit("workflowDebug", payload);
+    this.redisService.publish("chat_events", { event: "workflowDebug", tenantId, payload });
   }
 
   /**
    * Handle typing indicator events
-   * Broadcasts typing status to all agents in the tenant room
    */
   @SubscribeMessage("typing")
   handleTyping(
@@ -94,13 +113,7 @@ export class MessagesGateway
       isTyping: boolean;
     },
   ) {
-    this.logger.log(
-      `Typing event from ${client.id}: ${JSON.stringify(payload)}`,
-    );
-
-    // Broadcast to all clients in the tenant room except the sender
-    client.to(payload.tenantId).emit("typing", payload);
-
+    this.redisService.publish("chat_events", { event: "typing", tenantId: payload.tenantId, payload });
     return { event: "typingAck", data: { received: true } };
   }
 
@@ -112,13 +125,7 @@ export class MessagesGateway
     client: Socket,
     payload: { tenantId: string; agentId: string; agentName: string },
   ) {
-    this.logger.log(
-      `Agent ${payload.agentId} is online in tenant ${payload.tenantId}`,
-    );
-
-    // Broadcast to all clients in the tenant room
-    this.server.to(payload.tenantId).emit("agentOnline", payload);
-
+    this.redisService.publish("chat_events", { event: "agentOnline", tenantId: payload.tenantId, payload });
     return { event: "agentOnlineAck", data: { agentId: payload.agentId } };
   }
 
@@ -130,32 +137,19 @@ export class MessagesGateway
     client: Socket,
     payload: { tenantId: string; agentId: string },
   ) {
-    this.logger.log(
-      `Agent ${payload.agentId} is offline in tenant ${payload.tenantId}`,
-    );
-
-    // Broadcast to all clients in the tenant room
-    this.server.to(payload.tenantId).emit("agentOffline", payload);
-
+    this.redisService.publish("chat_events", { event: "agentOffline", tenantId: payload.tenantId, payload });
     return { event: "agentOfflineAck", data: { agentId: payload.agentId } };
   }
 
   /**
    * Handle mark as read event
-   * This is for internal tracking when an agent reads messages
    */
   @SubscribeMessage("markAsRead")
   handleMarkAsRead(
     client: Socket,
     payload: { tenantId: string; conversationId: string; agentId?: string },
   ) {
-    this.logger.log(
-      `Messages marked as read in conversation ${payload.conversationId}`,
-    );
-
-    // Broadcast to all clients in the tenant room
-    this.server.to(payload.tenantId).emit("messageRead", payload);
-
+    this.redisService.publish("chat_events", { event: "messageRead", tenantId: payload.tenantId, payload });
     return {
       event: "markAsReadAck",
       data: { conversationId: payload.conversationId },

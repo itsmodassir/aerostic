@@ -8,7 +8,7 @@ export class AgentsService {
   constructor(
     @InjectRepository(Agent)
     private agentRepo: Repository<Agent>,
-  ) {}
+  ) { }
 
   async create(tenantId: string, data: any) {
     const agent = this.agentRepo.create({
@@ -26,12 +26,13 @@ export class AgentsService {
         "name",
         "description",
         "type",
+        "systemPrompt",
         "isActive",
         "totalConversations",
         "successfulResolutions",
         "handoffsTriggered",
         "createdAt",
-        "updatedAt", // Exclude flowConfig and systemPrompt
+        "updatedAt", // Exclude flowConfig
       ],
       order: { createdAt: "DESC" },
     });

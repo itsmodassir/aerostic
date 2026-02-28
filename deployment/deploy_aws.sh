@@ -2,10 +2,10 @@
 set -e
 
 # Configuration
-APP_DIR="/var/www/aerostic"
-REPO_URL="https://github.com/itsmodassir/aerostic.git"
+APP_DIR="/var/www/aimstors"
+REPO_URL="https://github.com/itsmodassir/aimstors.git"
 
-echo "🚀 Starting Aerostic Production Deployment..."
+echo "🚀 Starting Aimstors Solution Production Deployment..."
 
 # 1. Update/Clone Code
 if [ ! -d "$APP_DIR" ]; then
@@ -73,12 +73,12 @@ echo "🔄 Restarting Services..."
 pm2 delete all || true
 
 # Backend
-pm2 start backend/dist/api-service/main.js --name aerostic-api
-pm2 start backend/dist/webhook-service/main.js --name aerostic-webhook
-pm2 start backend/dist/worker-service/main.js --name aerostic-worker
+pm2 start backend/dist/api-service/main.js --name aimstors-api
+pm2 start backend/dist/webhook-service/main.js --name aimstors-webhook
+pm2 start backend/dist/worker-service/main.js --name aimstors-worker
 
 # Frontend
-PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/frontend/app-dashboard/server.js --name aerostic-frontend
+PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/frontend/app-dashboard/server.js --name aimstors-frontend
 
 # Nginx + ML Service (Docker)
 cd infrastructure/docker

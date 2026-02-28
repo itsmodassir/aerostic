@@ -15,7 +15,7 @@ export default function SocialProof() {
         {
             name: "Alex Rivera",
             role: "Founder, Growthly",
-            content: "Aerostic isn't just a tool; it's our growth engine. We've automated 90% of our patient reminders.",
+            content: "Aimstors Solution isn't just a tool; it's our growth engine. We've automated 90% of our patient reminders.",
             avatar: "AR"
         },
         {

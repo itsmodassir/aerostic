@@ -7,9 +7,14 @@ import {
 } from "typeorm";
 
 export enum AgentType {
-  SALES = "SALES",
-  SUPPORT = "SUPPORT",
-  CUSTOM = "CUSTOM",
+  SALES_UPPER = "SALES",
+  SUPPORT_UPPER = "SUPPORT",
+  CUSTOM_UPPER = "CUSTOM",
+  CUSTOMER_SUPPORT = "customer_support",
+  SALES = "sales",
+  LEAD_FOLLOWUP = "lead_followup",
+  FAQ = "faq",
+  CUSTOM = "custom",
 }
 
 export enum AgentTrigger {

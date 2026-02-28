@@ -152,7 +152,7 @@ export const AppUpdatePrompt = ({
             Update Available
           </AlertDialogTitle>
           <AlertDialogDescription>
-            A new version of Aerostic AI is available. 
+            A new version of Aimstors Solution AI is available. 
             {forceUpdate 
               ? ' This update is required to continue using the app.' 
               : ' Update now to get the latest features and improvements.'

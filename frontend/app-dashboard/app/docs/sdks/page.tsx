@@ -22,11 +22,11 @@ export default function SDKsDocsPage() {
             name: 'Node.js',
             version: '2.1.0',
             status: 'stable',
-            install: 'npm install @aerostic/sdk',
-            init: `const Aerostic = require('@aerostic/sdk');
+            install: 'npm install @aimstors/sdk',
+            init: `const Aimstors Solution = require('@aimstors/sdk');
 
-const client = new Aerostic({
-  apiKey: process.env.AEROSTIC_API_KEY
+const client = new Aimstors Solution({
+  apiKey: process.env.AIMSTORS_API_KEY
 });`,
             sendMessage: `// Send a template message
 const response = await client.messages.send({
@@ -58,11 +58,11 @@ app.post('/webhook', express.json(), (req, res) => {
             name: 'Python',
             version: '1.8.0',
             status: 'stable',
-            install: 'pip install aerostic',
-            init: `from aerostic import Aerostic
+            install: 'pip install aimstors',
+            init: `from aimstors import Aimstors Solution
 import os
 
-client = Aerostic(api_key=os.environ['AEROSTIC_API_KEY'])`,
+client = Aimstors Solution(api_key=os.environ['AIMSTORS_API_KEY'])`,
             sendMessage: `# Send a template message
 response = client.messages.send(
     to='+919876543210',
@@ -93,11 +93,11 @@ def webhook():
             name: 'PHP',
             version: '1.5.0',
             status: 'beta',
-            install: 'composer require aerostic/sdk',
+            install: 'composer require aimstors/sdk',
             init: `<?php
-use Aerostic\\Client;
+use Aimstors Solution\\Client;
 
-$client = new Client(getenv('AEROSTIC_API_KEY'));`,
+$client = new Client(getenv('AIMSTORS_API_KEY'));`,
             sendMessage: `<?php
 // Send a template message
 $response = $client->messages->send([
@@ -130,19 +130,19 @@ Route::post('/webhook', function (Request $request) {
             name: 'Go',
             version: '0.9.0',
             status: 'alpha',
-            install: 'go get github.com/aerostic/aerostic-go',
+            install: 'go get github.com/aimstors/aimstors-go',
             init: `package main
 
 import (
     "os"
-    aerostic "github.com/aerostic/aerostic-go"
+    aimstors "github.com/aimstors/aimstors-go"
 )
 
 func main() {
-    client := aerostic.NewClient(os.Getenv("AEROSTIC_API_KEY"))
+    client := aimstors.NewClient(os.Getenv("AIMSTORS_API_KEY"))
 }`,
             sendMessage: `// Send a template message
-response, err := client.Messages.Send(&aerostic.SendMessageParams{
+response, err := client.Messages.Send(&aimstors.SendMessageParams{
     To:        "+919876543210",
     Template:  "order_confirmation",
     Language:  "en",
@@ -157,7 +157,7 @@ fmt.Printf("Message ID: %s\\n", response.ID)
 fmt.Printf("Status: %s\\n", response.Status)`,
             webhook: `// HTTP webhook handler
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
-    var event aerostic.WebhookEvent
+    var event aimstors.WebhookEvent
     json.NewDecoder(r.Body).Decode(&event)
     
     switch event.Event {
@@ -183,7 +183,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                     <Link href="/docs" className="text-blue-600 hover:underline">← Back to Docs</Link>
                 </div>
@@ -199,7 +199,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
                     <h1 className="text-4xl font-extrabold text-gray-900">SDK Libraries</h1>
                 </div>
                 <p className="text-xl text-gray-600 mb-12">
-                    Official client libraries for integrating Aerostic into your applications.
+                    Official client libraries for integrating Aimstors Solution into your applications.
                 </p>
 
                 {/* SDK Grid */}
@@ -350,7 +350,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

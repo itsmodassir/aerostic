@@ -1,5 +1,5 @@
 /**
- * Centralized Queue Names for Aerostic Platform
+ * Centralized Queue Names for Aimstors Solution Platform
  */
 
 export const CAMPAIGN_QUEUE = "campaign_queue";

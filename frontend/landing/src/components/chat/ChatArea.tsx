@@ -430,7 +430,7 @@ const ChatArea = ({
               
               {/* Gradient heading */}
               <h2 className="text-3xl md:text-4xl font-bold mb-3 message-slide-in" style={{ animationDelay: '0.1s' }}>
-                <span className="gradient-text">Hello, I'm Aerostic</span>
+                <span className="gradient-text">Hello, I'm Aimstors Solution</span>
               </h2>
               
               <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-md mx-auto message-slide-in" style={{ animationDelay: '0.2s' }}>
@@ -537,7 +537,7 @@ const ChatArea = ({
                   <div className={`flex-1 min-w-0 ${message.role === 'user' ? 'flex flex-col items-end' : ''}`}>
                     {/* Timestamp */}
                     <span className="text-[10px] text-muted-foreground/50 mb-1 block font-medium">
-                      {message.role === 'assistant' ? 'Aerostic AI' : 'You'} · {formatTime(message.created_at)}
+                      {message.role === 'assistant' ? 'Aimstors Solution AI' : 'You'} · {formatTime(message.created_at)}
                     </span>
                     
                     <div className={`inline-block max-w-[90%] md:max-w-[85%] rounded-2xl ${
@@ -573,7 +573,7 @@ const ChatArea = ({
                   </div>
                   <div className="flex-1">
                     <span className="text-[10px] text-muted-foreground/50 mb-1 block font-medium">
-                      Aerostic AI
+                      Aimstors Solution AI
                     </span>
                     <div className="glass-bubble p-4 inline-block">
                       <div className="flex items-center gap-3">
@@ -672,7 +672,7 @@ const ChatArea = ({
           </div>
 
           <p className="text-[11px] text-muted-foreground/50 text-center mt-3 hidden md:block">
-            Aerostic AI can make mistakes. Consider checking important information.
+            Aimstors Solution AI can make mistakes. Consider checking important information.
           </p>
         </div>
       </div>

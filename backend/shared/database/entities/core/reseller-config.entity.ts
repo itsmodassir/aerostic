@@ -45,6 +45,9 @@ export class ResellerConfig {
   @Column({ name: "support_email", nullable: true })
   supportEmail: string;
 
+  @Column({ type: "jsonb", nullable: true, name: "payment_gateway" })
+  paymentGateway: Record<string, any>;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 

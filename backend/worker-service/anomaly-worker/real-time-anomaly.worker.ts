@@ -23,7 +23,7 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
     // Subscribe to usage events
     await this.kafkaService.subscribe(
       "anomaly-engine-group",
-      "aerostic.usage.events",
+      "aimstors.usage.events",
       async ({ message }) => {
         if (!message.value) return;
         const event = JSON.parse(message.value.toString());
@@ -34,7 +34,7 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
     // Subscribe to security events
     await this.kafkaService.subscribe(
       "anomaly-engine-group",
-      "aerostic.security.events",
+      "aimstors.security.events",
       async ({ message }) => {
         if (!message.value) return;
         const event = JSON.parse(message.value.toString());
@@ -100,7 +100,7 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
         this.logger.warn(
           `PLATFORM CLUSTER DETECTED: ${spikingTenants} tenants spiking simultaneously!`,
         );
-        await this.kafkaService.emit("aerostic.anomaly.alerts", {
+        await this.kafkaService.emit("aimstors.anomaly.alerts", {
           type: "PLATFORM_CLUSTER",
           affectedTenants: spikingTenants,
           timestamp: now,
@@ -149,7 +149,7 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
       `REAL-TIME ANOMALY: Tenant ${tenantId} - ${reason} (${magnitude})`,
     );
 
-    await this.kafkaService.emit("aerostic.anomaly.alerts", {
+    await this.kafkaService.emit("aimstors.anomaly.alerts", {
       type: "TENANT_ANOMALY",
       tenantId,
       reason,

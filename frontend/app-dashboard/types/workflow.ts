@@ -1,5 +1,5 @@
 /**
- * Centralized TypeScript type definitions for Aerostic Workflow Builder
+ * Centralized TypeScript type definitions for Aimstors Solution Workflow Builder
  * 
  * This file contains all type definitions for:
  * - Workflow nodes and their data

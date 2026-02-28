@@ -1,4 +1,4 @@
-# 🚀 Aerostic Security Audit - Quick Fix Checklist
+# 🚀 Aimstors Solution Security Audit - Quick Fix Checklist
 
 **Last Updated:** February 11, 2026  
 **Status:** 🔴 NEEDS FIXES BEFORE PRODUCTION
@@ -53,7 +53,7 @@ ALLOWED_ORIGINS=https://app.aimstore.in,https://admin.aimstore.in
 **Why:** Prevent decryption of all encrypted secrets
 
 ```diff
-- const secret = this.configService.get<string>('ENCRYPTION_KEY') || 'aerostic-prod-encryption-default-secret';
+- const secret = this.configService.get<string>('ENCRYPTION_KEY') || 'aimstors-prod-encryption-default-secret';
 + const secret = this.configService.get<string>('ENCRYPTION_KEY');
 + if (!secret) {
 +   throw new Error('ENCRYPTION_KEY environment variable is required');

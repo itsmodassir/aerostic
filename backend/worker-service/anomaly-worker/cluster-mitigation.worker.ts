@@ -26,7 +26,7 @@ export class ClusterMitigationWorker implements OnModuleInit {
 
     await this.kafkaService.subscribe(
       "cluster-mitigation-group",
-      "aerostic.platform.cluster.events",
+      "aimstors.platform.cluster.events",
       async ({ message }) => {
         if (!message.value) return;
         const clusterEvent = JSON.parse(message.value.toString());

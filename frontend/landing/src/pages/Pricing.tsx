@@ -11,7 +11,7 @@ const Pricing = () => {
       name: "Free Trial",
       price: "$0",
       period: "7 days",
-      description: "Perfect for trying out Aerostic AI",
+      description: "Perfect for trying out Aimstors Solution AI",
       features: [
         "5 AI-generated blog posts",
         "Basic blog themes",
@@ -20,7 +20,7 @@ const Pricing = () => {
         "Community support"
       ],
       limitations: [
-        "Aerostic.ai subdomain only",
+        "Aimstors Solution.ai subdomain only",
         "Limited customization"
       ],
       cta: "Start Free Trial",
@@ -199,7 +199,7 @@ const Pricing = () => {
           <div className="text-center mt-16">
             <h2 className="text-3xl font-bold mb-4">Ready to Start Your AI Blog?</h2>
             <p className="text-xl text-gray-600 mb-8">
-              Join thousands of creators using Aerostic AI to build their online presence.
+              Join thousands of creators using Aimstors Solution AI to build their online presence.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="px-8">

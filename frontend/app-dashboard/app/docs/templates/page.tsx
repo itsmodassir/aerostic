@@ -30,7 +30,7 @@ export default function TemplatesDocsPage() {
                 {
                     name: 'new_arrival',
                     body: 'Hey {{1}}! Check out our latest collection just dropped! 👗✨\n\nExplore: {{2}}',
-                    footer: 'Aerostic Fashion'
+                    footer: 'Aimstors Solution Fashion'
                 }
             ]
         },
@@ -46,7 +46,7 @@ export default function TemplatesDocsPage() {
                 {
                     name: 'appointment_reminder',
                     body: 'Reminder: You have an appointment scheduled for {{1}} at {{2}}.\n\nLocation: {{3}}\n\nReply YES to confirm or NO to reschedule.',
-                    footer: 'Aerostic Healthcare'
+                    footer: 'Aimstors Solution Healthcare'
                 }
             ]
         },
@@ -57,12 +57,12 @@ export default function TemplatesDocsPage() {
                 {
                     name: 'otp_verification',
                     body: 'Your verification code is: {{1}}\n\nThis code expires in 10 minutes. Do not share with anyone.',
-                    footer: 'Aerostic Security'
+                    footer: 'Aimstors Solution Security'
                 },
                 {
                     name: 'login_alert',
                     body: 'New login detected on your account from {{1}} at {{2}}.\n\nIf this wasn\'t you, secure your account immediately.',
-                    footer: 'Aerostic Security'
+                    footer: 'Aimstors Solution Security'
                 }
             ]
         }
@@ -126,7 +126,7 @@ export default function TemplatesDocsPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aerostic</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Aimstors Solution</span>
                     </Link>
                     <Link href="/docs" className="text-blue-600 hover:underline">← Back to Docs</Link>
                 </div>
@@ -316,7 +316,7 @@ export default function TemplatesDocsPage() {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-8">
                 <div className="max-w-7xl mx-auto px-6 text-center text-gray-400">
-                    <p>© {new Date().getFullYear()} Aerostic. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} Aimstors Solution. All rights reserved.</p>
                 </div>
             </footer>
         </div>

@@ -13,6 +13,7 @@ import { MessagesModule } from "@api/messages/messages.module";
 
 import { BillingModule } from "@api/billing/billing.module";
 import { WebhookSettingsController } from "./webhook-settings.controller";
+import { WebhooksProcessor } from "./webhooks.processor";
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { WebhookSettingsController } from "./webhook-settings.controller";
     BillingModule,
   ],
   controllers: [WebhooksController, WebhookSettingsController],
-  providers: [WebhooksService],
+  providers: [WebhooksService, WebhooksProcessor],
 })
-export class WebhooksModule {}
+export class WebhooksModule { }

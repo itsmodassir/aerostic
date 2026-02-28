@@ -27,7 +27,7 @@ export class MetaService {
     private adminConfigService: AdminConfigService,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
-  ) {}
+  ) { }
 
   private async getApiVersion(): Promise<string> {
     return (
@@ -43,7 +43,7 @@ export class MetaService {
     const verifyToken =
       (await this.adminConfigService.getConfigValue(
         "meta.webhook_verify_token",
-      )) || "aerostic_verification_token";
+      )) || "aimstors_verification_token";
 
     // 2. Validate
     if (mode === "subscribe" && token === verifyToken) {
@@ -133,7 +133,7 @@ export class MetaService {
     // 1. Exchange auth code for short-lived access token
     try {
       const tokenRes = await axios.get(
-        "https://graph.facebook.com/${apiVersion}/oauth/access_token",
+        `https://graph.facebook.com/${apiVersion}/oauth/access_token`,
         {
           params: {
             client_id: appId,
@@ -190,7 +190,7 @@ export class MetaService {
         this.logger.warn(`Debug token failed: ${err.message}`);
       }
 
-      // 3. Fetch WABA (Production Ready for Aerostic Multi-Tenant)
+      // 3. Fetch WABA (Production Ready for Aimstors Solution Multi-Tenant)
 
       // PRIORITY 1: Use Embedded Signup data or Fallback from debug token
       let waba = null;
@@ -319,6 +319,22 @@ export class MetaService {
         });
       }
 
+      // 6. Subscribe App to WABA Webhooks (CRITICAL for inbound messages)
+      try {
+        await axios.post(
+          `https://graph.facebook.com/${await this.getApiVersion()}/${wabaId}/subscribed_apps`,
+          {},
+          {
+            params: { access_token: accessToken },
+          },
+        );
+        this.logger.log(`Successfully subscribed app to WABA: ${wabaId}`);
+      } catch (subErr: any) {
+        this.logger.error(
+          `Failed to subscribe app to WABA: ${JSON.stringify(subErr.response?.data || subErr.message)}`,
+        );
+      }
+
       // Invalidate Redis Cache for this tenant
       await this.redisService.del(`whatsapp:token:${tenantId}`);
 
@@ -330,10 +346,11 @@ export class MetaService {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         error.response?.data?.error?.message ||
-          "Failed to connect WhatsApp account",
+        "Failed to connect WhatsApp account",
       );
     }
   }
+
 
   async getTemplates(wabaId: string, accessToken: string) {
     try {
@@ -388,7 +405,7 @@ export class MetaService {
       );
       throw new BadRequestException(
         error.response?.data?.error?.message ||
-          "Failed to create WhatsApp template",
+        "Failed to create WhatsApp template",
       );
     }
   }

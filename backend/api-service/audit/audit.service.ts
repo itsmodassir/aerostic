@@ -38,7 +38,7 @@ export class AuditService implements OnModuleInit {
     private alertService: AuditAlertService,
     private anomalyService: AnomalyService,
     private kafkaService: KafkaService,
-  ) {}
+  ) { }
 
   async log(data: any): Promise<AuditLog> {
     return this.logAction(data);
@@ -83,10 +83,10 @@ export class AuditService implements OnModuleInit {
         action,
         resourceType,
         resourceId,
-        tenantId: tenantId || "SYSTEM",
+        tenantId: tenantId || process.env.SYSTEM_TENANT_ID || "cb06f16b-74af-4e98-852c-7e30f63b3c0a",
         metadata,
         ipAddress: "0.0.0.0", // Fallbacks for backend-internal calls
-        userAgent: "Aerostic-System",
+        userAgent: "Aimstors Solution-System",
       };
     }
 
@@ -146,7 +146,7 @@ export class AuditService implements OnModuleInit {
     this.lastHash = saved.hash;
 
     // Emit to Kafka for real-time stream processing
-    this.kafkaService.emit("aerostic.security.events", {
+    this.kafkaService.emit("aimstors.security.events", {
       eventId: saved.id,
       tenantId: saved.tenantId,
       actorType: saved.actorType,
