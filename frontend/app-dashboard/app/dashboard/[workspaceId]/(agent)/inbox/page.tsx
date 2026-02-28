@@ -15,7 +15,7 @@ import {
 import { clsx } from 'clsx';
 import {
     getCachedConversations, setCachedConversations,
-    getCachedMessages, setCachedMessages
+    getCachedMessages, setCachedMessages, clearCacheForUser
 } from '@/lib/indexedDB';
 
 interface TeamMember {
@@ -251,7 +251,7 @@ export default function InboxPage() {
                 };
                 setMessages(prev => {
                     const newMessages = [...prev, newMessage];
-                    setCachedMessages(payload.conversationId, newMessages);
+                    if (currentUser?.id) setCachedMessages(tenantId, currentUser.id, payload.conversationId, newMessages);
                     return newMessages;
                 });
             } else {
@@ -279,7 +279,7 @@ export default function InboxPage() {
                     }
                     return conv;
                 });
-                if (tenantId) setCachedConversations(tenantId, newConvs);
+                if (tenantId && currentUser?.id) setCachedConversations(tenantId, currentUser.id, newConvs);
                 return newConvs;
             });
         };
@@ -304,10 +304,10 @@ export default function InboxPage() {
 
     // Fetch conversations from API (Initial load only, then sync via socket)
     useEffect(() => {
-        if (!tenantId) return;
+        if (!tenantId || !currentUser?.id) return;
         const fetchConvs = async () => {
             // Check cache first for instant load
-            const cached = await getCachedConversations(tenantId);
+            const cached = await getCachedConversations(tenantId, currentUser.id);
             if (cached) {
                 setConversations(cached);
             }
@@ -323,7 +323,7 @@ export default function InboxPage() {
                         channel: 'whatsapp',
                     }));
                     setConversations(mapped);
-                    setCachedConversations(tenantId, mapped);
+                    setCachedConversations(tenantId, currentUser.id, mapped);
                 } else {
                     setConversations([]);
                 }
@@ -333,18 +333,18 @@ export default function InboxPage() {
             }
         };
         fetchConvs();
-    }, [tenantId]);
+    }, [tenantId, currentUser?.id]);
 
     // Fetch messages when conversation selected (Initial load)
     useEffect(() => {
-        if (!selectedConversation) {
+        if (!selectedConversation || !currentUser?.id) {
             setMessages(prev => prev.length > 0 ? [] : prev);
             return;
         }
 
         const fetchMsgs = async () => {
             // Check cache first
-            const cached = await getCachedMessages(selectedConversation.id);
+            const cached = await getCachedMessages(tenantId, currentUser.id, selectedConversation.id);
             if (cached) {
                 setMessages(cached);
             }
@@ -353,7 +353,7 @@ export default function InboxPage() {
                 const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
                 if (res.data) {
                     setMessages(res.data);
-                    setCachedMessages(selectedConversation.id, res.data);
+                    setCachedMessages(tenantId, currentUser.id, selectedConversation.id, res.data);
                 } else {
                     setMessages([]);
                 }
@@ -363,7 +363,7 @@ export default function InboxPage() {
         };
 
         fetchMsgs();
-    }, [selectedConversation?.id, tenantId]);
+    }, [selectedConversation?.id, tenantId, currentUser?.id]);
 
     // Scroll to bottom on new messages
     useEffect(() => {
@@ -397,7 +397,7 @@ export default function InboxPage() {
         };
         setMessages(prev => {
             const newMessages = [...prev, newMessage];
-            setCachedMessages(selectedConversation.id, newMessages);
+            if (currentUser?.id) setCachedMessages(tenantId, currentUser.id, selectedConversation.id, newMessages);
             return newMessages;
         });
         setInputText('');
@@ -416,7 +416,7 @@ export default function InboxPage() {
                 const updated = prev.map(m =>
                     m.id === newMessage.id ? { ...m, status: 'delivered' } : m
                 );
-                setCachedMessages(selectedConversation.id, updated as Message[]);
+                if (currentUser?.id) setCachedMessages(tenantId, currentUser.id, selectedConversation.id, updated as Message[]);
                 return updated as Message[];
             });
         } catch (e) {
@@ -424,7 +424,7 @@ export default function InboxPage() {
                 const updated = prev.map(m =>
                     m.id === newMessage.id ? { ...m, status: 'failed' } : m
                 );
-                setCachedMessages(selectedConversation.id, updated as Message[]);
+                if (currentUser?.id) setCachedMessages(tenantId, currentUser.id, selectedConversation.id, updated as Message[]);
                 return updated as Message[];
             });
         }
