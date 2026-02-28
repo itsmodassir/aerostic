@@ -32,7 +32,9 @@ export class AgentsService {
         "successfulResolutions",
         "handoffsTriggered",
         "createdAt",
-        "updatedAt", // Exclude flowConfig
+        "updatedAt",
+        "nodes",
+        "edges",
       ],
       order: { createdAt: "DESC" },
     });

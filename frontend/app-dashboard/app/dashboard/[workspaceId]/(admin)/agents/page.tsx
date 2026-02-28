@@ -9,6 +9,7 @@ import {
     ArrowRight, ChevronLeft
 } from 'lucide-react';
 import { AGENT_TEMPLATES, AgentTemplate } from '@/lib/agent-templates';
+import api from '@/lib/api';
 
 interface Agent {
     id: string;
@@ -93,9 +94,10 @@ export default function AgentsPage() {
 
     const fetchAgents = async (tid: string) => {
         try {
-            const res = await fetch(`/api/v1/agents?tenantId=${tid}`);
-            if (res.ok) {
-                setAgents(await res.json());
+            // Using api utility which handles headers automatically
+            const res = await api.get('/agents');
+            if (res.data) {
+                setAgents(res.data);
             } else {
                 setAgents([]);
             }
@@ -153,46 +155,51 @@ export default function AgentsPage() {
 
         setCreating(true);
         try {
-            const url = editingAgentId ? `/api/v1/agents/${editingAgentId}` : '/api/v1/agents';
-            const method = editingAgentId ? 'PATCH' : 'POST';
+            const data = {
+                name: newAgentName,
+                type: newAgentType,
+                description: newAgentDescription,
+                systemPrompt: newAgentPrompt,
+                nodes: newAgentNodes,
+                edges: newAgentEdges,
+                tenantId,
+                isActive: true,
+            };
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: newAgentName,
-                    type: newAgentType,
-                    description: newAgentDescription,
-                    systemPrompt: newAgentPrompt,
-                    nodes: newAgentNodes,
-                    edges: newAgentEdges,
-                    tenantId,
-                    isActive: true, // Depending on use case this could toggle
-                }),
-            });
-
-            if (res.ok) {
-                if (editingAgentId) {
+            let res;
+            if (editingAgentId) {
+                res = await api.patch(`/agents/${editingAgentId}`, data);
+                if (res.data) {
                     fetchAgents(tenantId);
-                } else {
-                    const newAgent = await res.json();
-                    setAgents([...agents, newAgent]);
                 }
+            } else {
+                res = await api.post('/agents', data);
+                if (res.data) {
+                    setAgents([...agents, res.data]);
+                }
+            }
+
+            if (res.data) {
                 setShowCreateModal(false);
                 resetForm();
-            } else {
-                alert(`Failed to ${editingAgentId ? 'update' : 'create'} agent`);
             }
         } catch (error) {
             console.error('Failed to save agent', error);
+            alert('Failed to save agent. Please try again.');
         } finally {
             setCreating(false);
         }
     };
 
-    const handleDeleteAgent = (id: string) => {
-        if (confirm('Are you sure you want to delete this agent?')) {
+    const handleDeleteAgent = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this agent?')) return;
+
+        try {
+            await api.delete(`/agents/${id}`);
             setAgents(agents.filter(a => a.id !== id));
+        } catch (error) {
+            console.error('Failed to delete agent', error);
+            alert('Failed to delete agent. Please try again.');
         }
     };
 
