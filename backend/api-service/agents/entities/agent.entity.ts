@@ -65,6 +65,12 @@ export class Agent {
   @Column("jsonb", { default: {} })
   flowConfig: any; // Stores the ReactFlow JSON configuration
 
+  @Column({ type: "jsonb", default: [] })
+  nodes: any[];
+
+  @Column({ type: "jsonb", default: [] })
+  edges: any[];
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -58,7 +58,8 @@ export default function FlowCanvas({ agentId, workspaceId }: FlowCanvasProps) {
     useEffect(() => {
         const fetchAgent = async () => {
             try {
-                const res = await api.get(`/ai/agent?tenantId=${workspaceId}`);
+                // Use the specific agent endpoint instead of the global AI one
+                const res = await api.get(`/agents/${agentId}?tenantId=${workspaceId}`);
                 if (res.data) {
                     const agent = res.data;
                     if (agent.nodes && Array.isArray(agent.nodes) && agent.nodes.length > 0) {
@@ -74,10 +75,10 @@ export default function FlowCanvas({ agentId, workspaceId }: FlowCanvasProps) {
             }
         };
 
-        if (workspaceId) {
+        if (workspaceId && agentId) {
             fetchAgent();
         }
-    }, [workspaceId, setNodes, setEdges]);
+    }, [workspaceId, agentId, setNodes, setEdges]);
 
     const onConnect = useCallback(
         (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -125,7 +126,8 @@ export default function FlowCanvas({ agentId, workspaceId }: FlowCanvasProps) {
             const flow = reactFlowInstance.toObject();
             const toastId = toast.loading('Saving flow configuration...');
             try {
-                await api.post(`/ai/agents/${agentId}/flow?tenantId=${workspaceId}`, {
+                // Using PATCH on the specific agent to update its flow columns
+                await api.patch(`/agents/${agentId}?tenantId=${workspaceId}`, {
                     nodes: flow.nodes,
                     edges: flow.edges
                 });

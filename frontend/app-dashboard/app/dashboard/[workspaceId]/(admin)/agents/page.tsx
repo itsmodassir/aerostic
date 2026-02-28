@@ -5,8 +5,10 @@ import Link from 'next/link';
 import {
     Bot, Plus, Settings, Trash2, Play, Pause, MessageSquare, TrendingUp,
     Users, Lock, Crown, Sparkles, AlertCircle, CheckCircle, X,
-    Brain, Headphones, ShoppingCart, UserPlus, HelpCircle, Edit
+    Brain, Headphones, ShoppingCart, UserPlus, HelpCircle, Edit,
+    ArrowRight, ChevronLeft
 } from 'lucide-react';
+import { AGENT_TEMPLATES, AgentTemplate } from '@/lib/agent-templates';
 
 interface Agent {
     id: string;
@@ -54,6 +56,12 @@ export default function AgentsPage() {
     const [newAgentPrompt, setNewAgentPrompt] = useState('');
     const [creating, setCreating] = useState(false);
     const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
+    const [step, setStep] = useState<'gallery' | 'form'>('gallery');
+    const [selectedTemplate, setSelectedTemplate] = useState<AgentTemplate | null>(null);
+
+    const [newAgentNodes, setNewAgentNodes] = useState<any[]>([]);
+    const [newAgentEdges, setNewAgentEdges] = useState<any[]>([]);
+
     useEffect(() => {
         const init = async () => {
             try {
@@ -122,7 +130,19 @@ export default function AgentsPage() {
         setNewAgentType(agent.type || 'customer_support');
         setNewAgentDescription(agent.description || '');
         setNewAgentPrompt(agent.systemPrompt || '');
+        setStep('form');
         setShowCreateModal(true);
+    };
+
+    const handleSelectTemplate = (template: AgentTemplate) => {
+        setSelectedTemplate(template);
+        setNewAgentName(template.name);
+        setNewAgentType(template.type);
+        setNewAgentDescription(template.description);
+        setNewAgentPrompt(template.systemPrompt);
+        setNewAgentNodes(template.initialNodes);
+        setNewAgentEdges(template.initialEdges);
+        setStep('form');
     };
 
     const handleSaveAgent = async () => {
@@ -144,6 +164,8 @@ export default function AgentsPage() {
                     type: newAgentType,
                     description: newAgentDescription,
                     systemPrompt: newAgentPrompt,
+                    nodes: newAgentNodes,
+                    edges: newAgentEdges,
                     tenantId,
                     isActive: true, // Depending on use case this could toggle
                 }),
@@ -180,6 +202,10 @@ export default function AgentsPage() {
         setNewAgentDescription('');
         setNewAgentPrompt('');
         setEditingAgentId(null);
+        setStep('gallery');
+        setSelectedTemplate(null);
+        setNewAgentNodes([]);
+        setNewAgentEdges([]);
     };
 
     const getTypeColor = (type: string) => {
@@ -449,122 +475,160 @@ export default function AgentsPage() {
 
                         {/* Modal Body */}
                         <div className="p-6 space-y-6">
-                            {/* Agent Name */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Agent Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newAgentName}
-                                    onChange={(e) => setNewAgentName(e.target.value)}
-                                    placeholder="e.g., Sales Bot, Support Assistant"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
+                            {step === 'form' ? (
+                                <>
+                                    {/* Agent Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Agent Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newAgentName}
+                                            onChange={(e) => setNewAgentName(e.target.value)}
+                                            placeholder="e.g., Sales Bot, Support Assistant"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
 
-                            {/* Agent Type */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Agent Type <span className="text-red-500">*</span>
-                                </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {AGENT_TYPES.map((type) => (
-                                        <button
-                                            key={type.id}
-                                            type="button"
-                                            onClick={() => setNewAgentType(type.id)}
-                                            className={`p-4 rounded-xl border-2 text-left transition-all ${newAgentType === type.id
-                                                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg bg-${type.color}-100 shrink-0`}>
-                                                    <type.icon className={`w-5 h-5 text-${type.color}-600`} />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="font-medium text-gray-900 truncate">{type.name}</p>
-                                                    <p className="text-[10px] text-gray-500 truncate">{type.description}</p>
-                                                </div>
+                                    {/* Agent Type */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                                            Agent Type <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {AGENT_TYPES.map((type) => (
+                                                <button
+                                                    key={type.id}
+                                                    type="button"
+                                                    onClick={() => setNewAgentType(type.id)}
+                                                    className={`p-4 rounded-xl border-2 text-left transition-all ${newAgentType === type.id
+                                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2 rounded-lg bg-${type.color}-100 shrink-0`}>
+                                                            <type.icon className={`w-5 h-5 text-${type.color}-600`} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium text-gray-900 truncate">{type.name}</p>
+                                                            <p className="text-[10px] text-gray-500 truncate">{type.description}</p>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Description */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Description
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newAgentDescription}
+                                            onChange={(e) => setNewAgentDescription(e.target.value)}
+                                            placeholder="Brief description of what this agent does"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    {/* System Prompt */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            System Prompt
+                                        </label>
+                                        <textarea
+                                            value={newAgentPrompt}
+                                            onChange={(e) => setNewAgentPrompt(e.target.value)}
+                                            placeholder="You are a helpful assistant for [Company Name]. Your goal is to..."
+                                            rows={5}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Define your agent's personality, knowledge, and behavior
+                                        </p>
+                                    </div>
+
+                                    {/* Plan Info */}
+                                    {!editingAgentId && (
+                                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-blue-800">
+                                                    {planLimits.name} Plan: {agents.length + 1} of {planLimits.maxAgents === -1 ? 'Unlimited' : planLimits.maxAgents} agents
+                                                </p>
+                                                <p className="text-blue-700">
+                                                    You'll have {agentsRemaining === '∞' ? 'unlimited' : Number(agentsRemaining) - 1} slot{agentsRemaining !== 2 ? 's' : ''} remaining after creating this agent.
+                                                </p>
                                             </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Description
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newAgentDescription}
-                                    onChange={(e) => setNewAgentDescription(e.target.value)}
-                                    placeholder="Brief description of what this agent does"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-
-                            {/* System Prompt */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    System Prompt
-                                </label>
-                                <textarea
-                                    value={newAgentPrompt}
-                                    onChange={(e) => setNewAgentPrompt(e.target.value)}
-                                    placeholder="You are a helpful assistant for [Company Name]. Your goal is to..."
-                                    rows={5}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Define your agent's personality, knowledge, and behavior
-                                </p>
-                            </div>
-
-                            {/* Plan Info */}
-                            {!editingAgentId && (
-                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-                                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                                    <div className="text-sm">
-                                        <p className="font-medium text-blue-800">
-                                            {planLimits.name} Plan: {agents.length + 1} of {planLimits.maxAgents === -1 ? 'Unlimited' : planLimits.maxAgents} agents
-                                        </p>
-                                        <p className="text-blue-700">
-                                            You'll have {agentsRemaining === '∞' ? 'unlimited' : Number(agentsRemaining) - 1} slot{agentsRemaining !== 2 ? 's' : ''} remaining after creating this agent.
-                                        </p>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-500 mb-2 font-medium">Select a starting template:</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {AGENT_TEMPLATES.map((tmpl) => (
+                                            <button
+                                                key={tmpl.id}
+                                                onClick={() => handleSelectTemplate(tmpl)}
+                                                className="group relative bg-white border-2 border-gray-100 rounded-2xl p-5 text-left hover:border-blue-500 hover:shadow-md transition-all flex flex-col h-full"
+                                            >
+                                                <div className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center bg-${tmpl.color}-100`}>
+                                                    <tmpl.icon className={`w-6 h-6 text-${tmpl.color}-600`} />
+                                                </div>
+                                                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{tmpl.name}</h3>
+                                                <p className="text-xs text-gray-500 mt-2 flex-grow">{tmpl.description}</p>
+                                                <div className="mt-4 flex items-center text-blue-600 text-xs font-semibold">
+                                                    Use Template <ArrowRight className="w-3 h-3 ml-1 group-hover:ml-2 transition-all" />
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             )}
                         </div>
 
+
                         {/* Modal Footer */}
                         <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                            {step === 'form' && !editingAgentId && (
+                                <button
+                                    onClick={() => setStep('gallery')}
+                                    className="px-5 py-2.5 flex items-center gap-2 text-gray-500 hover:text-gray-700 font-medium mr-auto"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                    Back
+                                </button>
+                            )}
                             <button
                                 onClick={() => { setShowCreateModal(false); resetForm(); }}
                                 className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl font-medium"
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={handleSaveAgent}
-                                disabled={!newAgentName.trim() || creating}
-                                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                {creating ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        {editingAgentId ? 'Saving...' : 'Creating...'}
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle className="w-5 h-5" />
-                                        {editingAgentId ? 'Save Changes' : 'Create Agent'}
-                                    </>
-                                )}
-                            </button>
+                            {step === 'form' && (
+                                <button
+                                    onClick={handleSaveAgent}
+                                    disabled={!newAgentName.trim() || creating}
+                                    className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {creating ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            {editingAgentId ? 'Saving...' : 'Creating...'}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="w-5 h-5" />
+                                            {editingAgentId ? 'Save Changes' : 'Create Agent'}
+                                        </>
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
