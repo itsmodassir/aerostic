@@ -38,7 +38,7 @@ export class ResellerService {
     private usersService: UsersService,
     private tenantsService: TenantsService,
     private redisService: RedisService,
-  ) {}
+  ) { }
 
   async getStats(resellerId: string) {
     const reseller = await this.tenantsRepository.findOne({
@@ -124,7 +124,7 @@ export class ResellerService {
   async onboardSubTenant(resellerId: string, dto: OnboardSubTenantDto) {
     const reseller = await this.tenantsRepository.findOne({
       where: { id: resellerId },
-      relations: ["plan"],
+      relations: ["planRelation"],
     });
 
     if (!reseller || reseller.type !== TenantType.RESELLER) {
@@ -137,8 +137,8 @@ export class ResellerService {
     });
 
     if (
-      reseller.plan &&
-      subTenantCount >= (reseller.plan as any).maxSubTenants
+      reseller.planRelation &&
+      subTenantCount >= (reseller.planRelation as any).maxSubTenants
     ) {
       throw new BadRequestException(
         "Max sub-tenants limit reached for your plan",
