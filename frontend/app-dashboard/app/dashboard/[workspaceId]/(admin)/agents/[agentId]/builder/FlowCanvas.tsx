@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -52,6 +54,31 @@ export default function FlowCanvas({ agentId, workspaceId }: FlowCanvasProps) {
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
 
+    // Fetch existing flow on mount
+    useEffect(() => {
+        const fetchAgent = async () => {
+            try {
+                const res = await api.get(`/ai/agent?tenantId=${workspaceId}`);
+                if (res.data) {
+                    const agent = res.data;
+                    if (agent.nodes && Array.isArray(agent.nodes) && agent.nodes.length > 0) {
+                        setNodes(agent.nodes);
+                    }
+                    if (agent.edges && Array.isArray(agent.edges)) {
+                        setEdges(agent.edges);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load agent flow:', error);
+                toast.error('Failed to load existing flow data');
+            }
+        };
+
+        if (workspaceId) {
+            fetchAgent();
+        }
+    }, [workspaceId, setNodes, setEdges]);
+
     const onConnect = useCallback(
         (params: Connection) => setEdges((eds) => addEdge(params, eds)),
         [],
@@ -93,12 +120,22 @@ export default function FlowCanvas({ agentId, workspaceId }: FlowCanvasProps) {
         [reactFlowInstance],
     );
 
-    const onSave = () => {
-        if (reactFlowInstance) {
+    const onSave = async () => {
+        if (reactFlowInstance && agentId && workspaceId) {
             const flow = reactFlowInstance.toObject();
-            console.log('Flow saved:', flow);
-            // TODO: Send to backend (AgentsService)
-            alert('Flow configuration logged to console (Backend integration pending)');
+            const toastId = toast.loading('Saving flow configuration...');
+            try {
+                await api.post(`/ai/agents/${agentId}/flow?tenantId=${workspaceId}`, {
+                    nodes: flow.nodes,
+                    edges: flow.edges
+                });
+                toast.success('Flow saved successfully!', { id: toastId });
+            } catch (error) {
+                console.error('Failed to save flow:', error);
+                toast.error('Failed to save API configuration', { id: toastId });
+            }
+        } else if (!agentId) {
+            toast.error('Agent ID is missing');
         }
     };
 

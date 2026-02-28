@@ -13,6 +13,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { AiAgent } from "./entities/ai-agent.entity";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
+import { Param } from "@nestjs/common";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
 import { KnowledgeBaseService } from "./knowledge-base.service";
 
@@ -57,6 +58,25 @@ export class AiController {
     if (body.personalizationEnabled !== undefined) agent.personalizationEnabled = body.personalizationEnabled;
 
     return this.aiAgentRepo.save(agent);
+  }
+
+  @Post("agents/:id/flow")
+  async saveAgentFlow(
+    @UserTenant() tenantId: string,
+    @Param("id") id: string,
+    @Body() body: { nodes: any[]; edges: any[] },
+  ) {
+    let agent = await this.aiAgentRepo.findOne({ where: { id, tenantId } });
+    if (!agent) {
+      throw new BadRequestException("Agent not found");
+    }
+
+    agent.nodes = body.nodes || [];
+    agent.edges = body.edges || [];
+
+    await this.aiAgentRepo.save(agent);
+
+    return { status: "success", message: "Flow saved successfully" };
   }
   @Post("respond")
   async respond(

@@ -103,6 +103,13 @@ export class AiAgent {
   @Column({ name: "sample_conversations", type: "text", nullable: true })
   sampleConversations: string; // JSON array
 
+  // Visual Flow Builder
+  @Column({ type: "jsonb", default: [] })
+  nodes: any[];
+
+  @Column({ type: "jsonb", default: [] })
+  edges: any[];
+
   // Analytics
   @Column({ name: "total_conversations", default: 0 })
   totalConversations: number;
