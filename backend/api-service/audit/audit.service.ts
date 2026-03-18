@@ -215,8 +215,9 @@ export class AuditService implements OnModuleInit {
         `CRITICAL SECURITY ALERT: Audit chain corruption detected at ID: ${result.corruptedId}`,
       );
       // Force increase risk score for system boundary
+      const systemTenantId = process.env.SYSTEM_TENANT_ID || "cb06f16b-74af-4e98-852c-7e30f63b3c0a";
       await this.anomalyService.flagPermissionViolation(
-        "SYSTEM",
+        systemTenantId,
         "system-integrity-check",
         "system",
         `audit_chain_corruption:${result.corruptedId}`,

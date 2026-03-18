@@ -134,6 +134,13 @@ export class AnomalyService {
     scoreInfluence: number,
     details: any,
   ) {
+    // 0. Validate UUID format to prevent DB crashes (22P02)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      this.logger.error(`Skipping anomaly record: Invalid UUID tenantId "${tenantId}" for event ${type}`);
+      return;
+    }
+
     this.logger.warn(
       `Anomaly detected for tenant ${tenantId}: ${type} (+${scoreInfluence} risk)`,
     );

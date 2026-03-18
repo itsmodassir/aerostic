@@ -31,5 +31,6 @@ import { WebhooksProcessor } from "./webhooks.processor";
   ],
   controllers: [WebhooksController, WebhookSettingsController],
   providers: [WebhooksService, WebhooksProcessor],
+  exports: [WebhooksService],
 })
 export class WebhooksModule { }

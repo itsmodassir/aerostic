@@ -10,6 +10,7 @@ import { RedisService } from "@shared/redis.service";
 import { EncryptionService } from "@shared/encryption.service";
 import { Template } from "../templates/entities/template.entity";
 import { AdminConfigService } from "../admin/services/admin-config.service";
+import { WebhooksService } from "../webhooks/webhooks.service";
 
 @Injectable()
 export class MetaService {
@@ -27,6 +28,7 @@ export class MetaService {
     private adminConfigService: AdminConfigService,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
+    private webhooksService: WebhooksService,
   ) { }
 
   private async getApiVersion(): Promise<string> {
@@ -73,7 +75,12 @@ export class MetaService {
             await this.handleTemplateStatus(value);
           }
 
-          // Future: Handle Incoming Messages (value.messages)
+          // 🔥 Handle Incoming Messages (Delegated to WebhooksService)
+          if (value.messages || value.statuses) {
+            await this.webhooksService.processWebhook(body);
+            // We can break here as processWebhook handles the whole body
+            return "EVENT_RECEIVED";
+          }
         }
       }
     }
