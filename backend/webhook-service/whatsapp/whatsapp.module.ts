@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { WhatsappService } from "./whatsapp.service";
 import { WhatsappController } from "./whatsapp.controller";
-import { SystemConfig } from "@api/admin/entities/system-config.entity";
+import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { WhatsappAccount } from "./entities/whatsapp-account.entity";
 import { MetaToken } from "../inbound-processing/entities/meta-token.entity";
 import { BullModule } from "@nestjs/bullmq";

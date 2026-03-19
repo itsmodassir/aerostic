@@ -4,7 +4,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, LessThan } from "typeorm";
 import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
 import { MetaService } from "./meta.service";
-import { SystemConfig } from "@api/admin/entities/system-config.entity";
+import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { RedisService } from "@shared/redis.service";
 
 @Injectable()
