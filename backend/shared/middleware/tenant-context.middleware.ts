@@ -12,8 +12,6 @@ import { RlsContextUtil } from "../authorization/utils/rls-context.util";
 export class TenantContextMiddleware implements NestMiddleware {
   private readonly logger = new Logger(TenantContextMiddleware.name);
   constructor(private dataSource: DataSource) { }
-
-  // Routes that do not require a tenant context (Public/Auth/Webhooks/Admin)
   private readonly EXCLUDED_PATHS = [
     "auth",
     "webhooks",
@@ -24,19 +22,17 @@ export class TenantContextMiddleware implements NestMiddleware {
     "meta/webhook",
   ];
 
+  async use(req: Request, res: Response, next: NextFunction) {
     const path = req.path;
-    const originalUrl = req.originalUrl;
+    const originalUrl = req.originalUrl || "";
     
     const isExcluded = this.EXCLUDED_PATHS.some((p) =>
-      path.includes(p) || originalUrl?.includes(p),
+      path.includes(p) || originalUrl.includes(p),
     );
 
     if (isExcluded) {
-      // this.logger.debug(`Path excluded from tenant context: ${path}`);
       return next();
     }
-
-    this.logger.debug(`Checking tenant context for: Path=${path}, Original=${originalUrl}`);
 
     let tenantId =
       req.headers["x-tenant-id"] ||
