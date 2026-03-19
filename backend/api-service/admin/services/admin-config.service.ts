@@ -12,6 +12,7 @@ import { SystemConfig } from "@api/admin/entities/system-config.entity";
 import { EncryptionService } from "@shared/encryption.service";
 import { AuditService, LogLevel, LogCategory } from "@api/audit/audit.service";
 import { RedisService } from "@shared/redis.service";
+import { RlsContextUtil } from "@shared/authorization/utils/rls-context.util";
 
 // Default configuration values with explicit typing
 interface ConfigDef {
@@ -404,19 +405,29 @@ export class AdminConfigService implements OnModuleInit {
     }
 
     // Check Database (with multi-tenancy override support)
-    const config = await this.configRepo.findOne({
-      where: [
-        { key, tenantId: tenantId ?? IsNull() },
-        { key, tenantId: IsNull() }, // Fallback to global
-      ],
-      order: { tenantId: "DESC" }, // Prefer tenant override (non-null)
+    const configValue = await this.configRepo.manager.transaction(async (manager) => {
+      await RlsContextUtil.setLocalContext(manager, tenantId || "");
+      const config = await manager.findOne(SystemConfig, {
+        where: [
+          { key, tenantId: tenantId ?? IsNull() },
+          { key, tenantId: IsNull() }, // Fallback to global
+        ],
+        order: { tenantId: "DESC" }, // Prefer tenant override (non-null)
+      });
+
+      if (config) {
+        return config.isSecret
+          ? this.encryptionService.decrypt(config.value)
+          : config.value;
+      }
+      return null;
     });
 
-    if (config) {
-      await this.setCache(cacheKey, config.value);
-      return config.isSecret
-        ? this.encryptionService.decrypt(config.value)
-        : config.value;
+    if (configValue !== null) {
+      const isSecret = DEFAULT_CONFIG[key]?.isSecret || false;
+      const cacheVal = isSecret ? this.encryptionService.encrypt(configValue) : configValue;
+      await this.setCache(cacheKey, cacheVal);
+      return configValue;
     }
 
     return DEFAULT_CONFIG[key]?.value || null;

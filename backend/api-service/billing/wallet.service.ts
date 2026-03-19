@@ -6,7 +6,7 @@ import {
     ConflictException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource, QueryRunner } from "typeorm";
+import { Repository, DataSource, QueryRunner, EntityManager } from "typeorm";
 import { Wallet, WalletStatus } from "@shared/database/entities/billing/wallet.entity";
 import { WalletAccount, WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
 import { WalletTransaction, TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
@@ -32,33 +32,38 @@ export class WalletService {
     /**
      * Ensure a tenant has a wallet and required accounts
      */
-    async ensureWallet(tenantId: string): Promise<Wallet> {
-        let wallet = await this.walletRepo.findOne({
-            where: { tenantId },
-            relations: ["accounts"],
-        });
+    async ensureWallet(tenantId: string, manager?: EntityManager): Promise<Wallet> {
+        const work = async (m: EntityManager) => {
+            await RlsContextUtil.setLocalContext(m, tenantId);
+            let wallet = await m.findOne(Wallet, {
+                where: { tenantId },
+                relations: ["accounts"],
+            });
 
-        if (!wallet) {
-            wallet = await this.walletRepo.save(
-                this.walletRepo.create({
-                    tenantId,
-                    status: WalletStatus.ACTIVE,
-                }),
-            );
+            if (!wallet) {
+                wallet = await m.save(
+                    m.create(Wallet, {
+                        tenantId,
+                        status: WalletStatus.ACTIVE,
+                    }),
+                );
 
-            // Create default accounts
-            const accountTypes = Object.values(WalletAccountType);
-            const accounts = accountTypes.map((type) =>
-                this.accountRepo.create({
-                    walletId: wallet?.id || "",
-                    type,
-                    balance: 0,
-                }),
-            );
-            wallet.accounts = await this.accountRepo.save(accounts);
-        }
+                // Create default accounts
+                const accountTypes = Object.values(WalletAccountType);
+                const accounts = accountTypes.map((type) =>
+                    m.create(WalletAccount, {
+                        walletId: wallet?.id || "",
+                        type,
+                        balance: 0,
+                    }),
+                );
+                wallet.accounts = await m.save(WalletAccount, accounts);
+            }
+            return wallet;
+        };
 
-        return wallet;
+        if (manager) return work(manager);
+        return this.dataSource.transaction(work);
     }
 
     /**
@@ -72,16 +77,15 @@ export class WalletService {
             return parseFloat(cached);
         }
 
-        const wallet = await this.ensureWallet(tenantId);
-        if (!wallet || !wallet.accounts) {
-            throw new NotFoundException(`Wallet or accounts not found for tenant ${tenantId}`);
-        }
-        const account = wallet.accounts.find((a) => a.type === type);
+        const balance = await this.dataSource.transaction(async (manager) => {
+            const wallet = await this.ensureWallet(tenantId, manager);
+            const account = wallet.accounts.find((a) => a.type === type);
+            if (!account) throw new NotFoundException(`Account ${type} not found`);
+            return parseFloat(account.balance.toString());
+        });
 
-        if (!account) throw new NotFoundException(`Account ${type} not found`);
-
-        await this.redisService.set(cacheKey, account.balance.toString(), 300); // 5 min cache
-        return parseFloat(account.balance.toString());
+        await this.redisService.set(cacheKey, balance.toString(), 300); // 5 min cache
+        return balance;
     }
 
     /**

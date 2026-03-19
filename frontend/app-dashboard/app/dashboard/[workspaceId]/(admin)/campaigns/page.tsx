@@ -71,10 +71,10 @@ export default function CampaignsPage() {
     const fetchWalletAndContacts = async (tid: string) => {
         try {
             const [walletRes, contactsRes] = await Promise.all([
-                api.get(`/billing/wallet?tenantId=${tid}`),
+                api.get(`/billing/wallet/balance?tenantId=${tid}`),
                 api.get(`/contacts?tenantId=${tid}`)
             ]);
-            setWalletBalance(walletRes.data.mainBalance || 0);
+            setWalletBalance(walletRes.data.balance || 0);
             if (walletRes.data.templateRate !== undefined) {
                 setTemplateRate(walletRes.data.templateRate);
             }
