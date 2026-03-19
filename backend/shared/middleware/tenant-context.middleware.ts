@@ -21,6 +21,7 @@ export class TenantContextMiddleware implements NestMiddleware {
     "admin",
     "whatsapp/public-config",
     "meta/callback",
+    "meta/webhook",
   ];
 
   async use(req: Request, res: Response, next: NextFunction) {
