@@ -32,7 +32,7 @@ export class CampaignsController {
   }
 
   @Post(":id/send")
-  @Authorize({ resource: "campaign", action: "execute" })
+  @Authorize({ resource: "campaign", action: "create" })
   send(@UserTenant() tenantId: string, @Param("id") id: string) {
     return this.campaignsService.dispatch(tenantId, id);
   }

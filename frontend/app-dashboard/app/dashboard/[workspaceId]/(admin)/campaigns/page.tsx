@@ -159,8 +159,9 @@ export default function CampaignsPage() {
             setStep(1);
             fetchCampaigns(tenantId);
             alert('Campaign launched successfully!');
-        } catch (error) {
-            alert('Failed to launch campaign');
+        } catch (error: any) {
+            const msg = error?.response?.data?.message || error?.message || 'Failed to launch campaign';
+            alert(`Campaign Error: ${msg}`);
         } finally {
             setLoading(false);
         }
@@ -331,12 +332,20 @@ export default function CampaignsPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Broadcasts</h1>
                     <p className="text-sm text-gray-500">Advanced marketing campaigns.</p>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                    <Plus size={18} /> New Campaign
-                </button>
+                <div className="flex items-center gap-3">
+                    <a
+                        href={`/dashboard/${tenantId}/campaigns/flow`}
+                        className="flex items-center gap-2 px-4 py-2 border border-indigo-500 text-indigo-600 rounded-lg hover:bg-indigo-50 text-sm font-medium transition-colors"
+                    >
+                        ⚡ Flow Builder
+                    </a>
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        <Plus size={18} /> New Campaign
+                    </button>
+                </div>
             </div>
 
             <div className="grid gap-4">
