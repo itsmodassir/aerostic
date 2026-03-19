@@ -11,10 +11,11 @@ import { CampaignsService } from "./campaigns.service";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { TenantGuard } from "@shared/guards/tenant.guard";
 import { Authorize } from "@shared/authorization/decorators/authorize.decorator";
+import { AuthorizationGuard } from "@shared/authorization/guards/authorization.guard";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
 
 @Controller("campaigns")
-@UseGuards(JwtAuthGuard, TenantGuard) // TenantGuard still sets req.membership, which some logic may need
+@UseGuards(JwtAuthGuard, TenantGuard, AuthorizationGuard) // AuthorizationGuard MUST be after JwtAuthGuard
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 

@@ -11,10 +11,11 @@ import {
 } from "@nestjs/common";
 import { ApiKeyService } from "./api-keys.service";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
+import { AuthorizationGuard } from "@shared/authorization/guards/authorization.guard";
 import { Authorize } from "@shared/authorization/decorators/authorize.decorator";
 
 @Controller("api-keys")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AuthorizationGuard)
 export class ApiKeysController {
   constructor(private apiKeyService: ApiKeyService) {}
 

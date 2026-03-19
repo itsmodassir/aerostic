@@ -5,10 +5,11 @@ import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
 
 import { TenantGuard } from "@shared/guards/tenant.guard";
+import { AuthorizationGuard } from "@shared/authorization/guards/authorization.guard";
 import { Authorize } from "@shared/authorization/decorators/authorize.decorator";
 
 @Controller("automation")
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, AuthorizationGuard)
 export class AutomationController {
   constructor(
     private readonly automationService: AutomationService,

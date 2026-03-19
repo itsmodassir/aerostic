@@ -109,7 +109,7 @@ import { TenantContextMiddleware } from "@shared/middleware/tenant-context.middl
     },
     {
       provide: APP_GUARD,
-      useClass: AuthorizationGuard,
+      useClass: TenantThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,
