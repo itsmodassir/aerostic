@@ -81,7 +81,9 @@ export class WalletService {
             const wallet = await this.ensureWallet(tenantId, manager);
             const account = wallet.accounts.find((a) => a.type === type);
             if (!account) throw new NotFoundException(`Account ${type} not found`);
-            return parseFloat(account.balance.toString());
+            const val = parseFloat(account.balance.toString());
+            console.log(`[WalletService] getBalance for ${tenantId}: ${val}`);
+            return val;
         });
 
         await this.redisService.set(cacheKey, balance.toString(), 300); // 5 min cache
