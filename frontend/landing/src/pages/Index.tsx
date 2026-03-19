@@ -21,12 +21,12 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-                Create Amazing Content with{" "}
-                <span className="text-primary">AI Power</span>
+                Scale Your Business with{" "}
+                <span className="text-primary tracking-tight">WhatsApp Automation</span>
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto lg:mx-0">
-                Generate professional blog posts, create stunning images, and chat with AI. 
-                Let AI handle the heavy lifting while you focus on your ideas.
+                Connect with customers, automate support, and drive sales with AI-powered WhatsApp 
+                conversations. Let Aimstors handle the engagement while you grow your business.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 {user ? (
@@ -88,6 +88,19 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="text-center hover:shadow-lg transition-shadow border-primary/20 bg-primary/5">
+              <CardHeader>
+                <MessageCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+                <CardTitle>WhatsApp Automation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 font-medium">
+                  Official WhatsApp Business Platform integration with AI flow builders 
+                  and automated responses.
+                </p>
+              </CardContent>
+            </Card>
+
             <Card className="text-center hover:shadow-lg transition-shadow">
               <CardHeader>
                 <FileText className="h-12 w-12 text-primary mx-auto mb-4" />

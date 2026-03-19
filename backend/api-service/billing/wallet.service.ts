@@ -11,6 +11,7 @@ import { Wallet, WalletStatus } from "@shared/database/entities/billing/wallet.e
 import { WalletAccount, WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
 import { WalletTransaction, TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
 import { RedisService } from "@shared/redis.service";
+import { RlsContextUtil } from "@shared/authorization/utils/rls-context.util";
 import * as crypto from "crypto";
 
 @Injectable()
@@ -106,6 +107,8 @@ export class WalletService {
         await queryRunner.startTransaction();
 
         try {
+            // Set RLS context for this transaction's connection
+            await RlsContextUtil.setLocalContext(queryRunner, tenantId);
             // 1. Check Idempotency
             if (params.idempotencyKey) {
                 const existing = await queryRunner.manager.findOne(WalletTransaction, {

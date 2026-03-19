@@ -37,12 +37,37 @@ const Privacy = () => {
                 <li>Monitor and analyze trends and usage</li>
               </ul>
 
-              <h2>Information Sharing</h2>
               <p>
-                We do not sell, trade, or otherwise transfer your personal information to third parties 
-                without your consent, except as described in this policy. We may share your information 
-                in certain limited circumstances, such as with service providers who assist us in 
-                operating our platform.
+                We do not sell or trade your personal information. We share your information 
+                only in the following circumstances:
+              </p>
+              <ul>
+                <li><strong>Service Providers:</strong> Cloud hosting (AWS), database management, and analytics providers.</li>
+                <li><strong>Meta APIs:</strong> When you connect your WhatsApp Business Account, we share data with Meta Platforms, Inc. to facilitate message delivery. This is governed by Meta's own privacy policies.</li>
+                <li><strong>Legal Compliance:</strong> If required by law or to protect our rights.</li>
+              </ul>
+
+              <h2>WhatsApp & Meta Data Handling</h2>
+              <p>
+                When using our WhatsApp automation features, we process:
+              </p>
+              <ul>
+                <li>Phone numbers and display names of your customers.</li>
+                <li>Message content transferred via the WhatsApp Business Platform.</li>
+                <li>Media files (images, documents) sent within conversations.</li>
+              </ul>
+              <p>
+                This data is stored securely and used solely to provide the automation and inbox 
+                features you have configured.
+              </p>
+
+              <h2>Data Deletion & Retention</h2>
+              <p>
+                We retain your data for as long as your account is active. You can request full 
+                data deletion at any time by following our 
+                <a href="/data-deletion" className="text-primary hover:underline ml-1">
+                  Data Deletion Instructions
+                </a>.
               </p>
 
               <h2>Data Security</h2>

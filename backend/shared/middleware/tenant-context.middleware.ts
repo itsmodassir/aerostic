@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from "express";
  * Ensures every scoped request has a valid tenant identity.
  */
 import { DataSource } from "typeorm";
+import { RlsContextUtil } from "../authorization/utils/rls-context.util";
 
 @Injectable()
 export class TenantContextMiddleware implements NestMiddleware {
@@ -102,7 +103,7 @@ export class TenantContextMiddleware implements NestMiddleware {
 
     // Set Postgres RLS context
     try {
-      await this.dataSource.query(`SET app.current_tenant = '${tenantId}'`);
+      await RlsContextUtil.setContext(this.dataSource, tenantId);
     } catch (err) {
       this.logger.error(`Failed to set RLS context: ${err.message}`);
     }

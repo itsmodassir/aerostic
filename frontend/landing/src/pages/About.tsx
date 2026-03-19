@@ -16,16 +16,16 @@ const About = () => {
               About Aimstors Solution AI
             </h1>
             <p className="text-xl text-gray-600">
-              Empowering creators with AI-powered content generation
+              Transforming business engagement with AI-powered WhatsApp automation
             </p>
           </div>
 
           <div className="prose prose-lg max-w-none mb-12">
             <p className="text-gray-700 leading-relaxed mb-6">
-              Aimstors Solution AI is a revolutionary platform that combines the power of artificial intelligence 
-              with intuitive design to help content creators, bloggers, and businesses build their online 
-              presence effortlessly. Our mission is to democratize content creation and make professional 
-              blogging accessible to everyone.
+              Aimstors Solution AI is a premier platform that combines official WhatsApp Business 
+              Platform integration with advanced artificial intelligence. We help businesses 
+              automate customer engagement, scale support, and drive sales through intelligent 
+              conversations.
             </p>
             
             <p className="text-gray-700 leading-relaxed mb-6">
@@ -75,18 +75,19 @@ const About = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
                 <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                  <Edit className="h-6 w-6 text-white" />
+                  <MessageCircle className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="font-bold text-lg mb-3 text-gray-900">AI Blog Editor</h3>
+                <h3 className="font-bold text-lg mb-3 text-gray-900">WhatsApp Automation</h3>
                 <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-                  Our flagship tool that generates complete, high-quality blog posts from simple prompts. 
-                  Customize tone, length, target audience, and topic to create content that perfectly matches your brand voice.
+                  Our flagship tool that connects your business to the official WhatsApp API. 
+                  Build intelligent chat flows, automate customer support, and manage your 
+                  entire inbox with AI-powered responses.
                 </p>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Custom tone and style settings</li>
-                  <li>• SEO-optimized content generation</li>
-                  <li>• Multiple word count options</li>
-                  <li>• Real-time editing and refinement</li>
+                  <li>• Official WhatsApp API Integration</li>
+                  <li>• Drag-and-drop Flow Builder</li>
+                  <li>• AI Intent Detection</li>
+                  <li>• Multi-agent Team Inbox</li>
                 </ul>
               </div>
 

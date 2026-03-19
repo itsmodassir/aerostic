@@ -76,6 +76,11 @@ const Footer = () => {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link to="/data-deletion" className="hover:text-primary transition-colors block">
+                  Data Deletion
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -113,6 +118,7 @@ const Footer = () => {
             <div className="flex space-x-6 text-sm text-muted-foreground">
               <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
               <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+              <Link to="/data-deletion" className="hover:text-primary transition-colors">Data Deletion</Link>
               <Link to="/contact" className="hover:text-primary transition-colors">Cookies</Link>
             </div>
           </div>

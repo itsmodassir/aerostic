@@ -23,6 +23,7 @@ import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import DataDeletion from "./pages/DataDeletion";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 import Chat from "./pages/Chat";
@@ -66,6 +67,7 @@ function App() {
                   <Route path="/about" element={<About />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
+                  <Route path="/data-deletion" element={<DataDeletion />} />
                   <Route path="/help" element={<HelpCenter />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/deploy" element={<Deploy />} />

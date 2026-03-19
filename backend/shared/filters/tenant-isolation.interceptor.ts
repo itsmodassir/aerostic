@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { DataSource } from "typeorm";
+import { RlsContextUtil } from "../authorization/utils/rls-context.util";
 
 /**
  * Enforces Postgres Row-Level Security (RLS) by setting the 'app.current_tenant'
@@ -31,10 +32,8 @@ export class TenantIsolationInterceptor implements NestInterceptor {
 
     if (tenantId) {
       try {
-        // Use SET LOCAL to ensure the context is scoped to the current transaction/connection session
-        await this.dataSource.query(
-          `SET LOCAL app.current_tenant = '${tenantId}'`,
-        );
+        // Use SET LOCAL via RlsContextUtil to ensure context is scoped to the connection/transaction
+        await RlsContextUtil.setLocalContext(this.dataSource, tenantId);
       } catch (err) {
         this.logger.error(
           `Failed to set RLS context for tenant ${tenantId}`,

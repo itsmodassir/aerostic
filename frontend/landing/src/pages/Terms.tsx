@@ -38,6 +38,20 @@ const Terms = () => {
                 <li>Remove any copyright or other proprietary notations</li>
               </ul>
 
+              <h2>WhatsApp & Meta Business Service</h2>
+              <p>
+                As a provider of WhatsApp automation tools, our service is built upon the WhatsApp 
+                Business Platform (API). By using our service, you also agree to comply with:
+              </p>
+              <ul>
+                <li><a href="https://www.whatsapp.com/legal/business-policy/" target="_blank" className="text-primary hover:underline">WhatsApp Business Policy</a></li>
+                <li><a href="https://www.facebook.com/legal/commerce_policy" target="_blank" className="text-primary hover:underline">Meta Commerce Policy</a></li>
+              </ul>
+              <p>
+                Any violation of Meta's official policies may result in the immediate suspension or 
+                termination of your Aimstors account and your WhatsApp Business API connection.
+              </p>
+
               <h2>User Accounts</h2>
               <p>
                 When you create an account with us, you must provide information that is accurate, 
