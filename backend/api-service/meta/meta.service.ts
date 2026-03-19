@@ -5,7 +5,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { MetaToken } from "./entities/meta-token.entity";
 import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
-import { SystemConfig } from "../admin/entities/system-config.entity";
+import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { RedisService } from "@shared/redis.service";
 import { EncryptionService } from "@shared/encryption.service";
 import { Template } from "../templates/entities/template.entity";

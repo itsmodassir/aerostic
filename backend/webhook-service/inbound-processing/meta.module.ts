@@ -9,7 +9,6 @@ import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
 import { MetaTokenService } from "./meta-token.service";
 import { AuditModule } from "@api/audit/audit.module";
 import { AdminModule } from "@api/admin/admin.module";
-import { GithubService } from "./github.service";
 
 import { Template } from "@api/templates/entities/template.entity";
 
