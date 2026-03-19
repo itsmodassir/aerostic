@@ -53,7 +53,9 @@ export default function CampaignsPage() {
             try {
                 const res = await api.get('/auth/workspaces');
                 const memberships = res.data;
-                const activeMembership = memberships.find((m: any) => m.tenant?.slug === workspaceSlug);
+                const activeMembership = memberships.find((m: any) => 
+                    m.tenant?.slug === workspaceSlug || m.tenant?.id === workspaceSlug
+                );
                 if (activeMembership && activeMembership.tenant?.id) {
                     const tid = activeMembership.tenant.id;
                     setTenantId(tid);
@@ -87,7 +89,10 @@ export default function CampaignsPage() {
     const fetchTemplates = async (tid: string) => {
         try {
             const res = await api.get(`/templates?tenantId=${tid}`);
-            setTemplates(res.data.filter((t: any) => t.status === 'APPROVED'));
+            // Use case-insensitive check for APPROVED
+            setTemplates(res.data.filter((t: any) => 
+                t.status?.toUpperCase() === 'APPROVED'
+            ));
         } catch (e) { console.error('Failed to load templates'); }
     };
 
