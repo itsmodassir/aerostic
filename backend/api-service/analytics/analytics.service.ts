@@ -27,12 +27,13 @@ export class AnalyticsService {
     const now = new Date();
     const sevenDaysAgo = subDays(now, 7);
 
-    const [totalSent, totalReceived, totalContacts, totalAgents, dailyStats] =
+    const [totalSent, totalReceived, totalContacts, totalAgents, totalCampaigns, dailyStats] =
       await Promise.all([
         this.messageRepo.count({ where: { tenantId, direction: "out" } }),
         this.messageRepo.count({ where: { tenantId, direction: "in" } }),
         this.contactRepo.count({ where: { tenantId } }),
         this.aiAgentRepo.count({ where: { tenantId } }),
+        this.campaignRepo.count({ where: { tenantId } }),
         this.getDailyStats(tenantId, sevenDaysAgo, now),
       ]);
 
@@ -69,6 +70,7 @@ export class AnalyticsService {
         totalReceived,
         totalContacts,
         totalAgents,
+        totalCampaigns,
         aiCreditsUsed: aiCreditsResult?.value || 0,
         activeCampaigns: campaigns.filter((c) => c.status === "sending").length,
         statusBreakdown: statusBreakdown.reduce((acc, curr) => {

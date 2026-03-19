@@ -16,6 +16,7 @@ import {
   TenantRole,
 } from "@shared/database/entities/core/tenant-membership.entity";
 import { AuthzCacheService } from "@shared/authorization/cache/authz-cache.service";
+import { AuditLog } from "@shared/database/entities/core/audit-log.entity";
 
 @Injectable()
 export class UsersService {
@@ -28,6 +29,8 @@ export class UsersService {
     private tenantsRepository: Repository<Tenant>,
     @InjectRepository(TenantMembership)
     private membershipRepository: Repository<TenantMembership>,
+    @InjectRepository(AuditLog)
+    private auditLogRepository: Repository<AuditLog>,
     private authzCache: AuthzCacheService,
   ) {}
 
@@ -61,6 +64,62 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
     return user;
+  }
+
+  async updateProfile(userId: string, data: Partial<{ name: string; phone: string; company: string; website: string; address: string; avatar: string }>): Promise<User> {
+    const user = await this.findOne(userId);
+    let updatedUser = false;
+    
+    if (data.name !== undefined) { user.name = data.name; updatedUser = true; }
+    if (data.phone !== undefined) { user.phone = data.phone; updatedUser = true; }
+    if (data.avatar !== undefined) { user.avatar = data.avatar; updatedUser = true; }
+    
+    if (updatedUser) {
+      await this.usersRepository.save(user);
+    }
+
+    if (data.company !== undefined || data.website !== undefined || data.address !== undefined) {
+      const membership = await this.membershipRepository.findOne({
+        where: { userId },
+        relations: ["tenant"],
+        order: { createdAt: "ASC" },
+      });
+
+      if (membership && membership.tenant) {
+        let updatedTenant = false;
+        if (data.company !== undefined) { membership.tenant.name = data.company; updatedTenant = true; }
+        if (data.website !== undefined) { membership.tenant.website = data.website; updatedTenant = true; }
+        // Tenant entity does not currently have an address column, but we keep it in DTO for future schema updates
+        
+        if (updatedTenant) {
+          await this.tenantsRepository.save(membership.tenant);
+        }
+      }
+    }
+
+    return user;
+  }
+
+  async getNotifications(tenantId: string): Promise<any[]> {
+    if (!tenantId) return [];
+    
+    const logs = await this.auditLogRepository.find({
+      where: { tenantId },
+      order: { createdAt: "DESC" },
+      take: 5,
+    });
+
+    return logs.map((log) => ({
+      id: log.id,
+      title: this.formatAuditActionString(log.action),
+      message: `${log.resourceType} ${log.action.toLowerCase()}`,
+      time: log.createdAt,
+      unread: false, // Audit logs don't have read status for now
+    }));
+  }
+
+  private formatAuditActionString(action: string): string {
+    return action.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
   }
 
   async invalidateTokens(userId: string): Promise<void> {

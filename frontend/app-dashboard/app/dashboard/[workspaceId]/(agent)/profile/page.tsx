@@ -1,17 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
     User, Mail, Phone, Building2, MapPin, Globe, Camera,
     Save, Crown, Shield, Calendar, MessageSquare, Bot,
-    CheckCircle, AlertCircle, Key, Lock
+    CheckCircle, AlertCircle, Key, Lock, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/lib/api';
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(true);
     const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // User data
     const [name, setName] = useState('');
@@ -20,6 +24,8 @@ export default function ProfilePage() {
     const [company, setCompany] = useState('');
     const [address, setAddress] = useState('');
     const [website, setWebsite] = useState('');
+    const [avatar, setAvatar] = useState('');
+    const [avatarPreview, setAvatarPreview] = useState('');
     const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
     const [isAdmin, setIsAdmin] = useState(false);
     const [joinedDate, setJoinedDate] = useState('');
@@ -38,34 +44,77 @@ export default function ProfilePage() {
         if (user) {
             setEmail(user.email || '');
             setName(user.name || user.email?.split('@')[0] || '');
-            setCompany((user as any).tenantName || 'My Workspace'); // tenantName might need to come from elsewhere or user object needs update
-            // For now, let's assume user object has what we need or we fetch it.
-            // user.iat is not in User interface usually, but we have createdAt
-            // setJoinedDate...
-
-            // Set plan and admin status
-            if (user.email === 'md@modassir.info' || user.role === 'super_admin') {
-                setUserPlan('growth'); // Demo logic
-                setIsAdmin(true);
-            }
-
-            // Demo stats
-            setStats({
-                messagesSent: 12500,
-                contacts: 850,
-                agents: 3,
-                campaigns: 15,
-            });
+            setPhone((user as any).phone || '');
+            setAvatar((user as any).avatar || '');
+            setAvatarPreview((user as any).avatar || '');
+            setCompany((user as any).tenantName || 'My Workspace');
+            setIsAdmin(user.role === 'super_admin' || user.role === 'admin');
         }
     }, [user]);
 
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                setStatsLoading(true);
+                const res = await api.get('/analytics/overview');
+                const s = res.data?.stats;
+                if (s) {
+                    setStats({
+                        messagesSent: s.totalSent || 0,
+                        contacts: s.totalContacts || 0,
+                        agents: s.totalAgents || 0,
+                        campaigns: s.totalCampaigns || 0,
+                    });
+                }
+            } catch (err) {
+                // Fallback to zeros silently
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
     const handleSave = async () => {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setLoading(false);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setError('');
+        try {
+            await api.patch('/users/me', { name, phone, company, website, address, avatar });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to save profile');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Preview immediately
+        const reader = new FileReader();
+        reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+
+        // Upload to backend via multipart form
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post('/users/me/avatar', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (res.data?.avatarUrl) {
+                setAvatar(res.data.avatarUrl);
+            }
+        } catch (err) {
+            // Avatar preview stays, but URL upload failed - silently continue
+        }
     };
 
     const planColors = {
@@ -85,12 +134,31 @@ export default function ProfilePage() {
 
                 <div className="relative flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
                     <div className="relative">
-                        <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-4xl font-bold">
-                            {name[0]?.toUpperCase() || 'U'}
-                        </div>
-                        <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-600 shadow-lg hover:bg-gray-100">
+                        {avatarPreview ? (
+                            <img
+                                src={avatarPreview}
+                                alt={name}
+                                className="w-24 h-24 rounded-2xl object-cover bg-white/20"
+                            />
+                        ) : (
+                            <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-4xl font-bold">
+                                {name[0]?.toUpperCase() || 'U'}
+                            </div>
+                        )}
+                        <button
+                            onClick={handleAvatarClick}
+                            title="Upload profile photo"
+                            className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-600 shadow-lg hover:bg-gray-100 transition-colors"
+                        >
                             <Camera className="w-4 h-4" />
                         </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarChange}
+                        />
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold">{name || 'User'}</h1>
@@ -112,42 +180,59 @@ export default function ProfilePage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 relative">
-                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold">{stats.messagesSent.toLocaleString()}</p>
-                        <p className="text-sm text-white/70 flex items-center justify-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            Messages Sent
-                        </p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold">{stats.contacts}</p>
-                        <p className="text-sm text-white/70 flex items-center justify-center gap-1">
-                            <User className="w-3 h-3" />
-                            Contacts
-                        </p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold">{stats.agents}</p>
-                        <p className="text-sm text-white/70 flex items-center justify-center gap-1">
-                            <Bot className="w-3 h-3" />
-                            AI Agents
-                        </p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold">{stats.campaigns}</p>
-                        <p className="text-sm text-white/70 flex items-center justify-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Campaigns
-                        </p>
-                    </div>
+                    {statsLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-4 text-center animate-pulse">
+                                <div className="h-8 bg-white/20 rounded mb-2" />
+                                <div className="h-4 bg-white/10 rounded" />
+                            </div>
+                        ))
+                    ) : (
+                        <>
+                            <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                                <p className="text-2xl font-bold">{stats.messagesSent.toLocaleString()}</p>
+                                <p className="text-sm text-white/70 flex items-center justify-center gap-1">
+                                    <MessageSquare className="w-3 h-3" />
+                                    Messages Sent
+                                </p>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                                <p className="text-2xl font-bold">{stats.contacts.toLocaleString()}</p>
+                                <p className="text-sm text-white/70 flex items-center justify-center gap-1">
+                                    <User className="w-3 h-3" />
+                                    Contacts
+                                </p>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                                <p className="text-2xl font-bold">{stats.agents}</p>
+                                <p className="text-sm text-white/70 flex items-center justify-center gap-1">
+                                    <Bot className="w-3 h-3" />
+                                    AI Agents
+                                </p>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                                <p className="text-2xl font-bold">{stats.campaigns}</p>
+                                <p className="text-sm text-white/70 flex items-center justify-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Campaigns
+                                </p>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* Success Message */}
+            {/* Success / Error Messages */}
             {saved && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600" />
                     <p className="text-green-700 font-medium">Profile updated successfully!</p>
+                </div>
+            )}
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                    <p className="text-red-700 font-medium">{error}</p>
                 </div>
             )}
 
@@ -165,7 +250,7 @@ export default function ProfilePage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Your full name"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
                     </div>
@@ -194,7 +279,7 @@ export default function ProfilePage() {
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 placeholder="+91 98765 43210"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
                     </div>
@@ -208,7 +293,7 @@ export default function ProfilePage() {
                                 value={company}
                                 onChange={(e) => setCompany(e.target.value)}
                                 placeholder="Your company name"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
                     </div>
@@ -222,7 +307,7 @@ export default function ProfilePage() {
                                 value={website}
                                 onChange={(e) => setWebsite(e.target.value)}
                                 placeholder="https://yourwebsite.com"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
                     </div>
@@ -236,7 +321,7 @@ export default function ProfilePage() {
                                 value={address}
                                 onChange={(e) => setAddress(e.target.value)}
                                 placeholder="City, Country"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             />
                         </div>
                     </div>
@@ -248,7 +333,7 @@ export default function ProfilePage() {
                         disabled={loading}
                         className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50"
                     >
-                        <Save className="w-4 h-4" />
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {loading ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
@@ -283,7 +368,7 @@ export default function ProfilePage() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 py-3">
                         <div>
                             <p className="font-medium text-gray-900">Account Security</p>
-                            <p className="text-sm text-gray-500">Password last changed 30 days ago</p>
+                            <p className="text-sm text-gray-500">Set a strong password to protect your account</p>
                         </div>
                         <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm flex items-center justify-center gap-2 w-full sm:w-auto">
                             <Key className="w-4 h-4" />

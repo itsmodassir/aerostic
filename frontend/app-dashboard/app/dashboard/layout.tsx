@@ -213,12 +213,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         }
     }, [workspaceId, user, router, isReseller, membership]);
 
-    // notifications
-    const [notifications, setNotifications] = useState([
-        { id: 1, title: 'New message received', message: 'From +91 98765 43210', time: '2m ago', unread: true },
-        { id: 2, title: 'Campaign completed', message: 'Welcome Series sent to 150 contacts', time: '1h ago', unread: true },
-        { id: 3, title: 'AI Agent resolved', message: 'Support bot handled 5 queries', time: '3h ago', unread: false },
-    ]);
+    // notifications - loaded from real audit logs
+    const [notifications, setNotifications] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+        api.get('/users/me/notifications')
+            .then(res => { if (Array.isArray(res.data)) setNotifications(res.data); })
+            .catch(() => { /* silently fail - no notifications */ });
+    }, [user]);
 
     // Close dropdowns on outside click
     useEffect(() => {
@@ -497,14 +500,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                         <button className="text-xs text-blue-600 hover:text-blue-700">Mark all read</button>
                                     </div>
                                     <div className="max-h-80 overflow-y-auto">
-                                        {notifications.map(notif => (
+                                        {notifications.length === 0 ? (
+                                            <div className="p-6 text-center text-gray-500 text-sm">No recent activity</div>
+                                        ) : notifications.map(notif => (
                                             <div key={notif.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${notif.unread ? 'bg-blue-50/50' : ''}`}>
                                                 <div className="flex items-start gap-3">
                                                     <div className={`w-2 h-2 rounded-full mt-2 ${notif.unread ? 'bg-blue-500' : 'bg-gray-300'}`} />
                                                     <div className="flex-1">
                                                         <p className="text-sm font-medium text-gray-900">{notif.title}</p>
                                                         <p className="text-xs text-gray-500 mt-0.5">{notif.message}</p>
-                                                        <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            {notif.time ? notif.time : notif.createdAt ? new Date(notif.createdAt).toLocaleString() : ''}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>

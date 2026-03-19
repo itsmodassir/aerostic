@@ -597,6 +597,8 @@ export class AuthController {
       id: req.user.id,
       email: req.user.email,
       name: req.user.name,
+      phone: req.user.phone || membership?.tenant?.phone || null,
+      avatar: req.user.avatar || null,
       role: req.user.role,
       tenantId: membership?.tenantId || tenantId || null,
       tenantSlug: membership?.tenant?.slug || null,
