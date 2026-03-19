@@ -74,6 +74,7 @@ export class WalletService {
         const cached = await this.redisService.get(cacheKey);
 
         if (cached !== null) {
+            console.log(`[WalletService] getBalance for ${tenantId}: ${cached} (from cache)`);
             return parseFloat(cached);
         }
 

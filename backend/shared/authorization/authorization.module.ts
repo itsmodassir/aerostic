@@ -11,6 +11,7 @@ import { TenantsModule } from "../../api-service/tenants/tenants.module";
 import { TenantMembership } from "@shared/database/entities/core/tenant-membership.entity";
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";
 import { Subscription } from "@shared/database/entities/billing/subscription.entity";
+import { User } from "@shared/database/entities/core/user.entity";
 
 @Global()
 @Module({
@@ -20,6 +21,7 @@ import { Subscription } from "@shared/database/entities/billing/subscription.ent
       TenantMembership,
       ApiKey,
       Subscription,
+      User,
     ]),
     TenantsModule,
   ],

@@ -6,6 +6,7 @@ import { TenantMembership } from "@shared/database/entities/core/tenant-membersh
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";
 import { Subscription } from "@shared/database/entities/billing/subscription.entity";
 import { PolicyEntity } from "@shared/database/entities/core/policy.entity";
+import { User, UserRole } from "@shared/database/entities/core/user.entity";
 
 @Injectable()
 export class AuthzCacheService {
@@ -22,6 +23,8 @@ export class AuthzCacheService {
     private subscriptionRepo: Repository<Subscription>,
     @InjectRepository(PolicyEntity)
     private policyRepo: Repository<PolicyEntity>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
   ) {}
 
   async getAuthContext(subjectId: string): Promise<any> {
@@ -61,21 +64,30 @@ export class AuthzCacheService {
     }
 
     // 2️⃣ Otherwise User
-    const membership = await this.membershipRepo.findOne({
-      where: { userId: subjectId },
-      relations: ["tenant"],
-    });
+    const [membership, user] = await Promise.all([
+      this.membershipRepo.findOne({
+        where: { userId: subjectId },
+        relations: ["tenant"],
+      }),
+      this.userRepo.findOne({
+        where: { id: subjectId },
+      }),
+    ]);
+  
+    if (!membership && !user) return null;
+  
+    // Use global super_admin role as priority
+    const effectiveRole = user?.role === UserRole.SUPER_ADMIN ? UserRole.SUPER_ADMIN : membership?.role;
+    const effectiveTenantId = membership?.tenantId || (user?.role === UserRole.SUPER_ADMIN ? null : null);
 
-    if (!membership) return null;
-
-    const subscription = await this.subscriptionRepo.findOne({
+    const subscription = membership?.tenantId ? await this.subscriptionRepo.findOne({
       where: { tenantId: membership.tenantId },
-    });
+    }) : null;
 
     // 3️⃣ Resolve policies into permissions array
     const policies = await this.policyRepo.find({
       where: [
-        { subjectType: "role", subject: membership.role, isActive: true },
+        { subjectType: "role", subject: effectiveRole, isActive: true },
         { subjectType: "user", subject: subjectId, isActive: true },
       ],
     });
@@ -88,10 +100,10 @@ export class AuthzCacheService {
     });
 
     return {
-      role: membership.role,
+      role: effectiveRole,
       permissions,
-      tenantId: membership.tenantId,
-      subscriptionStatus: subscription?.status || "inactive",
+      tenantId: effectiveTenantId,
+      subscriptionStatus: subscription?.status || (effectiveRole === UserRole.SUPER_ADMIN ? "active" : "inactive"),
       riskScore: 0,
     };
   }
