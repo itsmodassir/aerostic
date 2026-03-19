@@ -12,7 +12,7 @@ BEGIN
     LOOP 
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation_policy ON %I', t);
-        EXECUTE format('CREATE POLICY tenant_isolation_policy ON %I USING (tenant_id = (NULLIF(current_setting($$app.current_tenant$$, true), $$$$))::uuid)', t);
+        EXECUTE format('CREATE POLICY tenant_isolation_policy ON %I USING (tenant_id = (NULLIF(current_setting(''app.current_tenant'', true), ''''))::uuid)', t);
         RAISE NOTICE 'Secured table: %', t;
     END LOOP;
 
