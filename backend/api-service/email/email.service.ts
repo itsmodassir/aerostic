@@ -37,6 +37,8 @@ export class EmailService {
         user: user || process.env.SMTP_USER || "",
         pass: pass || process.env.SMTP_PASS || "",
       },
+      debug: true,
+      logger: true,
     });
   }
 
