@@ -24,15 +24,19 @@ export class TenantContextMiddleware implements NestMiddleware {
     "meta/webhook",
   ];
 
-  async use(req: Request, res: Response, next: NextFunction) {
-    // Check both req.path and req.originalUrl for the excluded keywords
-    const isExcluded = this.EXCLUDED_PATHS.some((path) =>
-      req.path.includes(path) || req.originalUrl?.includes(path),
+    const path = req.path;
+    const originalUrl = req.originalUrl;
+    
+    const isExcluded = this.EXCLUDED_PATHS.some((p) =>
+      path.includes(p) || originalUrl?.includes(p),
     );
 
     if (isExcluded) {
+      // this.logger.debug(`Path excluded from tenant context: ${path}`);
       return next();
     }
+
+    this.logger.debug(`Checking tenant context for: Path=${path}, Original=${originalUrl}`);
 
     let tenantId =
       req.headers["x-tenant-id"] ||
