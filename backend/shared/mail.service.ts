@@ -1,38 +1,87 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, Like } from "typeorm";
 import * as nodemailer from "nodemailer";
+import { SystemConfig } from "./database/entities/core/system-config.entity";
+import { EncryptionService } from "./encryption.service";
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter;
+  private lastConfigHash: string = "";
 
-  constructor(private configService: ConfigService) {
-    const host = this.configService.get<string>("SMTP_HOST");
-    const port = this.configService.get<number>("SMTP_PORT", 465);
-    const user = this.configService.get<string>("SMTP_USER");
-    const pass = this.configService.get<string>("SMTP_PASS");
+  constructor(
+    @InjectRepository(SystemConfig)
+    private configRepo: Repository<SystemConfig>,
+    private configService: ConfigService,
+    private encryptionService: EncryptionService,
+  ) { }
 
-    if (host && user && pass) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: {
-          user,
-          pass,
-        },
+  private async getTransporter(): Promise<nodemailer.Transporter | null> {
+    try {
+      const configs = await this.configRepo.find({
+        where: { key: Like("email.smtp_%") },
       });
-      this.logger.log(`MailService initialized with host: ${host}`);
-    } else {
-      this.logger.warn(
-        "SMTP credentials not fully configured. Emails will not be sent.",
-      );
+
+      const configMap = configs.reduce((acc, curr) => {
+        acc[curr.key] = curr.isSecret
+          ? this.encryptionService.decrypt(curr.value)
+          : curr.value;
+        return acc;
+      }, {} as Record<string, string>);
+
+      const host = configMap["email.smtp_host"] || this.configService.get("SMTP_HOST");
+      const port = parseInt(configMap["email.smtp_port"] || this.configService.get("SMTP_PORT", "465"));
+      const user = configMap["email.smtp_user"] || this.configService.get("SMTP_USER");
+      const pass = configMap["email.smtp_pass"] || this.configService.get("SMTP_PASS");
+      const secure = configMap["email.smtp_secure"] === "true" || port === 465;
+
+      const currentHash = `${host}:${port}:${user}:${pass}:${secure}`;
+
+      if (this.transporter && this.lastConfigHash === currentHash) {
+        return this.transporter;
+      }
+
+      if (host && user && pass) {
+        this.transporter = nodemailer.createTransport({
+          host,
+          port,
+          secure,
+          auth: {
+            user,
+            pass,
+          },
+          // Add some timeout for faster failure detection
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 5000,
+        });
+        this.lastConfigHash = currentHash;
+        this.logger.log(`MailService (re)initialized with host: ${host}`);
+        return this.transporter;
+      }
+
+      this.logger.warn("SMTP credentials not fully configured in DB or Env.");
+      return null;
+    } catch (error) {
+      this.logger.error("Failed to initialize SMTP transporter", error);
+      return null;
     }
   }
 
   async sendMail(to: string, subject: string, html: string, text?: string) {
-    if (!this.transporter) {
+    const transporter = await this.getTransporter();
+
+    // Fetch from details for ஒவ்வொரு call
+    const fromConfig = await this.configRepo.find({
+      where: { key: Like("email.from_%") },
+    });
+    const fromName = fromConfig.find(c => c.key === "email.from_name")?.value || "Aimstors Solution";
+    const fromEmail = fromConfig.find(c => c.key === "email.from_email")?.value || "noreply@aimstore.in";
+
+    if (!transporter) {
       this.logger.warn("=================================================");
       this.logger.warn("FALLBACK: SMTP Transporter not initialized.");
       this.logger.warn(`EMAIL TO: ${to}`);
@@ -43,11 +92,8 @@ export class MailService {
     }
 
     try {
-      const info = await this.transporter.sendMail({
-        from: this.configService.get<string>(
-          "SMTP_FROM",
-          '"Aimstors Solution" <noreply@aimstore.in>',
-        ),
+      const info = await transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
         to,
         subject,
         text: text || subject,

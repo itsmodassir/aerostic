@@ -3,7 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AdminService } from "./admin.service";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { WhatsappAccount } from "../../webhook-service/whatsapp/entities/whatsapp-account.entity";
-import { SystemConfig } from "./entities/system-config.entity";
+import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { Message } from "@shared/database/entities/messaging/message.entity";
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";
 import { Subscription } from "@shared/database/entities/billing/subscription.entity";

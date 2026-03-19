@@ -19,6 +19,7 @@ import { Contact } from "@shared/database/entities/core/contact.entity";
 import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
 import { Message } from "@shared/database/entities/messaging/message.entity";
 import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
+import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 
 @Global()
 @Module({
@@ -38,6 +39,7 @@ import { Conversation } from "@shared/database/entities/messaging/conversation.e
       Mailbox,
       Message,
       Conversation,
+      SystemConfig,
     ]),
   ],
   providers: [

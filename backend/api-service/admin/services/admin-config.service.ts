@@ -8,7 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull } from "typeorm";
-import { SystemConfig } from "@api/admin/entities/system-config.entity";
+import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { EncryptionService } from "@shared/encryption.service";
 import { AuditService, LogLevel, LogCategory } from "@api/audit/audit.service";
 import { RedisService } from "@shared/redis.service";
