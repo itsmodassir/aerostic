@@ -18,11 +18,13 @@ interface Flow {
 
 const FLOW_CATEGORIES = [
     { value: 'CUSTOMER_SUPPORT', label: 'Customer Support' },
-    { value: 'EDUCATION', label: 'Education' },
-    { value: 'MARKETING', label: 'Marketing' },
-    { value: 'POLLS', label: 'Polls' },
-    { value: 'RESOURCES', label: 'Resources' },
-    { value: 'SURVEYS', label: 'Surveys' },
+    { value: 'LEAD_GENERATION', label: 'Lead Generation' },
+    { value: 'APPOINTMENT_BOOKING', label: 'Appointment Booking' },
+    { value: 'SIGN_UP', label: 'Sign Up' },
+    { value: 'SIGN_IN', label: 'Sign In' },
+    { value: 'SHOPPING', label: 'Shopping' },
+    { value: 'CONTACT_US', label: 'Contact Us' },
+    { value: 'SURVEY', label: 'Survey' },
     { value: 'OTHER', label: 'Other' },
 ];
 
