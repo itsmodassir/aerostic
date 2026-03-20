@@ -86,8 +86,8 @@ const CustomNode = ({ data, selected, id }: NodeProps) => {
                 )}
                 {type === 'agent' && (
                     <div>
-                        <p className="text-xs font-medium text-gray-700">{data.agentName as string || 'Select Agent'}</p>
-                        {data.retry && <p className="text-[10px] text-rose-500 font-semibold mt-1">Retry Enabled</p>}
+                        <p className="text-xs font-medium text-gray-700">{(data.agentName as string) || 'Select Agent'}</p>
+                        {!!data.retry && <p className="text-[10px] text-rose-500 font-semibold mt-1">Retry Enabled</p>}
                     </div>
                 )}
                 {type === 'end' && (
