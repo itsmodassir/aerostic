@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import * as qs from "querystring";
+import axios from "axios";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -300,11 +301,19 @@ export class WhatsappService {
       );
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new BadRequestException(
           data.error?.message || "Failed to create flow in Meta",
         );
+      }
+
+      // Automatically upload a default "Hello World" asset
+      try {
+        await this.uploadFlowAsset(tenantId, data.id, name);
+      } catch (uploadError) {
+        console.error("Error uploading default flow asset:", uploadError);
+        // We don't throw here as the flow is already created,
+        // but it will be in a state with no screens.
       }
 
       return data;
@@ -313,6 +322,71 @@ export class WhatsappService {
       throw error instanceof BadRequestException
         ? error
         : new BadRequestException("Failed to create flow. Please try again.");
+    }
+  }
+
+  async uploadFlowAsset(tenantId: string, flowId: string, flowName: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+    if (!account) return;
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+
+    const flowJson = {
+      version: "5.0",
+      screens: [
+        {
+          id: "WELCOME",
+          title: "Welcome",
+          terminal: true,
+          data: {},
+          layout: {
+            type: "SingleColumnLayout",
+            children: [
+              {
+                type: "TextHeading",
+                text: flowName || "Welcome"
+              },
+              {
+                type: "TextBody",
+                text: "This is an automated preview of your flow."
+              },
+              {
+                type: "Footer",
+                label: "Complete",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {}
+                }
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    const formData = new FormData();
+    const blob = new Blob([JSON.stringify(flowJson)], { type: "application/json" });
+    formData.append("file", blob, "flow.json");
+    formData.append("name", "flow.json");
+    formData.append("asset_type", "FLOW_JSON");
+
+    try {
+      const response = await axios.post(
+        `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${accessToken}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Meta Flow Asset Upload Error:", error.response?.data || error.message);
+      throw new BadRequestException("Failed to upload flow asset to Meta");
     }
   }
 }

@@ -105,11 +105,6 @@ export default function WhatsAppFlowsPage() {
             setIsCreateModalOpen(false);
             setNewFlowName('');
             await fetchFlows(); // Refresh list
-            
-            // Optionally redirect to builder
-            if (res.data?.id) {
-                window.open(`https://business.facebook.com/wa/manage/flows/${res.data.id}/builder`, '_blank');
-            }
         } catch (err: any) {
             console.error('Failed to create flow:', err);
             setCreateError(err.response?.data?.message || 'Failed to create WhatsApp Flow. Please check your Meta configuration.');
