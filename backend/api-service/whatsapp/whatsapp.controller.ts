@@ -81,4 +81,10 @@ export class WhatsappController {
   async syncAccount(@UserTenant() tenantId: string) {
     return this.whatsappService.syncAccountFromMeta(tenantId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("flows")
+  async getFlows(@UserTenant() tenantId: string) {
+    return this.whatsappService.getFlows(tenantId);
+  }
 }

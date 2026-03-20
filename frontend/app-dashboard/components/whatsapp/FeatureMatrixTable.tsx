@@ -30,10 +30,10 @@ export default function FeatureMatrixTable({ className = '' }: FeatureMatrixTabl
         },
         {
             name: 'WhatsApp Flows',
-            status: 'pending',
+            status: 'enabled',
             icon: Workflow,
             description: 'Advanced conversational forms',
-            action: { label: 'Request Access', href: 'https://developers.facebook.com/docs/whatsapp/flows', external: true },
+            action: { label: 'Manage Flows', href: 'whatsapp/flows' },
         },
         {
             name: 'WhatsApp Pay',

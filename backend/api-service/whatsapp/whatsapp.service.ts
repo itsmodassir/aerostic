@@ -238,4 +238,35 @@ export class WhatsappService {
       );
     }
   }
+
+  async getFlows(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+
+    if (!account) {
+      throw new BadRequestException("WhatsApp account not connected");
+    }
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion =
+      (await this.adminConfigService.getConfigValue("meta.api_version")) ||
+      "v21.0";
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${account.wabaId}/flows?fields=id,name,status,updated_at&access_token=${accessToken}`,
+      );
+
+      if (!response.ok) {
+        throw new BadRequestException("Failed to fetch flows from Meta");
+      }
+
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error("Error fetching flows from Meta:", error);
+      throw new BadRequestException("Failed to fetch flows. Please try again.");
+    }
+  }
 }
