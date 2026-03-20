@@ -403,45 +403,59 @@ export default function WhatsAppFlowsPage() {
                             </div>
 
                             {/* Right Preview Area */}
-                            <div className="flex-1 bg-white p-12 flex flex-col items-center justify-center space-y-10 relative overflow-hidden">
-                                <div className="absolute top-10 left-10">
+                            <div className="flex-1 bg-white p-6 lg:p-12 flex flex-col items-center justify-center space-y-8 relative overflow-hidden min-h-[500px]">
+                                <div className="absolute top-6 left-8 lg:top-10 lg:left-10">
                                     <label className="text-xl font-black text-gray-900 tracking-tight">Flow Preview</label>
                                 </div>
                                 
-                                <div className="absolute top-10 right-10">
+                                <div className="absolute top-6 right-8 lg:top-10 lg:right-10">
                                     <button className="p-3 hover:bg-gray-100 rounded-2xl text-gray-400 transition-colors"><RefreshCw size={22} /></button>
                                 </div>
 
-                                {/* Phone Mockup */}
-                                <div className="w-[320px] h-[640px] bg-white rounded-[56px] border-[12px] border-[#1c1e21] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col relative animate-in zoom-in-90 slide-in-from-bottom-12 duration-1000">
-                                    <div className="h-6 bg-[#1c1e21] w-36 mx-auto rounded-b-3xl mb-4 shrink-0" />
-                                    
-                                    {/* App Bar */}
-                                    <div className="px-7 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
-                                        <X size={20} className="text-gray-400" />
-                                        <span className="text-[14px] font-black text-gray-800">Welcome</span>
-                                        <div className="w-1 h-1 bg-gray-400 rounded-full" />
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="p-10 flex-1 flex flex-col bg-white">
-                                        <h4 className="text-[28px] font-[1000] text-gray-900 leading-[1.1] tracking-tight">Hello World</h4>
-                                        <p className="text-base text-gray-500 mt-5 font-bold leading-relaxed">Let's start <span className="text-[#1fb381]">building</span> things!</p>
+                                {/* Phone Mockup Container with Scaling */}
+                                <div className="relative transform scale-[0.7] sm:scale-[0.85] lg:scale-100 transition-transform duration-500 origin-center">
+                                    <div className="w-[300px] h-[600px] bg-white rounded-[56px] border-[10px] border-[#1c1e21] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col relative animate-in zoom-in-90 slide-in-from-bottom-12 duration-1000">
+                                        {/* Speaker/Notch */}
+                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-6 bg-[#1c1e21] w-32 rounded-b-2xl z-20" />
                                         
-                                        <div className="mt-auto space-y-6">
-                                            <button disabled className="w-full h-14 bg-[#1fb381] rounded-2xl flex items-center justify-center text-white font-[1000] text-[15px] shadow-2xl shadow-green-200 uppercase tracking-widest active:scale-95 transition-all">
-                                                Complete
-                                            </button>
-                                            <p className="text-[11px] text-center text-gray-400 font-bold leading-normal">
-                                                Managed by the business. <br/>
-                                                <span className="text-blue-600 underline cursor-pointer">Learn more</span>
+                                        {/* App Bar */}
+                                        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white mt-4">
+                                            <X size={18} className="text-gray-400" />
+                                            <span className="text-[13px] font-black text-gray-800">Welcome</span>
+                                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="p-8 flex-1 flex flex-col bg-white">
+                                            <h4 className="text-[24px] font-[1000] text-gray-900 leading-[1.2] tracking-tight break-words">
+                                                {newFlowName || 'Hello World'}
+                                            </h4>
+                                            <p className="text-sm text-gray-500 mt-4 font-bold leading-relaxed">
+                                                Category: <span className="text-purple-600 uppercase tracking-tighter text-[10px] ml-1">
+                                                    {FLOW_CATEGORIES.find(c => c.value === newFlowCategory)?.label || 'General'}
+                                                </span>
                                             </p>
+                                            <div className="w-12 h-1 bg-gray-100 rounded-full mt-6" />
+                                            
+                                            <p className="text-xs text-gray-400 mt-6 font-medium leading-relaxed">
+                                                This is a live preview of how your flow will appear to customers in WhatsApp.
+                                            </p>
+                                            
+                                            <div className="mt-auto space-y-5">
+                                                <button disabled className="w-full h-12 bg-[#1fb381] rounded-2xl flex items-center justify-center text-white font-[1000] text-[13px] shadow-2xl shadow-green-200 uppercase tracking-widest opacity-90">
+                                                    Complete
+                                                </button>
+                                                <p className="text-[10px] text-center text-gray-400 font-bold leading-normal">
+                                                    Managed by the business. <br/>
+                                                    <span className="text-blue-600 underline cursor-pointer">Learn more</span>
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="w-full max-w-sm p-5 bg-[#f0f2f5] border border-gray-200 rounded-3xl text-[12px] text-gray-500 leading-relaxed font-bold animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-                                    When utilising template Flow JSON, you are responsible for customising the experience to suit your use case, adhering to applicable laws and complying with <span className="text-blue-600 underline">WhatsApp Business Messaging Policy</span>.
+                                <div className="w-full max-w-sm p-4 bg-[#f0f2f5] border border-gray-200 rounded-2xl text-[10px] text-gray-500 leading-relaxed font-bold animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 text-center">
+                                    Preview is indicative. Actual appearance may vary based on OS and WhatsApp version.
                                 </div>
                             </div>
                         </div>
