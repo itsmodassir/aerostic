@@ -114,7 +114,7 @@ export default function CampaignFlowBuilderPage() {
     const [excludeLabels, setExcludeLabels] = useState('');
 
     // React Flow State
-    const [nodes, setNodes, onNodesChange] = useNodesState([
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([
         { 
             id: 'node-1', 
             type: 'campaignNode', 
@@ -122,7 +122,7 @@ export default function CampaignFlowBuilderPage() {
             data: { type: 'action', label: 'Broadcasting' } 
         },
     ]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
     const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
