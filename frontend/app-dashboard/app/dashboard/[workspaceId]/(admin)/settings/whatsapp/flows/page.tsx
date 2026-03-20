@@ -17,16 +17,33 @@ interface Flow {
 }
 
 const FLOW_CATEGORIES = [
-    { value: 'CUSTOMER_SUPPORT', label: 'Customer Support' },
-    { value: 'LEAD_GENERATION', label: 'Lead Generation' },
-    { value: 'APPOINTMENT_BOOKING', label: 'Appointment Booking' },
-    { value: 'SIGN_UP', label: 'Sign Up' },
-    { value: 'SIGN_IN', label: 'Sign In' },
+    { value: 'SIGN_UP', label: 'Sign up' },
+    { value: 'SIGN_IN', label: 'Log in' },
+    { value: 'APPOINTMENT_BOOKING', label: 'Appointment booking' },
+    { value: 'LEAD_GENERATION', label: 'Lead generation' },
     { value: 'SHOPPING', label: 'Shopping' },
-    { value: 'CONTACT_US', label: 'Contact Us' },
+    { value: 'CONTACT_US', label: 'Contact us' },
+    { value: 'CUSTOMER_SUPPORT', label: 'Customer support' },
     { value: 'SURVEY', label: 'Survey' },
     { value: 'OTHER', label: 'Other' },
 ];
+
+const TEMPLATES = {
+    WITHOUT_ENDPOINT: [
+        { id: 'default', label: 'Default', description: "Hello World template" },
+        { id: 'purchase_interest', label: 'Collect purchase interest', description: "Collect interest for items" },
+        { id: 'feedback', label: 'Get feedback', description: "Simple feedback form" },
+        { id: 'survey', label: 'Send a survey', description: "Multi-question survey" },
+        { id: 'support', label: 'Customer support', description: "Support ticket capture" },
+    ],
+    WITH_ENDPOINT: [
+        { id: 'loan', label: 'Get leads for a pre-approved loan / credit card', endpoint_needed: true },
+        { id: 'insurance', label: 'Provide insurance quote', endpoint_needed: true },
+        { id: 'personal_offer', label: 'Capture interest for a personalized offer', endpoint_needed: true },
+        { id: 'auth', label: 'Account Sign in / Sign up', endpoint_needed: true },
+        { id: 'appointment', label: 'Appointment booking', endpoint_needed: true },
+    ]
+};
 
 export default function WhatsAppFlowsPage() {
     const params = useParams();
@@ -43,6 +60,8 @@ export default function WhatsAppFlowsPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newFlowName, setNewFlowName] = useState('');
     const [newFlowCategory, setNewFlowCategory] = useState('CUSTOMER_SUPPORT');
+    const [templateType, setTemplateType] = useState<'WITHOUT_ENDPOINT' | 'WITH_ENDPOINT'>('WITHOUT_ENDPOINT');
+    const [selectedTemplate, setSelectedTemplate] = useState('default');
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState('');
 
@@ -213,7 +232,7 @@ export default function WhatsAppFlowsPage() {
                         <Workflow size={40} />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900 mb-3">No WhatsApp Flows Found</h3>
-                    <p className="text-gray-500 max-w-sm mx-auto text-lg leading-relaxed mb-8">
+                    <p className="text-gray-500 max-sm mx-auto text-lg leading-relaxed mb-8">
                         You haven't created any flows yet. Start building advanced conversational forms directly from here.
                     </p>
                     <button
@@ -262,80 +281,192 @@ export default function WhatsAppFlowsPage() {
                 </div>
             )}
 
-            {/* Create Flow Modal */}
+            {/* Create Flow Modal (Meta Style) */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-purple-50/50">
-                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <Workflow className="text-purple-600" size={20} />
-                                Create New Flow
-                            </h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-[#f0f2f5] w-full max-w-6xl h-[90vh] rounded-[32px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col border border-gray-200 animate-in zoom-in-95 duration-300">
+                        {/* Meta Nav Bar */}
+                        <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="p-1.5 bg-purple-100 text-purple-600 rounded-lg">
+                                    <Workflow size={18} />
+                                </div>
+                                <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">WhatsApp Manager &gt; <span className="text-gray-400 font-medium tracking-normal">Create Flow</span></h2>
+                            </div>
                             <button 
                                 onClick={() => setIsCreateModalOpen(false)}
-                                className="p-2 hover:bg-gray-200 rounded-xl transition-colors text-gray-500"
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
                             >
                                 <X size={20} />
                             </button>
                         </div>
                         
-                        <form onSubmit={handleCreateFlow} className="p-6 space-y-4">
-                            {createError && (
-                                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs flex gap-2">
-                                    <AlertCircle size={16} className="shrink-0" />
-                                    {createError}
+                        <div className="flex-1 flex overflow-hidden">
+                            {/* Left Form Area */}
+                            <div className="flex-[1.5] overflow-y-auto p-10 space-y-8 border-r border-gray-200 scrollbar-none">
+                                {/* Name Section */}
+                                <div className="p-8 bg-white rounded-3xl border border-gray-200 shadow-sm space-y-6 animate-in slide-in-from-left-4 duration-500">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-lg font-bold text-gray-900">Name</label>
+                                        <span className="text-xs font-bold text-gray-400">{newFlowName.length}/200</span>
+                                    </div>
+                                    <input
+                                        required
+                                        type="text"
+                                        maxLength={200}
+                                        placeholder="Enter name"
+                                        value={newFlowName}
+                                        onChange={(e) => setNewFlowName(e.target.value)}
+                                        className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base focus:ring-[3px] focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all placeholder:text-gray-300 font-bold text-gray-800"
+                                    />
                                 </div>
-                            )}
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Flow Name</label>
-                                <input
-                                    required
-                                    type="text"
-                                    placeholder="e.g. Lead Qualification"
-                                    value={newFlowName}
-                                    onChange={(e) => setNewFlowName(e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
-                                />
+                                {/* Categories Section */}
+                                <div className="p-8 bg-white rounded-3xl border border-gray-200 shadow-sm space-y-6 animate-in slide-in-from-left-4 delay-100 duration-500">
+                                    <label className="text-lg font-bold text-gray-900 block">Categories</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {FLOW_CATEGORIES.map(cat => (
+                                            <button
+                                                key={cat.value}
+                                                type="button"
+                                                onClick={() => setNewFlowCategory(cat.value)}
+                                                className={`px-4 py-3.5 rounded-xl border-2 text-sm font-bold transition-all text-left flex items-center justify-between ${
+                                                    newFlowCategory === cat.value 
+                                                    ? 'bg-purple-600 text-white border-purple-600 scale-[1.02] shadow-xl shadow-purple-100' 
+                                                    : 'bg-white text-gray-600 border-gray-100 hover:border-purple-200 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                {cat.label}
+                                                {newFlowCategory === cat.value && <CheckCircle size={14} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Template Section */}
+                                <div className="p-8 bg-white rounded-3xl border border-gray-200 shadow-sm space-y-6 animate-in slide-in-from-left-4 delay-200 duration-500">
+                                    <label className="text-lg font-bold text-gray-900 block">Template</label>
+                                    
+                                    {/* Tabs */}
+                                    <div className="flex p-1.5 bg-gray-100 rounded-2xl w-fit">
+                                        <button
+                                            type="button"
+                                            onClick={() => setTemplateType('WITHOUT_ENDPOINT')}
+                                            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                                templateType === 'WITHOUT_ENDPOINT' 
+                                                ? 'bg-white text-purple-600 shadow-md' 
+                                                : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            Without Endpoint
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setTemplateType('WITH_ENDPOINT')}
+                                            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                                templateType === 'WITH_ENDPOINT' 
+                                                ? 'bg-white text-purple-600 shadow-md' 
+                                                : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            With Endpoint
+                                        </button>
+                                    </div>
+
+                                    {/* Options */}
+                                    <div className="space-y-3">
+                                        {TEMPLATES[templateType].map(tpl => (
+                                            <label 
+                                                key={tpl.id}
+                                                className={`flex items-center gap-4 px-6 py-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                                    selectedTemplate === tpl.id 
+                                                    ? 'bg-blue-50/50 border-purple-600 ring-4 ring-purple-600/5' 
+                                                    : 'bg-white border-gray-50 hover:border-gray-100 text-gray-600'
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="template"
+                                                    value={tpl.id}
+                                                    checked={selectedTemplate === tpl.id}
+                                                    onChange={() => setSelectedTemplate(tpl.id)}
+                                                    className="w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500 focus:ring-offset-0"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-bold ${selectedTemplate === tpl.id ? 'text-gray-900' : 'text-gray-600'}`}>{tpl.label}</span>
+                                                    {('endpoint_needed' in tpl) && tpl.endpoint_needed && <span className="text-[10px] uppercase font-black text-gray-400 mt-1 tracking-wider">Endpoint template available</span>}
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
-                                <select
-                                    value={newFlowCategory}
-                                    onChange={(e) => setNewFlowCategory(e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white transition-all appearance-none cursor-pointer"
-                                >
-                                    {FLOW_CATEGORIES.map(cat => (
-                                        <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {/* Right Preview Area */}
+                            <div className="flex-1 bg-white p-12 flex flex-col items-center justify-center space-y-10 relative overflow-hidden">
+                                <div className="absolute top-10 left-10">
+                                    <label className="text-xl font-black text-gray-900 tracking-tight">Flow Preview</label>
+                                </div>
+                                
+                                <div className="absolute top-10 right-10">
+                                    <button className="p-3 hover:bg-gray-100 rounded-2xl text-gray-400 transition-colors"><RefreshCw size={22} /></button>
+                                </div>
 
-                            <div className="pt-4 flex items-center gap-3">
+                                {/* Phone Mockup */}
+                                <div className="w-[320px] h-[640px] bg-white rounded-[56px] border-[12px] border-[#1c1e21] shadow-[0_32px_128px_-12px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col relative animate-in zoom-in-90 slide-in-from-bottom-12 duration-1000">
+                                    <div className="h-6 bg-[#1c1e21] w-36 mx-auto rounded-b-3xl mb-4 shrink-0" />
+                                    
+                                    {/* App Bar */}
+                                    <div className="px-7 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+                                        <X size={20} className="text-gray-400" />
+                                        <span className="text-[14px] font-black text-gray-800">Welcome</span>
+                                        <div className="w-1 h-1 bg-gray-400 rounded-full" />
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-10 flex-1 flex flex-col bg-white">
+                                        <h4 className="text-[28px] font-[1000] text-gray-900 leading-[1.1] tracking-tight">Hello World</h4>
+                                        <p className="text-base text-gray-500 mt-5 font-bold leading-relaxed">Let's start <span className="text-[#1fb381]">building</span> things!</p>
+                                        
+                                        <div className="mt-auto space-y-6">
+                                            <button disabled className="w-full h-14 bg-[#1fb381] rounded-2xl flex items-center justify-center text-white font-[1000] text-[15px] shadow-2xl shadow-green-200 uppercase tracking-widest active:scale-95 transition-all">
+                                                Complete
+                                            </button>
+                                            <p className="text-[11px] text-center text-gray-400 font-bold leading-normal">
+                                                Managed by the business. <br/>
+                                                <span className="text-blue-600 underline cursor-pointer">Learn more</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="w-full max-w-sm p-5 bg-[#f0f2f5] border border-gray-200 rounded-3xl text-[12px] text-gray-500 leading-relaxed font-bold animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+                                    When utilising template Flow JSON, you are responsible for customising the experience to suit your use case, adhering to applicable laws and complying with <span className="text-blue-600 underline">WhatsApp Business Messaging Policy</span>.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Controls */}
+                        <div className="h-28 bg-white border-t border-gray-200 flex items-center justify-between px-16 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="px-10 py-4 border-2 border-gray-200 rounded-2xl text-base font-[1000] text-gray-500 hover:bg-gray-50 transition-all active:scale-95"
+                            >
+                                Discard
+                            </button>
+                            
+                            <div className="flex items-center gap-6">
+                                {createError && <span className="text-sm text-red-500 font-black animate-in fade-in duration-300">⚠️ {createError}</span>}
                                 <button
-                                    type="button"
-                                    onClick={() => setIsCreateModalOpen(false)}
-                                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all font-sans"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
+                                    onClick={handleCreateFlow}
                                     disabled={isCreating || !newFlowName.trim()}
-                                    className="flex-[2] px-4 py-3 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="px-14 py-4 bg-[#42b72a] text-white rounded-2xl text-base font-[1000] transition-all hover:bg-[#36a420] hover:shadow-2xl hover:shadow-green-200 disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-green-100"
                                 >
-                                    {isCreating ? (
-                                        <>
-                                            <Loader2 size={18} className="animate-spin" />
-                                            Creating...
-                                        </>
-                                    ) : (
-                                        'Create Flow'
-                                    )}
+                                    {isCreating ? <Loader2 size={20} className="animate-spin" /> : 'Create'}
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}
