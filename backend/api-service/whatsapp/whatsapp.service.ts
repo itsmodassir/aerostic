@@ -269,4 +269,50 @@ export class WhatsappService {
       throw new BadRequestException("Failed to fetch flows. Please try again.");
     }
   }
+
+  async createFlow(tenantId: string, name: string, categories: string[]) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+
+    if (!account) {
+      throw new BadRequestException("WhatsApp account not connected");
+    }
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion =
+      (await this.adminConfigService.getConfigValue("meta.api_version")) ||
+      "v21.0";
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${account.wabaId}/flows?access_token=${accessToken}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            categories,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new BadRequestException(
+          data.error?.message || "Failed to create flow in Meta",
+        );
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error creating flow in Meta:", error);
+      throw error instanceof BadRequestException
+        ? error
+        : new BadRequestException("Failed to create flow. Please try again.");
+    }
+  }
 }

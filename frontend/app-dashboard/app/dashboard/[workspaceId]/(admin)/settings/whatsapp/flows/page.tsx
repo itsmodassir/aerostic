@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { 
     ArrowLeft, Workflow, RefreshCw, ExternalLink, 
-    AlertCircle, Search, Clock, CheckCircle, FileText
+    AlertCircle, Search, Clock, CheckCircle, FileText,
+    Plus, X, Loader2
 } from 'lucide-react';
 
 interface Flow {
@@ -14,6 +15,16 @@ interface Flow {
     status: 'DRAFT' | 'PUBLISHED' | 'DEPRECATED' | 'BLOCKED';
     updated_at: string;
 }
+
+const FLOW_CATEGORIES = [
+    { value: 'CUSTOMER_SUPPORT', label: 'Customer Support' },
+    { value: 'EDUCATION', label: 'Education' },
+    { value: 'MARKETING', label: 'Marketing' },
+    { value: 'POLLS', label: 'Polls' },
+    { value: 'RESOURCES', label: 'Resources' },
+    { value: 'SURVEYS', label: 'Surveys' },
+    { value: 'OTHER', label: 'Other' },
+];
 
 export default function WhatsAppFlowsPage() {
     const params = useParams();
@@ -25,6 +36,13 @@ export default function WhatsAppFlowsPage() {
     const [syncing, setSyncing] = useState(false);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Create Flow Modal State
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [newFlowName, setNewFlowName] = useState('');
+    const [newFlowCategory, setNewFlowCategory] = useState('CUSTOMER_SUPPORT');
+    const [isCreating, setIsCreating] = useState(false);
+    const [createError, setCreateError] = useState('');
 
     const fetchFlows = async () => {
         setLoading(true);
@@ -50,6 +68,35 @@ export default function WhatsAppFlowsPage() {
         setSyncing(false);
     };
 
+    const handleCreateFlow = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newFlowName.trim()) return;
+
+        setIsCreating(true);
+        setCreateError('');
+        try {
+            const res = await api.post('/whatsapp/flows', {
+                name: newFlowName,
+                categories: [newFlowCategory]
+            });
+            
+            // Successfully created
+            setIsCreateModalOpen(false);
+            setNewFlowName('');
+            await fetchFlows(); // Refresh list
+            
+            // Optionally redirect to builder
+            if (res.data?.id) {
+                window.open(`https://business.facebook.com/wa/manage/flows/${res.data.id}/builder`, '_blank');
+            }
+        } catch (err: any) {
+            console.error('Failed to create flow:', err);
+            setCreateError(err.response?.data?.message || 'Failed to create WhatsApp Flow. Please check your Meta configuration.');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     const filteredFlows = flows.filter(f => 
         f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         f.id.includes(searchTerm)
@@ -71,7 +118,7 @@ export default function WhatsAppFlowsPage() {
     };
 
     return (
-        <div className="max-w-6xl space-y-6 animate-in fade-in duration-500">
+        <div className="max-w-6xl space-y-6 animate-in fade-in duration-500 pb-20">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -98,15 +145,13 @@ export default function WhatsAppFlowsPage() {
                         <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
                         Sync from Meta
                     </button>
-                    <a
-                        href="https://business.facebook.com/wa/manage/flows/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-all shadow-md shadow-purple-100"
                     >
                         <Plus size={16} />
                         Create Flow
-                    </a>
+                    </button>
                 </div>
             </div>
 
@@ -167,16 +212,14 @@ export default function WhatsAppFlowsPage() {
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900 mb-3">No WhatsApp Flows Found</h3>
                     <p className="text-gray-500 max-w-sm mx-auto text-lg leading-relaxed mb-8">
-                        You haven't created any flows yet. Start building advanced conversational forms in Meta Business Suite.
+                        You haven't created any flows yet. Start building advanced conversational forms directly from here.
                     </p>
-                    <a
-                        href="https://business.facebook.com/wa/manage/flows/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
                         className="inline-flex items-center gap-2 px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-200"
                     >
-                        Create your first Flow <ExternalLink size={20} />
-                    </a>
+                        Create your first Flow <Plus size={20} />
+                    </button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -216,16 +259,85 @@ export default function WhatsAppFlowsPage() {
                     ))}
                 </div>
             )}
+
+            {/* Create Flow Modal */}
+            {isCreateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-purple-50/50">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <Workflow className="text-purple-600" size={20} />
+                                Create New Flow
+                            </h2>
+                            <button 
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="p-2 hover:bg-gray-200 rounded-xl transition-colors text-gray-500"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleCreateFlow} className="p-6 space-y-4">
+                            {createError && (
+                                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs flex gap-2">
+                                    <AlertCircle size={16} className="shrink-0" />
+                                    {createError}
+                                </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Flow Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="e.g. Lead Qualification"
+                                    value={newFlowName}
+                                    onChange={(e) => setNewFlowName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
+                                <select
+                                    value={newFlowCategory}
+                                    onChange={(e) => setNewFlowCategory(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white transition-all appearance-none cursor-pointer"
+                                >
+                                    {FLOW_CATEGORIES.map(cat => (
+                                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="pt-4 flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreateModalOpen(false)}
+                                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all font-sans"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isCreating || !newFlowName.trim()}
+                                    className="flex-[2] px-4 py-3 bg-purple-600 text-white rounded-xl text-sm font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isCreating ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        'Create Flow'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-// Simple Plus icon since it's not imported from lucide-react in headers
-function Plus({ size }: { size: number }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-    );
-}
