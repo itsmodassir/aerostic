@@ -22,7 +22,7 @@ import '@xyflow/react/dist/style.css';
 
 import {
     ArrowLeft, Plus, X, MessageSquare, Clock, Users, Zap, Check, Trash2,
-    Send, FileText, AlertCircle, GitBranch
+    Send, FileText, AlertCircle, GitBranch, Bot
 } from 'lucide-react';
 
 // ─── Constants & Styles ───────────────────────────────────────────────────────
@@ -31,6 +31,7 @@ const NODE_COLORS: Record<string, string> = {
     message: 'from-green-500 to-green-600',
     delay: 'from-amber-500 to-amber-600',
     condition: 'from-purple-500 to-purple-600',
+    agent: 'from-rose-500 to-rose-600',
     end: 'from-gray-400 to-gray-500',
 };
 
@@ -39,6 +40,7 @@ const NODE_ICONS: Record<string, any> = {
     message: MessageSquare,
     delay: Clock,
     condition: GitBranch,
+    agent: Bot,
     end: Check,
 };
 
@@ -82,6 +84,12 @@ const CustomNode = ({ data, selected, id }: NodeProps) => {
                 {type === 'condition' && (
                     <p className="text-xs text-gray-600">{data.condition as string || 'If user replies...'}</p>
                 )}
+                {type === 'agent' && (
+                    <div>
+                        <p className="text-xs font-medium text-gray-700">{data.agentName as string || 'Select Agent'}</p>
+                        {data.retry && <p className="text-[10px] text-rose-500 font-semibold mt-1">Retry Enabled</p>}
+                    </div>
+                )}
                 {type === 'end' && (
                     <p className="text-xs text-gray-500">Flow ends here</p>
                 )}
@@ -108,6 +116,9 @@ export default function CampaignFlowBuilderPage() {
     const [selectedTemplate, setSelectedTemplate] = useState('');
     const [scheduleType, setScheduleType] = useState<'now' | 'later'>('now');
     const [scheduleDate, setScheduleDate] = useState('');
+
+    // Agents
+    const [agents, setAgents] = useState<any[]>([]);
 
     // Audience
     const [includeLabels, setIncludeLabels] = useState('');
@@ -150,6 +161,10 @@ export default function CampaignFlowBuilderPage() {
                 (t.status || '').toLowerCase() === 'approved'
             );
             setTemplates(approved);
+        }).catch(() => {});
+
+        api.get('/agents').then(res => {
+            setAgents(res.data || []);
         }).catch(() => {});
     }, []);
 
@@ -347,7 +362,7 @@ export default function CampaignFlowBuilderPage() {
                     {/* Canvas Toolbar */}
                     <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-200 z-10">
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest mr-2">Add Node</span>
-                        {['message', 'delay', 'condition', 'end'].map(type => {
+                        {['message', 'delay', 'condition', 'agent', 'end'].map(type => {
                             const Icon = NODE_ICONS[type];
                             return (
                                 <button
@@ -439,6 +454,63 @@ export default function CampaignFlowBuilderPage() {
                                         <option value="button_clicked">Button clicked</option>
                                         <option value="no_response">No response after delay</option>
                                     </select>
+                                </div>
+                            )}
+
+                            {selectedNode.data.type === 'agent' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Select AI Agent</label>
+                                        {agents.length > 0 ? (
+                                            <select
+                                                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                                value={selectedNode.data.agentId as string || ''}
+                                                onChange={e => {
+                                                    const agent = agents.find(a => a.id === e.target.value);
+                                                    setNodes(prev => prev.map(n =>
+                                                        n.id === selectedNode.id ? { 
+                                                            ...n, 
+                                                            data: { 
+                                                                ...n.data, 
+                                                                agentId: e.target.value,
+                                                                agentName: agent?.name || ''
+                                                            } 
+                                                        } : n
+                                                    ));
+                                                }}
+                                            >
+                                                <option value="">Choose an agent...</option>
+                                                {agents.map(a => (
+                                                    <option key={a.id} value={a.id}>{a.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                <p className="text-xs text-amber-700 mb-2">No AI agents found.</p>
+                                                <button 
+                                                    onClick={() => router.push(`/dashboard/${workspaceId}/agents`)}
+                                                    className="text-xs font-bold text-amber-900 underline underline-offset-2"
+                                                >
+                                                    Please create AI agent first
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-700">Retry on Failure</p>
+                                            <p className="text-[10px] text-gray-500">Automatically retry if delivery fails</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setNodes(prev => prev.map(n =>
+                                                n.id === selectedNode.id ? { ...n, data: { ...n.data, retry: !n.data.retry } } : n
+                                            ))}
+                                            className={`w-10 h-6 rounded-full transition-colors relative ${selectedNode.data.retry ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${selectedNode.data.retry ? 'translate-x-5' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
