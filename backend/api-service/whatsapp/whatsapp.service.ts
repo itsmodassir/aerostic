@@ -442,7 +442,8 @@ export class WhatsappService {
       const data = await response.json();
       if (!response.ok) {
         console.error("Meta Publish Error Details:", JSON.stringify(data, null, 2));
-        throw new BadRequestException(data.error?.message || "Failed to publish flow. Ensure it has valid assets.");
+        const metaError = data.error?.error_user_msg || data.error?.message || "Failed to publish flow. Ensure it has valid assets.";
+        throw new BadRequestException(metaError);
       }
 
       return { success: true, status: data.status };

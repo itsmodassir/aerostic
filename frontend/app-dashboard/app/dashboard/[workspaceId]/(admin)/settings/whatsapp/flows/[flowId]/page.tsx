@@ -244,13 +244,25 @@ export default function FlowEditorPage() {
             alert('Please Save your changes before publishing.');
             return;
         }
+
+        try {
+            const parsed = JSON.parse(jsonContent);
+            const version = parseFloat(parsed.version);
+            if (version > 3.1) {
+                if (!confirm(`Warning: Flow version "${parsed.version}" may be too high. Meta usually supports 2.1 or 3.1. High versions often cause publishing to fail. Proceed anyway?`)) {
+                    return;
+                }
+            }
+        } catch (e) {}
+
         setPublishing(true);
         try {
             await api.post(`/whatsapp/flows/${flowId}/publish`);
             alert('Flow submitted to Meta for validation and publishing!');
             router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`);
         } catch (err: any) {
-            alert(err.response?.data?.message || 'Publishing attempt failed. Ensure the flow has valid Flow JSON before publishing.');
+            const errorMsg = err.response?.data?.message || 'Publishing attempt failed.';
+            alert(`${errorMsg}\n\nTip: Ensure your Flow version is 2.1 or 3.1 and all fields are valid.`);
         } finally {
             setPublishing(false);
         }
