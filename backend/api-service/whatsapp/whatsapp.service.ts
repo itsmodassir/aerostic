@@ -335,13 +335,12 @@ export class WhatsappService {
     const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
 
     const flowJson = {
-      version: "7.3",
+      version: "3.1",
       screens: [
         {
-          id: "WELCOME",
+          id: "WELCOME_SCREEN",
           title: "Welcome",
           terminal: true,
-          data: {},
           layout: {
             type: "SingleColumnLayout",
             children: [
@@ -349,25 +348,23 @@ export class WhatsappService {
                 type: "Form",
                 name: "welcome_form",
                 "on-submit-action": {
-                  "name": "complete",
-                  "payload": {}
+                  name: "complete",
+                  payload: {
+                    status: "done"
+                  }
                 },
                 children: [
                   {
-                    type: "TextSubheading",
-                    text: flowName || "Welcome"
+                    type: "TextHeading",
+                    text: flowName || "Welcome to Flow"
                   },
                   {
                     type: "TextBody",
-                    text: "This is an automated preview of your flow."
+                    text: "This is an automated preview. You can edit this flow in the builder."
                   },
                   {
                     type: "Footer",
-                    label: "Complete",
-                    "on-click-action": {
-                      "name": "complete",
-                      "payload": {}
-                    }
+                    label: "Complete"
                   }
                 ]
               }
