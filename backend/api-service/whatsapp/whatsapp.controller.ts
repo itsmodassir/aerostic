@@ -90,6 +90,12 @@ export class WhatsappController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get("flows/published")
+  async getPublishedFlows(@UserTenant() tenantId: string) {
+    return this.whatsappService.getPublishedFlows(tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post("flows")
   async createFlow(
     @UserTenant() tenantId: string,

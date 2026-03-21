@@ -348,6 +348,10 @@ export class WhatsappService {
               {
                 type: "Form",
                 name: "welcome_form",
+                "on-submit-action": {
+                  "name": "complete",
+                  "payload": {}
+                },
                 children: [
                   {
                     type: "TextSubheading",
@@ -355,17 +359,17 @@ export class WhatsappService {
                   },
                   {
                     type: "TextBody",
-                    text: "This is an automated preview of your flow created from our platform."
+                    text: "This is an automated preview of your flow."
+                  },
+                  {
+                    type: "Footer",
+                    label: "Complete",
+                    "on-click-action": {
+                      "name": "complete",
+                      "payload": {}
+                    }
                   }
                 ]
-              },
-              {
-                type: "Footer",
-                label: "Complete",
-                "on-click-action": {
-                  "name": "complete",
-                  "payload": {}
-                }
               }
             ]
           }
@@ -478,15 +482,37 @@ export class WhatsappService {
       );
       const downloadData = await downloadResponse.json();
 
-      if (!downloadResponse.ok || !downloadData.download_url) {
-        throw new BadRequestException("Failed to get download URL for flow asset");
+      if (!downloadData.download_url) {
+        return assetsData.data[0];
       }
 
-      const flowContentResponse = await fetch(downloadData.download_url);
-      return await flowContentResponse.json();
+      // Download the actual JSON content
+      const jsonResponse = await fetch(downloadData.download_url);
+      const jsonContent = await jsonResponse.json();
+      return jsonContent;
     } catch (error) {
       console.error("Error fetching flow assets:", error);
       throw error instanceof BadRequestException ? error : new BadRequestException("Failed to fetch flow assets");
+    }
+  }
+
+  async getPublishedFlows(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOne({ where: { tenantId } });
+    if (!account) throw new BadRequestException("WhatsApp account not connected");
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${account.wabaId}/flows?fields=id,name,status,categories&status=PUBLISHED&access_token=${accessToken}`
+      );
+      const data = await response.json();
+      if (!response.ok) throw new BadRequestException(data.error?.message || "Failed to fetch published flows");
+      return data.data || [];
+    } catch (error) {
+      console.error("Error fetching published flows:", error);
+      throw error instanceof BadRequestException ? error : new BadRequestException("Failed to fetch published flows");
     }
   }
 }
