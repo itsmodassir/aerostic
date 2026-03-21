@@ -375,20 +375,19 @@ export class WhatsappService {
     };
 
     const formData = new FormData();
-    const blob = new Blob([JSON.stringify(flowJson)], { type: "application/json" });
-    formData.append("file", blob, "flow.json");
+    const jsonString = JSON.stringify(flowJson);
+    const buffer = Buffer.from(jsonString, 'utf-8');
+    
+    // In Node.js FormData, we can append a Buffer. 
+    // We must provide the filename and contentType for Meta to accept it correctly.
+    formData.append("file", new Blob([buffer], { type: "application/json" }), "flow.json");
     formData.append("name", "flow.json");
     formData.append("asset_type", "FLOW_JSON");
 
     try {
       const response = await axios.post(
         `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${accessToken}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        formData
       );
       console.log("Meta Flow Asset Upload Success:", JSON.stringify(response.data, null, 2));
       return response.data;
