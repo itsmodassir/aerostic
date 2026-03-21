@@ -11,7 +11,7 @@ import {
     Activity, Percent, Eye, MousePointer, AlertCircle, Rocket,
     Code, Settings, Users, Palette, Headphones, FileText,
     Key, Webhook, Database, Globe, Shield, Cpu, Mail, Phone,
-    Building2, CreditCard, BarChart2, PieChart, LineChart
+    Building2, CreditCard, BarChart2, PieChart, LineChart, Workflow
 } from 'lucide-react';
 
 // Complete Plan Feature Definitions matching pricing page
@@ -523,13 +523,14 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                 </Link>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
                 <QuickAction icon={Send} label="New Campaign" href={`/dashboard/${workspaceId}/campaigns`} color="bg-blue-500" />
                 <QuickAction icon={Users2} label="Add Contact" href={`/dashboard/${workspaceId}/contacts`} color="bg-green-500" />
                 <QuickAction icon={Bot} label="AI Agents" href={`/dashboard/${workspaceId}/agents`} color="bg-purple-500" available={planFeatures.aiAgents > 0} />
                 <QuickAction icon={Zap} label="Automation" href={`/dashboard/${workspaceId}/automation`} color="bg-amber-500" />
                 <QuickAction icon={CreditCard} label="My Wallet" href={`/dashboard/${workspaceId}/wallet`} color="bg-indigo-500" />
                 <QuickAction icon={FileText} label="Templates" href={`/dashboard/${workspaceId}/templates`} color="bg-pink-500" />
+                <QuickAction icon={Workflow} label="WhatsApp Flows" href={`/dashboard/${workspaceId}/settings/whatsapp/flows`} color="bg-teal-500" />
             </div>
 
             {/* Stats Grid */}

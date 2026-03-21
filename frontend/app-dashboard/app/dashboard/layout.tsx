@@ -7,7 +7,7 @@ import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import {
     LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut, Bell,
     Megaphone, FileText, Bot, Shield, User, CreditCard, HelpCircle,
-    ChevronDown, Crown, Check, Menu, BarChart2, Calendar, Gift, Target, Globe
+    ChevronDown, Crown, Check, Menu, BarChart2, Calendar, Gift, Target, Globe, Workflow
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEffect, useState, useRef } from 'react';
@@ -57,6 +57,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { name: 'Messages', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
         { name: 'Campaigns', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
         { name: 'Templates', href: `/dashboard/${workspaceId}/templates`, icon: FileText, permission: 'campaigns:read' },
+        { name: 'WhatsApp Flows', href: `/dashboard/${workspaceId}/settings/whatsapp/flows`, icon: Workflow, permission: 'campaigns:read' },
         { name: 'Leads', href: `/dashboard/${workspaceId}/leads`, icon: Target },
         { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
         { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
