@@ -16,7 +16,7 @@ export class SendMessageDto {
   to: string; // The recipient's phone number
 
   @IsNotEmpty()
-  @IsIn(["text", "template"])
+  @IsIn(["text", "template", "interactive"])
   type: string;
 
   @IsNotEmpty()

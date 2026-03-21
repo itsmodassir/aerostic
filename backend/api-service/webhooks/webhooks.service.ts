@@ -187,17 +187,51 @@ export class WebhooksService {
         timestamp: new Date(),
       });
 
-      // 🔥 Trigger New Visual Automation Workflows
-      const workflowHandled = await this.workflowsService.executeTrigger(
-        account.tenantId,
-        "new_message",
-        {
-          from,
-          messageBody: messageData.text?.body || "",
-          contactId: contact.id,
-          conversationId: conversation.id,
-        },
-      );
+      let workflowHandled = false;
+
+      // 🔥 Handle WhatsApp Flow Responses (nfm_reply)
+      if (messageData.type === 'interactive' && messageData.interactive?.type === 'nfm_reply') {
+        try {
+          const flowResponse = JSON.parse(messageData.interactive.nfm_reply.response_json);
+          this.logger.log(`Flow submission received from ${from}: ${JSON.stringify(flowResponse)}`);
+          
+          // Update Contact Attributes for lead tracking
+          contact.attributes = { ...(contact.attributes || {}), ...flowResponse };
+          
+          // Auto-map name/email if provided and not already set
+          if (flowResponse.name) contact.name = flowResponse.name;
+          if (flowResponse.email) contact.email = flowResponse.email;
+          
+          await this.contactRepo.save(contact);
+
+          // Trigger specific Flow Response workflow
+          workflowHandled = await this.workflowsService.executeTrigger(
+            account.tenantId,
+            "flow_response",
+            {
+              from,
+              flowData: flowResponse,
+              messageBody: `FLOW_SUBMITTED: ${JSON.stringify(flowResponse)}`,
+              contactId: contact.id,
+              conversationId: conversation.id,
+            },
+          );
+        } catch (e) {
+          this.logger.error(`Failed to parse flow response: ${e.message}`);
+        }
+      } else {
+        // 🔥 Trigger New Visual Automation Workflows for regular messages
+        workflowHandled = await this.workflowsService.executeTrigger(
+          account.tenantId,
+          "new_message",
+          {
+            from,
+            messageBody: messageData.text?.body || "",
+            contactId: contact.id,
+            conversationId: conversation.id,
+          },
+        );
+      }
 
       // Legacy fallback
       const legacyHandled = await this.automationService.evaluate(
@@ -219,11 +253,18 @@ export class WebhooksService {
             await this.conversationRepo.save(conversation);
           }
 
-          await this.aiService.process(
-            account.tenantId,
-            from,
-            messageData.text?.body || "",
-          );
+          // If it was a flow, pass the JSON to AI so it can acknowledge
+          const aiInput = (messageData.type === 'interactive' && messageData.interactive?.type === 'nfm_reply')
+            ? `[USER_SUBMITTED_FLOW]: ${messageData.interactive.nfm_reply.response_json}`
+            : (messageData.text?.body || "");
+
+          if (aiInput) {
+            await this.aiService.process(
+              account.tenantId,
+              from,
+              aiInput,
+            );
+          }
         } catch (aiError) {
           this.logger.error(`AI processing failed: ${aiError.message}`);
         }

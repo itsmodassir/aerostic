@@ -129,6 +129,8 @@ export class MessagesService {
       body.text = { body: dto.payload.text };
     } else if (dto.type === "template") {
       body.template = dto.payload;
+    } else if (dto.type === "interactive") {
+      body.interactive = dto.payload;
     }
 
     // 5. Pre-send Wallet Deduction (Only for Templates and not skipped)

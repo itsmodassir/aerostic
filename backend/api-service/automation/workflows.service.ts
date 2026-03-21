@@ -218,8 +218,9 @@ export class WorkflowsService {
       }
 
       if (triggerNode) {
+        const logPrefix = triggerType === "flow_response" ? "Flow Response Trigger" : "Workflow";
         this.logger.log(
-          `Starting workflow ${workflow.id} for tenant ${tenantId}`,
+          `Starting ${logPrefix} ${workflow.id} for tenant ${tenantId}`,
         );
         try {
           await this.runNode(workflow, triggerNode.id, context, 0);
