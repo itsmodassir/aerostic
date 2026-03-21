@@ -251,8 +251,8 @@ export default function FlowEditorPage() {
         try {
             const parsed = JSON.parse(jsonContent);
             const version = parseFloat(parsed.version);
-            if (version > 2.1) {
-                if (!confirm(`Warning: Flow version "${parsed.version}" might not be supported by your account or Meta's current API state. Version "2.1" is highly recommended for compatibility. Proceed anyway?`)) {
+            if (version < 3.1) {
+                if (!confirm(`Warning: Flow version "${parsed.version}" is below the recommended 3.1. Meta Graph API v21.0 may reject older versions. Proceed anyway?`)) {
                     return;
                 }
             }
@@ -265,7 +265,7 @@ export default function FlowEditorPage() {
             router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`);
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || 'Publishing attempt failed.';
-            alert(`${errorMsg}\n\nTip: Try changing version to "2.1" in your JSON. Meta often rejects higher versions in some regions.`);
+            alert(`${errorMsg}\n\nTip: Ensure your Flow version is "3.1" or higher for API v21.0.`);
         } finally {
             setPublishing(false);
         }

@@ -335,7 +335,7 @@ export class WhatsappService {
     const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
 
     const flowJson = customJson || {
-      version: "2.1",
+      version: "3.1",
       screens: [
         {
           id: "WELCOME_SCREEN",
