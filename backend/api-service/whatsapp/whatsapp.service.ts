@@ -325,7 +325,7 @@ export class WhatsappService {
     }
   }
 
-  async uploadFlowAsset(tenantId: string, flowId: string, flowName: string) {
+  async uploadFlowAsset(tenantId: string, flowId: string, flowName: string, customJson?: any) {
     const account = await this.whatsappAccountRepo.findOne({
       where: { tenantId },
     });
@@ -334,7 +334,7 @@ export class WhatsappService {
     const accessToken = this.encryptionService.decrypt(account.accessToken);
     const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
 
-    const flowJson = {
+    const flowJson = customJson || {
       version: "3.1",
       screens: [
         {

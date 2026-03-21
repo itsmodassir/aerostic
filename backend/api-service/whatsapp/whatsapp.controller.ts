@@ -135,6 +135,6 @@ export class WhatsappController {
     @Param("id") flowId: string,
     @Body() body: { json: any },
   ) {
-    return this.whatsappService.uploadFlowAsset(tenantId, flowId, "flow.json"); // Re-using uploadFlowAsset
+    return this.whatsappService.uploadFlowAsset(tenantId, flowId, "flow.json", body.json);
   }
 }

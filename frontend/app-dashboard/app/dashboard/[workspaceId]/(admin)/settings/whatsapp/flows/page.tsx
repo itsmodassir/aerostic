@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
 import {
     RefreshCw, AlertCircle, Search, Plus, X, Loader2,
@@ -395,11 +396,10 @@ export default function WhatsAppFlowsPage() {
                                             <input type="file" className="hidden" accept=".json"
                                                 onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(flow.id, f); }} />
                                         </label>
-                                        <a href={`https://business.facebook.com/wa/manage/flows/${flow.id}/builder`}
-                                            target="_blank" rel="noopener noreferrer"
-                                            className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors" title="Open in Meta Builder">
+                                        <Link href={`/dashboard/${workspaceId}/settings/whatsapp/flows/${flow.id}`}
+                                            className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors" title="Open Flow Editor">
                                             <ExternalLink size={14} />
-                                        </a>
+                                        </Link>
                                         {/* More menu */}
                                         <div className="relative">
                                             <button onClick={() => setActiveMenu(activeMenu === flow.id ? null : flow.id)}
