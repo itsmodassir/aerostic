@@ -335,7 +335,7 @@ export class WhatsappService {
     const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
 
     const flowJson = {
-      version: "5.0",
+      version: "7.3",
       screens: [
         {
           id: "WELCOME",
@@ -346,12 +346,18 @@ export class WhatsappService {
             type: "SingleColumnLayout",
             children: [
               {
-                type: "TextHeading",
-                text: flowName || "Welcome"
-              },
-              {
-                type: "TextBody",
-                text: "This is an automated preview of your flow."
+                type: "Form",
+                name: "welcome_form",
+                children: [
+                  {
+                    type: "TextSubheading",
+                    text: flowName || "Welcome"
+                  },
+                  {
+                    type: "TextBody",
+                    text: "This is an automated preview of your flow created from our platform."
+                  }
+                ]
               },
               {
                 type: "Footer",
