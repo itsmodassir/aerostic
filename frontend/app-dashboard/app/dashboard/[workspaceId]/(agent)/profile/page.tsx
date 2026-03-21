@@ -128,7 +128,7 @@ export default function ProfilePage() {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             {/* Profile Header */}
-            <div className={`bg-gradient-to-r ${planInfo.bg} rounded-2xl p-8 text-white relative overflow-hidden`}>
+            <div className={`bg-gradient-to-r ${planInfo.bg} rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden`}>
                 <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32" />
                 <div className="absolute left-0 bottom-0 w-48 h-48 bg-white/10 rounded-full translate-y-24 -translate-x-24" />
 
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                                 className="w-24 h-24 rounded-2xl object-cover bg-white/20"
                             />
                         ) : (
-                            <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-4xl font-bold">
+                            <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-4xl font-black">
                                 {name[0]?.toUpperCase() || 'U'}
                             </div>
                         )}
@@ -179,7 +179,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 relative">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8 relative">
                     {statsLoading ? (
                         Array.from({ length: 4 }).map((_, i) => (
                             <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-4 text-center animate-pulse">
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                     <button
                         onClick={handleSave}
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 w-full sm:w-auto"
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {loading ? 'Saving...' : 'Save Changes'}

@@ -462,10 +462,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                             <Menu className="w-6 h-6" />
                         </button>
                         {/* Breadcrumb / Title Stub */}
-                        <h2 className="text-lg font-semibold text-foreground capitalize">
+                        <h2 className="text-base md:text-lg font-bold text-gray-900 capitalize truncate max-w-[150px] sm:max-w-none">
                             {isReseller && (pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
                                 ? 'Partner Console'
-                                : pathname.split('/')[3]?.replace('-', ' ') || 'Overview'}
+                                : pathname.split('/')[3]?.replace(/-/g, ' ') || 'Overview'}
                         </h2>
                     </div>
 

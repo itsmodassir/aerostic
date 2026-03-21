@@ -335,7 +335,7 @@ export class WhatsappService {
     const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
 
     const flowJson = customJson || {
-      version: "3.1",
+      version: "2.1",
       screens: [
         {
           id: "WELCOME_SCREEN",
@@ -390,6 +390,7 @@ export class WhatsappService {
           },
         }
       );
+      console.log("Meta Flow Asset Upload Success:", JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       console.error("Meta Flow Asset Upload Error:", error.response?.data || error.message);

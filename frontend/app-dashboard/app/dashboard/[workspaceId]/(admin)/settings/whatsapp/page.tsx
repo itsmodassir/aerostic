@@ -348,7 +348,7 @@ export default function WhatsappSettingsPage() {
             </div>
 
             {/* Connection Status Card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
                     <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${connectionStatus === 'connected' ? 'bg-green-100' :
@@ -379,8 +379,8 @@ export default function WhatsappSettingsPage() {
                                 disabled={syncing}
                                 className="px-4 py-2 text-purple-600 border border-purple-300 rounded-lg hover:bg-purple-50 font-medium text-sm disabled:opacity-50 flex items-center justify-center gap-2 w-full sm:w-auto"
                             >
-                                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                                {syncing ? 'Syncing...' : 'Sync Account'}
+                                <RefreshCw className={`w-4 h-4 shrink-0 ${syncing ? 'animate-spin' : ''}`} />
+                                <span>{syncing ? 'Syncing...' : 'Sync Account'}</span>
                             </button>
                             <button
                                 onClick={handleDisconnect}
@@ -434,7 +434,7 @@ export default function WhatsappSettingsPage() {
             </div>
 
             {/* Notification Preferences */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
                     <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-xl flex shrink-0 items-center justify-center ${soundEnabled ? 'bg-blue-100' : 'bg-gray-100'}`}>
@@ -580,7 +580,7 @@ export default function WhatsappSettingsPage() {
 
             {/* Facebook Connect Section */}
             {connectionMethod === 'facebook' && connectionStatus === 'disconnected' && (
-                <div className="bg-gradient-to-r from-[#1877F2] to-[#166fe5] rounded-2xl p-6 sm:p-8 text-white">
+                <div className="bg-gradient-to-r from-[#1877F2] to-[#166fe5] rounded-2xl p-5 sm:p-8 text-white">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div>
                             <h3 className="text-xl font-bold mb-2">Connect with Facebook</h3>
@@ -621,7 +621,7 @@ export default function WhatsappSettingsPage() {
 
             {/* Manual Configuration Form */}
             {connectionMethod === 'manual' && connectionStatus === 'disconnected' && !requestSent && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                             <Settings className="w-5 h-5 text-purple-600" />
@@ -738,7 +738,7 @@ export default function WhatsappSettingsPage() {
             )}
 
             {/* Help Section */}
-            <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6">
                 <h3 className="font-bold text-gray-900 mb-4">Need Help?</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <a href="/docs/getting-started" className="p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group">

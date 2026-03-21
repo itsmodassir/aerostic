@@ -318,9 +318,10 @@ export default function WhatsAppFlowsPage() {
                 </div>
             </div>
 
-            {/* Table */}
+            {/* Table (Desktop) / Card List (Mobile) */}
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full">
+                {/* Desktop Table */}
+                <table className="w-full hidden md:table">
                     <thead className="border-b border-gray-100">
                         <tr>
                             {['Flow name', 'ID', 'Status', 'Category', 'Last modified', ''].map(h => (
@@ -425,6 +426,85 @@ export default function WhatsAppFlowsPage() {
                         ))}
                     </tbody>
                 </table>
+
+                {/* Mobile Card List */}
+                <div className="flex flex-col divide-y divide-gray-100 md:hidden">
+                    {loading ? (
+                        <div className="text-center py-16 text-gray-400">
+                            <Loader2 size={24} className="animate-spin mx-auto mb-2" />
+                            <p className="text-sm font-semibold">Loading flows...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-16 px-4">
+                            <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
+                            <p className="text-sm text-red-600 font-semibold mb-3">{error}</p>
+                            <button onClick={fetchFlows} className="w-full py-3 bg-red-600 text-white rounded-xl text-sm font-bold">Retry</button>
+                        </div>
+                    ) : filteredFlows.length === 0 ? (
+                        <div className="text-center py-20 px-4">
+                            <div className="w-16 h-16 bg-blue-50 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                                <Workflow size={28} className="text-blue-500" />
+                            </div>
+                            <h3 className="font-black text-gray-900 mb-1">No flows yet</h3>
+                            <button onClick={() => setIsCreateModalOpen(true)}
+                                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#0866FF] text-white rounded-xl text-sm font-black">
+                                <Plus size={16} /> Create Flow
+                            </button>
+                        </div>
+                    ) : filteredFlows.map(flow => (
+                        <div key={flow.id} className="p-4 space-y-4">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                                        <Workflow size={18} className="text-[#0866FF]" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-gray-900 text-sm leading-tight">{flow.name}</h4>
+                                        <code className="text-[10px] text-gray-400 font-mono">{flow.id}</code>
+                                    </div>
+                                </div>
+                                <StatusBadge status={flow.status} />
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-400 font-semibold uppercase tracking-wider">Category</span>
+                                <span className="text-gray-700 font-bold">
+                                    {flow.categories?.[0] ? (FLOW_CATEGORIES.find(c => c.value === flow.categories?.[0])?.label || flow.categories[0]) : '—'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-400 font-semibold uppercase tracking-wider">Modified</span>
+                                <span className="text-gray-700 font-bold">
+                                    {flow.updated_at ? new Date(flow.updated_at).toLocaleDateString() : '—'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-2">
+                                <Link href={`/dashboard/${workspaceId}/settings/whatsapp/flows/${flow.id}`}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-xs font-black">
+                                    <Edit3 size={14} /> Open Editor
+                                </Link>
+                                <div className="flex gap-2">
+                                    {flow.status === 'DRAFT' && (
+                                        <button onClick={() => handlePublish(flow.id)}
+                                            className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                                            <Send size={16} />
+                                        </button>
+                                    )}
+                                    <button onClick={() => handleExport(flow.id, flow.name)}
+                                        className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
+                                        <Download size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(flow.id)}
+                                        className="p-2.5 bg-red-50 text-red-600 rounded-xl">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Edit Flow Modal */}

@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
 import Editor from '@monaco-editor/react';
 import {
     ArrowLeft, Save, Send, Share2, MoreHorizontal, Settings,
-    Smartphone, Workflow, CheckCircle, Clock, XCircle, LayoutTemplate, X, Menu, ChevronRight, AlertCircle
+    Smartphone, Workflow, CheckCircle, Clock, XCircle, LayoutTemplate, X, Menu, ChevronRight, AlertCircle,
+    ChevronLeft, Loader2, Zap
 } from 'lucide-react';
 
 interface Flow {
@@ -182,6 +184,7 @@ export default function FlowEditorPage() {
     const [saving, setSaving] = useState(false);
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [publishing, setPublishing] = useState(false);
+    const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
 
     useEffect(() => {
         const fetchFlowData = async () => {
@@ -248,8 +251,8 @@ export default function FlowEditorPage() {
         try {
             const parsed = JSON.parse(jsonContent);
             const version = parseFloat(parsed.version);
-            if (version > 3.1) {
-                if (!confirm(`Warning: Flow version "${parsed.version}" may be too high. Meta usually supports 2.1 or 3.1. High versions often cause publishing to fail. Proceed anyway?`)) {
+            if (version > 2.1) {
+                if (!confirm(`Warning: Flow version "${parsed.version}" might not be supported by your account or Meta's current API state. Version "2.1" is highly recommended for compatibility. Proceed anyway?`)) {
                     return;
                 }
             }
@@ -262,7 +265,7 @@ export default function FlowEditorPage() {
             router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`);
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || 'Publishing attempt failed.';
-            alert(`${errorMsg}\n\nTip: Ensure your Flow version is 2.1 or 3.1 and all fields are valid.`);
+            alert(`${errorMsg}\n\nTip: Try changing version to "2.1" in your JSON. Meta often rejects higher versions in some regions.`);
         } finally {
             setPublishing(false);
         }
@@ -279,37 +282,35 @@ export default function FlowEditorPage() {
     const hasUnsavedChanges = jsonContent !== originalJson;
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] -m-6 bg-white overflow-hidden">
+        <div className="h-screen flex flex-col bg-white overflow-hidden">
             {/* Top Toolbar (Meta Style) */}
-            <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6 shrink-0 bg-white z-10">
-                <div className="flex items-center gap-6">
+            <div className="h-16 border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 shrink-0 bg-white z-10">
+                <div className="flex items-center gap-3 sm:gap-6">
                     {/* Back button & Breadcrumb */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
                         <button onClick={() => router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`)} 
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-                            <ArrowLeft size={18} className="text-gray-600" />
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
+                            <ChevronLeft size={20} className="text-gray-400" />
                         </button>
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-gray-400">
+                        <div className="flex flex-col overflow-hidden">
+                            <div className="hidden sm:flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-gray-400">
                                 <span>WhatsApp Manager</span>
                                 <span className="text-gray-300">›</span>
                                 <span>Flows</span>
-                                <span className="text-gray-300">›</span>
-                                <span className="text-gray-600">Edit</span>
                             </div>
-                            <div className="flex items-center gap-3 mt-1">
-                                <div className="w-6 h-6 bg-teal-600 rounded flex items-center justify-center shadow-sm">
+                            <div className="flex items-center gap-3 mt-1 overflow-hidden">
+                                <div className="w-6 h-6 bg-teal-600 rounded flex items-center justify-center shadow-sm shrink-0">
                                     <Workflow size={12} className="text-white" />
                                 </div>
-                                <h1 className="text-lg font-bold text-gray-900 leading-none">{flow?.name || 'Loading...'}</h1>
+                                <h1 className="text-sm sm:text-lg font-bold text-gray-900 leading-none truncate">{flow?.name || 'Loading...'}</h1>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 border-l border-gray-200 pl-6 h-8">
+                    <div className="hidden md:flex items-center gap-2 border-l border-gray-200 pl-6 h-8">
                         <StatusBadge status={flow?.status} />
-                        <span className="text-xs text-gray-500 font-medium">
-                            • Updated {flow?.updated_at ? new Date(flow.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'recently'}
+                        <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                            • Updated {flow?.updated_at ? new Date(flow.updated_at).toLocaleDateString() : 'recently'}
                             {hasUnsavedChanges && <span className="text-amber-500 ml-1">(Unsaved)</span>}
                         </span>
                     </div>
@@ -319,40 +320,61 @@ export default function FlowEditorPage() {
                     <button 
                         onClick={handleSave}
                         disabled={saving || !!jsonError || !hasUnsavedChanges}
-                        className="px-4 py-2 border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                        className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-700 text-xs sm:text-sm font-bold rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors">
                         {saving ? 'Saving...' : 'Save'}
                     </button>
                     <button 
                         onClick={handlePublish}
                         disabled={publishing || hasUnsavedChanges || flow?.status === 'PUBLISHED'}
-                        className="px-4 py-2 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg hover:bg-gray-200 hover:text-gray-600 transition-colors border border-gray-200 aria-disabled:cursor-not-allowed">
-                        {publishing ? 'Publishing...' : 'Publish'}
+                        className="px-3 sm:px-4 py-2 bg-[#0866FF] sm:bg-gray-100 text-white sm:text-gray-400 text-xs sm:text-sm font-bold rounded-lg hover:bg-blue-700 sm:hover:bg-gray-200 sm:hover:text-gray-600 transition-colors border border-gray-200 disabled:opacity-50">
+                        {publishing ? '...' : 'Publish'}
                     </button>
-                    <button className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
+                    <button className="hidden sm:flex w-9 h-9 items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
                         <Share2 size={16} />
                     </button>
-                    <button className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 border-l-2 border-l-gray-300">
+                    <button className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
                         <MoreHorizontal size={16} />
                     </button>
                 </div>
+            </div>
+
+            {/* Mobile Tab Switcher */}
+            <div className="flex sm:hidden border-b border-gray-100 bg-white shrink-0">
+                <button
+                    onClick={() => setActiveTab('editor')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-colors ${activeTab === 'editor' ? 'text-[#0866FF] border-b-2 border-[#0866FF]' : 'text-gray-400'}`}
+                >
+                    JSON Editor
+                </button>
+                <button
+                    onClick={() => setActiveTab('preview')}
+                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-colors ${activeTab === 'preview' ? 'text-[#0866FF] border-b-2 border-[#0866FF]' : 'text-gray-400'}`}
+                >
+                    Preview
+                </button>
             </div>
 
             {/* Main Editor Area */}
             <div className="flex flex-1 overflow-hidden">
                 
                 {/* Left Panel: JSON Editor */}
-                <div className="flex-1 border-r border-gray-200 flex flex-col bg-white">
+                <div className={`${activeTab === 'editor' ? 'flex' : 'hidden'} sm:flex flex-1 border-r border-gray-200 flex flex-col bg-white overflow-hidden`}>
                     <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white">
                         <span className="font-bold text-sm text-gray-900">Editor</span>
-                        <button className="px-3 py-1.5 border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50 shadow-sm">
-                            Run
-                        </button>
+                        <div className="flex items-center gap-2">
+                             <span className={`text-[10px] font-bold uppercase tracking-wider ${jsonError ? 'text-red-500' : 'text-green-500'}`}>
+                                {jsonError ? 'Invalid JSON' : 'Valid JSON'}
+                            </span>
+                            <button className="px-3 py-1.5 border border-gray-200 rounded text-xs font-bold text-gray-600 hover:bg-gray-50 shadow-sm">
+                                Run
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 w-full bg-[#1e1e1e] relative">
                         <Editor
                             height="100%"
                             defaultLanguage="json"
-                            theme="light"
+                            theme="vs-dark"
                             value={jsonContent}
                             onChange={handleEditorChange}
                             options={{
@@ -369,12 +391,12 @@ export default function FlowEditorPage() {
                     <div className="h-10 border-t border-gray-200 bg-white flex items-center justify-between px-4 shrink-0">
                         <div className="flex items-center gap-6">
                             <span className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
-                                Flow JSON Errors 
+                                Errors 
                                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${jsonError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                                     {jsonError ? '1' : '0'}
                                 </span>
                             </span>
-                            <span className="text-xs font-medium text-gray-600">Actions</span>
+                            <span className="hidden sm:inline text-xs font-medium text-gray-600">Actions</span>
                             <span className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
                                 Endpoint <div className="w-2 h-2 rounded-full bg-red-500" />
                             </span>
@@ -383,34 +405,36 @@ export default function FlowEditorPage() {
                 </div>
 
                 {/* Right Panel: Preview */}
-                <div className="w-[400px] flex flex-col bg-white shrink-0">
+                <div className={`${activeTab === 'preview' ? 'flex' : 'hidden'} sm:flex w-full sm:w-[400px] flex flex-col bg-white shrink-0 overflow-hidden`}>
                     <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white">
                         <span className="font-bold text-sm text-gray-900">Preview</span>
                         <div className="flex items-center gap-2">
                             <select className="px-3 py-1.5 border border-gray-200 rounded text-xs font-semibold text-gray-700 outline-none max-w-[150px] bg-white">
                                 <option>WELCOME_SCREEN</option>
-                                <option>APPOINTMENT</option>
                             </select>
                             <button className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded hover:bg-gray-50 text-gray-600">
                                 <Settings size={14} />
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden relative bg-white">
-                        {jsonError ? (
-                            <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-                                <div className="text-red-500 bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm max-w-sm">
-                                    <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
-                                    <h3 className="font-bold text-sm mb-1">Invalid JSON</h3>
-                                    <p className="text-xs">{jsonError}</p>
+                    <div className="flex-1 overflow-y-auto relative bg-gray-50 p-4 sm:p-0">
+                        <div className="sm:scale-95 lg:scale-100 transform origin-top">
+                            {jsonError ? (
+                                <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                                    <div className="text-red-500 bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm max-w-sm">
+                                        <AlertCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                                        <h3 className="font-bold text-sm mb-1">Invalid JSON</h3>
+                                        <p className="text-xs">{jsonError}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <FlowLivePreview flowJsonString={jsonContent} />
-                        )}
+                            ) : (
+                                <div className="flex justify-center py-4">
+                                    <FlowLivePreview flowJsonString={jsonContent} />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-                
             </div>
         </div>
     );

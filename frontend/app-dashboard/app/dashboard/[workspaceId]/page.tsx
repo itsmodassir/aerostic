@@ -523,7 +523,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
                 </Link>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 <QuickAction icon={Send} label="New Campaign" href={`/dashboard/${workspaceId}/campaigns`} color="bg-blue-500" />
                 <QuickAction icon={Users2} label="Add Contact" href={`/dashboard/${workspaceId}/contacts`} color="bg-green-500" />
                 <QuickAction icon={Bot} label="AI Agents" href={`/dashboard/${workspaceId}/agents`} color="bg-purple-500" available={planFeatures.aiAgents > 0} />
@@ -534,7 +534,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard title="Total Contacts" value={stats?.totalContacts || 0} icon={Users2} trend="+12%" trendUp={true} color="blue" />
                 <StatCard title="Messages Sent" value={stats?.totalSent || 0} icon={ArrowUpRight} trend="+28%" trendUp={true} color="green" />
                 <StatCard title="Messages Received" value={stats?.totalReceived || 0} icon={ArrowDownLeft} trend="+15%" trendUp={true} color="purple" />
@@ -543,7 +543,7 @@ function OverviewTab({ stats, planFeatures, usagePercent, aiUsagePercent, messag
 
             {/* Analytics Section */}
             {planFeatures.advancedAnalytics ? (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <MetricCard title="Delivery Rate" value="98.5%" icon={CheckCircle} color="green" />
                     <MetricCard title="Read Rate" value="76.2%" icon={Eye} color="blue" />
                     <MetricCard title="Response Rate" value="34.8%" icon={MousePointer} color="purple" />
