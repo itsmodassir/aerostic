@@ -472,19 +472,15 @@ export class WhatsappService {
         throw new BadRequestException("No assets found for this flow");
       }
 
-      // Usually the first asset is the flow.json
-      const assetId = assetsData.data[0].id;
-      const downloadResponse = await fetch(
-        `https://graph.facebook.com/${apiVersion}/${assetId}?fields=download_url&access_token=${accessToken}`
-      );
-      const downloadData = await downloadResponse.json();
+      // The asset object already contains the download_url directly
+      const downloadUrl = assetsData.data[0].download_url;
 
-      if (!downloadData.download_url) {
+      if (!downloadUrl) {
         return assetsData.data[0];
       }
 
       // Download the actual JSON content
-      const jsonResponse = await fetch(downloadData.download_url);
+      const jsonResponse = await fetch(downloadUrl);
       const jsonContent = await jsonResponse.json();
       return jsonContent;
     } catch (error) {
