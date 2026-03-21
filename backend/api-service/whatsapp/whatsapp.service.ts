@@ -389,4 +389,97 @@ export class WhatsappService {
       throw new BadRequestException("Failed to upload flow asset to Meta");
     }
   }
+
+  async deleteFlow(tenantId: string, flowId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+    if (!account) throw new BadRequestException("WhatsApp account not connected");
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${flowId}?access_token=${accessToken}`,
+        { method: "DELETE" }
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new BadRequestException(data.error?.message || "Failed to delete flow in Meta");
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting flow in Meta:", error);
+      throw error instanceof BadRequestException ? error : new BadRequestException("Failed to delete flow");
+    }
+  }
+
+  async publishFlow(tenantId: string, flowId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+    if (!account) throw new BadRequestException("WhatsApp account not connected");
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${flowId}/publish?access_token=${accessToken}`,
+        { method: "POST" }
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new BadRequestException(data.error?.message || "Failed to publish flow. Ensure it has valid assets.");
+      }
+
+      return { success: true, status: data.status };
+    } catch (error) {
+      console.error("Error publishing flow in Meta:", error);
+      throw error instanceof BadRequestException ? error : new BadRequestException("Failed to publish flow");
+    }
+  }
+
+  async getFlowAssets(tenantId: string, flowId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+    if (!account) throw new BadRequestException("WhatsApp account not connected");
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+
+    try {
+      // First get the list of assets
+      const assetsResponse = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${accessToken}`
+      );
+      const assetsData = await assetsResponse.json();
+      
+      if (!assetsResponse.ok || !assetsData.data?.[0]) {
+        throw new BadRequestException("No assets found for this flow");
+      }
+
+      // Usually the first asset is the flow.json
+      const assetId = assetsData.data[0].id;
+      const downloadResponse = await fetch(
+        `https://graph.facebook.com/${apiVersion}/${assetId}?fields=download_url&access_token=${accessToken}`
+      );
+      const downloadData = await downloadResponse.json();
+
+      if (!downloadResponse.ok || !downloadData.download_url) {
+        throw new BadRequestException("Failed to get download URL for flow asset");
+      }
+
+      const flowContentResponse = await fetch(downloadData.download_url);
+      return await flowContentResponse.json();
+    } catch (error) {
+      console.error("Error fetching flow assets:", error);
+      throw error instanceof BadRequestException ? error : new BadRequestException("Failed to fetch flow assets");
+    }
+  }
 }

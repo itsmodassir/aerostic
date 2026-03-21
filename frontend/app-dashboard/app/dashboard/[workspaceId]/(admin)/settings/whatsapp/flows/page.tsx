@@ -6,14 +6,16 @@ import api from '@/lib/api';
 import { 
     ArrowLeft, Workflow, RefreshCw, ExternalLink, 
     AlertCircle, Search, Clock, CheckCircle, FileText,
-    Plus, X, Loader2
+    Plus, X, Loader2, MoreVertical, Trash2, Send, 
+    Download, Upload, Play, Edit3
 } from 'lucide-react';
 
 interface Flow {
     id: string;
     name: string;
-    status: 'DRAFT' | 'PUBLISHED' | 'DEPRECATED' | 'BLOCKED';
+    status: 'DRAFT' | 'PUBLISHED' | 'DEPRECATED' | 'BLOCKED' | 'APPROVED' | 'PENDING' | 'REJECTED';
     updated_at: string;
+    categories?: string[];
 }
 
 const FLOW_CATEGORIES = [
@@ -121,15 +123,86 @@ export default function WhatsAppFlowsPage() {
     const getStatusStyles = (status: string) => {
         switch (status) {
             case 'PUBLISHED':
+            case 'APPROVED':
                 return 'bg-green-100 text-green-700 border-green-200';
             case 'DRAFT':
                 return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'DEPRECATED':
-                return 'bg-gray-100 text-gray-700 border-gray-200';
+            case 'PENDING':
+                return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'REJECTED':
             case 'BLOCKED':
                 return 'bg-red-100 text-red-700 border-red-200';
+            case 'DEPRECATED':
+                return 'bg-gray-100 text-gray-700 border-gray-200';
             default:
                 return 'bg-gray-100 text-gray-700 border-gray-200';
+        }
+    };
+
+    const [editingFlow, setEditingFlow] = useState<Flow | null>(null);
+    const [editName, setEditName] = useState('');
+    const [isImporting, setIsImporting] = useState<string | null>(null);
+
+    const handleDelete = async (flowId: string) => {
+        if (!confirm('Are you sure you want to delete this flow? This is permanent in Meta.')) return;
+        try {
+            await api.delete(`/whatsapp/flows/${flowId}`);
+            await fetchFlows();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to delete flow');
+        }
+    };
+
+    const handlePublish = async (flowId: string) => {
+        try {
+            await api.post(`/whatsapp/flows/${flowId}/publish`);
+            await fetchFlows();
+            alert('Flow submitted to Meta successfully!');
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to publish flow');
+        }
+    };
+
+    const handleExport = async (flowId: string) => {
+        try {
+            const res = await api.get(`/whatsapp/flows/${flowId}/assets`);
+            const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flow_${flowId}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to export flow');
+        }
+    };
+
+    const handleImport = async (flowId: string, file: File) => {
+        setIsImporting(flowId);
+        try {
+            const text = await file.text();
+            const json = JSON.parse(text);
+            await api.post(`/whatsapp/flows/${flowId}/assets`, { json });
+            await fetchFlows();
+            alert('Flow JSON imported successfully!');
+        } catch (err: any) {
+            alert('Invalid JSON file or upload failed');
+        } finally {
+            setIsImporting(null);
+        }
+    };
+
+    const handleUpdateMetadata = async () => {
+        if (!editingFlow || !editName.trim()) return;
+        try {
+            await api.post(`/whatsapp/flows/${editingFlow.id}/assets`, { 
+                json: { name: editName } 
+            });
+            setEditingFlow(null);
+            await fetchFlows();
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to update flow');
         }
     };
 
@@ -242,37 +315,144 @@ export default function WhatsAppFlowsPage() {
                     {filteredFlows.map((flow) => (
                         <div 
                             key={flow.id}
-                            className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-purple-300 transition-all group flex flex-col"
+                            className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm hover:shadow-2xl hover:border-purple-300 transition-all group flex flex-col relative"
                         >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="p-3 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                                    <FileText size={24} />
+                            <div className="flex items-start justify-between mb-6">
+                                <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all transform group-hover:scale-110">
+                                    <FileText size={28} />
                                 </div>
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${getStatusStyles(flow.status)}`}>
-                                    {flow.status}
-                                </span>
+                                <div className="flex flex-col items-end gap-2">
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase border-2 ${getStatusStyles(flow.status)} shadow-sm`}>
+                                        {flow.status}
+                                    </span>
+                                    <div className="flex gap-1">
+                                        {flow.status === 'DRAFT' && (
+                                            <button 
+                                                onClick={() => handlePublish(flow.id)}
+                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                                title="Submit to Meta"
+                                            >
+                                                <Send size={16} />
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => {
+                                                setEditingFlow(flow);
+                                                setEditName(flow.name);
+                                            }}
+                                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                                            title="Edit Metadata"
+                                        >
+                                            <Edit3 size={16} />
+                                        </button>
+                                        <label className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer" title="Import JSON">
+                                            <Upload size={16} />
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                accept=".json" 
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImport(flow.id, file);
+                                                }}
+                                            />
+                                        </label>
+                                        <button 
+                                            onClick={() => handleExport(flow.id)}
+                                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-xl transition-colors"
+                                            title="Export JSON"
+                                        >
+                                            <Download size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(flow.id)}
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                                            title="Delete Flow"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-purple-600 transition-colors">{flow.name}</h3>
-                            <code className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded w-fit mb-4">ID: {flow.id}</code>
+                            <h3 className="font-black text-gray-900 text-xl mb-2 group-hover:text-purple-600 transition-colors uppercase tracking-tight">{flow.name}</h3>
+                            <div className="flex items-center gap-2 mb-6">
+                                <code className="text-[10px] bg-gray-50 text-gray-400 font-bold px-3 py-1 rounded-full border border-gray-100">ID: {flow.id}</code>
+                                {flow.categories && flow.categories.length > 0 && (
+                                    <span className="text-[10px] bg-purple-50 text-purple-600 font-bold px-3 py-1 rounded-full">{flow.categories[0]}</span>
+                                )}
+                            </div>
                             
-                            <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                                    <Clock size={12} />
+                            <div className="mt-auto pt-6 border-t border-gray-50 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-[11px] text-gray-400 font-bold">
+                                    <Clock size={14} />
                                     <span>{new Date(flow.updated_at).toLocaleDateString()}</span>
                                 </div>
-                                <a
-                                    href={`https://business.facebook.com/wa/manage/flows/${flow.id}/builder`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
-                                    title="Open Builder"
-                                >
-                                    <ExternalLink size={18} />
-                                </a>
+                                <div className="flex gap-2">
+                                    <button 
+                                        className="p-2.5 bg-gray-50 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
+                                        title="Test Flow (Meta Preview)"
+                                        onClick={() => window.open(`https://business.facebook.com/wa/manage/flows/${flow.id}/builder`, '_blank')}
+                                    >
+                                        <Play size={18} />
+                                    </button>
+                                    <a
+                                        href={`https://business.facebook.com/wa/manage/flows/${flow.id}/builder`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2.5 bg-gray-50 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all flex items-center justify-center"
+                                        title="Open Builder"
+                                    >
+                                        <ExternalLink size={18} />
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Edit Flow Modal */}
+            {editingFlow && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl p-8 border border-gray-100 animate-in zoom-in-95 duration-300">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                                <Edit3 size={24} className="text-purple-600" />
+                                Edit Flow
+                            </h2>
+                            <button onClick={() => setEditingFlow(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <X size={20} className="text-gray-400" />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-sm font-bold text-gray-500 mb-2 block uppercase tracking-wider">Flow Name</label>
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-gray-800"
+                                />
+                            </div>
+                            
+                            <div className="flex items-center gap-4 pt-4">
+                                <button
+                                    onClick={() => setEditingFlow(null)}
+                                    className="flex-1 px-6 py-4 border-2 border-gray-100 rounded-2xl text-sm font-black text-gray-400 hover:bg-gray-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateMetadata}
+                                    className="flex-1 px-6 py-4 bg-purple-600 text-white rounded-2xl text-sm font-black hover:bg-purple-700 transition-all shadow-lg shadow-purple-100"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

@@ -6,6 +6,7 @@ import {
   Post,
   Body,
   Delete,
+  Param,
   UseGuards,
 } from "@nestjs/common";
 import { WhatsappService } from "./whatsapp.service";
@@ -95,5 +96,39 @@ export class WhatsappController {
     @Body() body: { name: string; categories: string[] },
   ) {
     return this.whatsappService.createFlow(tenantId, body.name, body.categories);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete("flows/:id")
+  async deleteFlow(@UserTenant() tenantId: string, @Param("id") flowId: string) {
+    return this.whatsappService.deleteFlow(tenantId, flowId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("flows/:id/publish")
+  async publishFlow(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+  ) {
+    return this.whatsappService.publishFlow(tenantId, flowId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("flows/:id/assets")
+  async getFlowAssets(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+  ) {
+    return this.whatsappService.getFlowAssets(tenantId, flowId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("flows/:id/assets")
+  async updateFlowAsset(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+    @Body() body: { json: any },
+  ) {
+    return this.whatsappService.uploadFlowAsset(tenantId, flowId, "flow.json"); // Re-using uploadFlowAsset
   }
 }
