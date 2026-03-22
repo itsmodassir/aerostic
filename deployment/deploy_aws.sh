@@ -78,7 +78,7 @@ pm2 start backend/dist/webhook-service/main.js --name aimstors-webhook
 pm2 start backend/dist/worker-service/main.js --name aimstors-worker
 
 # Frontend
-PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/frontend/app-dashboard/server.js --name aimstors-frontend
+PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
 
 # Nginx + ML Service (Docker)
 cd infrastructure/docker
