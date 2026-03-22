@@ -345,28 +345,22 @@ export class WhatsappService {
             type: "SingleColumnLayout",
             children: [
               {
-                type: "Form",
-                name: "welcome_form",
-                "on-submit-action": {
+                type: "TextHeading",
+                text: flowName || "Welcome to Flow"
+              },
+              {
+                type: "TextBody",
+                text: "This is an automated preview. You can edit this flow in the builder."
+              },
+              {
+                type: "Footer",
+                label: "Complete",
+                "on-click-action": {
                   name: "complete",
                   payload: {
                     status: "done"
                   }
-                },
-                children: [
-                  {
-                    type: "TextHeading",
-                    text: flowName || "Welcome to Flow"
-                  },
-                  {
-                    type: "TextBody",
-                    text: "This is an automated preview. You can edit this flow in the builder."
-                  },
-                  {
-                    type: "Footer",
-                    label: "Complete"
-                  }
-                ]
+                }
               }
             ]
           }
