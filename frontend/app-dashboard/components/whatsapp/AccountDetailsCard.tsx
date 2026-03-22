@@ -1,5 +1,6 @@
 import React from 'react';
 import { Building2, Phone, Key, Copy, CheckCircle } from 'lucide-react';
+import { clsx } from 'clsx';
 
 interface AccountDetailsCardProps {
     businessId?: string;
@@ -28,25 +29,27 @@ export default function AccountDetailsCard({
         if (!value) return null;
 
         return (
-            <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-purple-600" />
+            <div className="flex items-center justify-between py-5 border-b-2 border-gray-50 last:border-0 group">
+                <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
+                        <Icon className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors" />
                     </div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-medium">{label}</p>
-                        <p className="text-sm font-mono text-gray-900 mt-0.5">{value}</p>
+                    <div className="min-w-0">
+                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1.5">{label}</p>
+                        <p className="text-sm font-black text-gray-900 truncate tracking-tight">{value}</p>
                     </div>
                 </div>
                 <button
                     onClick={() => copyToClipboard(value, field)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Copy to clipboard"
+                    className={clsx(
+                        "p-3 rounded-xl transition-all active:scale-95 shrink-0",
+                        copiedField === field ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                    )}
                 >
                     {copiedField === field ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="w-5 h-5 shadow-sm" />
                     ) : (
-                        <Copy className="w-4 h-4 text-gray-400" />
+                        <Copy className="w-5 h-5" />
                     )}
                 </button>
             </div>
@@ -54,14 +57,14 @@ export default function AccountDetailsCard({
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-[32px] border-2 border-gray-50 p-6 md:p-8 shadow-xl shadow-gray-200/30 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h3 className="font-bold text-gray-900">Account Information</h3>
-                    <p className="text-sm text-gray-500 mt-1">Your WhatsApp Business Account details</p>
+                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Account Profile</h3>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Official Meta Credentials</p>
                 </div>
                 {verifiedName && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-green-100 shadow-sm shadow-green-100">
                         <CheckCircle className="w-4 h-4" />
                         Verified
                     </div>
@@ -80,7 +83,7 @@ export default function AccountDetailsCard({
 
                 {displayPhoneNumber && (
                     <InfoRow
-                        label="Display Phone Number"
+                        label="Official Display Number"
                         value={displayPhoneNumber}
                         icon={Phone}
                         field="displayPhone"
@@ -89,7 +92,7 @@ export default function AccountDetailsCard({
 
                 {businessId && (
                     <InfoRow
-                        label="Business ID"
+                        label="Meta Business ID"
                         value={businessId}
                         icon={Building2}
                         field="businessId"
@@ -97,14 +100,14 @@ export default function AccountDetailsCard({
                 )}
 
                 <InfoRow
-                    label="WhatsApp Business Account ID (WABA)"
+                    label="WhatsApp Account ID (WABA)"
                     value={wabaId}
                     icon={Building2}
                     field="wabaId"
                 />
 
                 <InfoRow
-                    label="Phone Number ID"
+                    label="Business Phone Number ID"
                     value={phoneNumberId}
                     icon={Key}
                     field="phoneNumberId"

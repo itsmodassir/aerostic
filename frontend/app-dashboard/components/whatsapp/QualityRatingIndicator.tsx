@@ -1,5 +1,6 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { clsx } from 'clsx';
 
 interface QualityRatingIndicatorProps {
     rating: string;
@@ -13,46 +14,46 @@ export default function QualityRatingIndicator({ rating, className = '' }: Quali
         switch (normalizedRating) {
             case 'GREEN':
                 return {
-                    color: 'green',
-                    bgColor: 'bg-green-100',
-                    textColor: 'text-green-700',
-                    borderColor: 'border-green-200',
+                    color: 'emerald',
+                    bgColor: 'bg-emerald-50',
+                    textColor: 'text-emerald-600',
+                    borderColor: 'border-emerald-100',
                     icon: CheckCircle2,
-                    label: 'High Quality',
-                    description: 'Your messaging quality is excellent. No restrictions applied.',
+                    label: 'Pristine Quality',
+                    description: 'Your health metrics are optimal. Full deliverability active.',
                     emoji: '🟢',
                 };
             case 'YELLOW':
                 return {
-                    color: 'yellow',
-                    bgColor: 'bg-yellow-100',
-                    textColor: 'text-yellow-700',
-                    borderColor: 'border-yellow-200',
+                    color: 'amber',
+                    bgColor: 'bg-amber-50',
+                    textColor: 'text-amber-600',
+                    borderColor: 'border-amber-100',
                     icon: AlertCircle,
-                    label: 'Medium Quality',
-                    description: 'Your quality rating has decreased. Monitor your messaging practices.',
+                    label: 'Quality Warning',
+                    description: 'Negative feedback detected. Please review your recent campaigns.',
                     emoji: '🟡',
                 };
             case 'RED':
                 return {
                     color: 'red',
-                    bgColor: 'bg-red-100',
-                    textColor: 'text-red-700',
-                    borderColor: 'border-red-200',
+                    bgColor: 'bg-red-50',
+                    textColor: 'text-red-600',
+                    borderColor: 'border-red-100',
                     icon: TrendingDown,
-                    label: 'Low Quality',
-                    description: 'Your account has quality issues. Messaging may be restricted.',
+                    label: 'Restricted Access',
+                    description: 'Critical quality issues. High risk of account suspension.',
                     emoji: '🔴',
                 };
             default:
                 return {
                     color: 'gray',
-                    bgColor: 'bg-gray-100',
-                    textColor: 'text-gray-700',
-                    borderColor: 'border-gray-200',
+                    bgColor: 'bg-gray-50',
+                    textColor: 'text-gray-400',
+                    borderColor: 'border-gray-100',
                     icon: AlertCircle,
-                    label: 'Unknown',
-                    description: 'Quality rating not available. Sync your account to update.',
+                    label: 'Sync Pending',
+                    description: 'Refreshing telemetry data. Please wait context update.',
                     emoji: '⚪',
                 };
         }
@@ -62,34 +63,34 @@ export default function QualityRatingIndicator({ rating, className = '' }: Quali
     const Icon = config.icon;
 
     return (
-        <div className={`bg-white rounded-2xl border border-gray-200 p-6 ${className}`}>
-            <div className="flex items-center gap-3 mb-4">
-                <div className={`w-12 h-12 ${config.bgColor} rounded-xl flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 ${config.textColor}`} />
+        <div className={clsx("bg-white rounded-[32px] border-2 border-gray-50 p-6 md:p-8 shadow-xl shadow-gray-200/30 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400", className)}>
+            <div className="flex items-center gap-4 mb-8">
+                <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm", config.bgColor)}>
+                    <Icon className={clsx("w-7 h-7", config.textColor)} />
                 </div>
                 <div>
-                    <h3 className="font-bold text-gray-900">Quality Rating</h3>
-                    <p className={`text-sm font-medium ${config.textColor}`}>
-                        {config.emoji} {config.label}
-                    </p>
+                    <h3 className="text-xl font-black text-gray-900 tracking-tight">System Health</h3>
+                    <div className={clsx("text-[10px] font-black uppercase tracking-widest mt-1 flex items-center gap-1.5", config.textColor)}>
+                        <span>{config.emoji}</span> {config.label}
+                    </div>
                 </div>
             </div>
 
-            <p className="text-sm text-gray-600 mb-4">{config.description}</p>
+            <p className="text-xs font-bold text-gray-400 leading-relaxed tracking-tight mb-8">
+                {config.description}
+            </p>
 
-            {rating?.toUpperCase() !== 'GREEN' && rating?.toUpperCase() !== 'UNKNOWN' && (
+            <div className="pt-8 border-t-2 border-gray-50">
                 <a
                     href="https://developers.facebook.com/docs/whatsapp/messaging-limits"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                    className="flex justify-between items-center w-full px-6 py-4 bg-gray-50 hover:bg-white border-2 border-transparent hover:border-blue-500 rounded-2xl transition-all group active:scale-[0.98]"
                 >
-                    Learn how to improve
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] group-hover:text-blue-600 transition-colors">Health Protocols</span>
+                    <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-600 transition-colors" />
                 </a>
-            )}
+            </div>
         </div>
     );
 }

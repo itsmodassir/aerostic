@@ -88,7 +88,6 @@ export default function InboxPage() {
     const [showTemplates, setShowTemplates] = useState(false);
     const [templateRates, setTemplateRates] = useState<any>({ marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 });
 
-    // AI mode + 24h window state
     const [aiStatus, setAiStatus] = useState<{
         aiMode: 'ai' | 'human' | 'paused';
         pauseSecondsLeft: number;
@@ -99,19 +98,16 @@ export default function InboxPage() {
     const [aiModeLoading, setAiModeLoading] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
     const params = useParams();
     const { user } = useAuth();
     const { socket, joinTenant, leaveTenant, isConnected } = useSocket();
 
-    // Init: Get user info and team members
     useEffect(() => {
         let mounted = true;
         const initInbox = async () => {
             const workspaceSlug = params.workspaceId as string;
             if (!workspaceSlug || !user) return;
 
-            // Request Notification Permissions
             if (typeof window !== 'undefined' && 'Notification' in window) {
                 if (Notification.permission === 'default') {
                     Notification.requestPermission();
@@ -119,7 +115,6 @@ export default function InboxPage() {
             }
 
             try {
-                // Resolve tenant
                 const res = await api.get('/auth/workspaces');
                 const memberships = res.data;
                 const activeMembership = memberships.find((m: any) => m.tenant?.slug === workspaceSlug);
@@ -135,7 +130,6 @@ export default function InboxPage() {
                         role: user.role === 'super_admin' ? 'admin' : 'agent',
                         status: 'online',
                     });
-                    // Fetch real team members, wallet, and templates
                     try {
                         const [teamRes, walletRes, templatesRes] = await Promise.all([
                             api.get(`/users?tenantId=${tid}`).catch(e => ({ data: [] })),
@@ -178,9 +172,8 @@ export default function InboxPage() {
         return () => {
             mounted = false;
         };
-    }, [user, params.workspaceId]); // Removed tenantId, joinTenant, leaveTenant if they change frequently
+    }, [user, params.workspaceId]);
 
-    // Handle Join / Leave Tenant when connected
     useEffect(() => {
         if (tenantId && isConnected) {
             joinTenant(tenantId);
@@ -188,7 +181,6 @@ export default function InboxPage() {
         }
     }, [tenantId, isConnected, joinTenant, leaveTenant]);
 
-    // Fetch AI status when conversation changes, refresh every 60s
     const fetchAiStatus = async (convId: string) => {
         try {
             const res = await api.get(`/messages/conversations/${convId}/status`);
@@ -228,18 +220,12 @@ export default function InboxPage() {
         return `${s}s`;
     };
 
-    // Handle Real-time Socket Events
     useEffect(() => {
         if (!socket) return;
 
         const handleNewMessage = (payload: any) => {
-            console.log('[Inbox] New Socket Message:', payload);
-
-            // Ignore outbound messages only if they are from a human agent (already added optimistically)
-            // AI replies (no agentId) should be shown!
             if (payload.direction === 'out' && payload.agentId) return;
 
-            // 1. Update messages list if this conversation is active
             if (selectedConversation?.id === payload.conversationId) {
                 const newMessage: Message = {
                     id: payload.id || `msg-${Date.now()}`,
@@ -255,7 +241,6 @@ export default function InboxPage() {
                     return newMessages;
                 });
             } else {
-                // Show browser notification for incoming messages in non-active conversations
                 if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
                     new Notification(`New message from ${payload.phone || 'Customer'}`, {
                         body: payload.content?.body || 'Received a file or image',
@@ -264,7 +249,6 @@ export default function InboxPage() {
                 }
             }
 
-            // 2. Update conversations list (last message, unread count for non-active convs)
             setConversations(prev => {
                 const newConvs = prev.map(conv => {
                     if (conv.id === payload.conversationId) {
@@ -285,7 +269,6 @@ export default function InboxPage() {
         };
 
         const handleMessageStatus = (payload: any) => {
-            console.log('[Inbox] Message Status Update:', payload);
             setMessages(prev => prev.map(m =>
                 (m.id === payload.messageId || (m as any).metaMessageId === payload.metaMessageId)
                     ? { ...m, status: payload.status }
@@ -302,15 +285,11 @@ export default function InboxPage() {
         };
     }, [socket, selectedConversation?.id]);
 
-    // Fetch conversations from API (Initial load only, then sync via socket)
     useEffect(() => {
         if (!tenantId || !currentUser?.id) return;
         const fetchConvs = async () => {
-            // Check cache first for instant load
             const cached = await getCachedConversations(tenantId, currentUser.id);
-            if (cached) {
-                setConversations(cached);
-            }
+            if (cached) setConversations(cached);
 
             try {
                 const res = await api.get(`/messages/conversations?tenantId=${tenantId}`);
@@ -324,18 +303,14 @@ export default function InboxPage() {
                     }));
                     setConversations(mapped);
                     setCachedConversations(tenantId, currentUser.id, mapped);
-                } else {
-                    setConversations([]);
                 }
             } catch (e) {
-                console.error('Failed to fetch conversations');
                 if (!cached) setConversations([]);
             }
         };
         fetchConvs();
     }, [tenantId, currentUser?.id]);
 
-    // Fetch messages when conversation selected (Initial load)
     useEffect(() => {
         if (!selectedConversation || !currentUser?.id) {
             setMessages(prev => prev.length > 0 ? [] : prev);
@@ -343,19 +318,14 @@ export default function InboxPage() {
         }
 
         const fetchMsgs = async () => {
-            // Check cache first
             const cached = await getCachedMessages(tenantId, currentUser.id, selectedConversation.id);
-            if (cached) {
-                setMessages(cached);
-            }
+            if (cached) setMessages(cached);
 
             try {
                 const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
                 if (res.data) {
                     setMessages(res.data);
                     setCachedMessages(tenantId, currentUser.id, selectedConversation.id, res.data);
-                } else {
-                    setMessages([]);
                 }
             } catch (e) {
                 if (!cached) setMessages([]);
@@ -365,12 +335,10 @@ export default function InboxPage() {
         fetchMsgs();
     }, [selectedConversation?.id, tenantId, currentUser?.id]);
 
-    // Scroll to bottom on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, selectedConversation?.id]);
 
-    // Filter conversations
     const filteredConversations = conversations.filter(conv => {
         const matchesSearch = conv.contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             conv.contact.phoneNumber.includes(searchQuery);
@@ -385,7 +353,6 @@ export default function InboxPage() {
     const handleSend = async () => {
         if (!inputText.trim() || !selectedConversation) return;
 
-        // Optimistic update
         const newMessage: Message = {
             id: `temp-${Date.now()}`,
             direction: 'out',
@@ -411,7 +378,6 @@ export default function InboxPage() {
                 payload: { text: inputText }
             });
 
-            // Update message status
             setMessages(prev => {
                 const updated = prev.map(m =>
                     m.id === newMessage.id ? { ...m, status: 'delivered' } : m
@@ -432,33 +398,23 @@ export default function InboxPage() {
 
     const handleSendTemplate = async (template: any) => {
         if (!selectedConversation) return;
-
         const category = (template.category || 'marketing').toLowerCase();
         const templateRate = templateRates[category] || templateRates.default || 0.80;
 
         if (walletBalance < templateRate) {
-            alert(`Insufficient wallet balance. Sending a ${category} template costs ₹${templateRate.toFixed(2)}.`);
+            alert(`Insufficient wallet balance.`);
             return;
         }
 
         setShowTemplates(false);
-
         const payload = {
             name: template.name,
             language: { code: template.language || 'en_US' },
-            components: [
-                {
-                    type: "body",
-                    parameters: [
-                        { type: "text", text: selectedConversation.contact.name || "Customer" }
-                    ]
-                }
-            ]
+            components: [{ type: "body", parameters: [{ type: "text", text: selectedConversation.contact.name || "Customer" }] }]
         };
 
-        const tempMsgId = `temp-${Date.now()}`;
         const newMessage: Message = {
-            id: tempMsgId,
+            id: `temp-${Date.now()}`,
             direction: 'out',
             type: 'template',
             content: payload,
@@ -470,22 +426,13 @@ export default function InboxPage() {
 
         try {
             await api.post('/messages/send', {
-                tenantId,
-                to: selectedConversation.contact.phoneNumber,
-                type: 'template',
-                payload,
+                tenantId, to: selectedConversation.contact.phoneNumber,
+                type: 'template', payload,
             });
-
-            // Deduct local state to reflect transaction
             setWalletBalance(prev => prev - templateRate);
-
-            setMessages(prev => prev.map(m =>
-                m.id === newMessage.id ? { ...m, status: 'delivered' } : m
-            ));
+            setMessages(prev => prev.map(m => m.id === newMessage.id ? { ...m, status: 'delivered' } : m));
         } catch (e) {
-            setMessages(prev => prev.map(m =>
-                m.id === newMessage.id ? { ...m, status: 'failed' } : m
-            ));
+            setMessages(prev => prev.map(m => m.id === newMessage.id ? { ...m, status: 'failed' } : m));
         }
     };
 
@@ -496,53 +443,38 @@ export default function InboxPage() {
 
     const handleAssign = (member: TeamMember) => {
         if (!selectedConversation) return;
-        setConversations(prev => prev.map(c =>
-            c.id === selectedConversation.id ? { ...c, assignedTo: member } : c
-        ));
+        setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, assignedTo: member } : c));
         setSelectedConversation(prev => prev ? { ...prev, assignedTo: member } : null);
         setShowAssignModal(false);
     };
 
     const handleStatusChange = (status: Conversation['status']) => {
         if (!selectedConversation) return;
-        setConversations(prev => prev.map(c =>
-            c.id === selectedConversation.id ? { ...c, status } : c
-        ));
+        setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, status } : c));
         setSelectedConversation(prev => prev ? { ...prev, status } : null);
     };
 
     const handleStar = (convId: string) => {
-        setConversations(prev => prev.map(c =>
-            c.id === convId ? { ...c, isStarred: !c.isStarred } : c
-        ));
+        setConversations(prev => prev.map(c => c.id === convId ? { ...c, isStarred: !c.isStarred } : c));
     };
 
     const getStatusBadge = (status: string) => {
         const colors: Record<string, string> = {
-            open: 'bg-green-100 text-green-700',
-            pending: 'bg-amber-100 text-amber-700',
-            resolved: 'bg-blue-100 text-blue-700',
-            snoozed: 'bg-gray-100 text-gray-700',
+            open: 'bg-green-50 text-green-700 border-green-100',
+            pending: 'bg-amber-50 text-amber-700 border-amber-100',
+            resolved: 'bg-blue-50 text-blue-700 border-blue-100',
+            snoozed: 'bg-gray-50 text-gray-700 border-gray-100',
         };
         return colors[status] || colors.open;
     };
 
-    const getPriorityColor = (priority: string) => {
-        const colors: Record<string, string> = {
-            high: 'text-red-500',
-            medium: 'text-amber-500',
-            low: 'text-green-500',
-        };
-        return colors[priority] || colors.medium;
-    };
-
     const getMessageStatus = (status: string) => {
         switch (status) {
-            case 'sent': return <Check className="w-3 h-3 text-gray-400" />;
-            case 'delivered': return <CheckCheck className="w-3 h-3 text-gray-400" />;
-            case 'read': return <CheckCheck className="w-3 h-3 text-blue-500" />;
-            case 'failed': return <AlertCircle className="w-3 h-3 text-red-500" />;
-            default: return <Clock className="w-3 h-3 text-gray-300" />;
+            case 'sent': return <Check className="w-3 h-3 text-white/60" />;
+            case 'delivered': return <CheckCheck className="w-3 h-3 text-white/60" />;
+            case 'read': return <CheckCheck className="w-3 h-3 text-white" />;
+            case 'failed': return <AlertCircle className="w-3 h-3 text-red-300" />;
+            default: return <Clock className="w-3 h-3 text-white/40" />;
         }
     };
 
@@ -550,14 +482,9 @@ export default function InboxPage() {
         const date = new Date(dateString);
         const now = new Date();
         const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-        if (diffHours < 24) {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else if (diffHours < 48) {
-            return 'Yesterday';
-        } else {
-            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        }
+        if (diffHours < 24) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (diffHours < 48) return 'Yesterday';
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
 
     const stats = {
@@ -568,111 +495,59 @@ export default function InboxPage() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] bg-gray-100 rounded-2xl overflow-hidden shadow-lg relative">
+        <div className="flex h-[calc(100vh-8rem)] bg-white sm:rounded-[40px] rounded-[32px] overflow-hidden shadow-2xl border-2 border-gray-50 relative animate-in fade-in duration-500">
             {/* Sidebar - Conversation List */}
             <div className={clsx(
-                "w-full md:w-96 border-r bg-white flex flex-col transition-all",
+                "w-full md:w-96 border-r-2 border-gray-50 bg-white flex flex-col transition-all",
                 selectedConversation && "hidden md:flex"
             )}>
                 {/* Header */}
-                <div className="p-4 border-b">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <Inbox className="w-5 h-5 text-blue-600" />
-                            Team Inbox
+                <div className="p-6 border-b-2 border-gray-50">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                            <div className="p-2 bg-blue-50 rounded-xl text-blue-600"><Inbox size={20} /></div>
+                            Inbox
                         </h2>
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                            >
-                                <Filter className="w-4 h-4" />
-                            </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
-                                <RefreshCw className="w-4 h-4" />
+                            <button onClick={() => setShowFilters(!showFilters)} className={clsx("p-2.5 rounded-xl transition-all", showFilters ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-gray-400 hover:bg-gray-50")}>
+                                <Filter size={18} />
                             </button>
                         </div>
                     </div>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                        <button
-                            onClick={() => setFilterAssignee('all')}
-                            className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'all' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                        >
-                            <p className="text-lg font-bold text-gray-900">{stats.total}</p>
-                            <p className="text-[10px] text-gray-500">All</p>
-                        </button>
-                        <button
-                            onClick={() => setFilterAssignee('me')}
-                            className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'me' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                        >
-                            <p className="text-lg font-bold text-blue-600">{stats.myChats}</p>
-                            <p className="text-[10px] text-gray-500">Mine</p>
-                        </button>
-                        <button
-                            onClick={() => setFilterAssignee('unassigned')}
-                            className={`p-2 rounded-lg text-center transition-colors ${filterAssignee === 'unassigned' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                        >
-                            <p className="text-lg font-bold text-amber-600">{stats.unassigned}</p>
-                            <p className="text-[10px] text-gray-500">Unassigned</p>
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('open')}
-                            className={`p-2 rounded-lg text-center transition-colors ${filterStatus === 'open' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                        >
-                            <p className="text-lg font-bold text-green-600">{stats.open}</p>
-                            <p className="text-[10px] text-gray-500">Open</p>
-                        </button>
+                    {/* Quick Stats Grid */}
+                    <div className="grid grid-cols-4 gap-2 mb-6">
+                        {[
+                            { label: 'All', count: stats.total, active: filterAssignee === 'all', onClick: () => setFilterAssignee('all'), color: 'text-gray-900' },
+                            { label: 'Mine', count: stats.myChats, active: filterAssignee === 'me', onClick: () => setFilterAssignee('me'), color: 'text-blue-600' },
+                            { label: 'New', count: stats.unassigned, active: filterAssignee === 'unassigned', onClick: () => setFilterAssignee('unassigned'), color: 'text-amber-600' },
+                            { label: 'Open', count: stats.open, active: filterStatus === 'open', onClick: () => setFilterStatus('open'), color: 'text-green-600' },
+                        ].map(s => (
+                            <button key={s.label} onClick={s.onClick} className={clsx("p-2 rounded-2xl flex flex-col items-center justify-center transition-all border-2", s.active ? "bg-white border-blue-500 shadow-sm" : "bg-gray-50 border-transparent hover:border-gray-100")}>
+                                <span className={clsx("text-lg font-black leading-none", s.color)}>{s.count}</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mt-1">{s.label}</span>
+                            </button>
+                        ))}
                     </div>
 
                     {/* Search */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search conversations..."
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Find customers..."
+                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-sm font-bold outline-none transition-all placeholder:text-gray-300"
                         />
                     </div>
-
-                    {/* Filters */}
-                    {showFilters && (
-                        <div className="mt-3 pt-3 border-t flex gap-2">
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
-                                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                            >
-                                <option value="all">All Status</option>
-                                <option value="open">Open</option>
-                                <option value="pending">Pending</option>
-                                <option value="resolved">Resolved</option>
-                                <option value="snoozed">Snoozed</option>
-                            </select>
-                            <select
-                                value={filterAssignee}
-                                onChange={(e) => setFilterAssignee(e.target.value)}
-                                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                            >
-                                <option value="all">All Agents</option>
-                                <option value="me">Assigned to Me</option>
-                                <option value="unassigned">Unassigned</option>
-                                {teamMembers.map(m => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
                 </div>
 
                 {/* Conversation List */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto no-scrollbar py-2">
                     {filteredConversations.length === 0 ? (
-                        <div className="p-8 text-center">
-                            <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No conversations found</p>
+                        <div className="p-12 text-center opacity-30">
+                            <MessageSquare className="w-12 h-12 mx-auto mb-4" />
+                            <p className="font-black text-sm uppercase tracking-widest">No chats</p>
                         </div>
                     ) : (
                         filteredConversations.map(conv => (
@@ -680,65 +555,32 @@ export default function InboxPage() {
                                 key={conv.id}
                                 onClick={() => setSelectedConversation(conv)}
                                 className={clsx(
-                                    "p-4 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors relative",
-                                    selectedConversation?.id === conv.id && "bg-blue-50 border-l-4 border-l-blue-600"
+                                    "px-6 py-5 cursor-pointer hover:bg-gray-50 transition-all border-l-4",
+                                    selectedConversation?.id === conv.id ? "bg-blue-50/50 border-blue-600" : "border-transparent"
                                 )}
                             >
-                                <div className="flex items-start gap-3">
-                                    {/* Avatar */}
-                                    <div className="relative">
-                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                <div className="flex gap-4">
+                                    <div className="relative shrink-0">
+                                        <div className="w-12 h-12 rounded-[18px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-100">
                                             {conv.contact.name.charAt(0)}
                                         </div>
-                                        {conv.isBot && (
-                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                                                <Bot className="w-3 h-3 text-white" />
-                                            </div>
-                                        )}
+                                        {conv.isBot && <div className="absolute -bottom-1 -right-1 p-1 bg-white rounded-full shadow-sm border border-gray-50 text-indigo-500"><Bot size={10} /></div>}
                                     </div>
 
-                                    {/* Content */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <h4 className="font-semibold text-gray-900 truncate flex items-center gap-1">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="font-black text-gray-900 truncate text-sm flex items-center gap-1.5">
                                                 {conv.contact.name}
-                                                {conv.isStarred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
+                                                {conv.isStarred && <Star size={10} className="text-amber-500 fill-amber-500" />}
                                             </h4>
-                                            <span className="text-xs text-gray-400 whitespace-nowrap">
-                                                {formatTime(conv.lastMessageAt)}
-                                            </span>
+                                            <span className="text-[10px] font-black text-gray-300 uppercase whitespace-nowrap">{formatTime(conv.lastMessageAt)}</span>
                                         </div>
-
-                                        <p className="text-sm text-gray-500 truncate mb-2">
-                                            {conv.lastMessage || 'No messages yet'}
-                                        </p>
-
+                                        <p className="text-xs text-gray-400 font-bold truncate mb-3">{conv.lastMessage || 'Start a conversation...'}</p>
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusBadge(conv.status)}`}>
-                                                    {conv.status}
-                                                </span>
-                                                {conv.priority && (
-                                                    <Circle className={`w-2 h-2 fill-current ${getPriorityColor(conv.priority)}`} />
-                                                )}
-                                                {conv.contact.tags?.map(tag => (
-                                                    <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded">
-                                                        {tag}
-                                                    </span>
-                                                ))}
+                                            <div className="flex gap-1.5">
+                                                <span className={clsx("px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border", getStatusBadge(conv.status))}>{conv.status}</span>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                {conv.assignedTo && (
-                                                    <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600" title={conv.assignedTo.name}>
-                                                        {conv.assignedTo.name.charAt(0)}
-                                                    </div>
-                                                )}
-                                                {conv.unreadCount > 0 && (
-                                                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
-                                                        {conv.unreadCount}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            {conv.unreadCount > 0 && <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-black shadow-lg shadow-blue-100">{conv.unreadCount}</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -756,428 +598,213 @@ export default function InboxPage() {
                 {selectedConversation ? (
                     <>
                         {/* Chat Header */}
-                        <div className="px-4 md:px-6 py-4 bg-white border-b flex items-center justify-between">
-                            <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
-                                <button
-                                    onClick={() => setSelectedConversation(null)}
-                                    className="md:hidden p-2 -ml-2 text-gray-400 hover:text-gray-600"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                                <div className="relative shrink-0">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-base md:text-lg">
-                                        {selectedConversation.contact.name.charAt(0)}
-                                    </div>
-                                </div>
+                        <div className="px-6 py-5 bg-white border-b-2 border-gray-50 flex items-center justify-between z-10 shadow-sm shadow-gray-500/5">
+                            <div className="flex items-center gap-4 min-w-0">
+                                <button onClick={() => setSelectedConversation(null)} className="md:hidden p-2 -ml-2 text-gray-400 hover:bg-gray-50 rounded-xl transition-all"><ArrowLeft size={20} /></button>
+                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-[18px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg md:text-xl shrink-0 shadow-lg shadow-blue-100">{selectedConversation.contact.name.charAt(0)}</div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-900 truncate">{selectedConversation.contact.name}</h3>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium hidden sm:inline-block ${getStatusBadge(selectedConversation.status)}`}>
-                                            {selectedConversation.status}
-                                        </span>
+                                        <h3 className="font-black text-gray-900 truncate">{selectedConversation.contact.name}</h3>
+                                        {selectedConversation.isBot && <Bot size={14} className="text-indigo-500" />}
                                     </div>
-                                    <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                                        <Phone className="w-3 h-3" />
-                                        {selectedConversation.contact.phoneNumber}
-                                    </p>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5"><Phone size={10} /> {selectedConversation.contact.phoneNumber}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-1 md:gap-2">
-                                {/* Assignment - Compressed on mobile */}
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowAssignModal(!showAssignModal)}
-                                        className="flex items-center gap-2 p-2 md:px-3 md:py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                    >
-                                        <UserPlus className="w-4 h-4 text-gray-500" />
-                                        <span className="hidden lg:inline text-sm text-gray-500">
-                                            {selectedConversation.assignedTo ? selectedConversation.assignedTo.name : 'Assign'}
-                                        </span>
-                                        <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:inline" />
-                                    </button>
-                                    {/* ... modal logic stays same ... */}
-
-                                    {showAssignModal && (
-                                        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border overflow-hidden z-10">
-                                            <div className="p-3 border-b">
-                                                <p className="text-sm font-medium text-gray-700">Assign to team member</p>
-                                            </div>
-                                            <div className="max-h-60 overflow-y-auto">
-                                                {teamMembers.map(member => (
-                                                    <button
-                                                        key={member.id}
-                                                        onClick={() => handleAssign(member)}
-                                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <div className="relative">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                                                                {member.name.charAt(0)}
-                                                            </div>
-                                                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${member.status === 'online' ? 'bg-green-500' :
-                                                                member.status === 'away' ? 'bg-amber-500' : 'bg-gray-400'
-                                                                }`} />
-                                                        </div>
-                                                        <div className="flex-1 text-left">
-                                                            <p className="text-sm font-medium text-gray-900">{member.name}</p>
-                                                            <p className="text-xs text-gray-500">{member.role}</p>
-                                                        </div>
-                                                        {selectedConversation.assignedTo?.id === member.id && (
-                                                            <Check className="w-4 h-4 text-blue-600" />
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Status Dropdown - Hidden on XS */}
-                                <select
-                                    value={selectedConversation.status}
-                                    onChange={(e) => handleStatusChange(e.target.value as any)}
-                                    className="hidden sm:inline-block px-3 py-2 bg-gray-100 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="open">Open</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="resolved">Resolved</option>
-                                    <option value="snoozed">Snoozed</option>
-                                </select>
-
-                                {/* Star */}
-                                <button
-                                    onClick={() => handleStar(selectedConversation.id)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Star className={`w-5 h-5 ${selectedConversation.isStarred ? 'text-amber-500 fill-amber-500' : 'text-gray-400'}`} />
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowAssignModal(!showAssignModal)} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 font-bold text-xs rounded-xl hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200">
+                                    <UserPlus size={14} /> {selectedConversation.assignedTo ? selectedConversation.assignedTo.name : 'Unassigned'}
                                 </button>
-
-                                {/* More Options */}
-                                <button
-                                    onClick={() => setShowContactDetails(!showContactDetails)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <MoreVertical className="w-5 h-5 text-gray-400" />
-                                </button>
+                                <button onClick={() => setShowContactDetails(!showContactDetails)} className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-100 transition-all"><MoreVertical size={20} /></button>
                             </div>
                         </div>
 
-                        {/* AI Mode Status Bar */}
+                        {/* AI Toolbar */}
                         {aiStatus && (
-                            <div className={`px-4 py-2 border-b flex items-center justify-between text-xs ${aiStatus.aiMode === 'human' ? 'bg-amber-50 border-amber-200' :
-                                aiStatus.aiMode === 'paused' ? 'bg-orange-50 border-orange-200' :
-                                    'bg-emerald-50 border-emerald-200'
-                                }`}>
-                                <div className="flex items-center gap-3">
-                                    {/* AI Mode Badge */}
-                                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold ${aiStatus.aiMode === 'ai' ? 'bg-emerald-100 text-emerald-700' :
-                                        aiStatus.aiMode === 'paused' ? 'bg-orange-100 text-orange-700' :
-                                            'bg-amber-100 text-amber-700'
-                                        }`}>
-                                        {aiStatus.aiMode === 'ai' && <><Zap className="w-3 h-3" /> AI Active</>}
-                                        {aiStatus.aiMode === 'paused' && <><Pause className="w-3 h-3" /> AI Paused ({formatSeconds(aiStatus.pauseSecondsLeft)})</>}
-                                        {aiStatus.aiMode === 'human' && <><User className="w-3 h-3" /> Human Mode</>}
-                                    </span>
-
-                                    {/* 24h Window Timer */}
+                            <div className={clsx("px-6 py-2 border-b flex items-center justify-between animate-in slide-in-from-top-4 duration-300 z-0", aiStatus.aiMode === 'ai' ? "bg-emerald-50/50" : "bg-amber-50/50")}>
+                                <div className="flex items-center gap-4">
+                                    <div className={clsx("px-3 py-1 rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest", aiStatus.aiMode === 'ai' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")}>
+                                        {aiStatus.aiMode === 'ai' ? <><Zap size={12} className="fill-emerald-600" /> AI Responding</> : <><User size={12} /> Human Control</>}
+                                    </div>
                                     {aiStatus.windowSecondsLeft !== null && (
-                                        <span className={`flex items-center gap-1 ${aiStatus.windowExpired ? 'text-red-600 font-semibold' :
-                                            (aiStatus.windowSecondsLeft < 3600) ? 'text-orange-600' : 'text-gray-500'
-                                            }`}>
-                                            <Timer className="w-3 h-3" />
-                                            {aiStatus.windowExpired
-                                                ? '24h window expired'
-                                                : `24h window: ${formatSeconds(aiStatus.windowSecondsLeft)} left`
-                                            }
-                                        </span>
+                                        <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5"><Timer size={12} /> {formatSeconds(aiStatus.windowSecondsLeft)} window left</span>
                                     )}
                                 </div>
-
-                                {/* Toggle Controls */}
-                                <div className="flex items-center gap-2">
-                                    {aiStatus.aiMode !== 'ai' && (
-                                        <button
-                                            onClick={() => handleSetAiMode('ai')}
-                                            disabled={aiModeLoading}
-                                            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white rounded-full text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                                        >
-                                            <Play className="w-3 h-3" /> Resume AI
-                                        </button>
-                                    )}
-                                    {aiStatus.aiMode === 'ai' && (
-                                        <button
-                                            onClick={() => handleSetAiMode('human')}
-                                            disabled={aiModeLoading}
-                                            className="flex items-center gap-1 px-2.5 py-1 bg-amber-500 text-white rounded-full text-xs font-semibold hover:bg-amber-600 disabled:opacity-50 transition-colors"
-                                        >
-                                            <User className="w-3 h-3" /> Take Over
-                                        </button>
-                                    )}
-                                </div>
+                                <button onClick={() => handleSetAiMode(aiStatus.aiMode === 'ai' ? 'human' : 'ai')} disabled={aiModeLoading} className={clsx("px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", aiStatus.aiMode === 'ai' ? "bg-amber-500 text-white shadow-lg shadow-amber-100" : "bg-emerald-600 text-white shadow-lg shadow-emerald-100")}>
+                                    {aiStatus.aiMode === 'ai' ? 'Take Over' : 'Enable AI'}
+                                </button>
                             </div>
                         )}
 
-                        {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar bg-gray-50/50">
                             {messages.map((msg) => {
                                 const isOut = msg.direction === 'out';
                                 return (
-                                    <div key={msg.id} className={clsx("flex", isOut ? "justify-end" : "justify-start")}>
-                                        <div className={clsx("max-w-[65%] group", isOut ? "items-end" : "items-start")}>
-                                            {!isOut && (
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-xs text-gray-500">{selectedConversation.contact.name}</span>
-                                                </div>
-                                            )}
-                                            {isOut && msg.sender && (
-                                                <div className="flex items-center gap-2 mb-1 justify-end">
-                                                    <span className="text-xs text-gray-500">{msg.sender.name}</span>
-                                                </div>
-                                            )}
+                                    <div key={msg.id} className={clsx("flex flex-col", isOut ? "items-end text-right" : "items-start text-left")}>
+                                        <div className="flex flex-col gap-1.5 max-w-[85%] sm:max-w-[70%] lg:max-w-[60%]">
                                             <div className={clsx(
-                                                "rounded-2xl px-4 py-3 shadow-sm",
-                                                isOut
-                                                    ? "bg-blue-600 text-white rounded-br-md"
-                                                    : "bg-white text-gray-800 rounded-bl-md border"
+                                                "p-4 shadow-xl shadow-gray-200/50 transition-all",
+                                                isOut 
+                                                    ? "bg-blue-600 text-white rounded-[24px] rounded-br-[4px]" 
+                                                    : "bg-white text-gray-800 rounded-[24px] rounded-bl-[4px] border border-gray-100"
                                             )}>
-                                                {msg.type === 'text' && <p className="text-sm">{msg.content.body}</p>}
-                                                {msg.type === 'image' && (
-                                                    <div className="rounded-lg overflow-hidden">
-                                                        <Image className="w-48 h-32 text-gray-400" />
+                                                {msg.type === 'text' && <p className="text-sm font-medium leading-relaxed break-words">{msg.content.body}</p>}
+                                                {msg.type === 'template' && (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60"><FileText size={12} /> Template Message</div>
+                                                        <p className="text-sm font-bold leading-relaxed">{msg.content.name}</p>
                                                     </div>
                                                 )}
-
-                                                <div className={clsx(
-                                                    "flex items-center gap-1 mt-1",
-                                                    isOut ? "justify-end" : "justify-start"
-                                                )}>
-                                                    <span className={clsx(
-                                                        "text-[10px]",
-                                                        isOut ? "text-blue-100" : "text-gray-400"
-                                                    )}>
-                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
+                                                <div className={clsx("flex items-center gap-2 mt-3", isOut ? "justify-end text-white/50" : "justify-start text-gray-300")}>
+                                                    <span className="text-[10px] font-black uppercase tracking-tighter">{formatTime(msg.createdAt)}</span>
                                                     {isOut && getMessageStatus(msg.status)}
                                                 </div>
                                             </div>
+                                            {isOut && msg.sender && <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mr-2">{msg.sender.name}</div>}
                                         </div>
                                     </div>
                                 );
                             })}
-
                             {isTyping && (
-                                <div className="flex justify-start">
-                                    <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border rounded-bl-md">
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                        </div>
+                                <div className="flex justify-start animate-in fade-in slide-in-from-left-4">
+                                    <div className="bg-white p-4 rounded-[24px] rounded-bl-[4px] border border-gray-100 shadow-sm">
+                                        <div className="flex gap-1.5"><div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" /><div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150" /><div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-300" /></div>
                                     </div>
                                 </div>
                             )}
-
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Message Input */}
-                        <div className="p-4 bg-white border-t relative">
-                            {/* Quick Replies */}
-                            {showQuickReplies && (
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                    {QUICK_REPLIES.map((reply, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => handleQuickReply(reply)}
-                                            className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 transition-colors"
-                                        >
-                                            {reply}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Templates Drawer */}
+                        {/* Input Area */}
+                        <div className="p-6 md:p-8 bg-white border-t-2 border-gray-50 relative rounded-b-[40px]">
+                            {/* Templates Drawer Improved */}
                             {showTemplates && (
-                                <div className="absolute bottom-full left-0 w-full bg-white border-t border-b p-4 max-h-64 overflow-y-auto shadow-lg z-10">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <h4 className="font-bold text-gray-900 flex items-center gap-2">
-                                            <FileText className="w-4 h-4 text-blue-600" />
-                                            WhatsApp Templates
-                                        </h4>
-                                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                            Balance: ₹{walletBalance.toFixed(2)}
-                                        </span>
+                                <div className="absolute bottom-full left-0 w-full bg-white border-t-4 border-blue-500 p-8 max-h-96 overflow-y-auto shadow-2xl z-20 animate-in slide-in-from-bottom-8">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h4 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3"><div className="p-2 bg-blue-50 rounded-xl text-blue-600"><FileText size={20} /></div> Templates</h4>
+                                        <div className="px-4 py-2 bg-gray-50 rounded-xl text-xs font-black text-gray-500 uppercase tracking-widest border border-gray-100">Wallet: ₹{walletBalance.toFixed(2)}</div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {templates.map(t => (
-                                            <div key={t.id} className="border rounded-lg p-3 hover:border-blue-300 transition-colors bg-gray-50 flex flex-col justify-between">
-                                                <div>
-                                                    <p className="font-medium text-sm text-gray-900 break-all">{t.name}</p>
-                                                    <p className="text-xs text-gray-500 mb-2 truncate">{t.components?.find((c: any) => c.type === 'BODY')?.text}</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleSendTemplate(t)}
-                                                    className="w-full mt-2 py-1.5 bg-blue-100 text-blue-700 text-xs font-bold rounded hover:bg-blue-200 flex justify-center items-center gap-1"
-                                                >
-                                                    <Send size={12} /> Send (₹{(t.category?.toLowerCase() === 'utility' ? (templateRates.utility || templateRates.default) : t.category?.toLowerCase() === 'authentication' ? (templateRates.authentication || templateRates.default) : (templateRates.marketing || templateRates.default)).toFixed(2)})
-                                                </button>
-                                            </div>
+                                            <button key={t.id} onClick={() => handleSendTemplate(t)} className="text-left p-5 bg-gray-50 border-2 border-transparent hover:border-blue-500 hover:bg-white rounded-[24px] transition-all group active:scale-[0.98]">
+                                                <p className="font-black text-gray-900 text-sm mb-1 group-hover:text-blue-600 transition-colors uppercase tracking-tight truncate">{t.name}</p>
+                                                <p className="text-xs text-gray-400 font-medium line-clamp-2 leading-relaxed mb-4">{t.components?.find((c: any) => c.type === 'BODY')?.text}</p>
+                                                <div className="flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase tracking-widest"><Zap size={10} className="fill-blue-600" /> Send Now</div>
+                                            </button>
                                         ))}
-                                        {templates.length === 0 && (
-                                            <p className="text-sm text-gray-500">No approved templates found.</p>
-                                        )}
                                     </div>
                                 </div>
                             )}
 
-                            <div className="flex items-end gap-3">
-                                {/* Attachment & Tools */}
-                                <div className="flex gap-1">
-                                    <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                        <Paperclip className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowTemplates(!showTemplates);
-                                            setShowQuickReplies(false);
-                                        }}
-                                        className={`p-2.5 rounded-lg transition-colors ${showTemplates ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                                        title="WhatsApp Templates"
-                                    >
-                                        <FileText className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowQuickReplies(!showQuickReplies);
-                                            setShowTemplates(false);
-                                        }}
-                                        className={`p-2.5 rounded-lg transition-colors ${showQuickReplies ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                                        title="Quick Replies"
-                                    >
-                                        <Smile className="w-5 h-5" />
-                                    </button>
+                            <div className="flex items-center gap-4">
+                                <div className="flex gap-2">
+                                    <button onClick={() => {setShowTemplates(!showTemplates); setShowQuickReplies(false);}} className={clsx("p-3 rounded-2xl transition-all border-2", showTemplates ? "bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100" : "bg-gray-50 text-gray-400 border-transparent hover:border-gray-100")}><Zap size={20} /></button>
+                                    <button className="hidden sm:block p-3 bg-gray-50 text-gray-400 rounded-2xl hover:bg-gray-100 hover:border-gray-200 transition-all border-2 border-transparent"><Paperclip size={20} /></button>
                                 </div>
-
-                                {/* Input */}
                                 <div className="flex-1 relative">
                                     <textarea
                                         value={inputText}
                                         onChange={(e) => setInputText(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleSend();
-                                            }
-                                        }}
-                                        placeholder="Type a message..."
+                                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                                        placeholder="Write a message..."
                                         rows={1}
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-[20px] px-6 py-4 outline-none transition-all font-bold text-gray-900 placeholder:text-gray-300 resize-none max-h-40"
                                     />
                                 </div>
-
-                                {/* Send */}
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!inputText.trim()}
-                                    className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Send className="w-5 h-5" />
-                                </button>
+                                <button onClick={handleSend} disabled={!inputText.trim()} className="p-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 disabled:opacity-20 flex items-center justify-center active:scale-90"><Send size={24} /></button>
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <MessageSquare className="w-12 h-12 text-gray-300" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">Select a conversation</h3>
-                        <p className="text-gray-400">Choose a chat from the sidebar to start messaging</p>
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-12 animate-in zoom-in-95 duration-700">
+                        <div className="w-32 h-32 bg-white rounded-[40px] shadow-2xl shadow-blue-100 flex items-center justify-center mb-8"><MessageSquare size={64} className="text-blue-500/20" /></div>
+                        <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Select a Conversation</h3>
+                        <p className="text-gray-400 font-medium max-w-xs leading-relaxed">Choose a chat from the sidebar to start a premium communication session.</p>
                     </div>
                 )}
             </div>
 
-            {/* Contact Details Sidebar - Overlay on mobile */}
+            {/* Contact Details Sidebar - Redesigned */}
             {showContactDetails && selectedConversation && (
-                <div className="absolute inset-y-0 right-0 w-80 bg-white border-l flex flex-col shadow-2xl z-20 md:relative md:shadow-none">
-                    <div className="p-4 border-b flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">Contact Details</h3>
-                        <button
-                            onClick={() => setShowContactDetails(false)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                        >
-                            <X className="w-4 h-4 text-gray-400" />
-                        </button>
+                <div className="fixed sm:relative inset-y-0 right-0 w-full sm:w-[350px] bg-white border-l-2 border-gray-50 flex flex-col shadow-2xl z-[100] animate-in slide-in-from-right-full duration-500">
+                    <div className="p-6 border-b-2 border-gray-50 flex items-center justify-between bg-gray-50/20">
+                        <h3 className="text-lg font-black text-gray-900 tracking-tight">Overview</h3>
+                        <button onClick={() => setShowContactDetails(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400"><X size={20} /></button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                        {/* Profile */}
+                    <div className="flex-1 overflow-y-auto p-8 space-y-10 no-scrollbar">
                         <div className="text-center">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-3">
+                            <div className="w-24 h-24 rounded-[32px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-black mx-auto mb-4 shadow-2xl shadow-blue-200">
                                 {selectedConversation.contact.name.charAt(0)}
                             </div>
-                            <h4 className="font-bold text-gray-900">{selectedConversation.contact.name}</h4>
-                            <p className="text-sm text-gray-500">{selectedConversation.contact.phoneNumber}</p>
+                            <h4 className="text-xl font-black text-gray-900 tracking-tight">{selectedConversation.contact.name}</h4>
+                            <div className="flex items-center justify-center gap-2 mt-2 font-bold text-gray-400 text-xs uppercase tracking-widest"><Phone size={12} /> {selectedConversation.contact.phoneNumber}</div>
                         </div>
 
-                        {/* Tags */}
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Tags</p>
-                            <div className="flex flex-wrap gap-2">
-                                {selectedConversation.contact.tags?.map(tag => (
-                                    <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                        {tag}
-                                    </span>
-                                ))}
-                                <button className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1 hover:bg-gray-200">
-                                    <Plus className="w-3 h-3" />
-                                    Add
-                                </button>
+                        <div className="space-y-4">
+                            <h5 className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] ml-1">Current Status</h5>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-4 bg-gray-50 rounded-2xl border-2 border-transparent">
+                                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">State</div>
+                                    <div className="text-sm font-black text-gray-900 uppercase">{selectedConversation.status}</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-2xl border-2 border-transparent">
+                                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Priority</div>
+                                    <div className="text-sm font-black text-gray-900 uppercase">{selectedConversation.priority}</div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Quick Actions */}
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Actions</p>
-                            <div className="space-y-2">
-                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <Phone className="w-4 h-4 text-gray-500" />
-                                    <span className="text-sm text-gray-700">Call Contact</span>
-                                </button>
-                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <Archive className="w-4 h-4 text-gray-500" />
-                                    <span className="text-sm text-gray-700">Archive Chat</span>
-                                </button>
-                                <button className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <Bot className="w-4 h-4 text-gray-500" />
-                                    <span className="text-sm text-gray-700">Enable AI Bot</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Assigned To */}
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Assigned To</p>
+                        <div className="space-y-4 pt-10 border-t-2 border-gray-50">
+                            <h5 className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] ml-1">Manage Assignment</h5>
                             {selectedConversation.assignedTo ? (
-                                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                                        {selectedConversation.assignedTo.name.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">{selectedConversation.assignedTo.name}</p>
-                                        <p className="text-xs text-gray-500">{selectedConversation.assignedTo.email}</p>
+                                <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-[24px] border border-blue-100">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black">{selectedConversation.assignedTo.name.charAt(0)}</div>
+                                    <div className="min-w-0">
+                                        <div className="text-sm font-black text-blue-900 truncate">{selectedConversation.assignedTo.name}</div>
+                                        <div className="text-[10px] font-bold text-blue-600 truncate opacity-60">{selectedConversation.assignedTo.email}</div>
                                     </div>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={() => setShowAssignModal(true)}
-                                    className="w-full flex items-center gap-3 px-3 py-2 border-2 border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-                                >
-                                    <UserPlus className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm text-gray-500">Assign to team member</span>
+                                <button onClick={() => setShowAssignModal(true)} className="w-full flex flex-col items-center gap-2 p-6 border-2 border-dashed border-gray-100 rounded-[28px] text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-all bg-gray-50/30 group">
+                                    <UserPlus className="group-hover:scale-110 transition-transform" />
+                                    <span className="text-[11px] font-black uppercase tracking-widest">Assign to Team</span>
                                 </button>
                             )}
+                        </div>
+                    </div>
+                    
+                    <div className="p-8 bg-gray-50/50 border-t-2 border-gray-50">
+                        <button className="w-full py-4 bg-white border-2 border-gray-100 text-red-500 font-black rounded-2xl hover:bg-red-50 hover:border-red-100 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+                            <Archive size={16} /> Archive Conversation
+                        </button>
+                    </div>
+                </div>
+            )}
+            
+            {/* Assign Modal Overlay */}
+            {showAssignModal && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAssignModal(false)} />
+                    <div className="relative w-full max-w-sm bg-white rounded-[40px] shadow-2xl overflow-hidden shadow-indigo-200">
+                        <div className="p-8 border-b-2 border-gray-50 bg-gray-50/50">
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Assign Team</h3>
+                        </div>
+                        <div className="p-4 max-h-[60vh] overflow-y-auto no-scrollbar">
+                            {teamMembers.map(member => (
+                                <button key={member.id} onClick={() => handleAssign(member)} className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-[24px] transition-all group">
+                                    <div className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-indigo-100">{member.name.charAt(0)}</div>
+                                    <div className="flex-1 text-left min-w-0">
+                                        <p className="text-sm font-black text-gray-900 leading-none mb-1 group-hover:text-blue-600 transition-colors">{member.name}</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{member.role}</p>
+                                    </div>
+                                    {selectedConversation?.assignedTo?.id === member.id && <div className="p-1.5 bg-green-500 rounded-full text-white shadow-lg shadow-green-100"><Check size={12} /></div>}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-8 bg-gray-50/50 flex gap-4">
+                            <button onClick={() => setShowAssignModal(false)} className="flex-1 py-4 bg-white border-2 border-gray-100 rounded-2xl font-black text-gray-400 uppercase tracking-widest text-xs">Close</button>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle, MessageSquare, Image, Workflow, CreditCard, Smartphone } from 'lucide-react';
+import { CheckCircle, MessageSquare, Image, Workflow, CreditCard, Smartphone, ChevronRight } from 'lucide-react';
+import { clsx } from 'clsx';
 
 interface FeatureMatrixTableProps {
     className?: string;
@@ -11,36 +12,36 @@ export default function FeatureMatrixTable({ className = '' }: FeatureMatrixTabl
             name: 'Template Messaging',
             status: 'enabled',
             icon: MessageSquare,
-            description: 'Send pre-approved message templates',
-            action: { label: 'Manage Templates', href: '../templates' },
+            description: 'Automated notification engine',
+            action: { label: 'Manage', href: '../templates' },
         },
         {
-            name: 'Interactive Messages',
+            name: 'Interactive UI',
             status: 'enabled',
             icon: Smartphone,
-            description: 'Buttons, lists, and quick replies',
+            description: 'Buttons & list interactions',
             action: { label: 'View Docs', href: 'https://developers.facebook.com/docs/whatsapp/guides/interactive-messages', external: true },
         },
         {
-            name: 'Media Messaging',
+            name: 'Rich Media',
             status: 'enabled',
             icon: Image,
-            description: 'Send images, videos, and documents',
+            description: 'Images, video & document support',
             action: { label: 'Check Limits', href: 'https://developers.facebook.com/docs/whatsapp/api/media', external: true },
         },
         {
-            name: 'WhatsApp Flows',
+            name: 'Advanced Flows',
             status: 'enabled',
             icon: Workflow,
-            description: 'Advanced conversational forms',
-            action: { label: 'Manage Flows', href: 'whatsapp/flows' },
+            description: 'Conversational form processing',
+            action: { label: 'Builder', href: 'whatsapp/flows' },
         },
         {
-            name: 'WhatsApp Pay',
+            name: 'Native Payments',
             status: 'unavailable',
             icon: CreditCard,
-            description: 'In-chat payment processing',
-            action: { label: 'Learn More', href: 'https://developers.facebook.com/docs/whatsapp/payments', external: true },
+            description: 'In-chat checkout systems',
+            action: { label: 'Explore', href: 'https://developers.facebook.com/docs/whatsapp/payments', external: true },
         },
     ];
 
@@ -48,28 +49,23 @@ export default function FeatureMatrixTable({ className = '' }: FeatureMatrixTabl
         switch (status) {
             case 'enabled':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        Enabled
-                    </span>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm shadow-emerald-50">
+                        <CheckCircle className="w-3 h-3" />
+                        Active
+                    </div>
                 );
             case 'pending':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-100 shadow-sm shadow-amber-50">
+                        <CheckCircle className="w-3 h-3" />
                         Pending
-                    </span>
+                    </div>
                 );
             case 'unavailable':
                 return (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Not Available
-                    </span>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-gray-100">
+                        Locked
+                    </div>
                 );
             default:
                 return null;
@@ -77,37 +73,40 @@ export default function FeatureMatrixTable({ className = '' }: FeatureMatrixTabl
     };
 
     return (
-        <div className={`bg-white rounded-2xl border border-gray-200 p-6 ${className}`}>
-            <h3 className="font-bold text-gray-900 mb-4">Feature Availability</h3>
-            <p className="text-sm text-gray-500 mb-6">WhatsApp Business API features enabled for your account</p>
+        <div className={clsx("bg-white rounded-[32px] border-2 border-gray-50 p-6 md:p-8 shadow-xl shadow-gray-200/30 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100", className)}>
+            <div className="mb-8">
+                <h3 className="text-xl font-black text-gray-900 tracking-tight text-center sm:text-left">Feature Matrix</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 text-center sm:text-left">Service capability breakdown</p>
+            </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                 {features.map((feature) => {
                     const Icon = feature.icon;
                     return (
                         <div
                             key={feature.name}
-                            className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-sm transition-all"
+                            className="flex flex-col sm:flex-row items-center justify-between p-5 bg-gray-50/50 border-2 border-transparent hover:border-blue-500 hover:bg-white rounded-3xl transition-all group shadow-sm hover:shadow-xl hover:shadow-blue-500/10 active:scale-[0.98]"
                         >
-                            <div className="flex items-center gap-4 flex-1">
-                                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <Icon className="w-5 h-5 text-purple-600" />
+                            <div className="flex flex-col sm:flex-row items-center gap-5 flex-1 w-full text-center sm:text-left">
+                                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                                    <Icon className="w-7 h-7 text-gray-400 group-hover:text-white transition-colors" />
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className="font-semibold text-gray-900">{feature.name}</h4>
-                                    <p className="text-sm text-gray-500">{feature.description}</p>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-black text-gray-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight text-sm mb-1">{feature.name}</h4>
+                                    <p className="text-xs text-gray-400 font-bold tracking-tight line-clamp-1">{feature.description}</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-4 mt-4 sm:mt-0 w-full sm:w-auto justify-between sm:justify-end">
                                 {getStatusBadge(feature.status)}
                                 <a
                                     href={feature.action.href}
                                     target={feature.action.external ? '_blank' : undefined}
                                     rel={feature.action.external ? 'noopener noreferrer' : undefined}
-                                    className="px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-white border border-gray-100 text-gray-400 hover:text-blue-600 hover:border-blue-200 rounded-xl transition-all flex items-center gap-1 shadow-sm"
                                 >
                                     {feature.action.label}
+                                    <ChevronRight size={12} />
                                 </a>
                             </div>
                         </div>

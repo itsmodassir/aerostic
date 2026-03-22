@@ -81,45 +81,45 @@ export default function TemplatesPage() {
     return (
         <div className="max-w-7xl space-y-6 animate-in fade-in duration-500 pb-20">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Message Templates</h1>
-                    <p className="text-gray-400 text-sm mt-1 font-medium">Create, manage and submit WhatsApp templates for Meta approval</p>
+                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Templates</h1>
+                    <p className="text-gray-400 text-xs sm:text-sm mt-1 font-medium">Create and manage WhatsApp message templates</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <button onClick={handleSync} disabled={syncing}
-                        className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-gray-100 text-gray-600 rounded-2xl hover:bg-gray-50 disabled:opacity-50 transition-all font-bold text-sm shadow-sm">
-                        <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} />
-                        {syncing ? 'Syncing...' : 'Sync from Meta'}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border-2 border-gray-100 text-gray-600 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-all font-bold text-xs sm:text-sm shadow-sm">
+                        <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+                        {syncing ? 'Syncing...' : 'Sync Meta'}
                     </button>
                     <button onClick={() => { setSelectedLibraryTemplate(null); setIsCreateModalOpen(true); }}
-                        className="flex items-center gap-2 px-5 py-3 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 transition-all font-black text-sm shadow-lg shadow-purple-100">
-                        <Plus size={18} />
-                        Create Template
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all font-black text-xs sm:text-sm shadow-lg shadow-purple-100">
+                        <Plus size={16} />
+                        Create
                     </button>
                 </div>
             </div>
 
             {/* Stats Bar */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 {[
                     { label: 'Total', count: templates.length, color: 'bg-gray-50 text-gray-600 border-gray-100' },
                     { label: 'Approved', count: templates.filter(t => t.status === 'APPROVED').length, color: 'bg-green-50 text-green-700 border-green-100' },
                     { label: 'Pending', count: templates.filter(t => t.status === 'PENDING').length, color: 'bg-amber-50 text-amber-700 border-amber-100' },
                     { label: 'Rejected', count: templates.filter(t => t.status === 'REJECTED').length, color: 'bg-red-50 text-red-700 border-red-100' },
                 ].map(s => (
-                    <div key={s.label} className={`p-4 rounded-2xl border-2 ${s.color}`}>
-                        <div className="text-2xl font-black">{s.count}</div>
-                        <div className="text-sm font-bold opacity-70">{s.label}</div>
+                    <div key={s.label} className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 ${s.color}`}>
+                        <div className="text-xl sm:text-2xl font-black">{s.count}</div>
+                        <div className="text-xs sm:text-sm font-bold opacity-70">{s.label}</div>
                     </div>
                 ))}
             </div>
 
             {/* Tabs */}
             <div className="flex items-center gap-1 bg-gray-50 rounded-2xl p-1 w-fit">
-                {[{ key: 'mine', label: 'My Templates' }, { key: 'library', label: 'Template Library' }].map(tab => (
+                {[{ key: 'mine', label: 'My Templates' }, { key: 'library', label: 'Library' }].map(tab => (
                     <button key={tab.key} onClick={() => setView(tab.key as any)}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all ${view === tab.key ? 'bg-white shadow text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all ${view === tab.key ? 'bg-white shadow text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
                         {tab.label}
                     </button>
                 ))}
@@ -134,80 +134,81 @@ export default function TemplatesPage() {
             />
 
             {view === 'mine' && (
-                <>
+                <div className="space-y-4">
                     {/* Search + Filters */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="relative flex-1">
                             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
-                            <input type="text" placeholder="Search templates..."
+                            <input type="text" placeholder="Search..."
                                 value={search} onChange={e => setSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none text-sm" />
+                                className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-gray-100 rounded-xl focus:border-purple-500 outline-none text-sm" />
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
                             {['ALL', 'APPROVED', 'PENDING', 'REJECTED'].map(s => (
                                 <button key={s} onClick={() => setStatusFilter(s)}
-                                    className={`px-4 py-3 text-xs font-black rounded-2xl transition-all uppercase tracking-wider ${statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
-                                    {s === 'ALL' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
+                                    className={`px-3 py-2 text-[10px] font-black rounded-xl transition-all uppercase tracking-wider shrink-0 ${statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
+                                    {s === 'ALL' ? 'All' : s.slice(0,3)}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Table */}
+                    {/* Table Section */}
                     {loading ? (
-                        <div className="text-center py-20 text-gray-400 font-semibold">Loading templates...</div>
+                        <div className="text-center py-20 text-gray-400 font-semibold">Loading...</div>
                     ) : filteredTemplates.length === 0 ? (
                         <div className="py-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
                             <FileText className="mx-auto h-10 w-10 text-gray-300 mb-3" />
                             <h3 className="text-base font-black text-gray-900">No templates found</h3>
-                            <p className="mt-1 text-sm text-gray-400">Create your first template or sync from Meta to get started.</p>
                         </div>
                     ) : (
-                        <div className="bg-white border-2 border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-                            <table className="w-full">
-                                <thead className="bg-gray-50 border-b-2 border-gray-100">
-                                    <tr>
-                                        {['Flow Name', 'Category', 'Language', 'Status', 'Last Updated', ''].map(h => (
-                                            <th key={h} className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {filteredTemplates.map(tpl => {
-                                        const hasFlow = tpl.components?.some((c: any) => c.type === 'BUTTONS' && c.buttons?.some((b: any) => b.type === 'FLOW'));
-                                        return (
-                                            <tr key={tpl.id} className="hover:bg-gray-50/50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-xl ${hasFlow ? 'bg-purple-50' : 'bg-gray-50'}`}>
-                                                            {hasFlow ? <Workflow size={16} className="text-purple-600" /> : <FileText size={16} className="text-gray-400" />}
+                        <div className="bg-white border-2 border-gray-100 rounded-3xl overflow-x-auto shadow-sm no-scrollbar">
+                            <div className="min-w-[800px]">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b-2 border-gray-100">
+                                        <tr>
+                                            {['Name', 'Category', 'Language', 'Status', 'Last Updated', ''].map(h => (
+                                                <th key={h} className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {filteredTemplates.map(tpl => {
+                                            const hasFlow = tpl.components?.some((c: any) => c.type === 'BUTTONS' && c.buttons?.some((b: any) => b.type === 'FLOW'));
+                                            return (
+                                                <tr key={tpl.id} className="hover:bg-gray-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`p-2 rounded-xl ${hasFlow ? 'bg-purple-50' : 'bg-gray-50'}`}>
+                                                                {hasFlow ? <Workflow size={16} className="text-purple-600" /> : <FileText size={16} className="text-gray-400" />}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-black text-gray-900 text-sm">{tpl.name}</div>
+                                                                {hasFlow && <div className="text-[10px] text-purple-500 font-bold">Flow attached</div>}
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <div className="font-black text-gray-900 text-sm">{tpl.name}</div>
-                                                            {hasFlow && <div className="text-[10px] text-purple-500 font-bold">Flow attached</div>}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{tpl.category}</td>
-                                                <td className="px-6 py-4 text-xs text-gray-500">{LANGUAGES[tpl.language] || tpl.language}</td>
-                                                <td className="px-6 py-4"><StatusBadge status={tpl.status} /></td>
-                                                <td className="px-6 py-4 text-xs text-gray-400">Mar 21, 2026</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    {tpl.status === 'REJECTED' && tpl.rejectionReason && (
-                                                        <div className="flex items-center gap-1.5 text-[10px] text-red-500 font-semibold max-w-[140px] text-right ml-auto">
-                                                            <AlertCircle size={12} className="shrink-0" />
-                                                            <span>{tpl.rejectionReason}</span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{tpl.category}</td>
+                                                    <td className="px-6 py-4 text-xs text-gray-500">{LANGUAGES[tpl.language] || tpl.language}</td>
+                                                    <td className="px-6 py-4"><StatusBadge status={tpl.status} /></td>
+                                                    <td className="px-6 py-4 text-xs text-gray-400">Mar 21, 2026</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {tpl.status === 'REJECTED' && tpl.rejectionReason && (
+                                                            <div className="flex items-center gap-1.5 text-[10px] text-red-500 font-semibold max-w-[140px] text-right ml-auto">
+                                                                <AlertCircle size={12} className="shrink-0" />
+                                                                <span>{tpl.rejectionReason}</span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
-                </>
+                </div>
             )}
 
             {view === 'library' && (
