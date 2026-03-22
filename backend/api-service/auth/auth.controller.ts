@@ -515,17 +515,22 @@ export class AuthController {
         ? { userId: req.user?.id, tenantId }
         : { userId: req.user?.id };
 
+    const relations = ["tenant", "tenant.reseller", "tenant.reseller.resellerConfig", "tenant.resellerConfig"];
+    
+    // Only attempt to join roleEntity relations if they are expected to exist
+    // This prevents 500 errors on deep joins with null intermediaries
+    const membershipBase = await this.membershipRepo.findOne({
+      where: whereClause as any,
+      select: ["roleId", "id", "userId", "tenantId"],
+    });
+
+    if (membershipBase?.roleId) {
+      relations.push("roleEntity", "roleEntity.rolePermissions", "roleEntity.rolePermissions.permission");
+    }
+
     const membership = await this.membershipRepo.findOne({
       where: whereClause as any,
-      relations: [
-        "tenant",
-        "tenant.reseller",
-        "tenant.reseller.resellerConfig",
-        "tenant.resellerConfig",
-        "roleEntity",
-        "roleEntity.rolePermissions",
-        "roleEntity.rolePermissions.permission",
-      ],
+      relations,
       order: { createdAt: "ASC" },
     });
 
