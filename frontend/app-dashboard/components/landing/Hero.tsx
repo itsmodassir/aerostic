@@ -1,96 +1,110 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Play, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Play, CheckCircle2, Sparkles, Zap, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { clsx } from 'clsx';
 
 export default function Hero() {
     return (
-        <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden bg-white">
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[800px] h-[800px] bg-emerald-50 rounded-full blur-3xl opacity-50" />
-            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-[600px] h-[600px] bg-blue-50 rounded-full blur-3xl opacity-30" />
-
+        <section className="relative pt-32 pb-24 md:pt-64 md:pb-48 overflow-hidden bg-white">
+            {/* Neural Background Matrix */}
+            <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-emerald-50 rounded-full blur-[120px] opacity-40 -translate-y-1/2 translate-x-1/4 animate-pulse" />
+            <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-blue-50 rounded-full blur-[120px] opacity-30 translate-y-1/2 -translate-x-1/4" />
+            
             <div className="max-w-7xl mx-auto px-6 relative z-10">
-                <div className="text-center max-w-4xl mx-auto">
-                    {/* Badge */}
+                <div className="text-center max-w-5xl mx-auto">
+                    {/* Premium Protocol Badge */}
                     <motion.div
-                        initial={false}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="inline-flex items-center space-x-2 bg-emerald-50 border border-emerald-100 px-4 py-1.5 rounded-full mb-8"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="inline-flex items-center gap-3 bg-white border-2 border-emerald-100 px-6 py-2 rounded-full mb-12 shadow-xl shadow-emerald-100/20"
                     >
-                        <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">Official Meta Cloud API</span>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-[.4em]">Official Meta Nexus Node V4.0</span>
                     </motion.div>
 
-                    {/* Headline */}
-                    <motion.h1
-                        initial={false}
+                    {/* High-Velocity Headline */}
+                    <motion.h1 
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-4xl md:text-7xl font-bold tracking-tight text-gray-900 mb-8"
+                        transition={{ duration: 1, ease: "circOut" }}
+                        className="text-5xl md:text-9xl font-black tracking-tighter text-gray-900 leading-[0.9] mb-12"
                     >
-                        The Safest Way to Scale <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600">
-                            WhatsApp Business
+                        THE SAFEST WAY TO <br />
+                        <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400 bg-clip-text text-transparent italic">
+                            SCALE WHATSAPP
                         </span>
                     </motion.h1>
 
-                    {/* Subheading */}
-                    <motion.p
-                        initial={false}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-xl text-gray-600 mb-12 leading-relaxed max-w-2xl mx-auto"
+                    {/* Operational Subheading */}
+                    <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 1.2, delay: 0.3 }}
+                        className="text-lg md:text-2xl font-bold text-gray-400 max-w-3xl mx-auto leading-relaxed uppercase tracking-tighter mb-16"
                     >
-                        Scale your sales and support with the official WhatsApp Marketing & Automation Platform.
-                        100% compliance, zero bot bans, and direct Meta integration.
+                        Orchestrate global sales and support with the official <span className="text-black">Meta Cloud Protocol</span>. 
+                        Zero bot-bans, 100% compliance, and hyper-automated engagement.
                     </motion.p>
 
-                    {/* CTAs */}
-                    <motion.div
-                        initial={false}
+                    {/* Tactical Mobilization CTAs */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 mb-16"
+                        transition={{ duration: 0.8, delay: 0.6 }}
+                        className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-24"
                     >
                         <Link
                             href="https://app.aimstore.in/register"
-                            className="group bg-emerald-500 text-white px-8 py-4 rounded-2xl text-lg font-bold flex items-center space-x-2 hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-200 hover:-translate-y-1"
+                            className="w-full sm:w-auto px-12 py-6 bg-black text-white rounded-[24px] text-[10px] font-black uppercase tracking-[.3em] hover:bg-emerald-600 transition-all shadow-2xl flex items-center justify-center gap-4 group"
                         >
-                            <span>Get Official API Access</span>
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            <span>Initialize Protocol</span>
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <Link
                             href="/contact"
-                            className="group bg-white border-2 border-gray-100 px-8 py-4 rounded-2xl text-lg font-bold flex items-center space-x-2 hover:bg-gray-50 transition-all hover:-translate-y-1"
+                            className="w-full sm:w-auto px-12 py-6 bg-white border-2 border-gray-100 rounded-[24px] text-[10px] font-black uppercase tracking-[.3em] text-gray-900 hover:border-black transition-all flex items-center justify-center gap-4 group"
                         >
-                            <Play className="w-5 h-5 text-emerald-500 fill-emerald-500" />
-                            <span>Talk to an Expert</span>
+                            <Play className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+                            <span>Neural Sandbox</span>
                         </Link>
                     </motion.div>
 
-                    {/* Trust Badges */}
-                    <motion.div
-                        initial={false}
+                    {/* Trust Infrastructure Matrix */}
+                    <motion.div 
+                        initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 1, delay: 0.5 }}
-                        className="flex flex-wrap items-center justify-center gap-8 md:gap-12"
+                        transition={{ duration: 1, delay: 1 }}
+                        className="flex flex-wrap items-center justify-center gap-10 md:gap-16 pt-12 border-t border-gray-100"
                     >
                         {[
-                            "No Setup Fees",
-                            "14-Day Free Trial",
-                            "Cancel Anytime"
-                        ].map((badge) => (
-                            <div key={badge} className="flex items-center space-x-2 text-gray-500 font-medium">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                                <span>{badge}</span>
+                            { label: "Zero Setup Cost", icon: Zap },
+                            { label: "14-Day Free Evaluation", icon: Sparkles },
+                            { label: "Nexus Node Security", icon: Shield }
+                        ].map((node) => (
+                            <div key={node.label} className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">
+                                    <node.icon size={18} strokeWidth={3} />
+                                </div>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{node.label}</span>
                             </div>
                         ))}
                     </motion.div>
                 </div>
             </div>
+            
+            {/* Scroll Indicator */}
+            <motion.div 
+                animate={{ y: [0, 10, 0] }} 
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute bottom-10 left-1/2 -translate-x-1/2 text-gray-200 hidden md:block"
+            >
+                <div className="w-6 h-10 rounded-full border-2 border-gray-100 flex items-start justify-center p-1">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                </div>
+            </motion.div>
         </section>
     );
 }

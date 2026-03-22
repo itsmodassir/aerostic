@@ -1,79 +1,78 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { AlertCircle, XCircle, TrendingDown } from 'lucide-react';
+import { AlertCircle, XCircle, TrendingDown, ShieldAlert, Cpu, Activity } from 'lucide-react';
 
 export default function Problem() {
     const painPoints = [
         {
-            icon: <XCircle className="w-6 h-6" />,
-            title: "Risk of Number Bans",
-            description: "Using unofficial APIs or Chrome extensions leads to permanent WhatsApp bans.",
+            icon: <ShieldAlert size={20} strokeWidth={3} />,
+            title: "TERMINAL BAN RISK",
+            description: "Unofficial protocols and Chrome extensions trigger permanent Meta account neutralization.",
             color: "text-red-500",
-            bg: "bg-red-50"
+            bg: "bg-red-500/10"
         },
         {
-            icon: <TrendingDown className="w-6 h-6" />,
-            title: "Poor Delivery Rates",
-            description: "Generic solutions often fail to deliver messages during peak traffic hours.",
+            icon: <Activity size={20} strokeWidth={3} />,
+            title: "THROUGHPUT COLLAPSE",
+            description: "Generic infrastructure fails during high-velocity traffic, halting business operations.",
             color: "text-orange-500",
-            bg: "bg-orange-50"
+            bg: "bg-orange-500/10"
         },
         {
-            icon: <AlertCircle className="w-6 h-6" />,
-            title: "Zero Support",
-            description: "No dedicated support means your business stops when the automation breaks.",
+            icon: <Cpu size={20} strokeWidth={3} />,
+            title: "ZERO NEURAL SUPPORT",
+            description: "Non-official tools lack the direct API-level stability required for enterprise growth.",
             color: "text-amber-500",
-            bg: "bg-amber-50"
+            bg: "bg-amber-500/10"
         }
     ];
 
     return (
-        <section className="py-24 bg-white relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-6">
-                <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <section id="features" className="py-32 bg-white relative overflow-hidden border-t border-gray-50">
+            <div className="max-w-7xl mx-auto px-6 lg:px-12">
+                <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div>
                         <motion.div
-                            initial={false}
+                            initial={{ opacity: 0, x: -20 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
-                            className="inline-block px-4 py-1.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-sm font-bold uppercase tracking-wider mb-6"
+                            className="inline-block px-5 py-2 rounded-full bg-red-50 border border-red-100 text-red-600 text-[10px] font-black uppercase tracking-[.4em] mb-12"
                         >
-                            The Status Quo
+                            THREAT ASSESSMENT
                         </motion.div>
 
                         <motion.h2
-                            initial={false}
+                            initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight"
+                            className="text-5xl md:text-7xl font-black text-gray-900 mb-10 leading-[0.9] tracking-tighter"
                         >
-                            Stop Gambling with your <br />
-                            <span className="text-red-500">WhatsApp Presence</span>
+                            STOP GAMBLING <br />
+                            WITH YOUR <span className="text-red-500 italic">REACH</span>
                         </motion.h2>
 
-                        <p className="text-xl text-gray-600 mb-10 leading-relaxed">
-                            Most businesses use unstable, unofficial tools that put their brand at risk every single day.
-                            Don't wait for a ban to realize you need a professional solution.
+                        <p className="text-xl font-bold text-gray-400 mb-16 leading-relaxed uppercase tracking-tighter">
+                            Most businesses use unstable, unofficial tools that put their <span className="text-black">Entire Customer Base</span> at risk of permanent suspension.
                         </p>
 
-                        <div className="space-y-6">
+                        <div className="grid gap-6">
                             {painPoints.map((point, idx) => (
                                 <motion.div
                                     key={idx}
-                                    initial={false}
+                                    initial={{ opacity: 0, x: -20 }}
                                     whileInView={{ opacity: 1, x: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ delay: 0.2 + idx * 0.1 }}
-                                    className="flex items-start space-x-4 p-6 rounded-2xl border border-gray-100 hover:border-red-100 hover:bg-red-50/10 transition-colors"
+                                    className="flex items-start gap-6 p-8 rounded-[28px] bg-gray-50/50 border border-transparent hover:border-red-100 hover:bg-white transition-all group lg:w-4/5"
                                 >
-                                    <div className={`p-3 rounded-xl ${point.bg} ${point.color}`}>
+                                    <div className={`p-4 rounded-2xl ${point.bg} ${point.color} group-hover:scale-110 transition-transform`}>
                                         {point.icon}
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-1">{point.title}</h3>
-                                        <p className="text-gray-600">{point.description}</p>
+                                        <h3 className="text-[10px] font-black tracking-[.2em] text-gray-900 mb-2 uppercase">{point.title}</h3>
+                                        <p className="text-sm font-bold text-gray-400 leading-snug">{point.description}</p>
                                     </div>
                                 </motion.div>
                             ))}
@@ -81,41 +80,59 @@ export default function Problem() {
                     </div>
 
                     <motion.div
-                        initial={false}
+                        initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
+                        transition={{ duration: 1 }}
                         className="relative"
                     >
-                        <div className="absolute inset-0 bg-red-500/5 blur-[100px] rounded-full" />
-                        <div className="relative bg-gray-900 rounded-[32px] p-8 shadow-2xl border border-gray-800">
-                            <div className="flex items-center space-x-2 mb-8">
-                                <div className="w-3 h-3 rounded-full bg-red-500" />
-                                <div className="w-3 h-3 rounded-full bg-amber-500" />
-                                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                        {/* High-End Diagnostic Interface */}
+                        <div className="absolute inset-0 bg-red-500/10 blur-[150px] rounded-full animate-pulse" />
+                        <div className="relative bg-black rounded-[48px] p-12 shadow-[0_40px_100px_rgba(0,0,0,0.3)] border border-gray-800 overflow-hidden">
+                            {/* Scanning line effect */}
+                            <motion.div 
+                                animate={{ y: [0, 600, 0] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-20 z-10" 
+                            />
+                            
+                            <div className="flex items-center gap-3 mb-12">
+                                <div className="w-4 h-4 rounded-full bg-red-500/20 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                </div>
+                                <span className="text-[10px] font-black text-red-500 uppercase tracking-[.3em]">System Critical Failure</span>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="h-4 bg-gray-800 rounded-full w-3/4" />
-                                <div className="h-4 bg-gray-800 rounded-full w-1/2" />
-                                <div className="pt-8 space-y-4">
-                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center space-x-3">
-                                        <XCircle className="w-6 h-6 text-red-500" />
-                                        <span className="text-red-400 font-mono text-sm">CRITICAL: Account suspended by Meta</span>
+                            <div className="space-y-8 relative z-20">
+                                <div className="space-y-3">
+                                    <div className="h-3 bg-gray-900 rounded-full w-4/5 border border-gray-800" />
+                                    <div className="h-3 bg-gray-900 rounded-full w-1/2 border border-gray-800" />
+                                </div>
+                                
+                                <div className="p-8 bg-red-500/5 border border-red-500/30 rounded-3xl flex flex-col gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <XCircle className="text-red-500" size={24} />
+                                        <span className="font-black text-red-500 uppercase tracking-widest text-xs">Access Terminated</span>
                                     </div>
-                                    <div className="p-4 bg-gray-800/50 rounded-xl">
-                                        <div className="h-3 bg-gray-700 rounded-full w-full mb-2" />
-                                        <div className="h-3 bg-gray-700 rounded-full w-2/3" />
+                                    <p className="text-[10px] font-bold text-red-400 mt-2 leading-relaxed">
+                                        META-ENFORCEMENT DETECTED UNOFFICIAL PROTOCOL INJECTION. <br />
+                                        PERMANENT ACCOUNT SHUTDOWN INITIALIZED.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6 pt-12">
+                                    <div className="p-6 bg-gray-900/50 rounded-3xl border border-gray-800 text-center">
+                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Reachable Clients</p>
+                                        <p className="text-4xl font-black text-white">0%</p>
+                                    </div>
+                                    <div className="p-6 bg-gray-900/50 rounded-3xl border border-red-500/20 text-center">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Revenue Loss</p>
+                                        <p className="text-4xl font-black text-red-500 animate-pulse">MAX</p>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="mt-12 text-center">
-                                <p className="text-red-500 font-bold mb-2">Loss of Revenue</p>
-                                <p className="text-5xl font-black text-white">400%</p>
-                                <p className="text-gray-500 text-sm mt-2">Avg. impact of unstable automation</p>
-                            </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
         </section>
