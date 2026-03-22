@@ -52,9 +52,15 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
+    // Cache buster to force new Next.js chunk hashes and bypass Cloudflare/Browser cached 404s
+    const buildStamp = new Date().getTime().toString();
+    
     return (
         <html lang="en">
-            <body className={`${inter.className} font-sans antialiased`}>
+            <body 
+                className={`${inter.className} font-sans antialiased`}
+                data-build-stamp={buildStamp}
+            >
                 {children}
             </body>
         </html>
