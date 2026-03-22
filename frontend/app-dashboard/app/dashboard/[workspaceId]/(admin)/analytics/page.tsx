@@ -7,9 +7,12 @@ import {
     LineChart, Line, AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 import {
-    TrendingUp, MessageSquare, Users, Bot, Zap,
-    ArrowUpRight, ArrowDownRight, Activity, Calendar,
-    CheckCircle, Eye, MousePointer, ChevronRight, BarChart3
+    BarChart3, TrendingUp, TrendingDown, Users,
+    MessageSquare, CheckCircle, Clock, ArrowUpRight,
+    ArrowDownLeft, Activity, Target, Zap,
+    ChevronRight, Calendar, Filter, Download,
+    Search, MoreHorizontal, AlertCircle, Bot,
+    Eye, MousePointer
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -175,7 +178,7 @@ export default function AnalyticsPage() {
                                         tickLine={false} 
                                         tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 800 }} 
                                         dy={15} 
-                                        format={(val: string) => val.toUpperCase()} 
+                                        tickFormatter={(val: string) => val.toUpperCase()} 
                                     />
                                     <YAxis 
                                         axisLine={false} 
@@ -223,7 +226,7 @@ export default function AnalyticsPage() {
                                         stroke="none"
                                     >
                                         {pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={12} className="outline-none hover:opacity-80 transition-opacity cursor-pointer" />
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none hover:opacity-80 transition-opacity cursor-pointer" />
                                         ))}
                                     </Pie>
                                     <Tooltip 
