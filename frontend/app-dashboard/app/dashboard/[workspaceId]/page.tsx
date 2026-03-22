@@ -153,7 +153,7 @@ export default function DashboardPage() {
                          <button onClick={fetchDashboardData} className="p-5 bg-gray-50 text-gray-400 rounded-[28px] hover:bg-black hover:text-white transition-all active:scale-90 shadow-sm border-2 border-transparent">
                             <Zap size={28} />
                          </button>
-                         <Link href={`/dashboard/${workspaceId}/settings/whatsapp`} className="px-8 py-5 bg-blue-600 text-white rounded-[32px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-black transition-all active:scale-95 shadow-2xl shadow-blue-100 flex items-center gap-3">
+                         <Link href="/settings/whatsapp" className="px-8 py-5 bg-blue-600 text-white rounded-[32px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-black transition-all active:scale-95 shadow-2xl shadow-blue-100 flex items-center gap-3">
                             <Sparkles size={18} strokeWidth={3} />
                             Deploy New Protocol
                          </Link>
@@ -226,4 +226,3 @@ export default function DashboardPage() {
         </div>
     );
 }
-

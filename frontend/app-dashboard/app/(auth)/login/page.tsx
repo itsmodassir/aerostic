@@ -9,6 +9,8 @@ import {
     Sparkles, Shield, Zap, CheckCircle, Star
 } from 'lucide-react';
 
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -56,6 +58,9 @@ export default function LoginPage() {
 
             // Redirect to workspace-specific dashboard
             const workspaceId = res.data.workspaceId;
+            if (workspaceId && UUID_V4_REGEX.test(workspaceId)) {
+                localStorage.setItem('x-tenant-id', workspaceId);
+            }
             if (workspaceId) {
                 router.push('/dashboard');
             } else {

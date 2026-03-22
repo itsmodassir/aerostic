@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { 
     MessageSquare, Bot, CheckCircle, Palette, 
     ChevronRight, Save, Shield, Settings,
@@ -10,11 +9,9 @@ import {
     ArrowUpRight, Lock
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { LockedFeatureCard, resolveWorkspaceId } from './DashboardComponents';
+import { LockedFeatureCard } from './DashboardComponents';
 
 export default function SettingsTab({ planFeatures, userPlan, membership }: any) {
-    const params = useParams();
-    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     const [whatsappConfig, setWhatsappConfig] = useState({
         phoneNumberId: '',
         wabaId: '',
@@ -270,7 +267,7 @@ export default function SettingsTab({ planFeatures, userPlan, membership }: any)
                         <p className="text-indigo-100/60 text-[10px] font-black uppercase tracking-[0.3em]">Billing Cycle Renewing: 30 SEP 2026</p>
                     </div>
                     {userPlan !== 'enterprise' && (
-                        <Link href={`/dashboard/${workspaceId}/billing`} className="px-10 py-5 bg-white text-indigo-600 rounded-[24px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all active:scale-95 shadow-2xl flex items-center gap-3">
+                        <Link href="/billing" className="px-10 py-5 bg-white text-indigo-600 rounded-[24px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all active:scale-95 shadow-2xl flex items-center gap-3">
                             <ArrowUpRight size={18} strokeWidth={3} />
                             Universal Upgrade
                         </Link>

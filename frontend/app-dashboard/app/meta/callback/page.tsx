@@ -19,14 +19,16 @@ function CallbackContent() {
                 .then(() => {
                     setStatus('Success! WhatsApp Connected.');
                     setTimeout(() => {
-                        router.push(`/dashboard/${state}/settings/whatsapp`);
+                        localStorage.setItem('x-tenant-id', state);
+                        router.push('/settings/whatsapp');
                     }, 2000);
                 })
                 .catch((err) => {
                     console.error('[MetaCallback] Exchange Failed:', err);
                     setStatus('Failed to connect WhatsApp. Please try again from settings.');
                     setTimeout(() => {
-                        router.push(`/dashboard/${state}/settings/whatsapp`);
+                        localStorage.setItem('x-tenant-id', state);
+                        router.push('/settings/whatsapp');
                     }, 3000);
                 });
         } else {

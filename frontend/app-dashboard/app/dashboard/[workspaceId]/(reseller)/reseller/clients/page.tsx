@@ -123,7 +123,7 @@ export default function ResellerClientsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <Link href={`/dashboard/${workspaceId}`} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <ArrowLeft className="w-5 h-5 text-gray-500" />
                     </Link>
                     <div>

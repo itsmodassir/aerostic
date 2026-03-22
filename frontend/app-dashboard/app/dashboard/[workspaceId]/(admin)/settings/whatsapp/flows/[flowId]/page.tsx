@@ -50,7 +50,7 @@ function FlowLivePreview({ flowJsonString, selectedScreenId }: { flowJsonString:
     
     // Find form elements if any
     let formChildren: any[] = [];
-    let texts: string[] = [];
+    const texts: string[] = [];
     let imageSrc: string | null = null;
     
     const extractContent = (children: any[]) => {
@@ -283,7 +283,7 @@ export default function FlowEditorPage() {
         try {
             await api.post(`/whatsapp/flows/${flowId}/publish`);
             alert('Flow submitted to Meta for validation and publishing!');
-            router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`);
+            router.push('/settings/whatsapp/flows');
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || 'Publishing attempt failed.';
             alert(`${errorMsg}\n\nTip: Ensure your Flow version is "7.3" for API v21.0 in 2026.`);
@@ -309,7 +309,7 @@ export default function FlowEditorPage() {
                 <div className="flex items-center gap-3 sm:gap-6">
                     {/* Back button & Breadcrumb */}
                     <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                        <button onClick={() => router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`)} 
+                        <button onClick={() => router.push('/settings/whatsapp/flows')} 
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                             <ChevronLeft size={20} className="text-gray-400" />
                         </button>

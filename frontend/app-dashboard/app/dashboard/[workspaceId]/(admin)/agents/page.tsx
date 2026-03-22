@@ -263,7 +263,7 @@ export default function AgentsPage() {
                         </button>
                     ) : (
                         <Link
-                            href="/dashboard/billing"
+                            href="/billing"
                             className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all"
                         >
                             <Crown className="w-5 h-5" />
@@ -289,7 +289,7 @@ export default function AgentsPage() {
                         </div>
                     </div>
                     <Link
-                        href="/dashboard/billing"
+                        href="/billing"
                         className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all"
                     >
                         View Plans
@@ -416,7 +416,7 @@ export default function AgentsPage() {
 
                             <div className="flex gap-2">
                                 <Link
-                                    href={`/dashboard/${workspaceId}/agents/${agent.id}/builder`}
+                                    href={`/ai-agent/${agent.id}/builder`}
                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
                                 >
                                     <Settings className="w-4 h-4" />

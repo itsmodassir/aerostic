@@ -358,7 +358,7 @@ export default function ProfilePage() {
                             <p className="text-sm text-gray-500">{userPlan.charAt(0).toUpperCase() + userPlan.slice(1)} - ₹{userPlan === 'starter' ? '1,999' : userPlan === 'growth' ? '4,999' : '14,999'}/mo</p>
                         </div>
                         <Link
-                            href="/dashboard/billing"
+                            href="/billing"
                             className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors text-sm w-full sm:w-auto text-center"
                         >
                             Manage

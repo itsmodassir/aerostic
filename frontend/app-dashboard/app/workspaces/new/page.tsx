@@ -17,7 +17,10 @@ export default function NewWorkspacePage() {
         try {
             const res = await api.post('/tenants', { name });
             const newWorkspaceId = res.data.id;
-            router.push(`/dashboard/${newWorkspaceId}`);
+            if (newWorkspaceId) {
+                localStorage.setItem('x-tenant-id', newWorkspaceId);
+            }
+            router.push('/dashboard');
         } catch (err: any) {
             console.error(err);
             setError(err.response?.data?.message || 'Failed to create workspace');

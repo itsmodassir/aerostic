@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { 
     Lock, ChevronRight, Activity, Users, Calendar, 
     ArrowDownLeft, ArrowUpRight, BarChart3, Bot, 
@@ -74,9 +73,6 @@ export function MetricCard({ title, value, icon: Icon, color }: any) {
 }
 
 export function LockedFeatureCard({ title, description, icon: Icon, plan }: any) {
-    const params = useParams();
-    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
-    
     return (
         <div className="bg-gray-50/50 p-12 rounded-[48px] border-2 border-dashed border-gray-200 text-center relative overflow-hidden group">
             <div className="relative z-10 flex flex-col items-center">
@@ -85,7 +81,7 @@ export function LockedFeatureCard({ title, description, icon: Icon, plan }: any)
                 </div>
                 <h4 className="text-xl font-black text-gray-900 tracking-tight uppercase">{title} Encrypted</h4>
                 <p className="text-xs font-bold text-gray-400 max-w-sm mt-3 uppercase tracking-widest leading-loose">{description}</p>
-                <Link href={`/dashboard/${workspaceId}/billing`} className="mt-8 px-8 py-4 bg-black text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-gray-200 text-center inline-block">
+                <Link href="/billing" className="mt-8 px-8 py-4 bg-black text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-gray-200 text-center inline-block">
                     Upgrade to {plan} License
                 </Link>
             </div>

@@ -201,7 +201,7 @@ export default function CampaignFlowBuilderPage() {
             if (scheduleType === 'now') {
                 await api.post(`/campaigns/${campaignId}/send`, { tenantId });
             }
-            router.push(`/dashboard/${workspaceId}/campaigns`);
+            router.push('/campaigns');
         } catch (err: any) {
             setError(err?.response?.data?.message || err?.message || 'Failed to launch campaign');
         } finally {
@@ -216,7 +216,7 @@ export default function CampaignFlowBuilderPage() {
             {/* Top Bar */}
             <div className="flex items-center gap-4 px-6 py-3 bg-white border-b border-gray-200 shadow-sm z-10">
                 <button
-                    onClick={() => router.push(`/dashboard/${workspaceId}/campaigns`)}
+                    onClick={() => router.push('/campaigns')}
                     className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />
@@ -488,7 +488,7 @@ export default function CampaignFlowBuilderPage() {
                                             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                                 <p className="text-xs text-amber-700 mb-2">No AI agents found.</p>
                                                 <button 
-                                                    onClick={() => router.push(`/dashboard/${workspaceId}/agents`)}
+                                                    onClick={() => router.push('/ai-agent')}
                                                     className="text-xs font-bold text-amber-900 underline underline-offset-2"
                                                 >
                                                     Please create AI agent first

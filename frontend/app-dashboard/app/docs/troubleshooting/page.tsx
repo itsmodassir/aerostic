@@ -43,7 +43,7 @@ export default function TroubleshootingPage() {
             description: 'Redirecting to /dashboard after login results in a "Page Not Found" error.',
             cause: 'The app requires a workspace slug in the URL which was missing from the redirect path.',
             fix: 'Use the state parameter in the OAuth flow to carry the tenant ID and redirect back to the workspace settings.',
-            code: `router.push(\`/dashboard/\${state}/settings/whatsapp\`);`
+            code: `localStorage.setItem('x-tenant-id', state); router.push('/settings/whatsapp');`
         }
     ];
 

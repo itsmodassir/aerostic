@@ -73,7 +73,7 @@ export default function AutomationPage() {
                     <p className="text-gray-500 text-sm">Create smart workflows to engage your customers.</p>
                 </div>
                 <Link
-                    href={`/dashboard/${workspaceId}/automation/builder`}
+                    href="/automation/builder"
                     className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all hover:scale-105 active:scale-95"
                 >
                     <Plus size={20} />
@@ -108,7 +108,7 @@ export default function AutomationPage() {
                 ].map((tpl) => (
                     <Link
                         key={tpl.id}
-                        href={`/dashboard/${workspaceId}/automation/builder?template=${tpl.id}`}
+                        href={`/automation/builder?template=${tpl.id}`}
                         className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group relative overflow-hidden"
                     >
                         <div className={`p-3 rounded-xl w-fit mb-4 ${tpl.color}`}>
@@ -136,7 +136,7 @@ export default function AutomationPage() {
                         <h3 className="text-2xl font-bold text-gray-900">Create your first Automation</h3>
                         <p className="text-gray-500 max-w-sm mt-3 text-lg leading-relaxed">Save time and boost engagement with automated WhatsApp sequences.</p>
                         <Link
-                            href={`/dashboard/${workspaceId}/automation/builder`}
+                            href="/automation/builder"
                             className="mt-8 flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:bg-blue-700 transition-all hover:scale-105"
                         >
                             Open Workflow Builder <ArrowRight size={20} />
@@ -176,7 +176,7 @@ export default function AutomationPage() {
                                 <Trash2 size={20} />
                             </button>
                             <Link
-                                href={`/dashboard/${workspaceId}/automation/builder?id=${workflow.id}`}
+                                href={`/automation/builder?id=${workflow.id}`}
                                 className="p-2.5 text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
                             >
                                 <MoreVertical size={20} />

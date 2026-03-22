@@ -3,12 +3,54 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value?: string | null): value is string {
+    return !!value && UUID_V4_REGEX.test(value);
+}
+
+type AuthMeResponse = {
+    tenantId?: string | null;
+    tenantSlug?: string | null;
+};
+
+type WorkspaceMembership = {
+    tenant?: {
+        id?: string;
+        slug?: string;
+    };
+};
+
 export default function DashboardResolverClient() {
     const router = useRouter();
 
     useEffect(() => {
         const resolveWorkspace = async () => {
             try {
+                let preferredTenantId: string | null = null;
+                let preferredTenantSlug: string | null = null;
+
+                const meRes = await fetch('/api/v1/auth/me', {
+                    credentials: 'include',
+                    cache: 'no-store',
+                });
+
+                if (meRes.ok) {
+                    const me = (await meRes.json()) as AuthMeResponse;
+                    if (isUuid(me?.tenantId)) {
+                        preferredTenantId = me.tenantId;
+                        localStorage.setItem('x-tenant-id', me.tenantId);
+                    }
+                    if (me?.tenantSlug) {
+                        preferredTenantSlug = me.tenantSlug;
+                    }
+                }
+
+                if (preferredTenantSlug) {
+                    router.replace(`/dashboard/${preferredTenantSlug}`);
+                    return;
+                }
+
                 const res = await fetch('/api/v1/auth/workspaces', {
                     credentials: 'include',
                     cache: 'no-store',
@@ -19,13 +61,21 @@ export default function DashboardResolverClient() {
                     return;
                 }
 
-                const workspaces = await res.json();
-                const firstWorkspace =
-                    workspaces?.find((w: any) => w?.tenant?.slug)?.tenant?.slug ||
-                    workspaces?.[0]?.tenant?.id;
+                const workspaces = (await res.json()) as WorkspaceMembership[];
+                const preferredWorkspace =
+                    workspaces?.find((w) => w?.tenant?.id === preferredTenantId) ||
+                    workspaces?.find((w) => !!w?.tenant?.slug) ||
+                    workspaces?.[0];
 
-                if (firstWorkspace) {
-                    router.replace(`/dashboard/${firstWorkspace}`);
+                const slug = preferredWorkspace?.tenant?.slug;
+                const id = preferredWorkspace?.tenant?.id;
+
+                if (isUuid(id)) {
+                    localStorage.setItem('x-tenant-id', id);
+                }
+
+                if (slug || id) {
+                    router.replace(`/dashboard/${slug || id}`);
                     return;
                 }
 

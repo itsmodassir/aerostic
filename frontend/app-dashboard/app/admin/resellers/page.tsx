@@ -133,7 +133,10 @@ export default function ResellersPage() {
             });
             if (res.ok) {
                 const data = await res.json();
-                window.location.href = data.redirectUrl || `/dashboard/${data.workspaceId}`;
+                if (data.workspaceId) {
+                    localStorage.setItem('x-tenant-id', data.workspaceId);
+                }
+                window.location.href = '/dashboard';
             }
         } catch (error) {
             console.error('Failed to impersonate:', error);

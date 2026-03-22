@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { 
     MessageSquare, Sparkles, CreditCard, ArrowRight,
     Send, Users2, Bot, Zap, FileText, Workflow, 
@@ -14,7 +13,7 @@ import { clsx } from 'clsx';
 import { 
     StatCard, MetricCard, LockedFeatureCard, 
     AIAgentCardPremium, MessageRowPremium, 
-    StatusBadge, resolveWorkspaceId 
+    StatusBadge
 } from './DashboardComponents';
 
 export default function OverviewTab({ 
@@ -22,9 +21,6 @@ export default function OverviewTab({
     messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, 
     userPlan, walletBalance, membership 
 }: any) {
-    const params = useParams();
-    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
-    
     return (
         <div className="space-y-12 animate-in slide-in-from-bottom-8 duration-700">
             {/* Usage Metrix */}
@@ -55,7 +51,7 @@ export default function OverviewTab({
                             </div>
                             <div className="flex justify-between items-center mt-4">
                                 <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.1em]">License Cap: {planFeatures.messagesLimit > 0 ? planFeatures.messagesLimit.toLocaleString() : 'Unlimited'}</p>
-                                <Link href={`/dashboard/${workspaceId}/billing`} className="text-[9px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors">Scale Capacity →</Link>
+                                <Link href="/billing" className="text-[9px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors">Scale Capacity →</Link>
                             </div>
                         </div>
                     </div>
@@ -94,7 +90,7 @@ export default function OverviewTab({
                 </div>
 
                 {/* Wallet Balance Hub */}
-                <Link href={`/dashboard/${workspaceId}/wallet`} className="group">
+                <Link href="/wallet" className="group">
                     <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[48px] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden h-full flex flex-col justify-between hover:shadow-indigo-500/20 hover:-translate-y-1 transition-all">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32 opacity-10 blur-[60px] group-hover:scale-125 transition-transform duration-1000" />
                         
@@ -128,13 +124,13 @@ export default function OverviewTab({
             {/* Quick Command Matrix */}
             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                 {[
-                    { icon: Send, label: 'Broadcast', href: `/dashboard/${workspaceId}/campaigns`, color: 'bg-blue-600 shadow-blue-500/20' },
-                    { icon: Users2, label: 'Contact Lab', href: `/dashboard/${workspaceId}/contacts`, color: 'bg-emerald-600 shadow-emerald-500/20' },
-                    { icon: Bot, label: 'AI Synthesis', href: `/dashboard/${workspaceId}/agents`, color: 'bg-purple-600 shadow-purple-500/20', available: planFeatures.aiAgents > 0 },
-                    { icon: Zap, label: 'Automate', href: `/dashboard/${workspaceId}/automation`, color: 'bg-amber-600 shadow-amber-500/20' },
-                    { icon: CreditCard, label: 'Asset Ops', href: `/dashboard/${workspaceId}/wallet`, color: 'bg-indigo-600 shadow-indigo-500/20' },
-                    { icon: FileText, label: 'Protocol Tpl', href: `/dashboard/${workspaceId}/templates`, color: 'bg-pink-600 shadow-pink-500/20' },
-                    { icon: Workflow, label: 'Nexus Flows', href: `/dashboard/${workspaceId}/settings/whatsapp/flows`, color: 'bg-teal-600 shadow-teal-500/20' },
+                    { icon: Send, label: 'Broadcast', href: '/campaigns', color: 'bg-blue-600 shadow-blue-500/20' },
+                    { icon: Users2, label: 'Contact Lab', href: '/contacts', color: 'bg-emerald-600 shadow-emerald-500/20' },
+                    { icon: Bot, label: 'AI Synthesis', href: '/ai-agent', color: 'bg-purple-600 shadow-purple-500/20', available: planFeatures.aiAgents > 0 },
+                    { icon: Zap, label: 'Automate', href: '/automation', color: 'bg-amber-600 shadow-amber-500/20' },
+                    { icon: CreditCard, label: 'Asset Ops', href: '/wallet', color: 'bg-indigo-600 shadow-indigo-500/20' },
+                    { icon: FileText, label: 'Protocol Tpl', href: '/templates', color: 'bg-pink-600 shadow-pink-500/20' },
+                    { icon: Workflow, label: 'Nexus Flows', href: '/settings/whatsapp/flows', color: 'bg-teal-600 shadow-teal-500/20' },
                 ].map((action, i) => (
                     <Link 
                         key={i} 
@@ -186,7 +182,7 @@ export default function OverviewTab({
                             <h3 className="text-2xl font-black text-gray-900 tracking-tight">Real-Time Packets</h3>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Live individual message flow</p>
                         </div>
-                        <Link href={`/dashboard/${workspaceId}/inbox`} className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90"><ChevronRight size={24} /></Link>
+                        <Link href="/message" className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90"><ChevronRight size={24} /></Link>
                     </div>
                     <div className="divide-y-2 divide-gray-50 max-h-[520px] overflow-y-auto scrollbar-none">
                         {recentMsgs.length === 0 ? (
@@ -211,7 +207,7 @@ export default function OverviewTab({
                                 <h3 className="text-2xl font-black tracking-tight">Agent Command</h3>
                                 <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-1">Autonomous Compute Stacks</p>
                             </div>
-                            <Link href={`/dashboard/${workspaceId}/agents`} className="p-3 bg-white/5 text-white/40 rounded-xl hover:bg-white hover:text-black transition-all active:scale-90"><Plus size={20} /></Link>
+                            <Link href="/ai-agent" className="p-3 bg-white/5 text-white/40 rounded-xl hover:bg-white hover:text-black transition-all active:scale-90"><Plus size={20} /></Link>
                         </div>
                         
                         <div className="space-y-4 flex-1">

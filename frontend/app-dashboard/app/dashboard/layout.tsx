@@ -52,37 +52,37 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const isReseller = membership?.tenantType === 'reseller';
 
     const navigation = [
-        { name: 'Dashboard', href: `/dashboard/${workspaceId}`, icon: LayoutDashboard },
-        { name: 'Contacts', href: `/dashboard/${workspaceId}/contacts`, icon: Users2, permission: 'contacts:read' },
-        { name: 'Messages', href: `/dashboard/${workspaceId}/inbox`, icon: MessageSquare, permission: 'inbox:read' },
-        { name: 'Campaigns', href: `/dashboard/${workspaceId}/campaigns`, icon: Megaphone, permission: 'campaigns:read' },
-        { name: 'Templates', href: `/dashboard/${workspaceId}/templates`, icon: FileText, permission: 'campaigns:read' },
-        { name: 'WhatsApp Flows', href: `/dashboard/${workspaceId}/settings/whatsapp/flows`, icon: Workflow, permission: 'campaigns:read' },
-        { name: 'Leads', href: `/dashboard/${workspaceId}/leads`, icon: Target },
-        { name: 'Analytics', href: `/dashboard/${workspaceId}/analytics`, icon: BarChart2 },
-        { name: 'Automation', href: `/dashboard/${workspaceId}/automation`, icon: Zap, permission: 'automation:create' },
-        { name: 'AI Agent', href: `/dashboard/${workspaceId}/agents`, icon: Bot, permission: 'automation:create' },
-        { name: 'Scheduler', href: `/dashboard/${workspaceId}/scheduler`, icon: Calendar },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Contacts', href: '/contacts', icon: Users2, permission: 'contacts:read' },
+        { name: 'Messages', href: '/message', icon: MessageSquare, permission: 'inbox:read' },
+        { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns:read' },
+        { name: 'Templates', href: '/templates', icon: FileText, permission: 'campaigns:read' },
+        { name: 'WhatsApp Flows', href: '/settings/whatsapp/flows', icon: Workflow, permission: 'campaigns:read' },
+        { name: 'Leads', href: '/leads', icon: Target },
+        { name: 'Analytics', href: '/analytics', icon: BarChart2 },
+        { name: 'Automation', href: '/automation', icon: Zap, permission: 'automation:create' },
+        { name: 'AI Agent', href: '/ai-agent', icon: Bot, permission: 'automation:create' },
+        { name: 'Scheduler', href: '/scheduler', icon: Calendar },
         {
             name: 'Settings',
             icon: Settings,
             permission: 'billing:manage',
             children: [
-                { name: 'WhatsApp', href: `/dashboard/${workspaceId}/settings/whatsapp` },
-                { name: 'Email Flow', href: `/dashboard/${workspaceId}/settings/email` },
-                { name: 'AI Models', href: `/dashboard/${workspaceId}/settings/ai` },
-                { name: 'Wallet', href: `/dashboard/${workspaceId}/wallet` },
-                { name: 'Knowledge Base', href: `/dashboard/${workspaceId}/knowledge`, permission: 'automation:create' },
-                { name: 'Referrals', href: `/dashboard/${workspaceId}/referrals` },
-                { name: 'Branding', href: `/dashboard/${workspaceId}/reseller/branding`, resellerOnly: true }
+                { name: 'WhatsApp', href: '/settings/whatsapp' },
+                { name: 'Email Flow', href: '/settings/email' },
+                { name: 'AI Models', href: '/settings/ai' },
+                { name: 'Wallet', href: '/wallet' },
+                { name: 'Knowledge Base', href: '/knowledge-base', permission: 'automation:create' },
+                { name: 'Referrals', href: '/referrals' },
+                { name: 'Branding', href: '/reseller/branding', resellerOnly: true }
             ]
         },
         // Platform Admin - only for super_admin or specific platform admins
-        { name: 'Platform Admin', href: `/dashboard/${workspaceId}/admin`, icon: Shield, adminOnly: true },
-        { name: 'Resellers', href: `/dashboard/${workspaceId}/admin/resellers`, icon: Users2, adminOnly: true },
+        { name: 'Platform Admin', href: '/admin', icon: Shield, adminOnly: true },
+        { name: 'Resellers', href: '/admin/resellers', icon: Users2, adminOnly: true },
 
         // Reseller Specific
-        { name: 'My Clients', href: `/dashboard/${workspaceId}/reseller/clients`, icon: Users2, resellerOnly: true },
+        { name: 'My Clients', href: '/reseller/clients', icon: Users2, resellerOnly: true },
     ];
 
     const { socket, isConnected } = useSocket();
@@ -194,6 +194,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     // Redirect 'default' to actual workspace
     useEffect(() => {
         // If we're on a reseller subdomain (isReseller is true), prioritize the resolved tenant
+        if (!pathname.startsWith('/dashboard')) {
+            return;
+        }
+
         if (workspaceId === 'default' && isReseller && membership?.tenant?.slug) {
             router.replace(`/dashboard/${membership.tenant.slug}`);
             return;
@@ -212,7 +216,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 })
                 .catch(err => console.error('Failed to resolve default workspace:', err));
         }
-    }, [workspaceId, user, router, isReseller, membership]);
+    }, [workspaceId, user, router, isReseller, membership, pathname]);
 
     // notifications - loaded from real audit logs
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -463,16 +467,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                         </button>
                         {/* Breadcrumb / Title Stub */}
                         <h2 className="text-base md:text-lg font-bold text-gray-900 capitalize truncate max-w-[150px] sm:max-w-none">
-                            {isReseller && (pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
+                            {isReseller && (pathname === '/dashboard' || pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
                                 ? 'Partner Console'
-                                : pathname.split('/')[3]?.replace(/-/g, ' ') || 'Overview'}
+                                : pathname.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ') || 'Overview'}
                         </h2>
                     </div>
 
                     <div className="flex items-center gap-4">
                         {/* Plan Badge */}
                         <Link
-                            href={`/dashboard/${workspaceId}/billing`}
+                            href="/billing"
                             className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${planInfo.bg} ${planInfo.text} hover:opacity-80 transition-opacity`}
                         >
                             <Crown className="w-3 h-3" />
@@ -519,7 +523,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                         ))}
                                     </div>
                                     <div className="p-3 border-t border-gray-100">
-                                        <Link href={`/dashboard/${workspaceId}/notifications`} className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                        <Link href="/notifications" className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
                                             View all notifications
                                         </Link>
                                     </div>
@@ -583,7 +587,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                     {/* Menu Items */}
                                     <div className="py-2">
                                         <Link
-                                            href={`/dashboard/${workspaceId}/profile`}
+                                            href="/profile"
                                             onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
@@ -591,7 +595,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                             My Profile
                                         </Link>
                                         <Link
-                                            href={`/dashboard/${workspaceId}/billing`}
+                                            href="/billing"
                                             onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >
@@ -599,7 +603,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                             Billing & Plans
                                         </Link>
                                         <Link
-                                            href={`/dashboard/${workspaceId}/settings/whatsapp`}
+                                            href="/settings/whatsapp"
                                             onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                         >

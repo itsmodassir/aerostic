@@ -8,11 +8,33 @@ const api = axios.create({
     withCredentials: true, // Enable cookie-based auth
 });
 
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value?: string | null): value is string {
+    return !!value && UUID_V4_REGEX.test(value);
+}
+
+async function resolveTenantIdFromSession(): Promise<string | null> {
+    try {
+        const res = await fetch('/api/v1/auth/me', {
+            credentials: 'include',
+            cache: 'no-store',
+        });
+        if (!res.ok) return null;
+        const payload = await res.json();
+        const tenantId = payload?.tenantId;
+        return isUuid(tenantId) ? tenantId : null;
+    } catch {
+        return null;
+    }
+}
+
 // Request interceptor to automatically add the tenant ID and Auth Token
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
     if (typeof window !== 'undefined') {
         const path = window.location.pathname;
         const workspaceMatch = path.match(/\/dashboard\/([a-zA-Z0-9-]{1,})/i);
+        const candidateWorkspace = workspaceMatch?.[1];
 
         // Define global endpoints that should NEVER send a tenant ID
         // (so they don't get rejected by the tenant-context middleware)
@@ -23,16 +45,29 @@ api.interceptors.request.use((config) => {
             config.url?.startsWith('/auth/register');
 
         if (!isGlobalEndpoint) {
-            if (workspaceMatch) {
-                config.headers['x-tenant-id'] = workspaceMatch[1];
-                // Also persist it for future clean URL requests
-                localStorage.setItem('x-tenant-id', workspaceMatch[1]);
-            } else {
-                // Check localStorage for clean URLs
+            let tenantId: string | null = null;
+
+            // Only trust URL segment when it's an actual UUID.
+            if (isUuid(candidateWorkspace)) {
+                tenantId = candidateWorkspace;
+            }
+
+            // Fall back to cached UUID for clean URLs.
+            if (!tenantId) {
                 const savedTenantId = localStorage.getItem('x-tenant-id');
-                if (savedTenantId) {
-                    config.headers['x-tenant-id'] = savedTenantId;
+                if (isUuid(savedTenantId)) {
+                    tenantId = savedTenantId;
                 }
+            }
+
+            // Last fallback: resolve current tenant context from authenticated profile.
+            if (!tenantId) {
+                tenantId = await resolveTenantIdFromSession();
+            }
+
+            if (tenantId) {
+                config.headers['x-tenant-id'] = tenantId;
+                localStorage.setItem('x-tenant-id', tenantId);
             }
         }
 

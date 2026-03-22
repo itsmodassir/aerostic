@@ -397,7 +397,7 @@ export default function WhatsAppFlowsPage() {
                                             <input type="file" className="hidden" accept=".json"
                                                 onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(flow.id, f); }} />
                                         </label>
-                                        <Link href={`/dashboard/${workspaceId}/settings/whatsapp/flows/${flow.id}`}
+                                        <Link href={`/settings/whatsapp/flows/${flow.id}`}
                                             className="p-1.5 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors" title="Open Flow Editor">
                                             <ExternalLink size={14} />
                                         </Link>
@@ -481,7 +481,7 @@ export default function WhatsAppFlowsPage() {
                             </div>
 
                             <div className="flex items-center gap-2 pt-2">
-                                <Link href={`/dashboard/${workspaceId}/settings/whatsapp/flows/${flow.id}`}
+                                <Link href={`/settings/whatsapp/flows/${flow.id}`}
                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-50 text-gray-700 rounded-xl text-xs font-black">
                                     <Edit3 size={14} /> Open Editor
                                 </Link>

@@ -105,7 +105,8 @@ export default function TenantsPage() {
             const data = await res.json();
             if (data.success && data.workspaceId) {
                 // Force full reload to ensure auth state is picked up
-                window.location.href = `/dashboard/${data.workspaceId}`;
+                localStorage.setItem('x-tenant-id', data.workspaceId);
+                window.location.href = '/dashboard';
             }
         } catch (error) {
             console.error('Impersonation error:', error);

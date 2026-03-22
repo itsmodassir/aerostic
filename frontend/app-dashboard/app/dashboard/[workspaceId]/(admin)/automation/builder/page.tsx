@@ -506,7 +506,7 @@ function WorkflowBuilder() {
                     isActive: true,
                 });
                 if (res.data?.id) {
-                    router.replace(`/dashboard/${workspaceId}/automation/builder?id=${res.data.id}`);
+                    router.replace(`/automation/builder?id=${res.data.id}`);
                 }
             }
             if (!isAutoSave) toast.success('Workflow saved successfully!');

@@ -1,10 +1,59 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+function toCanonicalAppPath(pathname: string): string | null {
+    const match = pathname.match(/^\/dashboard\/[^/]+(?:\/(.*))?$/);
+    if (!match) return null;
+
+    const rest = match[1];
+    if (!rest) return '/dashboard';
+
+    const normalized = rest.replace(/^\/+/, '');
+
+    if (normalized === 'inbox') return '/message';
+    if (normalized === 'agents') return '/ai-agent';
+    if (normalized === 'knowledge') return '/knowledge-base';
+    if (normalized === 'billing') return '/billing';
+    if (normalized === 'profile') return '/profile';
+
+    return `/${normalized}`;
+}
+
 export function proxy(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const { pathname, search } = request.nextUrl;
     const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aimstore.in';
+    const appPathAliases: Record<string, string> = {
+        '/contacts': '/dashboard/default/contacts',
+        '/message': '/dashboard/default/inbox',
+        '/messages': '/dashboard/default/inbox',
+        '/campaigns': '/dashboard/default/campaigns',
+        '/templates': '/dashboard/default/templates',
+        '/wallet': '/dashboard/default/wallet',
+        '/leads': '/dashboard/default/leads',
+        '/analytics': '/dashboard/default/analytics',
+        '/automation': '/dashboard/default/automation',
+        '/ai-agent': '/dashboard/default/agents',
+        '/agents': '/dashboard/default/agents',
+        '/scheduler': '/dashboard/default/scheduler',
+        '/referrals': '/dashboard/default/referrals',
+        '/knowledge-base': '/dashboard/default/knowledge',
+        '/settings/whatsapp': '/dashboard/default/settings/whatsapp',
+        '/settings/whatsapp/flows': '/dashboard/default/settings/whatsapp/flows',
+        '/settings/ai': '/dashboard/default/settings/ai',
+        '/settings/email': '/dashboard/default/settings/email',
+        '/settings': '/dashboard/default/settings/whatsapp',
+        '/billing': '/dashboard/default/billing',
+        '/profile': '/dashboard/default/profile',
+        '/reseller/clients': '/dashboard/default/reseller/clients',
+        '/reseller/branding': '/dashboard/default/reseller/branding',
+    };
+    const appAliasPrefixes: Array<[string, string]> = [
+        ['/automation/', '/dashboard/default/automation/'],
+        ['/ai-agent/', '/dashboard/default/agents/'],
+        ['/campaigns/', '/dashboard/default/campaigns/'],
+        ['/settings/whatsapp/flows/', '/dashboard/default/settings/whatsapp/flows/'],
+    ];
 
     // 0. API Subdomain
     if (hostname.startsWith(`api.${baseDomain}`)) {
@@ -25,12 +74,28 @@ export function proxy(request: NextRequest) {
     // 2. App Subdomain (Main Dashboard / Landing for logged in users)
     console.log(`[Proxy] Request: ${hostname}${pathname} | Base: ${baseDomain}`);
     if (hostname.startsWith('app.')) {
-
+        const canonicalPath = toCanonicalAppPath(pathname);
+        if (canonicalPath && canonicalPath !== pathname) {
+            return NextResponse.redirect(new URL(`${canonicalPath}${search}`, request.url));
+        }
 
         // If visiting root on app subdomain, resolve workspace via /dashboard route.
         if (pathname === '/') {
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }
+
+        const exactAlias = appPathAliases[pathname];
+        if (exactAlias) {
+            return NextResponse.rewrite(new URL(`${exactAlias}${search}`, request.url));
+        }
+
+        for (const [sourcePrefix, targetPrefix] of appAliasPrefixes) {
+            if (pathname.startsWith(sourcePrefix)) {
+                const suffix = pathname.slice(sourcePrefix.length);
+                return NextResponse.rewrite(new URL(`${targetPrefix}${suffix}${search}`, request.url));
+            }
+        }
+
         return NextResponse.next();
     }
 
@@ -42,7 +107,13 @@ export function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL(`https://admin.${baseDomain}${strippedPath}${search}`, request.url));
         }
         // Redirect user app logic to app subdomain
-        if (pathname.startsWith('/dashboard') || pathname === '/login' || pathname === '/register') {
+        if (
+            pathname.startsWith('/dashboard') ||
+            pathname === '/login' ||
+            pathname === '/register' ||
+            pathname in appPathAliases ||
+            appAliasPrefixes.some(([prefix]) => pathname.startsWith(prefix))
+        ) {
             return NextResponse.redirect(new URL(`https://app.${baseDomain}${pathname}${search}`, request.url));
         }
         return NextResponse.next();

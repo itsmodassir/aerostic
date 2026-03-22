@@ -214,12 +214,14 @@ export class AuthController {
       const membership = await this.membershipRepo.findOne({
         where: { userId: user.id },
         relations: ["tenant"],
+        order: { createdAt: "ASC" },
       });
 
       this.logger.log(`Membership found: ${membership?.tenantId}`);
       return {
         user,
         workspaceId: membership?.tenantId,
+        workspaceSlug: membership?.tenant?.slug,
         workspaceName: membership?.tenant?.name,
       };
     } catch (error) {
@@ -557,6 +559,7 @@ export class AuthController {
     return this.membershipRepo.find({
       where: { userId },
       relations: ["tenant"],
+      order: { createdAt: "ASC" },
     });
   }
 
@@ -618,4 +621,3 @@ export class AuthController {
     return payload;
   }
 }
-

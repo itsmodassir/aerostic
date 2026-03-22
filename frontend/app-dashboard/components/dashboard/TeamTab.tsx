@@ -2,18 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { 
     Users, Mail, CheckCircle, XCircle, 
     Settings, Plus, ChevronRight, Activity,
     Shield, UserPlus, MessageSquare, Clock, Search
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { resolveWorkspaceId } from './DashboardComponents';
 
 export default function TeamTab({ planFeatures }: any) {
-    const params = useParams();
-    const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
     const [conversations, setConversations] = useState<any[]>([]);
     const [inboxStats, setInboxStats] = useState({ unassigned: 0, inProgress: 0, resolved: 0 });
@@ -172,7 +168,7 @@ export default function TeamTab({ planFeatures }: any) {
                         </h3>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Real-time collaborative inbox telemetry</p>
                     </div>
-                    <Link href={`/dashboard/${workspaceId}/inbox`} className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-black hover:text-white transition-all active:scale-95 shadow-sm">
+                    <Link href="/message" className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-black hover:text-white transition-all active:scale-95 shadow-sm">
                         <ChevronRight size={24} strokeWidth={3} />
                     </Link>
                 </div>
