@@ -504,57 +504,71 @@ export class AuthController {
     @NestRequest() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    this.logger.debug(`HEADERS: ${JSON.stringify(req.headers)}`);
-    res.setHeader("Cache-Control", "no-store");
+    try {
+      this.logger.debug(`[TRACE-MB] Started for user: ${req.user?.id}`);
+      this.logger.debug(`[TRACE-MB] Headers: ${JSON.stringify(req.headers)}`);
+      res.setHeader("Cache-Control", "no-store");
 
-    // TenantGuard enforces isolation but does not hydrate membership details.
-    // Resolve membership here to ensure frontend always gets tenant context.
-    const tenantId = req.user?.tenantId;
-    const whereClause =
-      tenantId && isUuid(tenantId)
-        ? { userId: req.user?.id, tenantId }
-        : { userId: req.user?.id };
+      const tenantId = req.user?.tenantId;
+      const whereClause =
+        tenantId && isUuid(tenantId)
+          ? { userId: req.user?.id, tenantId }
+          : { userId: req.user?.id };
 
-    const relations = ["tenant", "tenant.reseller", "tenant.reseller.resellerConfig", "tenant.resellerConfig"];
-    
-    // Only attempt to join roleEntity relations if they are expected to exist
-    // This prevents 500 errors on deep joins with null intermediaries
-    const membershipBase = await this.membershipRepo.findOne({
-      where: whereClause as any,
-      select: ["roleId", "id", "userId", "tenantId"],
-    });
+      this.logger.debug(`[TRACE-MB] whereClause: ${JSON.stringify(whereClause)}`);
 
-    if (membershipBase?.roleId) {
-      relations.push("roleEntity", "roleEntity.rolePermissions", "roleEntity.rolePermissions.permission");
+      const relations = ["tenant", "tenant.reseller", "tenant.reseller.resellerConfig", "tenant.resellerConfig"];
+      
+      const membershipBase = await this.membershipRepo.findOne({
+        where: whereClause as any,
+        select: ["roleId", "id", "userId", "tenantId"],
+      });
+
+      this.logger.debug(`[TRACE-MB] membershipBase: ${!!membershipBase}, roleId: ${membershipBase?.roleId}`);
+
+      if (membershipBase?.roleId) {
+        relations.push("roleEntity", "roleEntity.rolePermissions", "roleEntity.rolePermissions.permission");
+      }
+
+      this.logger.debug(`[TRACE-MB] Joining relations: ${JSON.stringify(relations)}`);
+
+      const membership = await this.membershipRepo.findOne({
+        where: whereClause as any,
+        relations,
+        order: { createdAt: "ASC" },
+      });
+
+      if (!membership) {
+        this.logger.warn(`[TRACE-MB] No membership found for user ${req.user?.id}`);
+        return null;
+      }
+
+      const branding =
+        membership?.tenant?.type === TenantType.RESELLER
+          ? membership?.tenant?.resellerConfig
+          : membership?.tenant?.reseller?.resellerConfig;
+          
+      const permissions =
+        membership?.roleEntity?.rolePermissions?.map(
+          (rp: any) =>
+            rp.permission
+              ? `${rp.permission.resource}:${rp.permission.action}`
+              : null,
+        )?.filter(Boolean) || [];
+
+      this.logger.log(
+        `[TRACE-MB] Returning membership for ${membership?.tenant?.slug}`,
+      );
+      return {
+        ...membership,
+        tenantType: membership?.tenant?.type,
+        branding,
+        permissions,
+      };
+    } catch (error) {
+      this.logger.error(`[TRACE-MB] CRITICAL FAILURE: ${error.message}`, error.stack);
+      throw error;
     }
-
-    const membership = await this.membershipRepo.findOne({
-      where: whereClause as any,
-      relations,
-      order: { createdAt: "ASC" },
-    });
-
-    const branding =
-      membership?.tenant?.type === TenantType.RESELLER
-        ? membership?.tenant?.resellerConfig
-        : membership?.tenant?.reseller?.resellerConfig;
-    const permissions =
-      membership?.roleEntity?.rolePermissions?.map(
-        (rp: any) =>
-          rp.permission
-            ? `${rp.permission.resource}:${rp.permission.action}`
-            : null,
-      )?.filter(Boolean) || [];
-
-    this.logger.log(
-      `Returning membership for ${membership?.tenant?.slug} (Type: ${membership?.tenant?.type})`,
-    );
-    return {
-      ...membership,
-      tenantType: membership?.tenant?.type,
-      branding,
-      permissions,
-    };
   }
 
   @Get("workspaces")
