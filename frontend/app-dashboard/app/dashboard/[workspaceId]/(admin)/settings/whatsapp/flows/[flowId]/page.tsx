@@ -39,18 +39,19 @@ function StatusBadge({ status }: { status?: string }) {
 }
 
 // Live Phone Preview Component parsing flow JSON
-function FlowLivePreview({ flowJsonString }: { flowJsonString: string }) {
+function FlowLivePreview({ flowJsonString, selectedScreenId }: { flowJsonString: string, selectedScreenId: string }) {
     let parsed: any = null;
     try {
         parsed = JSON.parse(flowJsonString);
     } catch (e) { }
 
-    const firstScreen = parsed?.screens?.[0] || {};
-    const title = firstScreen.title || 'Welcome';
+    const screen = parsed?.screens?.find((s: any) => s.id === selectedScreenId) || parsed?.screens?.[0] || {};
+    const title = screen.title || 'Flow Preview';
     
     // Find form elements if any
     let formChildren: any[] = [];
     let texts: string[] = [];
+    let imageSrc: string | null = null;
     
     const extractContent = (children: any[]) => {
         if (!children) return;
@@ -59,19 +60,22 @@ function FlowLivePreview({ flowJsonString }: { flowJsonString: string }) {
                 formChildren = c.children || [];
             } else if (c.type === 'TextHeading' || c.type === 'TextBody' || c.type === 'TextSubheading') {
                 texts.push(c.text);
+            } else if (c.type === 'Image') {
+                imageSrc = c.src;
             } else if (c.children) {
                 extractContent(c.children);
             }
         });
     };
 
-    if (firstScreen.layout?.children) {
-        extractContent(firstScreen.layout.children);
+    if (screen.layout?.children) {
+        extractContent(screen.layout.children);
     }
     
     // If we have a form, let's extract inputs
-    const inputs = formChildren.filter(c => c.type === 'TextInput' || c.type === 'Dropdown' || c.type === 'CheckboxGroup' || c.type === 'RadioButtonsGroup' || c.type === 'DatePicker');
+    const inputs = formChildren.filter(c => c.type === 'TextInput' || c.type === 'Dropdown' || c.type === 'CheckboxGroup' || c.type === 'RadioButtonsGroup' || c.type === 'DatePicker' || c.type === 'OptIn');
     const formTexts = formChildren.filter(c => c.type === 'TextHeading' || c.type === 'TextBody' || c.type === 'TextSubheading').map(c => c.text);
+    const formImages = formChildren.filter(c => c.type === 'Image').map(c => c.src);
 
     return (
         <div className="flex flex-col items-center justify-start pt-6 h-full bg-gray-50 overflow-y-auto">
@@ -96,67 +100,67 @@ function FlowLivePreview({ flowJsonString }: { flowJsonString: string }) {
                     {/* Chat Bubble */}
                     <div className="bg-[#ECE5DD] p-3 flex flex-col items-start min-h-[50px]">
                          <div className="bg-white rounded-r-xl rounded-bl-xl p-3 shadow-sm max-w-[85%] mt-2">
-                             <p className="text-xs text-gray-800 mb-1">Please fill out this form below.</p>
-                             <button className="w-full mt-2 py-2 bg-gray-100 text-teal-600 font-bold text-xs rounded-lg flex items-center justify-center gap-2">
+                             <p className="text-xs text-gray-800 mb-1">Interactive Flow</p>
+                             <button className="w-full mt-2 py-2 bg-gray-100 text-[#075E54] font-bold text-xs rounded-lg flex items-center justify-center gap-2">
                                 <LayoutTemplate size={14} /> Open Form
                              </button>
                          </div>
                     </div>
 
                     {/* Flow Modal Overlay (simulating opened flow) */}
-                    <div className="absolute inset-x-0 bottom-0 bg-white h-[85%] rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col z-20 transition-transform">
+                    <div className="absolute inset-x-0 bottom-0 bg-white h-full rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col z-20 transition-transform">
                         {/* Modal Header */}
                         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <X size={20} className="text-gray-500" />
-                                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+                                <h3 className="text-sm font-bold text-gray-900 truncate max-w-[180px]">{title}</h3>
                             </div>
                             <MoreHorizontal size={20} className="text-gray-500" />
                         </div>
                         
                         {/* Modal Content */}
                         <div className="p-4 flex-1 overflow-y-auto w-full space-y-4">
+                            {/* Main Image */}
+                            {(imageSrc || formImages[0]) && (
+                                <div className="w-full h-40 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                                    <img src={imageSrc || formImages[0]} alt="Flow content" className="w-full h-full object-cover" onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5Y2FlYmYiIGZvbnQtc2l6ZT0iMTIiPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                                    }} />
+                                </div>
+                            )}
+
                             {/* Texts */}
                             {[...texts, ...formTexts].map((text, i) => (
-                                <p key={i} className={`text-sm ${i===0 ? 'font-bold text-gray-900' : 'text-gray-600'}`}>{text}</p>
+                                <p key={i} className={`text-sm ${i===0 && !imageSrc ? 'font-bold text-gray-900' : 'text-gray-600'}`}>{text}</p>
                             ))}
                             
                             {/* Inputs */}
                             {inputs.length > 0 ? (
-                                <div className="space-y-3 mt-4">
+                                <div className="space-y-4 mt-4">
                                     {inputs.map((input, i) => (
-                                        <div key={i} className="flex items-center justify-between px-3 py-3 border border-gray-200 rounded-lg bg-gray-50">
-                                            <span className="text-xs text-gray-500">{input.label || input.name || 'Input field'}</span>
-                                            <ChevronRight size={14} className="text-gray-400" />
+                                        <div key={i} className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{input.label || input.name || 'Input field'}</label>
+                                            <div className="flex items-center justify-between px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50/50">
+                                                <span className="text-xs text-gray-400 italic">Select option...</span>
+                                                <ChevronRight size={14} className="text-gray-300" />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="space-y-3 mt-4">
-                                    <div className="flex items-center justify-between px-3 py-3 border border-gray-200 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-500">Department</span>
-                                        <span className="text-gray-400">›</span>
+                                <div className="flex flex-col items-center justify-center h-40 text-center space-y-2">
+                                    <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center">
+                                        <Zap size={20} className="text-gray-300" />
                                     </div>
-                                    <div className="flex items-center justify-between px-3 py-3 border border-gray-200 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-500">Location</span>
-                                        <span className="text-gray-400">›</span>
-                                    </div>
-                                    <div className="flex items-center justify-between px-3 py-3 border border-gray-200 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-500">Date</span>
-                                        <span className="text-gray-400">›</span>
-                                    </div>
-                                    <div className="flex items-center justify-between px-3 py-3 border border-gray-200 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-500">Time</span>
-                                        <span className="text-gray-400">›</span>
-                                    </div>
+                                    <p className="text-[10px] text-gray-400 font-medium">Add form components to see them here</p>
                                 </div>
                             )}
 
                         </div>
                         {/* Footer */}
                         <div className="p-4 border-t border-gray-100">
-                             <button className="w-full py-3 bg-[#0866FF] text-white text-xs font-bold rounded-xl">
-                                Submit
+                             <button className="w-full py-3 bg-[#0866FF] text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-200">
+                                {formChildren.find(c => c.type === 'Footer')?.label || 'Continue'}
                             </button>
                         </div>
                     </div>
@@ -164,8 +168,8 @@ function FlowLivePreview({ flowJsonString }: { flowJsonString: string }) {
             </div>
             
             <div className="mt-4 px-6 py-3 w-full border-t border-gray-200/60 flex items-center gap-2">
-                <Settings size={14} className="text-gray-400" />
-                <span className="text-[10px] text-gray-500">Rendering and interaction varies based on device.</span>
+                <Smartphone size={14} className="text-teal-600" />
+                <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">Live Preview • Version {parsed?.version || '7.3'}</span>
             </div>
         </div>
     );
@@ -185,6 +189,23 @@ export default function FlowEditorPage() {
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [publishing, setPublishing] = useState(false);
     const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+    const [selectedScreen, setSelectedScreen] = useState<string>('');
+
+    // Derived screens list
+    const [screens, setScreens] = useState<string[]>([]);
+
+    useEffect(() => {
+        try {
+            const parsed = JSON.parse(jsonContent);
+            if (parsed.screens && Array.isArray(parsed.screens)) {
+                const ids = parsed.screens.map((s: any) => s.id);
+                setScreens(ids);
+                if (!selectedScreen || !ids.includes(selectedScreen)) {
+                    setSelectedScreen(ids[0] || '');
+                }
+            }
+        } catch (e) {}
+    }, [jsonContent]);
 
     useEffect(() => {
         const fetchFlowData = async () => {
@@ -409,10 +430,24 @@ export default function FlowEditorPage() {
                     <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white">
                         <span className="font-bold text-sm text-gray-900">Preview</span>
                         <div className="flex items-center gap-2">
-                            <select className="px-3 py-1.5 border border-gray-200 rounded text-xs font-semibold text-gray-700 outline-none max-w-[150px] bg-white">
-                                <option>WELCOME_SCREEN</option>
+                            <select 
+                                value={selectedScreen}
+                                onChange={(e) => setSelectedScreen(e.target.value)}
+                                className="px-3 py-1.5 border border-gray-200 rounded text-xs font-bold text-gray-700 outline-none max-w-[150px] bg-white hover:border-gray-300 transition-colors cursor-pointer appearance-none shadow-sm pr-8 relative"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                    backgroundPosition: `right 0.5rem center`,
+                                    backgroundRepeat: `no-repeat`,
+                                    backgroundSize: `1.5em 1.5em`,
+                                }}
+                            >
+                                {screens.length > 0 ? (
+                                    screens.map(id => <option key={id} value={id}>{id}</option>)
+                                ) : (
+                                    <option>No screens found</option>
+                                )}
                             </select>
-                            <button className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded hover:bg-gray-50 text-gray-600">
+                            <button className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded hover:bg-gray-50 text-gray-600 shadow-sm">
                                 <Settings size={14} />
                             </button>
                         </div>
@@ -429,7 +464,7 @@ export default function FlowEditorPage() {
                                 </div>
                             ) : (
                                 <div className="flex justify-center py-4">
-                                    <FlowLivePreview flowJsonString={jsonContent} />
+                                    <FlowLivePreview flowJsonString={jsonContent} selectedScreenId={selectedScreen} />
                                 </div>
                             )}
                         </div>

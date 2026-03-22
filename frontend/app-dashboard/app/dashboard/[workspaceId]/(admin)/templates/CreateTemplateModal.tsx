@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { 
     X, Send, AlertCircle, CheckCircle, ChevronRight, ChevronLeft,
-    Bold, Italic, Strikethrough, Plus, Workflow, Smile, Code, Image as ImageIcon, Option, List, Play, ExternalLink
+    Bold, Italic, Strikethrough, Plus, Workflow, Smile, Code, Image as ImageIcon, Option, List, Play, ExternalLink,
+    Phone, FileText, Video, MoreHorizontal, ArrowLeft, Search
 } from 'lucide-react';
 
 interface Flow { id: string; name: string; status: string; }
@@ -40,26 +41,93 @@ const BUTTON_ICONS = [
     { value: 'REVIEW', label: 'Review' },
 ];
 
-// Reusable WhatsApp chat bubble layout
-function PhonePreviewFrame({ children, headerType }: { children: React.ReactNode, headerType?: string }) {
+// Realistic iPhone-style Phone Preview Frame
+function PhonePreviewFrame({ children, title = "Business" }: { children: React.ReactNode, title?: string }) {
     return (
-        <div className="w-80 shrink-0 select-none">
-            <div className="bg-[#E4DCCE] w-full min-h-[400px] rounded-lg overflow-hidden shadow-inner flex flex-col border border-gray-200">
-                <div className="bg-[#008069] h-14 flex items-center px-4 gap-3 shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <div className="w-4 h-4 rounded-full bg-white/50" />
-                    </div>
-                    <span className="text-white font-medium text-[15px]">Business</span>
-                </div>
-                {/* Chat Area Background */}
-                <div className="flex-1 p-3 bg-[url('https://static.whatsapp.net/rsrc.php/v3/yO/r/YqsE136z19q.png')] bg-repeat bg-[length:260px]">
-                    <div className="flex justify-start max-w-[90%]">
-                        <div className="bg-white rounded-lg rounded-tl-none p-1.5 shadow-sm text-sm text-[#111b21] relative flex flex-col w-full">
-                            {children}
-                        </div>
+        <div className="relative w-[320px] h-[640px] bg-[#1a1a1a] rounded-[3rem] border-[8px] border-[#2a2a2a] shadow-2xl overflow-hidden pointer-events-none scale-[0.85] lg:scale-100 origin-top">
+            {/* iPhone Notch */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#2a2a2a] rounded-b-2xl z-20 flex items-center justify-center">
+                <div className="w-10 h-1 bg-[#1a1a1a] rounded-full mr-2" />
+                <div className="w-2 h-2 bg-[#1a1a1a] rounded-full" />
+            </div>
+
+            {/* Status Bar */}
+            <div className="absolute top-0 inset-x-0 h-12 flex items-end justify-between px-6 pb-1.5 z-10 text-[10px] font-bold text-white/90">
+                <span>9:41</span>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-3.5 h-3.5 flex items-center justify-center opacity-80"><Code size={10} /></div>
+                    <div className="w-4 h-2.5 border border-white/40 rounded-[2px] relative">
+                         <div className="absolute left-0.5 top-0.5 bottom-0.5 w-2 bg-white rounded-[1px]" />
                     </div>
                 </div>
             </div>
+
+            {/* Content Area */}
+            <div className="absolute inset-0 pt-12 flex flex-col bg-[#efeae2]">
+                {/* WhatsApp Header */}
+                <div className="bg-[#008069] h-14 flex items-center px-4 gap-3 shrink-0 shadow-md">
+                    <ArrowLeft size={18} className="text-white" />
+                    <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-white/40" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-white font-bold text-[14px] leading-tight">{title}</span>
+                        <span className="text-white/70 text-[10px]">online</span>
+                    </div>
+                    <div className="ml-auto flex items-center gap-3 text-white">
+                        <Play size={16} fill="white" />
+                        <MoreHorizontal size={18} />
+                    </div>
+                </div>
+
+                {/* Chat Background with Doodles */}
+                <div className="flex-1 p-3 bg-[url('https://user-images.githubusercontent.com/15072942/150654157-12ed6223-99b3-462d-9658-00d075d654f5.png')] bg-repeat bg-[length:400px] overflow-hidden">
+                    <div className="flex flex-col items-start gap-1">
+                        {/* Date Separator */}
+                        <div className="self-center my-2 px-3 py-1 bg-white/80 rounded-lg shadow-sm text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                            Today
+                        </div>
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// WhatsApp Bubble Styling (Modern)
+function WhatsAppBubble({ children, footer, headerContent }: { children: React.ReactNode, footer?: string, headerContent?: React.ReactNode }) {
+    return (
+        <div className="flex flex-col w-full max-w-[260px] drop-shadow-sm">
+            {/* Bubble Main Body */}
+            <div className="bg-white rounded-xl rounded-tl-none p-1 flex flex-col w-full overflow-hidden">
+                {headerContent && (
+                    <div className="w-full mb-1">
+                        {headerContent}
+                    </div>
+                )}
+                <div className="px-2 pt-1 pb-1">
+                    {children}
+                    {footer && (
+                        <p className="text-[11px] text-gray-400 mt-1 italic">{footer}</p>
+                    )}
+                    <div className="flex items-center justify-end gap-1 mt-0.5">
+                        <span className="text-[9px] text-gray-400">9:41 AM</span>
+                        <CheckCircle size={10} className="text-blue-400" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Button Action Card (WhatsApp Style)
+function ActionButton({ text, iconType }: { text: string, iconType?: string }) {
+    const Icon = iconType === 'URL' ? ExternalLink : iconType === 'FLOW' ? List : iconType === 'PHONE_NUMBER' ? Phone : Play;
+    return (
+        <div className="bg-white rounded-xl mt-1.5 py-2.5 px-4 flex items-center justify-center gap-2 text-[#00a884] font-bold text-[14px] shadow-sm border-t border-gray-100 hover:bg-gray-50 transition-colors w-full max-w-[260px]">
+             {iconType !== 'QUICK_REPLY' && <Icon size={16} className="shrink-0" />}
+             <span className="truncate">{text}</span>
         </div>
     );
 }
@@ -98,6 +166,11 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenant
     
     const bodyRef = useRef<HTMLTextAreaElement>(null);
     const headerRef = useRef<HTMLInputElement>(null);
+
+    // Flow Selection State
+    const [showFlowSelector, setShowFlowSelector] = useState<{ isOpen: boolean, buttonIdx: number }>({ isOpen: false, buttonIdx: -1 });
+    const [showFlowCreator, setShowFlowCreator] = useState<{ isOpen: boolean, buttonIdx: number }>({ isOpen: false, buttonIdx: -1 });
+    const [flowSearch, setFlowSearch] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -261,50 +334,59 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenant
                 )}
 
                 <div className="flex-1 overflow-hidden relative">
-                    {/* STEP 1 */}
+                    {/* STEP 1: CATEGORY SELECTION */}
                     {step === 1 && (
-                        <div className="absolute inset-0 overflow-y-auto p-10 bg-white">
-                            <div className="max-w-2xl mx-auto space-y-8">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Template name and language</h1>
-                                    <p className="text-sm text-gray-600">Choose a name for your template and select the language it will be sent in.</p>
+                        <div className="absolute inset-0 overflow-y-auto p-8 lg:p-12 bg-white">
+                            <div className="max-w-4xl mx-auto space-y-10">
+                                <div className="border-b border-gray-100 pb-6">
+                                    <h1 className="text-2xl font-extrabold text-[#1c1e21] mb-2 tracking-tight">Template name and language</h1>
+                                    <p className="text-sm text-[#606770] leading-relaxed">Choose a unique name for your template and select the language it will be sent in. This cannot be changed later.</p>
                                 </div>
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-bold text-gray-700">Name your template</label>
-                                            <div className="relative">
-                                                <input value={name} onChange={e => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
-                                                    maxLength={512} placeholder="e.g. feedback"
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:border-[#0866FF] focus:ring-1 focus:ring-[#0866FF] outline-none" />
-                                                <span className="absolute right-3 top-2.5 text-xs text-gray-400">{name.length}/512</span>
-                                            </div>
-                                            <p className="text-xs text-gray-500">Only lowercase letters, numbers, and underscores.</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider">Template Name</label>
+                                        <div className="relative group">
+                                            <input value={name} onChange={e => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                                                maxLength={512} placeholder="e.g. shipping_update"
+                                                className="w-full px-4 py-3 border border-[#dddfe2] rounded-lg text-sm transition-all focus:border-[#0866FF] focus:ring-4 focus:ring-[#0866FF]/10 outline-none bg-white font-medium" />
+                                            <span className="absolute right-4 top-3.5 text-[10px] font-bold text-gray-400">{name.length}/512</span>
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-bold text-gray-700">Select language</label>
-                                            <select value={language} onChange={e => setLanguage(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:border-[#0866FF] focus:ring-1 focus:ring-[#0866FF] outline-none bg-white">
-                                                {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
-                                            </select>
-                                        </div>
+                                        <p className="text-[11px] text-[#606770]">Use only lowercase letters, numbers, and underscores.</p>
                                     </div>
-                                    <div className="space-y-1 pt-4">
-                                        <label className="text-sm font-bold text-gray-700 mb-2 block">Category</label>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            {CATEGORIES.map(cat => (
-                                                <div key={cat.value} onClick={() => setCategory(cat.value)}
-                                                    className={`border rounded-lg p-4 cursor-pointer transition-all ${category === cat.value ? 'border-[#0866FF] bg-blue-50/50 shadow-sm ring-1 ring-[#0866FF]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${category === cat.value ? 'border-[#0866FF]' : 'border-gray-300'}`}>
-                                                            {category === cat.value && <div className="w-2.5 h-2.5 bg-[#0866FF] rounded-full" />}
-                                                        </div>
-                                                        <span className="font-bold text-sm text-gray-900">{cat.label}</span>
+                                    <div className="space-y-2">
+                                        <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider">Select Language</label>
+                                        <select value={language} onChange={e => setLanguage(e.target.value)}
+                                            className="w-full px-4 py-3 border border-[#dddfe2] rounded-lg text-sm transition-all focus:border-[#0866FF] focus:ring-4 focus:ring-[#0866FF]/10 outline-none bg-white font-medium appearance-none cursor-pointer">
+                                            {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-6">
+                                    <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider block">Category</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                        {CATEGORIES.map(cat => (
+                                            <div key={cat.value} onClick={() => setCategory(cat.value)}
+                                                className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 group ${category === cat.value ? 'border-[#0866FF] bg-[#0866FF]/5 shadow-md' : 'border-[#dddfe2] hover:border-[#ccd0d5] hover:bg-[#f2f3f5]'}`}>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${category === cat.value ? 'border-[#0866FF] bg-[#0866FF]' : 'border-[#ccd0d5] bg-white group-hover:border-[#adb5bd]'}`}>
+                                                        {category === cat.value && <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />}
                                                     </div>
-                                                    <p className="text-xs text-gray-500 pl-6">{cat.desc}</p>
+                                                    <Workflow size={20} className={category === cat.value ? 'text-[#0866FF]' : 'text-[#8d949e]'} />
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <span className={`block font-bold text-[16px] mb-1.5 transition-colors ${category === cat.value ? 'text-[#0866FF]' : 'text-[#1c1e21]'}`}>{cat.label}</span>
+                                                <p className="text-[13px] text-[#606770] leading-snug">{cat.desc}</p>
+                                                
+                                                {category === cat.value && (
+                                                    <div className="absolute -top-3 -right-3">
+                                                        <div className="bg-[#0866FF] text-white p-1 rounded-full shadow-lg">
+                                                            <CheckCircle size={14} fill="currentColor" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -332,30 +414,69 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenant
                                     </div>
                                     <div className="p-5 space-y-5">
                                         
-                                        {/* Variable Type & Media Dropdowns */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {body.includes('{{') && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-sm font-bold text-gray-800 flex items-center gap-1">Type of variable</label>
-                                                    <select value={varType} onChange={e => setVarType(e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm bg-white outline-none focus:border-[#0866FF]">
-                                                        <option value="Number">Number</option>
-                                                        <option value="Text">Text</option>
-                                                        <option value="Date">Date</option>
-                                                        <option value="Currency">Currency</option>
-                                                    </select>
+                                        {/* Header Type & Media Selection */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider">Header Content</label>
+                                                <span className="text-[11px] text-[#606770] font-medium italic">Optional</span>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-3">
+                                                {[
+                                                    { id: 'NONE', label: 'None', icon: X },
+                                                    { id: 'TEXT', label: 'Text', icon: FileText },
+                                                    { id: 'IMAGE', label: 'Image', icon: ImageIcon },
+                                                    { id: 'VIDEO', label: 'Video', icon: Video },
+                                                    { id: 'DOCUMENT', label: 'Doc', icon: FileText }
+                                                ].map(type => (
+                                                    <button key={type.id} 
+                                                        onClick={() => {
+                                                            if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(type.id)) {
+                                                                setMediaType(type.id as any);
+                                                                setHeaderType('MEDIA');
+                                                            } else {
+                                                                setMediaType('NONE');
+                                                                setHeaderType(type.id as any);
+                                                            }
+                                                        }}
+                                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all font-bold text-[12px] gap-1.5 ${
+                                                            (headerType === type.id || (headerType === 'MEDIA' && mediaType === type.id))
+                                                            ? 'border-[#0866FF] bg-[#0866FF]/5 text-[#0866FF]' 
+                                                            : 'border-[#dddfe2] hover:border-[#ccd0d5] text-[#606770]'
+                                                        }`}>
+                                                        <type.icon size={20} />
+                                                        {type.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {headerType === 'TEXT' && (
+                                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    <div className="relative group">
+                                                         <input ref={headerRef} value={headerText} onChange={e => setHeaderText(e.target.value)}
+                                                            placeholder="e.g. Order Confirmation"
+                                                            maxLength={60}
+                                                            className="w-full px-4 py-3 border border-[#dddfe2] rounded-lg text-sm bg-white outline-none focus:border-[#0866FF] focus:ring-4 focus:ring-[#0866FF]/10 transition-all font-medium" />
+                                                         <span className="absolute right-4 top-3.5 text-[10px] font-bold text-gray-400 group-focus-within:text-[#0866FF]">{headerText.length}/60</span>
+                                                    </div>
+                                                    <div className="flex justify-end pr-1">
+                                                        <button onClick={() => injectVariable('header')} className="text-[12px] font-bold text-[#0866FF] hover:underline flex items-center gap-1">
+                                                            <Plus size={14} strokeWidth={3} /> Add Variable
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             )}
-                                            <div className="space-y-1.5">
-                                                <label className="text-sm font-bold text-gray-800 flex items-center gap-1">Media sample <span className="text-gray-400 font-normal ml-1">· Optional</span></label>
-                                                <select value={mediaType} onChange={e => {setMediaType(e.target.value as any); if(e.target.value !== 'NONE') setHeaderType('MEDIA');}}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm bg-white outline-none focus:border-[#0866FF]">
-                                                    <option value="NONE">None</option>
-                                                    <option value="IMAGE">Image</option>
-                                                    <option value="VIDEO">Video</option>
-                                                    <option value="DOCUMENT">Document</option>
-                                                </select>
-                                            </div>
+
+                                            {headerType === 'MEDIA' && (
+                                                <div className="bg-[#f0f2f5] border-2 border-dashed border-[#ccd0d5] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-4 group hover:bg-[#ebedf0] transition-colors cursor-pointer animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    <div className="w-14 h-14 bg-white rounded-full shadow-sm flex items-center justify-center text-[#0866FF] group-hover:scale-110 transition-transform">
+                                                        {mediaType === 'IMAGE' ? <ImageIcon size={28} /> : mediaType === 'VIDEO' ? <Video size={28} /> : <FileText size={28} />}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[14px] font-bold text-[#1c1e21]">Click to upload your {mediaType.toLowerCase()}</p>
+                                                        <p className="text-[12px] text-[#606770]">Max size: 16MB. Formats: {mediaType === 'IMAGE' ? 'JPG, PNG' : mediaType === 'VIDEO' ? 'MP4' : 'PDF'}.</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Header */}
@@ -382,170 +503,275 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenant
                                             </div>
                                         </div>
 
-                                        {/* Body */}
-                                        <div className="space-y-1.5 border-t border-gray-100 pt-5">
-                                            <label className="text-[13px] font-bold text-gray-800">Body</label>
-                                            <div className="border border-gray-300 rounded overflow-hidden focus-within:border-[#0866FF]">
+                                        {/* Body Section */}
+                                        <div className="space-y-4 border-t border-gray-100 pt-6">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider">Body Content</label>
+                                                <span className="text-[11px] text-[#606770] font-medium">Required</span>
+                                            </div>
+                                            <div className="border border-[#dddfe2] rounded-xl overflow-hidden focus-within:border-[#0866FF] focus-within:ring-4 focus-within:ring-[#0866FF]/10 transition-all bg-white">
                                                 <textarea ref={bodyRef} value={body} onChange={e => setBody(e.target.value)}
-                                                    placeholder="Hello world!" rows={5} maxLength={1024}
-                                                    className="w-full px-3 py-2 text-sm outline-none resize-none border-0 ring-0 min-h-[100px]" />
-                                                <div className="bg-gray-50 px-3 py-2 flex items-center justify-between border-t border-gray-200">
-                                                    <div className="flex items-center gap-2">
-                                                        <button className="text-gray-500 p-1 hover:bg-gray-200 rounded"><Smile size={16} /></button>
-                                                        <button onClick={()=>injectFormat('*')} className="text-gray-500 p-1 hover:bg-gray-200 rounded font-serif font-bold">B</button>
-                                                        <button onClick={()=>injectFormat('_')} className="text-gray-500 p-1 hover:bg-gray-200 rounded font-serif italic">I</button>
-                                                        <button onClick={()=>injectFormat('~')} className="text-gray-500 p-1 hover:bg-gray-200 rounded line-through">S</button>
-                                                        <button onClick={()=>injectFormat('```')} className="text-gray-500 p-1 hover:bg-gray-200 rounded"><Code size={16} /></button>
-                                                        <div className="w-px h-4 bg-gray-300 mx-1" />
-                                                        <button onClick={() => injectVariable('body')} className="text-[13px] font-semibold text-gray-700 hover:text-gray-900 justify-center flex items-center gap-1 px-1">
-                                                            <Plus size={14} /> Add variable
+                                                    placeholder="Enter your message body here..." rows={6} maxLength={1024}
+                                                    className="w-full px-4 py-3 text-sm outline-none resize-none border-0 ring-0 min-h-[120px] font-medium" />
+                                                <div className="bg-[#f0f2f5] px-4 py-2.5 flex items-center justify-between border-t border-[#dddfe2]">
+                                                    <div className="flex items-center gap-1">
+                                                        <button title="Emoji" className="text-[#606770] p-1.5 hover:bg-white hover:text-[#1c1e21] rounded-lg transition-colors"><Smile size={18} /></button>
+                                                        <div className="w-px h-5 bg-[#dddfe2] mx-1" />
+                                                        <button onClick={()=>injectFormat('*')} title="Bold" className="text-[#606770] p-1.5 hover:bg-white hover:text-[#1c1e21] rounded-lg transition-colors font-bold">B</button>
+                                                        <button onClick={()=>injectFormat('_')} title="Italic" className="text-[#606770] p-1.5 hover:bg-white hover:text-[#1c1e21] rounded-lg transition-colors italic">I</button>
+                                                        <button onClick={()=>injectFormat('~')} title="Strikethrough" className="text-[#606770] p-1.5 hover:bg-white hover:text-[#1c1e21] rounded-lg transition-colors line-through">S</button>
+                                                        <button onClick={()=>injectFormat('```')} title="Monospace" className="text-[#606770] p-1.5 hover:bg-white hover:text-[#1c1e21] rounded-lg transition-colors"><Code size={18} /></button>
+                                                        <div className="w-px h-5 bg-[#dddfe2] mx-1" />
+                                                        <button onClick={() => injectVariable('body')} className="text-[12px] font-bold text-[#0866FF] hover:bg-white px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                                            <Plus size={14} strokeWidth={3} /> Add Variable
                                                         </button>
                                                     </div>
-                                                    <span className="text-xs text-gray-400">{body.length}/1024</span>
+                                                    <span className="text-[11px] font-bold text-[#8d949e]">{body.length}/1024</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Footer */}
-                                        <div className="space-y-1.5 border-t border-gray-100 pt-5">
-                                            <label className="text-[13px] font-bold text-gray-800 flex items-center gap-1">Footer <span className="text-gray-400 font-normal ml-1">· Optional</span></label>
-                                            <div className="relative">
+                                        {/* Footer Section */}
+                                        <div className="space-y-4 border-t border-gray-100 pt-6">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider">Footer</label>
+                                                <span className="text-[11px] text-[#606770] font-medium italic">Optional</span>
+                                            </div>
+                                            <div className="relative group">
                                                 <input value={footer} onChange={e => setFooter(e.target.value)}
-                                                    placeholder="Add a short line of text to the bottom of your message in English"
+                                                    placeholder="e.g. Reply STOP to opt out"
                                                     maxLength={60}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm outline-none focus:border-[#0866FF]" />
-                                                <span className="absolute right-3 top-2.5 text-xs text-gray-400">{footer.length}/60</span>
+                                                    className="w-full px-4 py-3 border border-[#dddfe2] rounded-lg text-sm bg-white outline-none focus:border-[#0866FF] focus:ring-4 focus:ring-[#0866FF]/10 transition-all font-medium" />
+                                                <span className="absolute right-4 top-3.5 text-[10px] font-bold text-gray-400 group-focus-within:text-[#0866FF]">{footer.length}/60</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Buttons Box */}
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                                    <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-                                        <label className="text-[13px] font-bold text-gray-800">Buttons <span className="text-gray-400 font-normal ml-1">· Optional</span></label>
-                                        <button onClick={addButton} className="text-xs font-semibold px-3 py-1.5 border border-gray-300 rounded flex items-center gap-1 hover:bg-gray-50">
-                                            <Plus size={14} /> Add button
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                    <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[13px] font-bold text-[#1c1e21] uppercase tracking-wider">Interactive Buttons</label>
+                                            <span className="text-[10px] bg-[#e7f3ff] text-[#0866FF] px-2 py-0.5 rounded-full font-bold">New</span>
+                                        </div>
+                                        <button onClick={addButton} disabled={buttons.length >= 10} className="text-[12px] font-bold px-4 py-2 bg-white border border-[#dddfe2] rounded-lg flex items-center gap-2 hover:bg-[#f2f3f5] transition-colors shadow-sm disabled:opacity-50">
+                                            <Plus size={16} strokeWidth={3} className="text-[#1c1e21]" /> Add Button
                                         </button>
                                     </div>
-                                    {buttons.length > 0 && (
-                                        <div className="p-5 space-y-4">
-                                            {buttons.map((btn, idx) => (
-                                                <div key={idx} className="space-y-4">
-                                                    <label className="text-[13px] font-bold text-gray-800">Call to Action <span className="text-gray-400 font-normal ml-1">· Optional</span></label>
-                                                    <div className="bg-[#f5f6f6] border border-gray-200 rounded p-4">
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            <div>
-                                                                <span className="text-xs font-semibold text-gray-700 block mb-1">Type of Action</span>
-                                                                <select value={btn.type} onChange={e => updateButton(idx, 'type', e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm outline-none bg-white font-medium">
-                                                                    {BUTTON_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                                                                </select>
-                                                            </div>
-                                                            {btn.type === 'FLOW' && (
-                                                                <div>
-                                                                    <span className="text-xs font-semibold text-gray-700 block mb-1">Button Icon</span>
-                                                                    <select value={btn.icon || 'DEFAULT'} onChange={e => updateButton(idx, 'icon', e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm outline-none bg-white font-medium flex items-center">
-                                                                        {BUTTON_ICONS.map(ic => <option key={ic.value} value={ic.value}>{ic.label}</option>)}
-                                                                    </select>
-                                                                </div>
-                                                            )}
-                                                            <div>
-                                                                <span className="text-xs font-semibold text-gray-700 block mb-1">Button Text</span>
-                                                                <div className="relative">
-                                                                    <input value={btn.text} onChange={e => updateButton(idx, 'text', e.target.value)} maxLength={25}
-                                                                        className="w-full px-2 py-1.5 pr-8 border border-gray-300 rounded text-sm outline-none font-medium" />
-                                                                    <span className="absolute right-2 top-2 text-[10px] text-gray-400">{btn.text.length}/25</span>
-                                                                </div>
+                                    <div className="p-6 space-y-6">
+                                        {buttons.length === 0 ? (
+                                            <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl">
+                                                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                                                    <List size={24} />
+                                                </div>
+                                                <p className="text-sm text-gray-500 font-medium">No buttons added yet. <button onClick={addButton} className="text-[#0866FF] hover:underline">Add one</button></p>
+                                            </div>
+                                        ) : (
+                                            buttons.map((btn, idx) => (
+                                                <div key={idx} className="group relative bg-[#f7f8fa] border border-[#dddfe2] rounded-2xl p-5 space-y-5 animate-in zoom-in-95 duration-200">
+                                                    <button onClick={() => removeButton(idx)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                                                        <X size={18} />
+                                                    </button>
+                                                    
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="space-y-1.5">
+                                                            <span className="text-[11px] font-bold text-[#606770] uppercase">Action Type</span>
+                                                            <select value={btn.type} onChange={e => updateButton(idx, 'type', e.target.value)} className="w-full px-3 py-2 border border-[#dddfe2] rounded-lg text-sm outline-none bg-white font-bold text-[#1c1e21] focus:border-[#0866FF] transition-all">
+                                                                {BUTTON_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                                            </select>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <span className="text-[11px] font-bold text-[#606770] uppercase">Button Text</span>
+                                                            <div className="relative">
+                                                                <input value={btn.text} onChange={e => updateButton(idx, 'text', e.target.value)} maxLength={25}
+                                                                    placeholder="e.g. Shop Now"
+                                                                    className="w-full px-3 py-2 border border-[#dddfe2] rounded-lg text-sm bg-white outline-none font-bold text-[#1c1e21] focus:border-[#0866FF] transition-all" />
+                                                                <span className="absolute right-3 top-2.5 text-[9px] font-bold text-gray-300">{btn.text.length}/25</span>
                                                             </div>
                                                         </div>
-
                                                         {btn.type === 'FLOW' && (
-                                                            <div className="mt-4 space-y-4">
-                                                                <div className="flex flex-col gap-2">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <span className="text-sm font-bold text-gray-900 flex-1">{publishedFlows.find(f=>f.id===btn.flow_id)?.name || 'Select a Flow'}</span>
-                                                                        <button className="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-semibold hover:bg-gray-50">Preview</button>
-                                                                        <button onClick={() => updateButton(idx, 'flow_id', '')} className="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-semibold hover:bg-gray-50">Delete</button>
-                                                                    </div>
-                                                                    {!btn.flow_id && (
-                                                                         <select value={btn.flow_id} onChange={e => updateButton(idx, 'flow_id', e.target.value)} className="w-full p-2 text-sm border border-gray-300 rounded mt-1 bg-white">
-                                                                            <option value="">Select Flow</option>
-                                                                            {publishedFlows.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                                                                        </select>
-                                                                    )}
+                                                            <div className="space-y-1.5">
+                                                                <span className="text-[11px] font-bold text-[#606770] uppercase">Button Icon</span>
+                                                                <select value={btn.icon || 'DEFAULT'} onChange={e => updateButton(idx, 'icon', e.target.value)} className="w-full px-3 py-2 border border-[#dddfe2] rounded-lg text-sm outline-none bg-white font-bold text-[#1c1e21] focus:border-[#0866FF] transition-all">
+                                                                    {BUTTON_ICONS.map(ic => <option key={ic.value} value={ic.value}>{ic.label}</option>)}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {btn.type === 'FLOW' && (
+                                                        <div className="bg-white border border-[#dddfe2] rounded-xl p-4 space-y-4 shadow-sm border-l-4 border-l-[#0866FF]">
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <div className="flex-1">
+                                                                    <p className="text-[10px] font-bold text-[#606770] uppercase mb-1">Linked Flow</p>
+                                                                    <h4 className="text-sm font-bold text-[#1c1e21]">{publishedFlows.find(f=>f.id===btn.flow_id)?.name || 'No flow selected'}</h4>
                                                                 </div>
-                                                                <div className="grid grid-cols-2 gap-3 pb-2">
-                                                                    <div>
-                                                                        <span className="text-xs font-semibold text-gray-700 block mb-1">Flow starts with</span>
-                                                                        <select className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded bg-gray-100 text-gray-500 font-medium cursor-not-allowed" disabled>
-                                                                            <option>Pre-defined screen</option>
-                                                                        </select>
+                                                                <div className="flex items-center gap-2">
+                                                                    <button onClick={() => setShowFlowCreator({ isOpen: true, buttonIdx: idx })} className="px-3 py-1.5 bg-[#f0f2f5] hover:bg-[#e4e6eb] rounded-lg text-xs font-bold transition-all flex items-center gap-1.5">
+                                                                        <Plus size={14} strokeWidth={3} /> Create new
+                                                                    </button>
+                                                                    <button onClick={() => setShowFlowSelector({ isOpen: true, buttonIdx: idx })} className="px-3 py-1.5 bg-[#1877f2] hover:bg-[#166fe5] text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5">
+                                                                        <List size={14} /> Use existing
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            {btn.flow_id && (
+                                                                <div className="grid grid-cols-2 gap-4 pb-1">
+                                                                    <div className="space-y-1.5">
+                                                                        <span className="text-[11px] font-bold text-[#606770]">Flow starts with</span>
+                                                                        <div className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold text-gray-500 flex items-center gap-2">
+                                                                            <CheckCircle size={14} className="text-[#008069]" /> Pre-defined screen
+                                                                        </div>
                                                                     </div>
-                                                                    <div>
-                                                                        <span className="text-xs font-semibold text-gray-700 block mb-1">Select pre-defined screen</span>
-                                                                        <select value={btn.navigate_screen || 'WELCOME_SCREEN'} onChange={e => updateButton(idx, 'navigate_screen', e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm outline-none bg-white font-medium">
+                                                                    <div className="space-y-1.5">
+                                                                        <span className="text-[11px] font-bold text-[#606770]">Target Screen</span>
+                                                                        <select value={btn.navigate_screen || 'WELCOME_SCREEN'} onChange={e => updateButton(idx, 'navigate_screen', e.target.value)} className="w-full px-3 py-2 border border-[#dddfe2] rounded-lg text-xs outline-none bg-white font-bold text-[#1c1e21] focus:border-[#0866FF]">
                                                                             <option value="WELCOME_SCREEN">WELCOME_SCREEN</option>
                                                                             <option value="DETAILS">DETAILS</option>
                                                                             <option value="SUMMARY">SUMMARY</option>
                                                                         </select>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Right Panel: Template Preview */}
-                            <div className="w-[360px] shrink-0 border-l border-gray-200 bg-[#f5f6f6] flex flex-col items-center pt-8 p-6">
-                                <div className="w-full max-w-sm">
-                                    <div className="bg-white rounded p-4 mb-4 flex items-center justify-between shadow-sm">
-                                        <span className="font-bold text-sm text-gray-900">Template preview</span>
-                                        <button className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"><Play size={14} /></button>
+                                            ))
+                                        )}
                                     </div>
-                                    <PhonePreviewFrame>
-                                        <div className="p-1.5 flex flex-col relative space-y-1 mt-1">
-                                            {/* Media Header */}
-                                            {mediaType !== 'NONE' && (
-                                                <div className="w-full h-32 bg-gray-200 rounded flex items-center justify-center mb-1">
-                                                    <ImageIcon className="text-gray-400" size={32} />
-                                                </div>
-                                            )}
-                                            {/* Text Header */}
-                                            {headerType === 'TEXT' && headerText && (
-                                                <div className="font-bold text-[15px] mb-1">{renderTextHighlights(headerText)}</div>
-                                            )}
-                                            {/* Body */}
-                                            <div className="text-[14.5px] leading-relaxed whitespace-pre-wrap font-sans text-gray-900">
-                                                {renderTextHighlights(body) || 'Hello!'}
-                                            </div>
-                                            {/* Footer */}
-                                            {footer && (
-                                                <div className="text-[12px] text-gray-400 pt-1 mt-1">{footer}</div>
-                                            )}
-                                            <div className="text-[10px] text-gray-400 self-end translate-y-2 translate-x-1.5 mt-[-10px]">
-                                                11:52 AM
-                                            </div>
+                                </div>
+                                                       {/* Right Panel: Template Preview */}
+                            <div className="hidden lg:flex w-[400px] shrink-0 border-l border-gray-200 bg-[#f8f9fa] flex-col items-center pt-8 p-6 overflow-y-auto">
+                                <div className="w-full flex flex-col items-center">
+                                    <div className="bg-white rounded-xl p-4 mb-8 flex items-center justify-between shadow-sm border border-gray-100 w-full max-w-[320px]">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-sm text-gray-900">Template preview</span>
+                                            <span className="text-[10px] text-gray-500 font-medium">Rendered as standard WhatsApp message</span>
                                         </div>
-                                        {/* Render Buttons below the bubble content layout */}
+                                        <button className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-[#008069]"><Play size={14} fill="currentColor" /></button>
+                                    </div>
+                                    
+                                    <PhonePreviewFrame title={name?.toUpperCase() || "BUSINESS NAME"}>
+                                        <WhatsAppBubble 
+                                            footer={footer}
+                                            headerContent={
+                                                headerType === 'MEDIA' ? (
+                                                    <div className="w-full h-36 bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2 border-b border-gray-50">
+                                                        {mediaType === 'IMAGE' ? <ImageIcon size={32} /> : mediaType === 'VIDEO' ? <Video size={32} /> : <FileText size={32} />}
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider">{mediaType} HEADER</span>
+                                                    </div>
+                                                ) : headerType === 'TEXT' && headerText ? (
+                                                    <div className="px-2 pt-2 text-[14px] font-bold text-gray-900 leading-tight">
+                                                        {renderTextHighlights(headerText)}
+                                                    </div>
+                                                ) : null
+                                            }
+                                        >
+                                            <div className="text-[14px] leading-[1.4] whitespace-pre-wrap font-sans text-gray-900 py-0.5">
+                                                {renderTextHighlights(body) || 'Hi! Welcome to our business service.'}
+                                            </div>
+                                        </WhatsAppBubble>
+                                        
+                                        {/* Buttons as Distinct Cards */}
                                         {buttons.length > 0 && (
-                                            <div className="mt-1 flex flex-col w-full border-t border-gray-100 divide-y divide-gray-100">
+                                            <div className="flex flex-col w-full gap-1 mt-0.5">
                                                 {buttons.map((b, i) => (
-                                                    <button key={i} className="py-2.5 text-[#00a884] font-medium text-[15px] flex items-center justify-center gap-2 hover:bg-gray-50 active:bg-gray-100 transition-colors w-full rounded-b-lg">
-                                                        {b.type === 'FLOW' && <List size={16} />} 
-                                                        {b.type === 'URL' && <ExternalLink size={16} />} 
-                                                        {b.text || 'Action'}
-                                                    </button>
+                                                    <ActionButton key={i} text={b.text || 'Action Button'} iconType={b.type} />
                                                 ))}
                                             </div>
                                         )}
                                     </PhonePreviewFrame>
+                                    
+                                    <div className="mt-8 text-center space-y-1">
+                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Preview Mode</p>
+                                         <p className="text-[11px] text-gray-500 px-8">This is an approximation. The actual display may vary slightly depending on the user's device and WhatsApp version.</p>
+                                    </div>
                                 </div>
                             </div>
+  </div>
+                        </div>
+                    )}
+
+                    {/* Flow Selector Modal Overlay */}
+                    {showFlowSelector.isOpen && (
+                        <div className="absolute inset-0 z-[100] bg-white/95 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-200">
+                             <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col max-h-[80vh] overflow-hidden">
+                                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                                    <h2 className="text-xl font-extrabold text-[#1c1e21]">Select a Flow</h2>
+                                    <button onClick={() => setShowFlowSelector({ isOpen: false, buttonIdx: -1 })} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
+                                </div>
+                                <div className="p-6 border-b border-gray-100">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+                                        <input value={flowSearch} onChange={e => setFlowSearch(e.target.value)}
+                                            placeholder="Search flows by name..."
+                                            className="w-full pl-10 pr-4 py-3 bg-[#f0f2f5] border-0 rounded-xl text-sm focus:ring-2 focus:ring-[#0866FF] outline-none" />
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                    {publishedFlows.filter(f => f.name.toLowerCase().includes(flowSearch.toLowerCase())).map(f => (
+                                        <div key={f.id} 
+                                            onClick={() => {
+                                                updateButton(showFlowSelector.buttonIdx, 'flow_id', f.id);
+                                                setShowFlowSelector({ isOpen: false, buttonIdx: -1 });
+                                            }}
+                                            className="group flex items-center justify-between p-4 rounded-2xl hover:bg-[#f0f2f5] cursor-pointer transition-all border border-transparent hover:border-gray-200">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-[#e7f3ff] rounded-xl flex items-center justify-center text-[#0866FF]">
+                                                    <Workflow size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-[#1c1e21]">{f.name}</p>
+                                                    <p className="text-[11px] text-[#606770] font-medium uppercase tracking-wider">{f.status}</p>
+                                                </div>
+                                            </div>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="bg-[#0866FF] text-white p-1 rounded-full shadow-sm">
+                                                    <CheckCircle size={14} fill="currentColor" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                             </div>
+                        </div>
+                    )}
+
+                    {/* Flow Creator Modal Overlay */}
+                    {showFlowCreator.isOpen && (
+                        <div className="absolute inset-0 z-[100] bg-white/95 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-200">
+                             <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] overflow-hidden">
+                                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                    <div>
+                                        <h2 className="text-xl font-extrabold text-[#1c1e21]">Create a Flow</h2>
+                                        <p className="text-xs text-[#606770] font-medium mt-0.5">Build a simple survey or interaction for your template</p>
+                                    </div>
+                                    <button onClick={() => setShowFlowCreator({ isOpen: false, buttonIdx: -1 })} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-10 flex flex-col items-center justify-center text-center space-y-6">
+                                    <div className="w-20 h-20 bg-[#e7f3ff] rounded-3xl flex items-center justify-center text-[#0866FF] shadow-inner">
+                                        <Workflow size={40} />
+                                    </div>
+                                    <div className="max-w-md space-y-2">
+                                        <h3 className="text-lg font-bold text-[#1c1e21]">Survey Flow Builder</h3>
+                                        <p className="text-sm text-[#606770]">You can build a simple survey flow directly here. For more complex logic, please use the Main Flow Builder.</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+                                        <div className="p-6 border-2 border-[#dddfe2] rounded-2xl hover:border-[#0866FF] cursor-pointer transition-all group bg-white shadow-sm">
+                                            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#e7f3ff] group-hover:text-[#0866FF] transition-colors"><List size={20} /></div>
+                                            <h4 className="font-bold text-[#1c1e21] mb-1">Single Question</h4>
+                                            <p className="text-[11px] text-[#606770]">One screen with options</p>
+                                        </div>
+                                        <div className="p-6 border-2 border-[#dddfe2] rounded-2xl hover:border-[#0866FF] cursor-pointer transition-all group bg-white shadow-sm">
+                                            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#e7f3ff] group-hover:text-[#0866FF] transition-colors"><Workflow size={20} /></div>
+                                            <h4 className="font-bold text-[#1c1e21] mb-1">Multiple Screens</h4>
+                                            <p className="text-[11px] text-[#606770]">Sequential survey flow</p>
+                                        </div>
+                                    </div>
+                                    <button className="px-8 py-3 bg-[#0866FF] text-white font-bold rounded-xl shadow-lg hover:bg-[#166fe5] hover:scale-105 transition-all">Start Building</button>
+                                </div>
+                             </div>
                         </div>
                     )}
 
@@ -574,3 +800,18 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess, tenant
         </div>
     );
 }
+
+{/* --- Helper Components & Functions --- */}
+
+const renderTextHighlights = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\*[^\*]+\*|_[^_]+_|~[^~]+~|```[^\`]+```|\{\{[0-9]+\}\})/g);
+    return parts.map((part, i) => {
+        if (part.startsWith('*') && part.endsWith('*')) return <strong key={i}>{part.slice(1, -1)}</strong>;
+        if (part.startsWith('_') && part.endsWith('_')) return <em key={i}>{part.slice(1, -1)}</em>;
+        if (part.startsWith('~') && part.endsWith('~')) return <del key={i}>{part.slice(1, -1)}</del>;
+        if (part.startsWith('```') && part.endsWith('```')) return <code key={i} className="bg-gray-100 px-1 rounded">{part.slice(3, -3)}</code>;
+        if (part.startsWith('{{') && part.endsWith('}}')) return <span key={i} className="text-[#0866FF] font-bold">{part}</span>;
+        return part;
+    });
+};
