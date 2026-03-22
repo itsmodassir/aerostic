@@ -251,8 +251,8 @@ export default function FlowEditorPage() {
         try {
             const parsed = JSON.parse(jsonContent);
             const version = parseFloat(parsed.version);
-            if (version < 3.1) {
-                if (!confirm(`Warning: Flow version "${parsed.version}" is below the recommended 3.1. Meta Graph API v21.0 may reject older versions. Proceed anyway?`)) {
+            if (version < 7.3) {
+                if (!confirm(`Warning: Flow version "${parsed.version}" is below the recommended 7.3. Versions below 5.0 are frozen and may be rejected. Proceed anyway?`)) {
                     return;
                 }
             }
@@ -265,7 +265,7 @@ export default function FlowEditorPage() {
             router.push(`/dashboard/${workspaceId}/settings/whatsapp/flows`);
         } catch (err: any) {
             const errorMsg = err.response?.data?.message || 'Publishing attempt failed.';
-            alert(`${errorMsg}\n\nTip: Ensure your Flow version is "3.1" or higher for API v21.0.`);
+            alert(`${errorMsg}\n\nTip: Ensure your Flow version is "7.3" for API v21.0 in 2026.`);
         } finally {
             setPublishing(false);
         }
