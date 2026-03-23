@@ -6,7 +6,7 @@ function toCanonicalAppPath(pathname: string): string | null {
     if (!match) return null;
 
     const rest = match[1];
-    if (!rest) return '/dashboard';
+    if (!rest) return null;
 
     const normalized = rest.replace(/^\/+/, '');
 
