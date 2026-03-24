@@ -22,8 +22,8 @@ const FlowNode = ({ data, selected }: NodeProps<WorkflowUIFlowNode>) => {
                     {data.flowId ? (
                         <div className="flex flex-col gap-1">
                             <span className="font-semibold text-gray-700">Flow ID:</span>
-                            <span className="truncate opacity-75 font-mono">{data.flowId}</span>
-                            <span className="text-[10px] bg-pink-50 px-1.5 py-0.5 rounded w-fit text-pink-600 uppercase font-bold mt-1">{data.flowAction || 'NAVIGATE'}</span>
+                            <span className="truncate opacity-75 font-mono">{data.flowId as string}</span>
+                            <span className="text-[10px] bg-pink-50 px-1.5 py-0.5 rounded w-fit text-pink-600 uppercase font-bold mt-1">{(data.flowAction as string) || 'NAVIGATE'}</span>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 text-gray-400">
