@@ -23,36 +23,41 @@ export function proxy(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const { pathname, search } = request.nextUrl;
     const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aimstore.in';
+    
+    // Resolve preferred tenant from cookies, fallback to 'default'
+    const tenantCookie = request.cookies.get('selected_tenant')?.value;
+    const activeTenant = tenantCookie || 'default';
+
     const appPathAliases: Record<string, string> = {
-        '/contacts': '/dashboard/default/contacts',
-        '/message': '/dashboard/default/inbox',
-        '/messages': '/dashboard/default/inbox',
-        '/campaigns': '/dashboard/default/campaigns',
-        '/templates': '/dashboard/default/templates',
-        '/wallet': '/dashboard/default/wallet',
-        '/leads': '/dashboard/default/leads',
-        '/analytics': '/dashboard/default/analytics',
-        '/automation': '/dashboard/default/automation',
-        '/ai-agent': '/dashboard/default/agents',
-        '/agents': '/dashboard/default/agents',
-        '/scheduler': '/dashboard/default/scheduler',
-        '/referrals': '/dashboard/default/referrals',
-        '/knowledge-base': '/dashboard/default/knowledge',
-        '/settings/whatsapp': '/dashboard/default/settings/whatsapp',
-        '/settings/whatsapp/flows': '/dashboard/default/settings/whatsapp/flows',
-        '/settings/ai': '/dashboard/default/settings/ai',
-        '/settings/email': '/dashboard/default/settings/email',
-        '/settings': '/dashboard/default/settings/whatsapp',
-        '/billing': '/dashboard/default/billing',
-        '/profile': '/dashboard/default/profile',
-        '/reseller/clients': '/dashboard/default/reseller/clients',
-        '/reseller/branding': '/dashboard/default/reseller/branding',
+        '/contacts': `/dashboard/${activeTenant}/contacts`,
+        '/message': `/dashboard/${activeTenant}/inbox`,
+        '/messages': `/dashboard/${activeTenant}/inbox`,
+        '/campaigns': `/dashboard/${activeTenant}/campaigns`,
+        '/templates': `/dashboard/${activeTenant}/templates`,
+        '/wallet': `/dashboard/${activeTenant}/wallet`,
+        '/leads': `/dashboard/${activeTenant}/leads`,
+        '/analytics': `/dashboard/${activeTenant}/analytics`,
+        '/automation': `/dashboard/${activeTenant}/automation`,
+        '/ai-agent': `/dashboard/${activeTenant}/agents`,
+        '/agents': `/dashboard/${activeTenant}/agents`,
+        '/scheduler': `/dashboard/${activeTenant}/scheduler`,
+        '/referrals': `/dashboard/${activeTenant}/referrals`,
+        '/knowledge-base': `/dashboard/${activeTenant}/knowledge`,
+        '/settings/whatsapp': `/dashboard/${activeTenant}/settings/whatsapp`,
+        '/settings/whatsapp/flows': `/dashboard/${activeTenant}/settings/whatsapp/flows`,
+        '/settings/ai': `/dashboard/${activeTenant}/settings/ai`,
+        '/settings/email': `/dashboard/${activeTenant}/settings/email`,
+        '/settings': `/dashboard/${activeTenant}/settings/whatsapp`,
+        '/billing': `/dashboard/${activeTenant}/billing`,
+        '/profile': `/dashboard/${activeTenant}/profile`,
+        '/reseller/clients': `/dashboard/${activeTenant}/reseller/clients`,
+        '/reseller/branding': `/dashboard/${activeTenant}/reseller/branding`,
     };
     const appAliasPrefixes: Array<[string, string]> = [
-        ['/automation/', '/dashboard/default/automation/'],
-        ['/ai-agent/', '/dashboard/default/agents/'],
-        ['/campaigns/', '/dashboard/default/campaigns/'],
-        ['/settings/whatsapp/flows/', '/dashboard/default/settings/whatsapp/flows/'],
+        ['/automation/', `/dashboard/${activeTenant}/automation/`],
+        ['/ai-agent/', `/dashboard/${activeTenant}/agents/`],
+        ['/campaigns/', `/dashboard/${activeTenant}/campaigns/`],
+        ['/settings/whatsapp/flows/', `/dashboard/${activeTenant}/settings/whatsapp/flows/`],
     ];
 
     // 0. API Subdomain

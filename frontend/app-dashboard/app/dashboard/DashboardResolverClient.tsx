@@ -47,6 +47,7 @@ export default function DashboardResolverClient() {
                 }
 
                 if (preferredTenantSlug) {
+                    document.cookie = `selected_tenant=${preferredTenantSlug}; path=/; max-age=31536000; SameSite=Lax`;
                     router.replace(`/dashboard/${preferredTenantSlug}`);
                     return;
                 }
@@ -75,7 +76,9 @@ export default function DashboardResolverClient() {
                 }
 
                 if (slug || id) {
-                    router.replace(`/dashboard/${slug || id}`);
+                    const target = slug || id;
+                    document.cookie = `selected_tenant=${target}; path=/; max-age=31536000; SameSite=Lax`;
+                    router.replace(`/dashboard/${target}`);
                     return;
                 }
 
