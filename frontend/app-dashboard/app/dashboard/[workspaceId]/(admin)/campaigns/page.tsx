@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { Plus, Send, Copy, AlertCircle, FileSpreadsheet, Users, UserCheck, ChevronRight, ChevronLeft, Upload, Megaphone, BarChart3, Wallet, X, CheckCircle2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { clsx } from 'clsx';
-const Papa = require('papaparse');
+import Papa from 'papaparse';
 
 interface Campaign {
     id: string;
