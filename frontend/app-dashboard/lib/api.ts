@@ -14,20 +14,7 @@ function isUuid(value?: string | null): value is string {
     return !!value && UUID_V4_REGEX.test(value);
 }
 
-async function resolveTenantIdFromSession(): Promise<string | null> {
-    try {
-        const res = await fetch('/api/v1/auth/me', {
-            credentials: 'include',
-            cache: 'no-store',
-        });
-        if (!res.ok) return null;
-        const payload = await res.json();
-        const tenantId = payload?.tenantId;
-        return isUuid(tenantId) ? tenantId : null;
-    } catch {
-        return null;
-    }
-}
+
 
 // Request interceptor to automatically add the tenant ID and Auth Token
 api.interceptors.request.use(async (config) => {
@@ -58,11 +45,6 @@ api.interceptors.request.use(async (config) => {
                 if (isUuid(savedTenantId)) {
                     tenantId = savedTenantId;
                 }
-            }
-
-            // Last fallback: resolve current tenant context from authenticated profile.
-            if (!tenantId) {
-                tenantId = await resolveTenantIdFromSession();
             }
 
             if (tenantId) {

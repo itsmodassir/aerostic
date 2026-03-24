@@ -191,32 +191,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         }
     }, [user, isAdmin, router]);
 
-    // Redirect 'default' to actual workspace
-    useEffect(() => {
-        // If we're on a reseller subdomain (isReseller is true), prioritize the resolved tenant
-        if (!pathname.startsWith('/dashboard')) {
-            return;
-        }
 
-        if (workspaceId === 'default' && isReseller && membership?.tenant?.slug) {
-            router.replace(`/dashboard/${membership.tenant.slug}`);
-            return;
-        }
-
-        if (workspaceId === 'default' && user && !isReseller) {
-            fetch('/api/v1/auth/workspaces', { credentials: 'include' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.length > 0) {
-                        const firstSlug = data[0].tenant?.slug;
-                        if (firstSlug) {
-                            router.replace(`/dashboard/${firstSlug}`);
-                        }
-                    }
-                })
-                .catch(err => console.error('Failed to resolve default workspace:', err));
-        }
-    }, [workspaceId, user, router, isReseller, membership, pathname]);
 
     // notifications - loaded from real audit logs
     const [notifications, setNotifications] = useState<any[]>([]);
