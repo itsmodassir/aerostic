@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   generateBuildId: async () => {
     // This ensures that all nodes in a cluster use the same build ID
     // and prevents ChunkLoadError during deployments
-    return process.env.GIT_COMMIT_HASH || 'aimstore-' + Date.now();
+    return 'build-' + Date.now();
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
