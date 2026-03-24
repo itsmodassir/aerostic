@@ -200,6 +200,8 @@ const MemoryNode = ({ data }: NodeProps<WorkflowUIFlowNode>) => (
     </div>
 );
 
+import FlowNode from './FlowNode';
+
 const nodeTypes = {
     trigger: TriggerNode,
     action: ActionNode,
@@ -210,6 +212,7 @@ const nodeTypes = {
     google_sheets: GoogleSheetsNode,
     contact: ContactNode,
     template: TemplateNode,
+    whatsapp_flow: FlowNode,
     email: EmailNode,
     chat: ChatNode,
     webhook: WebhookNode,
@@ -661,6 +664,10 @@ function WorkflowBuilder() {
                         <button onClick={() => addNode('template')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Zap size={20} />
                             <span className="text-sm font-bold">Send Template</span>
+                        </button>
+                        <button onClick={() => addNode('whatsapp_flow')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                            <Zap size={20} />
+                            <span className="text-sm font-bold">WhatsApp Flow</span>
                         </button>
                         <button onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Mail size={20} />

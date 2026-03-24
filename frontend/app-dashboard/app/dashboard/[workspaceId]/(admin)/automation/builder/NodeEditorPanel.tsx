@@ -17,31 +17,135 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
     const [localData, setLocalData] = useState(node.data);
     const [mailboxes, setMailboxes] = useState<any[]>([]);
     const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
+    const [whatsappTemplates, setWhatsappTemplates] = useState<any[]>([]);
+    const [whatsappFlows, setWhatsappFlows] = useState<any[]>([]);
 
     useEffect(() => {
         setLocalData(node.data);
-        if (node.type === 'email') {
-            const fetchData = async () => {
-                try {
+        const fetchData = async () => {
+            try {
+                if (node.type === 'email') {
                     const [mbRes, tpRes] = await Promise.all([
                         api.get('/mailboxes'),
                         api.get('/email-templates')
                     ]);
                     setMailboxes(mbRes.data);
                     setEmailTemplates(tpRes.data);
-                } catch (err) {
-                    console.error('Failed to fetch email data', err);
                 }
-            };
-            fetchData();
-        }
-    }, [node.id, node.data]);
+                if (node.type === 'template') {
+                    const res = await api.get('/templates');
+                    setWhatsappTemplates(res.data);
+                }
+                if (node.type === 'whatsapp_flow') {
+                    const res = await api.get('/whatsapp/flows/published');
+                    setWhatsappFlows(res.data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch node data', err);
+            }
+        };
+        fetchData();
+    }, [node.id, node.type, node.data]);
 
     const handleChange = (field: string, value: any) => {
         const newData = { ...localData, [field]: value };
         setLocalData(newData);
         onUpdate(node.id, newData);
     };
+
+    const renderTemplateConfig = () => (
+        <div className="space-y-4">
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">WhatsApp Template</label>
+                <select
+                    value={localData.templateName || ''}
+                    onChange={(e) => {
+                        const template = whatsappTemplates.find(t => t.name === e.target.value);
+                        handleChange('templateName', e.target.value);
+                        if (template) {
+                            handleChange('language', template.language || 'en_US');
+                            // Initialize components if needed
+                        }
+                    }}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
+                >
+                    <option value="">Select Template...</option>
+                    {whatsappTemplates.map(t => (
+                        <option key={t.id} value={t.name}>{t.name} ({t.language})</option>
+                    ))}
+                </select>
+            </div>
+            {localData.templateName && (
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Variable Mapping</label>
+                    <p className="text-[10px] text-gray-400 mb-2 italic">Map dynamic values to your template variables (e.g. {"{{1}}"}), {"{{2}}"}).</p>
+                    <VariableInput
+                        value={localData.components || '[]'}
+                        textarea
+                        onChange={(v) => handleChange('components', v)}
+                        nodes={nodes}
+                        className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-mono resize-none"
+                        placeholder='[{"type": "body", "parameters": [{"type": "text", "text": "{{trigger.body}}"}]}]'
+                    />
+                </div>
+            )}
+        </div>
+    );
+
+    const renderWhatsappFlowConfig = () => (
+        <div className="space-y-4">
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">WhatsApp Flow</label>
+                <select
+                    value={localData.flowId || ''}
+                    onChange={(e) => {
+                        const flow = whatsappFlows.find(f => f.id === e.target.value);
+                        handleChange('flowId', e.target.value);
+                        if (flow) {
+                            handleChange('flowName', flow.name);
+                        }
+                    }}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
+                >
+                    <option value="">Select Flow...</option>
+                    {whatsappFlows.map(f => (
+                        <option key={f.id} value={f.id}>{f.name} ({f.status})</option>
+                    ))}
+                </select>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Flow Action</label>
+                <select
+                    value={localData.flowAction || 'NAVIGATE'}
+                    onChange={(e) => handleChange('flowAction', e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
+                >
+                    <option value="NAVIGATE">Navigate</option>
+                    <option value="DATA_EXCHANGE">Data Exchange</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Initial Screen ID</label>
+                <VariableInput
+                    value={localData.screenId || ''}
+                    onChange={(v) => handleChange('screenId', v)}
+                    nodes={nodes}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                    placeholder="e.g. WELCOME_SCREEN"
+                />
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Button Text</label>
+                <VariableInput
+                    value={localData.ctaText || 'Open Flow'}
+                    onChange={(v) => handleChange('ctaText', v)}
+                    nodes={nodes}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                    placeholder="e.g. Book Appointment"
+                />
+            </div>
+        </div>
+    );
 
     const renderMemoryConfig = () => (
         <div className="space-y-4">
@@ -553,6 +657,8 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     {node.type === 'condition' && renderConditionConfig()}
                     {node.type === 'api_request' && renderApiConfig()}
                     {(node.type === 'ai_agent' || node.type === 'gemini_model') && renderAiConfig()}
+                    {node.type === 'template' && renderTemplateConfig()}
+                    {node.type === 'whatsapp_flow' && renderWhatsappFlowConfig()}
                     {node.type === 'lead_update' && renderLeadConfig()}
                     {node.type === 'memory' && renderMemoryConfig()}
                     {node.type === 'knowledge_query' && renderKnowledgeConfig()}

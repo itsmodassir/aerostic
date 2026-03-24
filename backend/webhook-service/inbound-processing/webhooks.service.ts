@@ -180,6 +180,37 @@ export class WebhooksService {
       await this.messageRepo.save(message);
       this.logger.log(`Message saved successfully: ${message.id}`);
 
+      // Handle WhatsApp Flow Responses (nfm_reply)
+      if (messageData.type === 'interactive' && messageData.interactive?.type === 'nfm_reply') {
+        const flowReply = messageData.interactive.nfm_reply;
+        try {
+          const responseJson = JSON.parse(flowReply.response_json || '{}');
+          this.logger.log(`WhatsApp Flow reply received for contact ${contact.id}: ${JSON.stringify(responseJson)}`);
+
+          // Update contact attributes
+          contact.attributes = {
+            ...(contact.attributes || {}),
+            ...responseJson
+          };
+          await this.contactRepo.save(contact);
+
+          // Trigger flow_response workflow
+          await this.workflowsService.executeTrigger(
+            account.tenantId,
+            "flow_response",
+            {
+              from,
+              contactId: contact.id,
+              conversationId: conversation.id,
+              flowResponse: responseJson
+            }
+          );
+        } catch (e: any) {
+          this.logger.error(`Failed to parse WhatsApp Flow response: ${flowReply.response_json}`, e.stack);
+        }
+      }
+
+
       this.messagesGateway.emitNewMessage(account.tenantId, {
         conversationId: conversation.id,
         contactId: contact.id,
