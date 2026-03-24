@@ -9,7 +9,7 @@ import {
     Clock, Mail, Phone, Building2, Send, RefreshCw,
     Volume2, VolumeX, Zap, CreditCard, Smartphone, ShieldCheck
 } from 'lucide-react';
-import FacebookSDKLoader from '@/components/FacebookSDKLoader';
+import FacebookSDKLoader, { launchWhatsAppSignup } from '@/components/FacebookSDKLoader';
 import AccountDetailsCard from '@/components/whatsapp/AccountDetailsCard';
 import QualityRatingIndicator from '@/components/whatsapp/QualityRatingIndicator';
 import MessagingLimitsCard from '@/components/whatsapp/MessagingLimitsCard';
@@ -118,30 +118,15 @@ export default function WhatsappSettingsPage() {
             return;
         }
 
-        const redirectUri = metaConfig.redirectUri || 'https://app.aimstore.in/meta/callback';
-        const state = tenantId;
-
-        const fbUrl = `https://www.facebook.com/v19.0/dialog/oauth?` +
-            `client_id=${metaConfig.appId}` +
-            `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-            `&response_type=code` +
-            `&config_id=${metaConfig.configId}` +
-            `&state=${state}`;
-
-        const width = 600;
-        const height = 700;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-
-        const popup = window.open(
-            fbUrl,
-            'facebook-login',
-            `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,toolbar=no,menubar=no,scrollbars=yes`
+        launchWhatsAppSignup(
+            metaConfig.configId,
+            tenantId || '',
+            (code) => {
+                // When we get the code, redirect to our callback page to finish the process
+                const state = tenantId || '';
+                window.location.href = `/meta/callback?code=${code}&state=${state}`;
+            }
         );
-
-        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-            alert('Popup was blocked. Please enable popups for this site and try again.');
-        }
     };
 
     const handleManualSubmit = async () => {
