@@ -44,7 +44,9 @@ export function proxy(request: NextRequest) {
         '/referrals': `/dashboard/${activeTenant}/referrals`,
         '/knowledge-base': `/dashboard/${activeTenant}/knowledge`,
         '/settings/whatsapp': `/dashboard/${activeTenant}/settings/whatsapp`,
+        '/settings/whatsapp/trigger-flow': `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow`,
         '/settings/whatsapp/flows': `/dashboard/${activeTenant}/settings/whatsapp/flows`,
+        '/trigger-flow': `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow`,
         '/settings/ai': `/dashboard/${activeTenant}/settings/ai`,
         '/settings/email': `/dashboard/${activeTenant}/settings/email`,
         '/settings': `/dashboard/${activeTenant}/settings/whatsapp`,
@@ -57,6 +59,7 @@ export function proxy(request: NextRequest) {
         ['/automation/', `/dashboard/${activeTenant}/automation/`],
         ['/ai-agent/', `/dashboard/${activeTenant}/agents/`],
         ['/campaigns/', `/dashboard/${activeTenant}/campaigns/`],
+        ['/settings/whatsapp/trigger-flow/', `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow/`],
         ['/settings/whatsapp/flows/', `/dashboard/${activeTenant}/settings/whatsapp/flows/`],
     ];
 

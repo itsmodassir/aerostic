@@ -363,14 +363,53 @@ export class WorkflowsService {
     context: any,
     edge: any,
   ): Promise<boolean> {
-    const { condition, value } = node.data;
-    const body = (context.messageBody || "").toLowerCase();
-    const val = (value || "").toLowerCase();
+    const { condition, value, field } = node.data;
+
+    const resolveField = (source: any, path?: string) => {
+      if (!path) return source?.messageBody ?? "";
+      return path.split(".").reduce((acc, key) => {
+        if (acc === null || acc === undefined) return undefined;
+        return acc[key];
+      }, source);
+    };
+
+    const rawValue = resolveField(context, field);
+    const target = typeof rawValue === "string"
+      ? rawValue.toLowerCase()
+      : JSON.stringify(rawValue ?? "").toLowerCase();
+    const val = String(value || "").toLowerCase();
 
     let match = false;
-    if (condition === "contains") match = body.includes(val);
-    else if (condition === "exact") match = body === val;
-    else match = true; // default pass if no condition specified
+    switch (condition) {
+      case "contains":
+        match = target.includes(val);
+        break;
+      case "exact":
+      case "equals":
+        match = target === val;
+        break;
+      case "not_contains":
+        match = !target.includes(val);
+        break;
+      case "not_equals":
+        match = target !== val;
+        break;
+      case "exists":
+        match = rawValue !== undefined && rawValue !== null && rawValue !== "";
+        break;
+      case "not_exists":
+        match = rawValue === undefined || rawValue === null || rawValue === "";
+        break;
+      case "greater_than":
+        match = Number(rawValue) > Number(value);
+        break;
+      case "less_than":
+        match = Number(rawValue) < Number(value);
+        break;
+      default:
+        match = true; // default pass if no condition specified
+        break;
+    }
 
     // If the edge has a sourceHandle (e.g. "true" or "false"), respect it
     if (edge.sourceHandle === "true") return match;

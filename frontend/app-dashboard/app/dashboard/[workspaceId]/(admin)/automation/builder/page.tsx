@@ -83,7 +83,13 @@ const TriggerNode = ({ data }: NodeProps<WorkflowUIFlowNode<TriggerNodeData>>) =
         </div>
         <div className="p-4">
             <h4 className="font-bold text-gray-900">{data.label}</h4>
-            <p className="text-[10px] text-gray-500 mt-1">Starts when a new message is received</p>
+            <p className="text-[10px] text-gray-500 mt-1">
+                {data.triggerType === 'flow_response'
+                    ? 'Starts when a WhatsApp flow response is received'
+                    : data.triggerType === 'new_message' || data.triggerType === 'whatsapp_response'
+                        ? 'Starts when a WhatsApp reply is received'
+                        : 'Starts when a new message is received'}
+            </p>
         </div>
         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-amber-500" />
     </div>

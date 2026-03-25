@@ -51,7 +51,7 @@ export interface BaseNodeData extends Record<string, unknown> {
  * Trigger Node - Starts the workflow
  */
 export interface TriggerNodeData extends BaseNodeData {
-    triggerType: 'manual' | 'webhook' | 'schedule' | 'event';
+    triggerType: 'manual' | 'webhook' | 'schedule' | 'event' | 'new_message' | 'flow_response' | 'whatsapp_response';
     webhookUrl?: string;
     schedule?: string; // Cron expression
     eventType?: string;

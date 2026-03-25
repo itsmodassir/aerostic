@@ -45,6 +45,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
+    // notifications - loaded from real audit logs
+    const [notifications, setNotifications] = useState<any[]>([]);
     const profileRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -67,8 +69,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             name: 'Settings',
             icon: Settings,
             permission: 'billing:manage',
-            children: [
+                children: [
                 { name: 'WhatsApp', href: '/settings/whatsapp' },
+                { name: 'Trigger Flow', href: '/settings/whatsapp/trigger-flow' },
                 { name: 'Email Flow', href: '/settings/email' },
                 { name: 'AI Models', href: '/settings/ai' },
                 { name: 'Wallet', href: '/wallet' },
@@ -192,9 +195,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }, [user, isAdmin, router]);
 
 
-
-    // notifications - loaded from real audit logs
-    const [notifications, setNotifications] = useState<any[]>([]);
 
     useEffect(() => {
         if (!user) return;

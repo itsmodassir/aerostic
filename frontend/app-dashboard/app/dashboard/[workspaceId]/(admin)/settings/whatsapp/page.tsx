@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { useParams } from 'next/navigation';
@@ -7,7 +8,7 @@ import {
     Facebook, Settings, CheckCircle, XCircle, AlertCircle,
     Key, Globe, Shield, ArrowRight, Copy, Eye, EyeOff,
     Clock, Mail, Phone, Building2, Send, RefreshCw,
-    Volume2, VolumeX, Zap, CreditCard, Smartphone, ShieldCheck
+    Volume2, VolumeX, Zap, CreditCard, Smartphone, ShieldCheck, Workflow
 } from 'lucide-react';
 import FacebookSDKLoader, { launchWhatsAppSignup } from '@/components/FacebookSDKLoader';
 import AccountDetailsCard from '@/components/whatsapp/AccountDetailsCard';
@@ -212,6 +213,9 @@ export default function WhatsappSettingsPage() {
                     <p className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] mt-3 ml-1">Enterprise API Infrastructure</p>
                 </div>
                 <div className="flex gap-4">
+                    <Link href="/settings/whatsapp/trigger-flow" className="px-5 py-4 bg-gray-900 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3">
+                        <Workflow size={16} /> Trigger Flow
+                    </Link>
                      <button
                         onClick={toggleSound}
                         className={clsx(
