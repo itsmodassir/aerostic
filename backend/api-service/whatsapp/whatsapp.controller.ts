@@ -30,8 +30,7 @@ export class WhatsappController {
       throw new BadRequestException("Invalid embedded signup mode");
     }
     const url = await this.whatsappService.getEmbeddedSignupUrl(
-      tenantId,
-      selectedMode,
+      tenantId
     );
     return { url };
   }
@@ -48,8 +47,7 @@ export class WhatsappController {
       throw new BadRequestException("Invalid embedded signup mode");
     }
     const url = await this.whatsappService.getEmbeddedSignupUrl(
-      tenantId,
-      selectedMode,
+      tenantId
     );
     return res.redirect(url);
   }
