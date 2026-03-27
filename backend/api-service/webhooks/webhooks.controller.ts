@@ -18,7 +18,7 @@ export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) { }
 
   @Get("meta")
-  verify(
+  async verify(
     @Query("hub.mode") mode: string,
     @Query("hub.verify_token") token: string,
     @Query("hub.challenge") challenge: string,
@@ -26,7 +26,7 @@ export class WebhooksController {
   ) {
     this.logger.log(`Received verification request: mode=${mode}, token=${token}`);
     try {
-      const result = this.webhooksService.verifyWebhook(mode, token, challenge);
+      const result = await this.webhooksService.verifyWebhook(mode, token, challenge);
       this.logger.log("Verification successful");
       return res.status(HttpStatus.OK).send(result);
     } catch (e) {
@@ -47,7 +47,7 @@ export class WebhooksController {
 
     // Use rawBody if available, otherwise fallback to stringified body (less reliable)
     const rawBody = (req as any).rawBody || JSON.stringify(body);
-    const isValid = this.webhooksService.verifySignature(
+    const isValid = await this.webhooksService.verifySignature(
       rawBody,
       signature,
     );

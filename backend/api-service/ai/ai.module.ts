@@ -8,12 +8,14 @@ import { KnowledgeChunk } from "./entities/knowledge-chunk.entity";
 import { AiController } from "./ai.controller";
 import { AuditModule } from "../audit/audit.module";
 import { KnowledgeBaseService } from "./knowledge-base.service";
+import { AdminModule } from "../admin/admin.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([AiAgent, KnowledgeBase, KnowledgeChunk]),
     MessagesModule,
     AuditModule,
+    AdminModule,
   ],
   controllers: [AiController],
   providers: [AiService, KnowledgeBaseService],

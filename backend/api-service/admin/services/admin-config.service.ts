@@ -289,7 +289,7 @@ export class AdminConfigService implements OnModuleInit {
     const configs = await this.configRepo.find();
     const result: Record<string, any> = {};
 
-    // Map keys to env vars
+    // Map keys to env vars (env vars are bootstrap seeds only, NOT overrides)
     const envMap: Record<string, string> = {
       "meta.app_id": "META_APP_ID",
       "meta.app_secret": "META_APP_SECRET",
@@ -300,48 +300,45 @@ export class AdminConfigService implements OnModuleInit {
       "razorpay.key_secret": "RAZORPAY_KEY_SECRET",
       "razorpay.webhook_secret": "RAZORPAY_WEBHOOK_SECRET",
       "ai.gemini_api_key": "GEMINI_API_KEY",
+      "ai.openai_api_key": "OPENAI_API_KEY",
       "platform.app_url": "APP_URL",
     };
 
-    // Start with defaults + Env fallback (Strict Priority)
-    for (const [key, def] of Object.entries(DEFAULT_CONFIG)) {
-      let value = def.value;
-      const envKey = envMap[key];
-      let source = "default";
-
-      if (envKey) {
-        const envVal = this.configService.get(envKey);
-        if (envVal) {
-          value = envVal;
-          source = "env";
-        }
-      }
-
-      result[key] = {
-        value: def.isSecret && value ? "••••••••••••••••" : value,
-        description: def.description,
-        category: def.category,
-        isSecret: def.isSecret || false,
-        source: source,
-        readOnly: source === "env",
-      };
+    // Build index of DB values (DB wins — admin panel is authoritative)
+    const dbIndex: Record<string, SystemConfig> = {};
+    for (const config of configs) {
+      dbIndex[config.key] = config;
     }
 
-    // Override with stored values only if not read-only (env-backed)
-    for (const config of configs) {
-      if (result[config.key]?.readOnly) continue;
+    for (const [key, def] of Object.entries(DEFAULT_CONFIG)) {
+      const dbConfig = dbIndex[key];
 
-      result[config.key] = {
-        value: config.isSecret
-          ? "••••••••••••••••"
-          : config.value?.trim() || "",
-        description: config.description,
-        category: config.category,
-        isSecret: config.isSecret,
-        updatedAt: config.updatedAt,
-        source: "database",
-        readOnly: false,
-      };
+      if (dbConfig) {
+        // DB row exists — it is the authoritative value
+        result[key] = {
+          value: dbConfig.isSecret ? "••••••••••••••••" : dbConfig.value?.trim() || "",
+          description: dbConfig.description,
+          category: dbConfig.category,
+          isSecret: dbConfig.isSecret,
+          updatedAt: dbConfig.updatedAt,
+          source: "database",
+          readOnly: false,
+        };
+      } else {
+        // No DB row — show env var or hard default as a seed
+        const envKey = envMap[key];
+        const envVal = envKey ? this.configService.get(envKey) : null;
+        const value = envVal || def.value;
+        const source = envVal ? "env" : "default";
+        result[key] = {
+          value: def.isSecret && value ? "••••••••••••••••" : value,
+          description: def.description,
+          category: def.category,
+          isSecret: def.isSecret || false,
+          source,
+          readOnly: false, // Admin can always override env seeds via admin panel
+        };
+      }
     }
 
     return result;
@@ -373,10 +370,11 @@ export class AdminConfigService implements OnModuleInit {
   }
 
   async getConfigValue(key: string, tenantId?: string): Promise<string | null> {
-    // Check Env first (Strict Priority)
+    // Priority order: DB (tenant) > DB (global) > ENV (bootstrap seed) > hard default
+    // DB is always the authoritative source — admin panel changes take immediate effect.
+
     const envMap: Record<string, string> = {
       "meta.app_id": "META_APP_ID",
-
       "meta.app_secret": "META_APP_SECRET",
       "meta.webhook_verify_token": "META_WEBHOOK_VERIFY_TOKEN",
       "meta.config_id": "META_CONFIG_ID",
@@ -385,16 +383,11 @@ export class AdminConfigService implements OnModuleInit {
       "razorpay.key_secret": "RAZORPAY_KEY_SECRET",
       "razorpay.webhook_secret": "RAZORPAY_WEBHOOK_SECRET",
       "ai.gemini_api_key": "GEMINI_API_KEY",
+      "ai.openai_api_key": "OPENAI_API_KEY",
       "platform.app_url": "APP_URL",
     };
 
-    const envKey = envMap[key];
-    if (envKey) {
-      const envVal = this.configService.get(envKey);
-      if (envVal) return envVal;
-    }
-
-    // Check Cache
+    // 1. Check Cache (fastest)
     const cacheKey = tenantId ? `${tenantId}:${key}` : key;
     const cachedValue = await this.getCache(cacheKey);
     if (cachedValue) {
@@ -404,7 +397,7 @@ export class AdminConfigService implements OnModuleInit {
         : cachedValue;
     }
 
-    // Check Database (with multi-tenancy override support)
+    // 2. Check Database (tenant override first, then global)
     const configValue = await this.configRepo.manager.transaction(async (manager) => {
       await RlsContextUtil.setLocalContext(manager, tenantId || "");
       const config = await manager.findOne(SystemConfig, {
@@ -430,6 +423,14 @@ export class AdminConfigService implements OnModuleInit {
       return configValue;
     }
 
+    // 3. Fallback to ENV var (bootstrap seed — only used when no DB row exists yet)
+    const envKey = envMap[key];
+    if (envKey) {
+      const envVal = this.configService.get(envKey);
+      if (envVal) return envVal;
+    }
+
+    // 4. Hard default
     return DEFAULT_CONFIG[key]?.value || null;
   }
 

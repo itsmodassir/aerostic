@@ -1,39 +1,49 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { ConfigService } from "@nestjs/config";
 import { Repository } from "typeorm";
 import { AiAgent } from "./entities/ai-agent.entity";
 import { MessagesService } from "../messages/messages.service";
-import { ConfigService } from "@nestjs/config";
-import OpenAI from "openai";
 import { KnowledgeChunk } from "./entities/knowledge-chunk.entity";
 import { KnowledgeBase } from "./entities/knowledge-base.entity";
-import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
+import { AdminConfigService } from "../admin/services/admin-config.service";
 
 @Injectable()
 export class AiService {
-  private openai: OpenAI;
-  private genAI: GoogleGenerativeAI;
+  private readonly logger = new Logger(AiService.name);
 
   constructor(
     private messagesService: MessagesService,
     private configService: ConfigService,
+    private adminConfigService: AdminConfigService,
     @InjectRepository(AiAgent)
     private aiAgentRepo: Repository<AiAgent>,
     @InjectRepository(KnowledgeChunk)
     private chunkRepo: Repository<KnowledgeChunk>,
     @InjectRepository(KnowledgeBase)
     private kbRepo: Repository<KnowledgeBase>,
-  ) {
-    // Rely strictly on the environment variable for security
-    const openaiKey = this.configService.get("OPENAI_API_KEY");
-    if (openaiKey) {
-      this.openai = new OpenAI({ apiKey: openaiKey });
-    }
+  ) {}
 
-    const geminiKey = this.configService.get("GEMINI_API_KEY");
-    if (geminiKey) {
-      this.genAI = new GoogleGenerativeAI(geminiKey);
-    }
+  /**
+   * Returns a Gemini client initialized with the current admin config key.
+   * Falls back to env var for backward compatibility.
+   */
+  private async getGeminiClient(): Promise<GoogleGenerativeAI | null> {
+    const key = await this.adminConfigService.getConfigValue("ai.gemini_api_key");
+    if (!key) return null;
+    return new GoogleGenerativeAI(key);
+  }
+
+  /**
+   * Returns an OpenAI client initialized with the current admin config key.
+   * Falls back to env var for backward compatibility.
+   */
+  private async getOpenAIClient(): Promise<OpenAI | null> {
+    const key = await this.adminConfigService.getConfigValue("ai.openai_api_key");
+    if (!key) return null;
+    return new OpenAI({ apiKey: key });
   }
 
   async process(
@@ -42,59 +52,54 @@ export class AiService {
     messageBody: string,
     options?: { model?: string; systemPrompt?: string },
   ) {
-    if (!this.openai && !this.genAI) {
-      // Fallback or error if AI is not configured
+    const genAI = await this.getGeminiClient();
+    const openai = await this.getOpenAIClient();
+
+    if (!openai && !genAI) {
+      this.logger.warn("No AI provider configured. Set ai.gemini_api_key or ai.openai_api_key in admin config.");
       return;
     }
 
     try {
-      // Fetch Agent Configuration (Global Fallback)
       const agent = await this.aiAgentRepo.findOneBy({ tenantId });
 
-      // Use Custom Prompt from Workflow OR Global Agent Prompt OR System Default
       const systemPrompt =
         options?.systemPrompt ||
         agent?.systemPrompt ||
-        "You are a helpful and friendly customer support agent for Aimstors Solution, a SaaS platform. Answer concisely.";
+        "You are a helpful and friendly customer support agent. Answer concisely.";
 
       const isActive = agent ? agent.isActive : true;
+      if (!isActive && !options?.systemPrompt) return;
 
-      if (!isActive && !options?.systemPrompt) {
-        // Only block if using global agent and it's inactive.
-        // If workflow explicitly invoked AI, we should probably run it.
-        return;
-      }
-
-      // Model Selection (Prioritize Gemini Flash if available)
-      const modelName = options?.model || (this.genAI ? "gemini-flash-lite-latest" : "gpt-4o");
+      const modelName = options?.model || (genAI ? "gemini-flash-lite-latest" : "gpt-4o");
       const isGemini = modelName.toLowerCase().includes("gemini");
 
       let contextStr = "";
 
       // 1. Intent Detection
       if (agent?.intentDetection) {
-        const intentPrompt = `Analyze the intent of this user message: "${messageBody}". Is it a simple FAQ, a complex issue requiring HUMAN_SUPPORT, or a SALES inquiry? Reply ONLY with the exact category name: FAQ, HUMAN_SUPPORT, SALES, or OTHER.`;
+        const intentPrompt = `Analyze the intent of this user message: "${messageBody}". Reply ONLY with: FAQ, HUMAN_SUPPORT, SALES, or OTHER.`;
         let intent = "FAQ";
 
-        if (isGemini && this.genAI) {
-          const model = this.genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+        if (isGemini && genAI) {
+          const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
           const result = await model.generateContent(intentPrompt);
           intent = result.response.text().trim();
-        } else if (this.openai) {
-          const intentCompletion = await this.openai.chat.completions.create({
-            model: isGemini ? "gpt-4o" : modelName,
+        } else if (openai) {
+          const r = await openai.chat.completions.create({
+            model: "gpt-4o",
             messages: [{ role: "user", content: intentPrompt }],
             temperature: 0,
           });
-          intent = intentCompletion.choices[0]?.message?.content?.trim() || "FAQ";
+          intent = r.choices[0]?.message?.content?.trim() || "FAQ";
         }
 
-        if (intent.includes('HUMAN_SUPPORT')) {
+        if (intent.includes("HUMAN_SUPPORT")) {
           this.messagesService.send({
             tenantId,
             to: from,
             type: "text",
-            payload: { text: "I noticed your request is quite specific. Let me hand you over to a human agent right away." },
+            payload: { text: "Let me hand you over to a human agent right away." },
           });
           return;
         }
@@ -103,7 +108,7 @@ export class AiService {
 
       // 2. Personalization
       if (agent?.personalizationEnabled) {
-        contextStr += `[Personalization: Adopt a warm, adaptive tone matching the user's implicit sentiment.]\n`;
+        contextStr += `[Personalization: warm, adaptive tone.]\n`;
       }
 
       // 3. Knowledge Base / RAG
@@ -111,41 +116,32 @@ export class AiService {
       let kbContext = "";
       for (const kb of kbs) {
         const chunks = await this.findRelevantChunks(kb.id, messageBody, 3);
-        if (chunks.length > 0) {
-          kbContext += chunks.join("\n---\n") + "\n";
-        }
+        if (chunks.length > 0) kbContext += chunks.join("\n---\n") + "\n";
       }
+      if (kbContext) contextStr += `\n[Reference Knowledge Base]:\n${kbContext}\n`;
 
-      if (kbContext) {
-        contextStr += `\n[Reference Knowledge Base Extracts (use this to answer accurately)]:\n${kbContext}\n`;
-      }
-
-      // Primary Completion
       let aiReply = "";
 
-      if (isGemini && this.genAI) {
-        const model = this.genAI.getGenerativeModel({ model: modelName });
-        const prompt = `${systemPrompt}\n\nContext:\n${contextStr}\n\nNote: If you are extremely uncertain or need a human, reply exactly with "HANDOFF_TO_AGENT".\n\nUser: ${messageBody}`;
+      if (isGemini && genAI) {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const prompt = `${systemPrompt}\n\nContext:\n${contextStr}\n\nNote: If uncertain, reply exactly "HANDOFF_TO_AGENT".\n\nUser: ${messageBody}`;
         const result = await model.generateContent(prompt);
         aiReply = result.response.text();
-      } else if (this.openai) {
-        const completion = await this.openai.chat.completions.create({
+      } else if (openai) {
+        const completion = await openai.chat.completions.create({
           model: modelName,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "system", content: contextStr },
-            { role: "system", content: `Instruction: You are an AI agent. Answer the User based on the System and Context instructions. If you are extremely uncertain or need a human, reply exactly with "HANDOFF_TO_AGENT".` },
-            { role: "user", content: messageBody }
+            { role: "system", content: `Answer the User. If uncertain, reply exactly "HANDOFF_TO_AGENT".` },
+            { role: "user", content: messageBody },
           ],
         });
         aiReply = completion.choices[0]?.message?.content || "";
       }
 
-      if (aiReply.includes("HANDOFF_TO_AGENT")) {
-        return;
-      }
+      if (aiReply.includes("HANDOFF_TO_AGENT")) return;
 
-      // Send the reply
       await this.messagesService.send({
         tenantId,
         to: from,
@@ -153,7 +149,7 @@ export class AiService {
         payload: { text: aiReply },
       });
     } catch (e) {
-      console.error("AI Generation Failed", e);
+      this.logger.error("AI Generation Failed", e);
     }
   }
 
@@ -163,177 +159,113 @@ export class AiService {
     tools: any[],
     systemPrompt: string,
   ): Promise<string> {
-    if (!this.openai) return "AI not configured";
+    const genAI = await this.getGeminiClient();
+    const openai = await this.getOpenAIClient();
 
-    // 1. Prepare Tools
+    if (!openai && !genAI) return "AI not configured";
+
     const toolMap = new Map(tools.map((t) => [t.name, t]));
-
-    const formattedTools = tools.map(t => ({
+    const formattedTools = tools.map((t) => ({
       type: "function" as const,
-      function: {
-        name: t.name,
-        description: t.description,
-        parameters: t.parameters,
-      }
+      function: { name: t.name, description: t.description, parameters: t.parameters },
     }));
 
-    // 2. Start Chat Session History
     const messages: any[] = [
       { role: "system", content: systemPrompt },
-      { role: "system", content: "Understood. I am ready to help." },
-      { role: "user", content: messageBody }
+      { role: "user", content: messageBody },
     ];
 
     try {
-      if (this.openai) {
-        // 3. Execution Loop (OpenAI)
+      if (openai) {
         let turns = 0;
         const MAX_TURNS = 10;
 
         while (turns < MAX_TURNS) {
-          const completion = await this.openai.chat.completions.create({
+          const completion = await openai.chat.completions.create({
             model: "gpt-4o",
-            messages: messages,
+            messages,
             tools: formattedTools.length > 0 ? formattedTools : undefined,
           });
 
           const responseMessage = completion.choices[0]?.message;
           if (!responseMessage) break;
-
           messages.push(responseMessage);
 
           const toolCalls = responseMessage.tool_calls;
+          if (!toolCalls || toolCalls.length === 0) return responseMessage.content || "";
 
-          // If no tool calls, we are done
-          if (!toolCalls || toolCalls.length === 0) {
-            return responseMessage.content || "";
-          }
-
-          // Execute all requested tools
           for (const call of toolCalls) {
             if (call.type !== "function") continue;
-
             const tool = toolMap.get(call.function.name);
-            let functionArgs;
-            try {
-              functionArgs = JSON.parse(call.function.arguments);
-            } catch (e) {
-              functionArgs = {};
-            }
-
+            let functionArgs: any = {};
+            try { functionArgs = JSON.parse(call.function.arguments); } catch {}
             if (tool) {
               try {
-                console.log(`[Agent] Calling Tool: ${call.function.name}`);
                 const output = await tool.execute(functionArgs);
-
-                const content = typeof output === "string" ? output : JSON.stringify(output);
-                messages.push({
-                  tool_call_id: call.id,
-                  role: "tool",
-                  name: call.function.name,
-                  content: content,
-                });
+                messages.push({ tool_call_id: call.id, role: "tool", name: call.function.name, content: typeof output === "string" ? output : JSON.stringify(output) });
               } catch (err: any) {
-                console.error(`[Agent] Tool Error (${call.function.name}):`, err);
-                messages.push({
-                  tool_call_id: call.id,
-                  role: "tool",
-                  name: call.function.name,
-                  content: `Error: ${err.message}`,
-                });
+                messages.push({ tool_call_id: call.id, role: "tool", name: call.function.name, content: `Error: ${err.message}` });
               }
             } else {
-              messages.push({
-                tool_call_id: call.id,
-                role: "tool",
-                name: call.function.name,
-                content: `Error: Tool ${call.function.name} not found`,
-              });
+              messages.push({ tool_call_id: call.id, role: "tool", name: call.function.name, content: `Tool not found` });
             }
           }
-
           turns++;
         }
-      } else if (this.genAI) {
-        // Simple Gemini Fallback (No complex tool loop for now as Gemini tool syntax differs)
-        const model = this.genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+      } else if (genAI) {
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
         const result = await model.generateContent(`${systemPrompt}\n\nUser: ${messageBody}`);
         return result.response.text();
       }
 
       return messages[messages.length - 1]?.content || "Agent execution finished.";
     } catch (e: any) {
-      console.error("Agent Execution Failed:", e);
+      this.logger.error("Agent Execution Failed:", e);
       return `Agent Error: ${e.message}`;
     }
   }
 
-  /**
-   * Generates a vector embedding for a given text using OpenAI or Gemini
-   */
   async generateEmbedding(text: string): Promise<number[]> {
     const sanitizedText = text.replace(/\n/g, " ");
+    const genAI = await this.getGeminiClient();
+    const openai = await this.getOpenAIClient();
 
-    if (this.genAI) {
-      // Use Gemini for embeddings if available
+    if (genAI) {
       try {
-        const model = this.genAI.getGenerativeModel({ model: "gemini-embedding-001" });
+        const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
         const result = await model.embedContent(sanitizedText);
         return Array.from(result.embedding.values);
       } catch (e) {
-        console.error("Gemini Embedding Failed, falling back to OpenAI if possible:", e);
+        this.logger.error("Gemini Embedding Failed, falling back to OpenAI if possible:", e);
       }
     }
 
-    if (!this.openai) throw new Error("AI (OpenAI/Gemini) not configured for embeddings");
-
-    const result = await this.openai.embeddings.create({
+    if (!openai) throw new Error("No AI provider configured for embeddings");
+    const result = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: sanitizedText,
-      dimensions: 1536
+      dimensions: 1536,
     });
-
     return result.data[0].embedding;
   }
 
-  /**
-   * Finds the most relevant chunks in a knowledge base using cosine similarity
-   */
-  async findRelevantChunks(
-    knowledgeBaseId: string,
-    query: string,
-    limit: number = 3,
-  ): Promise<string[]> {
+  async findRelevantChunks(knowledgeBaseId: string, query: string, limit: number = 3): Promise<string[]> {
     const queryEmbedding = await this.generateEmbedding(query);
-
-    // Fetch chunks for this KB
-    const chunks = await this.chunkRepo.find({
-      where: { knowledgeBaseId },
-    });
-
+    const chunks = await this.chunkRepo.find({ where: { knowledgeBaseId } });
     if (chunks.length === 0) return [];
 
-    // Calculate similarity and sort
     const scoredChunks = chunks
       .map((chunk) => {
         let dbEmbedding: number[] = [];
-        if (typeof chunk.embedding === 'string') {
-          try { dbEmbedding = JSON.parse(chunk.embedding); } catch (e) { }
+        if (typeof chunk.embedding === "string") {
+          try { dbEmbedding = JSON.parse(chunk.embedding); } catch {}
         } else if (Array.isArray(chunk.embedding)) {
           dbEmbedding = chunk.embedding;
         }
-
-        // Handle dimension mismatch gracefully (e.g. if mixed models were used)
-        if (dbEmbedding.length !== queryEmbedding.length) {
-          return { content: chunk.content, score: 0 };
-        }
-
-        return {
-          content: chunk.content,
-          score: this.cosineSimilarity(queryEmbedding, dbEmbedding),
-        };
+        if (dbEmbedding.length !== queryEmbedding.length) return { content: chunk.content, score: 0 };
+        return { content: chunk.content, score: this.cosineSimilarity(queryEmbedding, dbEmbedding) };
       })
-      .filter(c => c.score > 0.3) // Filter out low quality matches
+      .filter((c) => c.score > 0.3)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
@@ -341,19 +273,14 @@ export class AiService {
   }
 
   private cosineSimilarity(vecA: number[], vecB: number[]): number {
-    if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0 || vecA.length !== vecB.length) {
-      return 0; // Return zero similarity if invalid
-    }
-
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
+    if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0 || vecA.length !== vecB.length) return 0;
+    let dotProduct = 0, normA = 0, normB = 0;
     for (let i = 0; i < vecA.length; i++) {
       dotProduct += vecA[i] * vecB[i];
       normA += vecA[i] * vecA[i];
       normB += vecB[i] * vecB[i];
     }
-    const divisor = (Math.sqrt(normA) * Math.sqrt(normB));
+    const divisor = Math.sqrt(normA) * Math.sqrt(normB);
     return divisor === 0 ? 0 : dotProduct / divisor;
   }
 }

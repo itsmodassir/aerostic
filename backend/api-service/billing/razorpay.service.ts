@@ -6,6 +6,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Tenant, TenantType } from "@shared/database/entities/core/tenant.entity";
 import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
+import { AdminConfigService } from "../admin/services/admin-config.service";
 
 export interface CreateSubscriptionDto {
   tenantId: string;
@@ -26,69 +27,35 @@ export interface RazorpayPlan {
 @Injectable()
 export class RazorpayService {
   private readonly logger = new Logger(RazorpayService.name);
-  private razorpay: Razorpay;
 
   // Subscription Plans
   static readonly PLANS: RazorpayPlan[] = [
-    {
-      id: "plan_starter",
-      name: "Starter",
-      priceInr: 999,
-      interval: "monthly",
-      features: ["1,000 Messages", "100 AI Credits", "1 Agent"],
-    },
-    {
-      id: "plan_starter-2",
-      name: "Starter 2",
-      priceInr: 2499,
-      interval: "monthly",
-      features: ["5,000 Messages", "500 AI Credits", "3 Agents"],
-    },
-    {
-      id: "plan_growth",
-      name: "Growth",
-      priceInr: 3999,
-      interval: "monthly",
-      features: [
-        "10,000 Messages",
-        "1,000 AI Credits",
-        "5 Agents",
-        "Unlimited Broadcasts",
-      ],
-    },
-    {
-      id: "plan_professional",
-      name: "Professional",
-      priceInr: 6999,
-      interval: "monthly",
-      features: [
-        "20,000 Messages",
-        "2,000 AI Credits",
-        "10 Agents",
-        "Unlimited Broadcasts",
-      ],
-    },
+    { id: "plan_starter", name: "Starter", priceInr: 999, interval: "monthly", features: ["1,000 Messages", "100 AI Credits", "1 Agent"] },
+    { id: "plan_starter-2", name: "Starter 2", priceInr: 2499, interval: "monthly", features: ["5,000 Messages", "500 AI Credits", "3 Agents"] },
+    { id: "plan_growth", name: "Growth", priceInr: 3999, interval: "monthly", features: ["10,000 Messages", "1,000 AI Credits", "5 Agents", "Unlimited Broadcasts"] },
+    { id: "plan_professional", name: "Professional", priceInr: 6999, interval: "monthly", features: ["20,000 Messages", "2,000 AI Credits", "10 Agents", "Unlimited Broadcasts"] },
   ];
 
   constructor(
     private configService: ConfigService,
+    private adminConfigService: AdminConfigService,
     @InjectRepository(Tenant)
     private tenantRepo: Repository<Tenant>,
     @InjectRepository(ResellerConfig)
     private configRepo: Repository<ResellerConfig>,
   ) {
-    const keyId = this.configService.get<string>("RAZORPAY_KEY_ID");
-    const keySecret = this.configService.get<string>("RAZORPAY_KEY_SECRET");
+    this.logger.log("RazorpayService initialized — credentials loaded dynamically from admin config");
+  }
 
-    if (keyId && keySecret) {
-      this.razorpay = new Razorpay({
-        key_id: keyId,
-        key_secret: keySecret,
-      });
-      this.logger.log("Razorpay initialized");
-    } else {
-      this.logger.warn("Razorpay credentials not configured");
-    }
+  /**
+   * Returns a Razorpay client using credentials from admin config (DB-backed).
+   * Falls back to env vars for backward compatibility.
+   */
+  private async getGlobalRazorpayClient(): Promise<Razorpay> {
+    const keyId = await this.adminConfigService.getConfigValue("razorpay.key_id");
+    const keySecret = await this.adminConfigService.getConfigValue("razorpay.key_secret");
+    if (!keyId || !keySecret) throw new Error("Razorpay credentials not configured in Admin Panel");
+    return new Razorpay({ key_id: keyId, key_secret: keySecret });
   }
 
   getPlans(): RazorpayPlan[] {
@@ -101,8 +68,7 @@ export class RazorpayService {
 
   async getRazorpayClient(tenantId?: string): Promise<Razorpay> {
     if (!tenantId) {
-      if (!this.razorpay) throw new Error("Global Razorpay not configured");
-      return this.razorpay;
+      return this.getGlobalRazorpayClient();
     }
 
     try {
@@ -118,7 +84,6 @@ export class RazorpayService {
           resellerConfig.paymentGateway.razorpayKeyId &&
           resellerConfig.paymentGateway.razorpayKeySecret
         ) {
-          // Initialize a dynamic Razorpay client for this reseller
           return new Razorpay({
             key_id: resellerConfig.paymentGateway.razorpayKeyId,
             key_secret: resellerConfig.paymentGateway.razorpayKeySecret,
@@ -129,22 +94,14 @@ export class RazorpayService {
       this.logger.error(`Error resolving Razorpay client for tenant ${tenantId}`, error);
     }
 
-    // Fallback to global client
-    if (!this.razorpay) throw new Error("Global Razorpay not configured");
-    return this.razorpay;
+    // Fallback to global client (from admin config)
+    return this.getGlobalRazorpayClient();
   }
 
-  async createCustomer(
-    email: string,
-    phone: string,
-    name: string,
-  ): Promise<any> {
+  async createCustomer(email: string, phone: string, name: string): Promise<any> {
     try {
-      const customer = await this.razorpay.customers.create({
-        name,
-        email,
-        contact: phone,
-      });
+      const client = await this.getGlobalRazorpayClient();
+      const customer = await client.customers.create({ name, email, contact: phone });
       return customer;
     } catch (error) {
       this.logger.error("Failed to create Razorpay customer", error);
@@ -180,7 +137,8 @@ export class RazorpayService {
 
   async getSubscription(subscriptionId: string): Promise<any> {
     try {
-      return await this.razorpay.subscriptions.fetch(subscriptionId);
+      const client = await this.getGlobalRazorpayClient();
+      return await client.subscriptions.fetch(subscriptionId);
     } catch (error) {
       this.logger.error("Failed to fetch subscription", error);
       throw error;
@@ -189,29 +147,21 @@ export class RazorpayService {
 
   async cancelSubscription(subscriptionId: string): Promise<any> {
     try {
-      return await this.razorpay.subscriptions.cancel(subscriptionId);
+      const client = await this.getGlobalRazorpayClient();
+      return await client.subscriptions.cancel(subscriptionId);
     } catch (error) {
       this.logger.error("Failed to cancel subscription", error);
       throw error;
     }
   }
 
-  async createPlan(
-    name: string,
-    amount: number,
-    interval: "monthly" | "yearly" = "monthly",
-    description?: string,
-  ): Promise<any> {
+  async createPlan(name: string, amount: number, interval: "monthly" | "yearly" = "monthly", description?: string): Promise<any> {
     try {
-      const plan = await this.razorpay.plans.create({
+      const client = await this.getGlobalRazorpayClient();
+      const plan = await client.plans.create({
         period: interval,
         interval: 1,
-        item: {
-          name,
-          amount: amount * 100, // Amount in paise
-          currency: "INR",
-          description,
-        },
+        item: { name, amount: amount * 100, currency: "INR", description },
       });
       return plan;
     } catch (error) {
@@ -220,22 +170,16 @@ export class RazorpayService {
     }
   }
 
-  async createPaymentLink(
-    amount: number,
-    description: string,
-    tenantId: string,
-  ): Promise<any> {
+  async createPaymentLink(amount: number, description: string, tenantId: string): Promise<any> {
     try {
       const client = await this.getRazorpayClient(tenantId);
-      // Use any to bypass strict type checking for Razorpay SDK
+      const appUrl = await this.adminConfigService.getConfigValue("platform.app_url");
       const paymentLink = await (client.paymentLink as any).create({
-        amount: amount * 100, // Razorpay uses paise
+        amount: amount * 100,
         currency: "INR",
         description,
-        notes: {
-          tenant_id: tenantId,
-        },
-        callback_url: `${this.configService.get("APP_URL")}/api/billing/callback`,
+        notes: { tenant_id: tenantId },
+        callback_url: `${appUrl}/api/billing/callback`,
         callback_method: "get",
       });
       return paymentLink;
@@ -245,12 +189,10 @@ export class RazorpayService {
     }
   }
 
-  verifyWebhookSignature(body: string, signature: string): boolean {
-    const webhookSecret = this.configService.get<string>(
-      "RAZORPAY_WEBHOOK_SECRET",
-    );
+  async verifyWebhookSignature(body: string, signature: string): Promise<boolean> {
+    const webhookSecret = await this.adminConfigService.getConfigValue("razorpay.webhook_secret");
     if (!webhookSecret) {
-      this.logger.error("Missing RAZORPAY_WEBHOOK_SECRET for webhook validation");
+      this.logger.error("razorpay.webhook_secret not configured in Admin Panel");
       return false;
     }
 

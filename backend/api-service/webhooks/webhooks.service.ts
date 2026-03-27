@@ -45,8 +45,8 @@ export class WebhooksService {
     private adminConfigService: AdminConfigService,
   ) { }
 
-  verifyWebhook(mode: string, token: string, challenge: string): string {
-    const verifyToken = this.configService.get("META_WEBHOOK_VERIFY_TOKEN");
+  async verifyWebhook(mode: string, token: string, challenge: string): Promise<string> {
+    const verifyToken = await this.adminConfigService.getConfigValue("meta.webhook_verify_token");
 
     if (mode === "subscribe" && token === verifyToken) {
       return challenge;
@@ -70,10 +70,10 @@ export class WebhooksService {
     return { status: "enqueued" };
   }
 
-  verifySignature(rawBody: string, signature: string): boolean {
-    const appSecret = this.configService.get("META_APP_SECRET");
+  async verifySignature(rawBody: string, signature: string): Promise<boolean> {
+    const appSecret = await this.adminConfigService.getConfigValue("meta.app_secret");
     if (!appSecret) {
-      this.logger.error("META_APP_SECRET not configured");
+      this.logger.error("meta.app_secret not configured in admin panel");
       return false;
     }
 
