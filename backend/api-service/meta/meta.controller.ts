@@ -11,12 +11,14 @@ export class MetaController {
     @Query("state") tenantId: string,
     @Query("wabaId") wabaId?: string,
     @Query("phoneNumberId") phoneNumberId?: string,
+    @Query("redirectUri") redirectUri?: string,
   ) {
     await this.metaService.handleOAuthCallback(
       code,
       tenantId,
       wabaId,
       phoneNumberId,
+      redirectUri,
     );
     return { success: true, message: "WhatsApp Connected Successfully" };
   }

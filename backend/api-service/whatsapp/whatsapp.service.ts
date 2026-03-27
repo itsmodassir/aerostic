@@ -604,4 +604,55 @@ export class WhatsappService {
       throw error instanceof BadRequestException ? error : new BadRequestException("Failed to fetch published flows");
     }
   }
+
+  async triggerSmbSync(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOne({
+      where: { tenantId },
+    });
+
+    if (!account) {
+      throw new BadRequestException("WhatsApp account not connected");
+    }
+
+    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const phoneNumberId = account.phoneNumberId;
+    const apiVersion =
+      (await this.adminConfigService.getConfigValue("meta.api_version")) ||
+      "v25.0";
+
+    try {
+      const syncUrl = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/smb_app_data`;
+
+      // Sync 1: Contacts
+      await fetch(syncUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          sync_type: "smb_app_state_sync",
+        }),
+      });
+
+      // Sync 2: History
+      await fetch(syncUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          sync_type: "history",
+        }),
+      });
+
+      return { success: true, message: "Sync initiated successfully" };
+    } catch (error) {
+      console.error("Error triggering SMB sync:", error);
+      throw new BadRequestException("Failed to initiate sync with Meta");
+    }
+  }
 }

@@ -50,7 +50,7 @@ export class AuditService implements OnModuleInit {
       where: {},
       order: { createdAt: "DESC" },
     });
-    this.lastHash = latestLog ? latestLog.hash : "INIT_HASH";
+    this.lastHash = (latestLog && latestLog.hash) ? latestLog.hash : "INIT_HASH";
     this.logger.log(
       `Audit chain initialized. Last hash: ${this.lastHash.substring(0, 8)}...`,
     );

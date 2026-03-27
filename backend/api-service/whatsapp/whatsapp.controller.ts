@@ -9,6 +9,7 @@ import {
   Param,
   UseGuards,
   BadRequestException,
+  Req,
 } from "@nestjs/common";
 import { WhatsappService } from "./whatsapp.service";
 import type { Response } from "express";
@@ -160,5 +161,10 @@ export class WhatsappController {
     @Body() body: { json: any },
   ) {
     return this.whatsappService.uploadFlowAsset(tenantId, flowId, "flow.json", body.json);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Post("smb-sync")
+  async triggerSmbSync(@UserTenant() tenantId: string) {
+    return this.whatsappService.triggerSmbSync(tenantId);
   }
 }

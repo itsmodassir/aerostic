@@ -119,12 +119,14 @@ export class MetaService {
     tenantId: string,
     providedWabaId?: string,
     providedPhoneNumberId?: string,
+    providedRedirectUri?: string,
   ) {
     const appId =
       (await this.adminConfigService.getConfigValue("meta.app_id")) || "";
     const appSecret =
       (await this.adminConfigService.getConfigValue("meta.app_secret")) || "";
     const redirectUri =
+      providedRedirectUri ||
       (await this.adminConfigService.getConfigValue("meta.redirect_uri")) ||
       "https://app.aimstore.in/meta/callback";
     const apiVersion = await this.getApiVersion();
@@ -137,8 +139,9 @@ export class MetaService {
     this.logger.debug(`Provided Phone: ${providedPhoneNumberId || "None"}`);
     this.logger.debug("-------------------");
 
-    // 1. Exchange auth code for short-lived access token
     try {
+      // 1. Exchange auth code for short-lived access token
+      this.logger.log(`Exchanging code for token. AppID: ${appId}, Redirect: ${redirectUri}`);
       const tokenRes = await axios.get(
         `https://graph.facebook.com/${apiVersion}/oauth/access_token`,
         {
@@ -149,9 +152,13 @@ export class MetaService {
             code,
           },
         },
-      );
+      ).catch(err => {
+        this.logger.error(`OAuth code exchange failed: ${JSON.stringify(err.response?.data || err.message)}`);
+        throw new Error(`Meta OAuth Exchange Failed: ${err.response?.data?.error?.message || err.message}`);
+      });
 
       const shortToken = tokenRes.data.access_token;
+      this.logger.log(`Short-lived token received successfully.`);
 
       // 2. Exchange short-lived token for long-lived token
       const longTokenData = await this.exchangeForLongLivedToken(
@@ -193,13 +200,11 @@ export class MetaService {
             );
           }
         }
-      } catch (err) {
-        this.logger.warn(`Debug token failed: ${err.message}`);
+      } catch (err: any) {
+        this.logger.warn(`Debug token failed: ${err.response?.data?.error?.message || err.message}`);
       }
 
       // 3. Fetch WABA (Production Ready for Aimstors Solution Multi-Tenant)
-
-      // PRIORITY 1: Use Embedded Signup data or Fallback from debug token
       let waba = null;
       let businesses = [];
 
@@ -248,27 +253,17 @@ export class MetaService {
                 this.logger.debug(`Found CLIENT WABA: ${wabaId}`);
                 break;
               }
-            } catch (err) {
+            } catch (err: any) {
               this.logger.warn(
                 `Business ${business.id} WABA fetch failed: ${err.response?.data?.error?.message || err.message}`,
               );
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           this.logger.error(
             `Failed to fetch businesses: ${err.response?.data?.error?.message || err.message}`,
           );
-          // If we reach here and still no WABA ID, we throw
         }
-      }
-
-      if (!wabaId) {
-        this.logger.error(
-          `Meta Response (businesses): ${JSON.stringify(businesses)}`,
-        );
-        throw new BadRequestException(
-          "No WhatsApp Business Account (WABA) found. Please ensure you have a WABA associated with your Facebook account.",
-        );
       }
 
       if (!wabaId) {
@@ -298,7 +293,7 @@ export class MetaService {
         );
       }
 
-      // 5. Save Mapping (Upsert) - Storing Token Directly in Account for Multi-Tenancy
+      // 5. Save Mapping (Upsert)
       const existing = await this.whatsappAccountRepo.findOneBy({
         phoneNumberId,
       });
@@ -326,10 +321,10 @@ export class MetaService {
         });
       }
 
-      // 6. Subscribe App to WABA Webhooks (CRITICAL for inbound messages)
+      // 6. Subscribe App to WABA Webhooks
       try {
         await axios.post(
-          `https://graph.facebook.com/${await this.getApiVersion()}/${wabaId}/subscribed_apps`,
+          `https://graph.facebook.com/${apiVersion}/${wabaId}/subscribed_apps`,
           {},
           {
             params: { access_token: accessToken },
@@ -342,19 +337,37 @@ export class MetaService {
         );
       }
 
-      // Invalidate Redis Cache for this tenant
+      // 7. Initiate Data Synchronization
+      try {
+        const syncUrl = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/smb_app_data`;
+
+        // Sync 1: Contacts
+        await axios.post(
+          syncUrl,
+          { messaging_product: "whatsapp", sync_type: "smb_app_state_sync" },
+          { params: { access_token: accessToken } },
+        );
+
+        // Sync 2: History
+        await axios.post(
+          syncUrl,
+          { messaging_product: "whatsapp", sync_type: "history" },
+          { params: { access_token: accessToken } },
+        );
+        this.logger.log(`Initiated SMB sync for: ${phoneNumberId}`);
+      } catch (syncErr: any) {
+        this.logger.error(
+          `Failed to initiate SMB sync: ${JSON.stringify(syncErr.response?.data || syncErr.message)}`,
+        );
+      }
+
+      // Invalidate Redis Cache
       await this.redisService.del(`whatsapp:token:${tenantId}`);
 
       return { success: true };
-    } catch (error: any) {
-      this.logger.error(
-        `OAuth Callback Failed: ${JSON.stringify(error.response?.data || error.message)}`,
-      );
-      if (error instanceof BadRequestException) throw error;
-      throw new BadRequestException(
-        error.response?.data?.error?.message ||
-        "Failed to connect WhatsApp account",
-      );
+    } catch (e: any) {
+      this.logger.error("Meta OAuth Handshake Failed:", e.response?.data || e.message);
+      throw e;
     }
   }
 

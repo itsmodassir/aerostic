@@ -37,6 +37,7 @@ export class AiController {
         active: true,
         intentDetection: false,
         personalizationEnabled: false,
+        webSearchEnabled: false,
       };
     }
     return agent;
@@ -45,7 +46,7 @@ export class AiController {
   @Post("agent")
   async saveAgent(
     @UserTenant() tenantId: string,
-    @Body() body: { systemPrompt: string; active: boolean; intentDetection?: boolean; personalizationEnabled?: boolean },
+    @Body() body: { systemPrompt: string; active: boolean; intentDetection?: boolean; personalizationEnabled?: boolean; webSearchEnabled?: boolean },
   ) {
     let agent = await this.aiAgentRepo.findOneBy({ tenantId });
     if (!agent) {
@@ -56,6 +57,7 @@ export class AiController {
     if (body.active !== undefined) agent.isActive = body.active;
     if (body.intentDetection !== undefined) agent.intentDetection = body.intentDetection;
     if (body.personalizationEnabled !== undefined) agent.personalizationEnabled = body.personalizationEnabled;
+    if (body.webSearchEnabled !== undefined) agent.webSearchEnabled = body.webSearchEnabled;
 
     return this.aiAgentRepo.save(agent);
   }

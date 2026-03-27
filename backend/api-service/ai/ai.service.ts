@@ -123,7 +123,19 @@ export class AiService {
       let aiReply = "";
 
       if (isGemini && genAI) {
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const tools: any[] = [];
+        if (agent?.webSearchEnabled) {
+          tools.push({
+            googleSearchRetrieval: {
+              dynamicRetrievalConfig: {
+                mode: "DYNAMIC",
+                dynamicThreshold: 0.3,
+              },
+            },
+          });
+        }
+
+        const model = genAI.getGenerativeModel({ model: modelName, tools: tools.length > 0 ? tools : undefined });
         const prompt = `${systemPrompt}\n\nContext:\n${contextStr}\n\nNote: If uncertain, reply exactly "HANDOFF_TO_AGENT".\n\nUser: ${messageBody}`;
         const result = await model.generateContent(prompt);
         aiReply = result.response.text();
@@ -213,7 +225,24 @@ export class AiService {
           turns++;
         }
       } else if (genAI) {
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+        const agent = await this.aiAgentRepo.findOneBy({ tenantId });
+        const tools: any[] = [];
+        if (agent?.webSearchEnabled) {
+          tools.push({
+            googleSearchRetrieval: {
+              dynamicRetrievalConfig: {
+                mode: "DYNAMIC",
+                dynamicThreshold: 0.3,
+              },
+            },
+          });
+        }
+
+        const model = genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          tools: tools.length > 0 ? tools : undefined,
+        });
+
         const result = await model.generateContent(`${systemPrompt}\n\nUser: ${messageBody}`);
         return result.response.text();
       }

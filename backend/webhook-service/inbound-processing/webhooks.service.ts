@@ -294,6 +294,106 @@ export class WebhooksService {
       }
     }
 
+    // --- COEXISTENCE: Handle Message Echoes (Messages from App) ---
+    if (changes?.field === "smb_message_echoes" && value?.message_echoes) {
+      for (const echo of value.message_echoes) {
+        const phoneNumberId = value.metadata?.phone_number_id;
+        const recipient = echo.to;
+
+        const account = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
+        if (!account) continue;
+
+        let contact = await this.contactRepo.findOneBy({
+          tenantId: account.tenantId,
+          phoneNumber: recipient,
+        });
+
+        if (!contact) {
+          contact = this.contactRepo.create({
+            tenantId: account.tenantId,
+            phoneNumber: recipient,
+            name: "Unknown (App Sync)",
+          });
+          await this.contactRepo.save(contact);
+        }
+
+        let conversation = await this.conversationRepo.findOne({
+          where: { tenantId: account.tenantId, contactId: contact.id, status: "open" },
+        });
+
+        if (!conversation) {
+          conversation = this.conversationRepo.create({
+            tenantId: account.tenantId,
+            contactId: contact.id,
+            phoneNumberId,
+            status: "open",
+            lastMessageAt: new Date(),
+          });
+          await this.conversationRepo.save(conversation);
+        }
+
+        const messageContent = echo[echo.type] || {};
+        const message = this.messageRepo.create({
+          tenantId: account.tenantId,
+          conversationId: conversation.id,
+          direction: "out",
+          type: echo.type,
+          content: messageContent,
+          metaMessageId: echo.id,
+          status: "delivered",
+        });
+
+        await this.messageRepo.save(message);
+
+        this.messagesGateway.emitNewMessage(account.tenantId, {
+          conversationId: conversation.id,
+          contactId: contact.id,
+          phone: recipient,
+          direction: "out",
+          type: echo.type,
+          content: messageContent,
+          timestamp: new Date(echo.timestamp * 1000),
+        });
+      }
+    }
+
+    // --- COEXISTENCE: Handle Contact State Sync ---
+    if (changes?.field === "smb_app_state_sync" && value?.state_sync) {
+      for (const sync of value.state_sync) {
+        if (sync.type === "contact") {
+          const phoneNumberId = value.metadata?.phone_number_id;
+          const account = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
+          if (!account) continue;
+
+          const { full_name, first_name, phone_number } = sync.contact;
+
+          if (sync.action === "add") {
+            let contact = await this.contactRepo.findOneBy({
+              tenantId: account.tenantId,
+              phoneNumber: phone_number,
+            });
+
+            if (contact) {
+              contact.name = full_name || contact.name;
+              await this.contactRepo.save(contact);
+            } else {
+              contact = this.contactRepo.create({
+                tenantId: account.tenantId,
+                phoneNumber: phone_number,
+                name: full_name || first_name || "Unknown",
+              });
+              await this.contactRepo.save(contact);
+            }
+          } else if (sync.action === "remove") {
+            await this.contactRepo.delete({
+              tenantId: account.tenantId,
+              phoneNumber: phone_number,
+            });
+          }
+        }
+      }
+    }
+
     return { status: "success" };
   }
 }
