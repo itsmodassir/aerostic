@@ -30,8 +30,8 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       # Static Assets Mounts
       - /var/www/aimstors/frontend/landing/dist:/usr/share/nginx/html/landing:ro
-      - /var/www/aimstors/frontend/app-dashboard/.next/static:/usr/share/nginx/html/app/_next/static:ro
-      - /var/www/aimstors/frontend/app-dashboard/public:/usr/share/nginx/html/app/public:ro
+      # Stable parent mount to prevent stale inodes after builds
+      - /var/www/aimstors/frontend/app-dashboard:/usr/share/nginx/html/app:ro
 
   redis:
     image: redis:7-alpine
@@ -56,13 +56,14 @@ services:
     container_name: aimstors-kafka
     restart: always
     ports:
-      - "127.0.0.1:9092:9092"
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://127.0.0.1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
@@ -78,8 +79,10 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
       - redis
+      - kafka
 
 volumes:
   postgres_data:
