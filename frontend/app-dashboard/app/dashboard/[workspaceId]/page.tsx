@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { 
     LayoutDashboard, Code, Users, Settings, 
-    Lock, Sparkles, UserPlus, Zap
+    Lock, RefreshCw, Zap, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { clsx } from 'clsx';
@@ -25,6 +25,7 @@ export default function DashboardPage() {
     // UI State
     const [activeTab, setActiveTab] = useState<'overview' | 'developer' | 'team' | 'settings'>('overview');
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     
     // Data State
     const [user, setUser] = useState<any>(null);
@@ -49,7 +50,6 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Parallel fetch for core data — each wrapped independently so one failure doesn't blank the page
             const [userRes, msgRes, campaignRes, walletRes] = await Promise.allSettled([
                 api.get('/users/me'),
                 api.get('/messages/recent'),
@@ -63,8 +63,6 @@ export default function DashboardPage() {
                 const member = userData.memberships?.find((m: any) => m.workspaceId === workspaceId);
                 setMembership(member);
                 setUserPlan(normalizePlan(member?.planName || 'Starter'));
-
-                // Fetch context-aware stats
                 try {
                     if (member?.tenantType === 'reseller') {
                         const res = await api.get('/admin/reseller-stats');
@@ -73,23 +71,25 @@ export default function DashboardPage() {
                         const res = await api.get('/analytics/overview');
                         if (res.status === 200) setStats(res.data);
                     }
-                } catch {
-                    // Stats failure is non-fatal — dashboard still renders
-                }
+                } catch { /* non-fatal */ }
             }
 
             if (msgRes.status === 'fulfilled' && msgRes.value.status === 200) setRecentMsgs(msgRes.value.data);
             if (campaignRes.status === 'fulfilled' && campaignRes.value.status === 200) setRecentCampaigns(campaignRes.value.data);
             if (walletRes.status === 'fulfilled' && walletRes.value.status === 200) {
-                const wData = walletRes.value.data;
-                setWalletBalance(wData.balance || 0);
+                setWalletBalance(walletRes.value.data?.balance || 0);
             }
-
         } catch (error) {
-            console.error('Fatal Dashboard Error:', error);
+            console.error('Dashboard Error:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await fetchDashboardData();
+        setRefreshing(false);
     };
 
     const planFeatures = {
@@ -107,98 +107,95 @@ export default function DashboardPage() {
     const usagePercent = Math.min(100, (stats?.totalSent || 0) / (planFeatures.messagesLimit > 0 ? planFeatures.messagesLimit : 1000000) * 100);
     const aiUsagePercent = Math.min(100, (stats?.aiCreditsUsed || 0) / (planFeatures.aiCredits > 0 ? planFeatures.aiCredits : 1000000) * 100);
 
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-                <div className="relative w-24 h-24 mb-6">
-                    <div className="absolute inset-0 border-4 border-blue-50 rounded-full" />
-                    <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <Zap className="text-blue-600 animate-pulse" size={32} strokeWidth={3} />
-                    </div>
-                </div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] animate-pulse">Initializing Nexus Protocol</p>
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-3" />
+                <p className="text-xs font-semibold text-gray-400">Loading dashboard...</p>
             </div>
         );
     }
 
+    const tabs = [
+        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        { id: 'developer', label: 'Developer', icon: Code, locked: !planFeatures.apiAccess },
+        { id: 'team', label: 'Team', icon: Users },
+        { id: 'settings', label: 'Settings', icon: Settings },
+    ];
+
     return (
-        <div className="min-h-screen bg-white pb-24 overflow-x-hidden">
-            {/* Header / Welcome Area */}
-            <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-12 md:pt-20 mb-16">
-                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-                    <div className="space-y-4">
+        <div className="min-h-screen bg-gray-50/30">
+            {/* Compact Header */}
+            <div className="bg-white border-b border-gray-100 px-6 py-4">
+                <div className="max-w-[1400px] mx-auto">
+                    {/* Top row: greeting + actions */}
+                    <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
-                                System Status: Operational
-                            </span>
-                            <div className="flex -space-x-2">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">U</div>
-                                ))}
-                                <div className="w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center text-[10px] font-bold text-white">+2</div>
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-100">
+                                {user?.name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-400 font-semibold">{greeting}</p>
+                                <h1 className="text-base font-black text-gray-900 tracking-tight leading-none">
+                                    {user?.name || 'Commander'} 
+                                    <span className="ml-2 text-xs font-bold text-gray-400">— {workspaceId?.slice(0, 8)}...</span>
+                                </h1>
                             </div>
                         </div>
-                        <h1 className="text-5xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none">
-                            Good Morning, <br />
-                            <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                {user?.name?.split(' ')[0] || 'Commander'}
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wide">Operational</span>
+                            </div>
+                            <span className="text-[11px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 uppercase tracking-wide">
+                                {planFeatures.name}
                             </span>
-                        </h1>
-                        <p className="text-lg md:text-xl font-bold text-gray-400 max-w-2xl leading-relaxed uppercase tracking-tighter">Your workspace is synchronized. Current throughput is peaking at <span className="text-black">1.2k req/s</span>.</p>
+                            <button
+                                onClick={handleRefresh}
+                                disabled={refreshing}
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-gray-100"
+                            >
+                                <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+                            </button>
+                            <Link
+                                href={`/dashboard/${workspaceId}/campaigns`}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-black hover:bg-blue-700 transition-all shadow-sm shadow-blue-200"
+                            >
+                                <Plus size={13} strokeWidth={3} />
+                                New Campaign
+                            </Link>
+                        </div>
                     </div>
-                    
-                    <div className="flex items-center gap-4">
-                         <button onClick={fetchDashboardData} className="p-5 bg-gray-50 text-gray-400 rounded-[28px] hover:bg-black hover:text-white transition-all active:scale-90 shadow-sm border-2 border-transparent">
-                            <Zap size={28} />
-                         </button>
-                         <Link href="/settings/whatsapp" className="px-8 py-5 bg-blue-600 text-white rounded-[32px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-black transition-all active:scale-95 shadow-2xl shadow-blue-100 flex items-center gap-3">
-                            <Sparkles size={18} strokeWidth={3} />
-                            Deploy New Protocol
-                         </Link>
-                    </div>
-                </div>
 
-                {/* Tab Navigation */}
-                <div className="mt-16 relative">
-                     <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none mask-fade-right">
-                        {[
-                            { id: 'overview', label: 'Primary Overview', icon: LayoutDashboard },
-                            { id: 'developer', label: 'Developer Protocols', icon: Code, locked: !planFeatures.apiAccess },
-                            { id: 'team', label: 'Team Command', icon: Users },
-                            { id: 'settings', label: 'Global Config', icon: Settings },
-                        ].map((tab) => (
+                    {/* Tab Navigation — inline pill style */}
+                    <div className="flex items-center gap-1">
+                        {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={clsx(
-                                    "px-8 py-5 rounded-[28px] flex items-center gap-4 transition-all whitespace-nowrap group shrink-0",
-                                    activeTab === tab.id 
-                                        ? "bg-black text-white shadow-2xl" 
-                                        : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                    activeTab === tab.id
+                                        ? "bg-gray-900 text-white shadow-sm"
+                                        : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                                 )}
                             >
-                                <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={clsx("transition-transform", activeTab === tab.id && "scale-110")} />
-                                <span className={clsx("text-sm font-black uppercase tracking-widest", activeTab === tab.id ? "opacity-100" : "opacity-60")}>
-                                    {tab.label}
-                                </span>
-                                {tab.locked && (
-                                    <Lock size={14} className="group-hover:text-blue-500 transition-colors" />
-                                )}
+                                <tab.icon size={13} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                                <span>{tab.label}</span>
+                                {tab.locked && <Lock size={10} className="opacity-50" />}
                             </button>
                         ))}
-                     </div>
-                     <div className="absolute right-0 top-0 bottom-4 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="max-w-[1600px] mx-auto px-6 md:px-12">
+            {/* Main Content */}
+            <div className="max-w-[1400px] mx-auto px-6 py-6">
                 {membership?.tenantType === 'reseller' && activeTab === 'overview' ? (
-                    <PartnerDashboardView 
-                        stats={stats} 
-                        workspaceId={workspaceId}
-                    />
+                    <PartnerDashboardView stats={stats} workspaceId={workspaceId} />
                 ) : (
                     <>
                         {activeTab === 'overview' && (
@@ -214,6 +211,7 @@ export default function DashboardPage() {
                                 userPlan={userPlan}
                                 walletBalance={walletBalance}
                                 membership={membership}
+                                workspaceId={workspaceId}
                             />
                         )}
                         {activeTab === 'developer' && <DeveloperTab planFeatures={planFeatures} />}

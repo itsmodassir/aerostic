@@ -3,253 +3,372 @@
 import React from 'react';
 import Link from 'next/link';
 import { 
-    MessageSquare, Sparkles, CreditCard, ArrowRight,
-    Send, Users2, Bot, Zap, FileText, Workflow, 
-    Target, CheckCircle, Eye, MousePointer, TrendingUp,
-    Activity, BarChart3, ChevronRight, Plus,
-    ArrowUpRight, ArrowDownLeft
+    MessageSquare, Sparkles, CreditCard, Send, Users2, Bot, Zap, 
+    FileText, Workflow, Target, CheckCircle, Eye, MousePointer, 
+    TrendingUp, Activity, BarChart3, ChevronRight, Plus,
+    ArrowUpRight, ArrowDownLeft, Lock, LayoutDashboard
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { 
-    StatCard, MetricCard, LockedFeatureCard, 
-    AIAgentCardPremium, MessageRowPremium, 
-    StatusBadge
-} from './DashboardComponents';
 
+// ─── Compact Stat Card ────────────────────────────────────────────────────────
+function StatCard({ title, value, icon: Icon, trend, trendUp, color }: any) {
+    const colorMap: Record<string, string> = {
+        blue: 'bg-blue-50 text-blue-600 border-blue-100',
+        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        purple: 'bg-purple-50 text-purple-600 border-purple-100',
+        amber: 'bg-amber-50 text-amber-600 border-amber-100',
+        indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+    };
+    return (
+        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:border-gray-200 transition-all group">
+            <div className="flex items-center justify-between mb-3">
+                <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center border", colorMap[color] || colorMap.blue)}>
+                    <Icon size={15} strokeWidth={2.5} />
+                </div>
+                {trend && (
+                    <span className={clsx(
+                        "text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full",
+                        trendUp === true ? "text-emerald-600 bg-emerald-50" :
+                        trendUp === false ? "text-red-500 bg-red-50" : "text-gray-500 bg-gray-50"
+                    )}>
+                        {trend}
+                    </span>
+                )}
+            </div>
+            <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none mb-1">
+                {typeof value === 'number' ? value.toLocaleString() : value}
+            </p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+        </div>
+    );
+}
+
+// ─── Usage Bar ────────────────────────────────────────────────────────────────
+function UsageBar({ label, used, limit, percent, color, icon: Icon, linkHref, linkLabel }: any) {
+    const barColor: Record<string, string> = {
+        blue: 'bg-blue-500',
+        purple: 'bg-purple-500',
+        indigo: 'bg-indigo-500',
+    };
+    return (
+        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                    <Icon size={14} className={
+                        color === 'blue' ? 'text-blue-500' :
+                        color === 'purple' ? 'text-purple-500' : 'text-indigo-500'
+                    } strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-gray-700">{label}</span>
+                </div>
+                <span className="text-[10px] font-black text-gray-400">{used.toLocaleString()} / {limit > 0 ? limit.toLocaleString() : '∞'}</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+                <div
+                    className={clsx("h-1.5 rounded-full transition-all", barColor[color] || barColor.blue)}
+                    style={{ width: `${Math.max(2, percent)}%` }}
+                />
+            </div>
+            <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">{Math.round(100 - percent)}% remaining</span>
+                {linkHref && (
+                    <Link href={linkHref} className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-wide">
+                        {linkLabel} →
+                    </Link>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ─── Quick Action Button ──────────────────────────────────────────────────────
+function QuickAction({ icon: Icon, label, href, color, disabled }: any) {
+    const colorMap: Record<string, string> = {
+        blue: 'bg-blue-600',
+        emerald: 'bg-emerald-500',
+        purple: 'bg-violet-600',
+        amber: 'bg-amber-500',
+        indigo: 'bg-indigo-600',
+        pink: 'bg-pink-600',
+        teal: 'bg-teal-500',
+    };
+    return (
+        <Link
+            href={disabled ? '#' : href}
+            className={clsx(
+                "group flex flex-col items-center gap-2 p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all text-center",
+                disabled && "opacity-40 pointer-events-none grayscale"
+            )}
+        >
+            <div className={clsx("w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform", colorMap[color] || colorMap.blue)}>
+                <Icon size={16} strokeWidth={2.5} />
+            </div>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-wide group-hover:text-gray-800 leading-tight">{label}</span>
+        </Link>
+    );
+}
+
+// ─── Message Row ──────────────────────────────────────────────────────────────
+function MessageRow({ msg }: { msg: any }) {
+    const statusColor: Record<string, string> = {
+        read: 'text-blue-600 bg-blue-50',
+        delivered: 'text-emerald-600 bg-emerald-50',
+        sent: 'text-gray-500 bg-gray-50',
+        failed: 'text-red-500 bg-red-50',
+    };
+    return (
+        <div className="flex items-center gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors group">
+            <div className={clsx(
+                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+                msg.direction === 'in' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'
+            )}>
+                {msg.direction === 'in' ? <ArrowDownLeft size={13} strokeWidth={2.5} /> : <ArrowUpRight size={13} strokeWidth={2.5} />}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-800 truncate">{msg.contactName || 'Unknown'}</p>
+                <p className="text-[10px] text-gray-400 truncate">{msg.content?.body?.slice(0, 40) || '—'}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+                <span className={clsx("text-[9px] font-black uppercase px-2 py-0.5 rounded-full", statusColor[msg.status] || statusColor.sent)}>
+                    {msg.status}
+                </span>
+                <span className="text-[9px] text-gray-300">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+        </div>
+    );
+}
+
+// ─── Campaign Row ─────────────────────────────────────────────────────────────
+function CampaignRow({ campaign }: { campaign: any }) {
+    const statusColor: Record<string, string> = {
+        sent: 'text-emerald-600 bg-emerald-50',
+        sending: 'text-blue-600 bg-blue-50',
+        draft: 'text-amber-600 bg-amber-50',
+        failed: 'text-red-500 bg-red-50',
+    };
+    return (
+        <div className="flex items-center gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                <Send size={13} className="text-indigo-600" strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-800 truncate">{campaign.name}</p>
+                <p className="text-[10px] text-gray-400">{campaign.totalContacts || 0} contacts</p>
+            </div>
+            <span className={clsx("text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0", statusColor[campaign.status] || statusColor.draft)}>
+                {campaign.status}
+            </span>
+        </div>
+    );
+}
+
+// ─── Feature Status Badge ─────────────────────────────────────────────────────
+function FeatureBadge({ label, active }: { label: string; active: boolean }) {
+    return (
+        <div className={clsx(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide border",
+            active
+                ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                : "bg-gray-50 text-gray-400 border-gray-100"
+        )}>
+            <div className={clsx("w-1.5 h-1.5 rounded-full", active ? "bg-emerald-500" : "bg-gray-300")} />
+            {label}
+        </div>
+    );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function OverviewTab({ 
     stats, planFeatures, usagePercent, aiUsagePercent, 
     messagesUsed, aiCreditsUsed, recentMsgs, recentCampaigns, 
-    userPlan, walletBalance, membership 
+    userPlan, walletBalance, membership, workspaceId
 }: any) {
+    const base = workspaceId ? `/dashboard/${workspaceId}` : '';
+
     return (
-        <div className="space-y-12 animate-in slide-in-from-bottom-8 duration-700">
-            {/* Usage Metrix */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Messages Hub */}
-                <div className="bg-gradient-to-br from-[#1E293B] to-black rounded-[48px] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600 rounded-full -mr-32 -mt-32 opacity-20 blur-[80px]" />
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div className="space-y-8">
-                            <div className="flex items-center justify-between">
-                                <div className="w-14 h-14 bg-white/5 rounded-[22px] flex items-center justify-center border border-white/10 group-hover:bg-blue-600 transition-all">
-                                    <MessageSquare size={28} className="text-blue-500 group-hover:text-white transition-colors" />
-                                </div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 px-3 py-1 bg-emerald-400/10 rounded-full">
-                                    {Math.floor(100 - usagePercent)}% Available
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-4xl sm:text-5xl font-black tracking-tighter leading-none mb-3">
-                                    {messagesUsed.toLocaleString()} <span className="text-lg text-white/30 tracking-tight">Handshakes</span>
-                                </h3>
-                                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Transmission Quota consumed</p>
-                            </div>
-                        </div>
-                        <div className="mt-12">
-                            <div className="w-full bg-white/5 rounded-full h-4 p-1 border border-white/5">
-                                <div className="h-full bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" style={{ width: `${usagePercent}%` }} />
-                            </div>
-                            <div className="flex justify-between items-center mt-4">
-                                <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.1em]">License Cap: {planFeatures.messagesLimit > 0 ? planFeatures.messagesLimit.toLocaleString() : 'Unlimited'}</p>
-                                <Link href="/billing" className="text-[9px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors">Scale Capacity →</Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Row 1: Core Stats — 4 compact cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard title="Total Contacts" value={stats?.totalContacts || 0} icon={Users2} trend="+12.4%" trendUp={true} color="blue" />
+                <StatCard title="Messages Sent" value={stats?.totalSent || 0} icon={ArrowUpRight} trend="+28.2%" trendUp={true} color="emerald" />
+                <StatCard title="Received" value={stats?.totalReceived || 0} icon={ArrowDownLeft} trend="+15.8%" trendUp={true} color="purple" />
+                <StatCard title="Active Campaigns" value={stats?.activeCampaigns || 0} icon={Target} trend={`${stats?.activeCampaigns || 0} live`} trendUp={null} color="amber" />
+            </div>
 
-                {/* AI Credits Hub */}
-                <div className="bg-white rounded-[48px] p-8 md:p-10 border-2 border-gray-50 shadow-2xl shadow-gray-200/40 relative overflow-hidden group">
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-50 rounded-full -ml-32 -mb-32 opacity-60 blur-[60px]" />
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div className="space-y-8">
-                            <div className="flex items-center justify-between">
-                                <div className="w-14 h-14 bg-purple-50 rounded-[22px] flex items-center justify-center border border-purple-100 group-hover:bg-purple-600 transition-all">
-                                    <Sparkles size={28} className="text-purple-600 group-hover:text-white transition-colors" />
-                                </div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-purple-600 px-3 py-1 bg-purple-50 rounded-full border border-purple-100">
-                                    Autonomous Engine
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-4xl sm:text-5xl font-black tracking-tighter leading-none mb-3 text-gray-900">
-                                    {aiCreditsUsed.toLocaleString()} <span className="text-lg text-gray-300 tracking-tight">Units</span>
-                                </h3>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Compute Resource Allocation</p>
-                            </div>
+            {/* Row 2: Usage Bars + Wallet */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <UsageBar
+                    label="Messages"
+                    used={messagesUsed}
+                    limit={planFeatures.messagesLimit}
+                    percent={usagePercent}
+                    color="blue"
+                    icon={MessageSquare}
+                    linkHref={`${base}/billing`}
+                    linkLabel="Upgrade"
+                />
+                <UsageBar
+                    label="AI Credits"
+                    used={aiCreditsUsed}
+                    limit={planFeatures.aiCredits}
+                    percent={aiUsagePercent}
+                    color="purple"
+                    icon={Sparkles}
+                    linkHref={`${base}/billing`}
+                    linkLabel="Boost"
+                />
+                {/* Wallet Card */}
+                <Link href={`${base}/wallet`} className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl p-4 shadow-sm hover:shadow-lg hover:shadow-indigo-200 transition-all group">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center border border-white/20">
+                            <CreditCard size={15} className="text-white" strokeWidth={2.5} />
                         </div>
-                        <div className="mt-12">
-                            <div className="w-full bg-gray-50 rounded-full h-4 p-1 border border-gray-100">
-                                <div className="h-full bg-purple-600 rounded-full shadow-lg shadow-purple-200" style={{ width: `${aiUsagePercent}%` }} />
-                            </div>
-                            <div className="flex justify-between items-center mt-4">
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.1em]">Tier Limit: {planFeatures.aiCredits > 0 ? planFeatures.aiCredits.toLocaleString() : 'Unlimited'}</p>
-                                <button className="text-[9px] font-black text-purple-600 uppercase tracking-widest hover:text-black transition-colors">Boost Compute →</button>
-                            </div>
-                        </div>
+                        <ArrowUpRight size={14} className="text-white/50 group-hover:text-white transition-colors" />
                     </div>
-                </div>
-
-                {/* Wallet Balance Hub */}
-                <Link href="/wallet" className="group">
-                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-[48px] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden h-full flex flex-col justify-between hover:shadow-indigo-500/20 hover:-translate-y-1 transition-all">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32 opacity-10 blur-[60px] group-hover:scale-125 transition-transform duration-1000" />
-                        
-                        <div className="space-y-8">
-                            <div className="flex items-center justify-between">
-                                <div className="w-14 h-14 bg-white/10 rounded-[22px] flex items-center justify-center border border-white/10 group-hover:bg-white group-hover:text-indigo-600 transition-all">
-                                    <CreditCard size={28} strokeWidth={2.5} />
-                                </div>
-                                <div className="p-2 bg-white/10 rounded-xl group-hover:bg-white group-hover:text-indigo-600 transition-all">
-                                    <ArrowUpRight size={20} />
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-4xl sm:text-5xl font-black tracking-tighter leading-none mb-3">
-                                    ₹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </h3>
-                                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Operational Liquidity Available</p>
-                            </div>
-                        </div>
-                        
-                        <div className="mt-12 pt-8 border-t border-white/10">
-                            <div className="flex items-center gap-3">
-                                <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Auto-Refill Security Active</span>
-                            </div>
-                        </div>
+                    <p className="text-xl font-black text-white tracking-tight leading-none mb-1">
+                        ₹{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-widest">Wallet Balance</p>
+                    <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/10">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                        <span className="text-[9px] font-black text-white/50 uppercase tracking-wide">Auto-refill Active</span>
                     </div>
                 </Link>
             </div>
 
-            {/* Quick Command Matrix */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-                {[
-                    { icon: Send, label: 'Broadcast', href: '/campaigns', color: 'bg-blue-600 shadow-blue-500/20' },
-                    { icon: Users2, label: 'Contact Lab', href: '/contacts', color: 'bg-emerald-600 shadow-emerald-500/20' },
-                    { icon: Bot, label: 'AI Synthesis', href: '/ai-agent', color: 'bg-purple-600 shadow-purple-500/20', available: planFeatures.aiAgents > 0 },
-                    { icon: Zap, label: 'Automate', href: '/automation', color: 'bg-amber-600 shadow-amber-500/20' },
-                    { icon: CreditCard, label: 'Asset Ops', href: '/wallet', color: 'bg-indigo-600 shadow-indigo-500/20' },
-                    { icon: FileText, label: 'Protocol Tpl', href: '/templates', color: 'bg-pink-600 shadow-pink-500/20' },
-                    { icon: Workflow, label: 'Nexus Flows', href: '/settings/whatsapp/flows', color: 'bg-teal-600 shadow-teal-500/20' },
-                ].map((action, i) => (
-                    <Link 
-                        key={i} 
-                        href={action.href} 
-                        className={clsx(
-                            "group p-6 bg-white border-2 border-gray-50 rounded-[30px] hover:border-black transition-all shadow-xl shadow-gray-200/30 flex flex-col items-center justify-center text-center gap-4 active:scale-95",
-                            !action.available && action.available !== undefined && "opacity-40 grayscale pointer-events-none"
-                        )}
-                    >
-                        <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl transition-transform group-hover:scale-110", action.color)}>
-                            <action.icon size={24} strokeWidth={2.5} />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">{action.label}</span>
-                    </Link>
-                ))}
-            </div>
-
-            {/* Core Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Repository" value={stats?.totalContacts || 0} icon={Users2} trend="+12.4%" trendUp={true} color="blue" />
-                <StatCard title="Outbound Flux" value={stats?.totalSent || 0} icon={ArrowUpRight} trend="+28.2%" trendUp={true} color="emerald" />
-                <StatCard title="Inbound Flow" value={stats?.totalReceived || 0} icon={ArrowDownLeft} trend="+15.8%" trendUp={true} color="purple" />
-                <StatCard title="Active Protocols" value={stats?.activeCampaigns || 0} icon={Target} trend="3 Live" trendUp={null} color="amber" />
-            </div>
-
-            {/* Telemetry Visuals */}
-            {planFeatures.advancedAnalytics ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <MetricCard title="Deliverability" value="98.5%" icon={CheckCircle} color="emerald" />
-                    <MetricCard title="Engagement" value="76.2%" icon={Eye} color="blue" />
-                    <MetricCard title="Conversion" value="34.8%" icon={MousePointer} color="purple" />
-                    <MetricCard title="Yield Velocity" value="12.4%" icon={TrendingUp} color="amber" />
+            {/* Row 3: Quick Actions */}
+            <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quick Actions</p>
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                    <QuickAction icon={Send} label="Campaigns" href={`${base}/campaigns`} color="blue" />
+                    <QuickAction icon={Users2} label="Contacts" href={`${base}/contacts`} color="emerald" />
+                    <QuickAction icon={Bot} label="AI Agent" href={`${base}/agents`} color="purple" disabled={planFeatures.aiAgents <= 0} />
+                    <QuickAction icon={Zap} label="Automate" href={`${base}/automation`} color="amber" />
+                    <QuickAction icon={CreditCard} label="Wallet" href={`${base}/wallet`} color="indigo" />
+                    <QuickAction icon={FileText} label="Templates" href={`${base}/templates`} color="pink" />
+                    <QuickAction icon={Workflow} label="Flows" href={`${base}/settings/whatsapp/flows`} color="teal" />
                 </div>
-            ) : (
-                <LockedFeatureCard
-                    title="Advanced Analytics"
-                    description="Upgrade to GROWTH LICENSE to decrypt delivery performance, conversion tracking, and behavior analytics."
-                    icon={BarChart3}
-                    plan="Growth"
-                />
-            )}
+            </div>
 
-            {/* Session Activity Matrix */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Live Stacks */}
-                <div className="lg:col-span-2 bg-white rounded-[48px] border-2 border-gray-50 shadow-2xl shadow-gray-200/40 relative overflow-hidden h-full">
-                    <div className="p-8 md:p-10 border-b-2 border-gray-50 flex items-center justify-between">
-                         <div>
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Real-Time Packets</h3>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Live individual message flow</p>
+            {/* Row 4: Activity Feed + Campaigns + Agents */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                {/* Recent Messages */}
+                <div className="lg:col-span-1 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
+                        <div>
+                            <h3 className="text-xs font-black text-gray-900">Recent Messages</h3>
+                            <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Live feed</p>
                         </div>
-                        <Link href="/message" className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90"><ChevronRight size={24} /></Link>
+                        <Link href={`${base}/inbox`} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                            <ChevronRight size={14} />
+                        </Link>
                     </div>
-                    <div className="divide-y-2 divide-gray-50 max-h-[520px] overflow-y-auto scrollbar-none">
+                    <div className="p-2 max-h-[220px] overflow-y-auto scrollbar-none">
                         {recentMsgs.length === 0 ? (
-                            <div className="p-24 text-center">
-                                <Activity size={48} className="text-gray-100 mx-auto mb-6" />
-                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">No Transmission Detected</p>
+                            <div className="flex flex-col items-center py-8 text-center">
+                                <Activity size={24} className="text-gray-200 mb-2" />
+                                <p className="text-[10px] text-gray-300 font-semibold uppercase tracking-widest">No messages yet</p>
                             </div>
                         ) : (
-                            recentMsgs.slice(0, 8).map((msg: any, i: number) => (
-                                <MessageRowPremium key={i} msg={msg} />
+                            recentMsgs.slice(0, 6).map((msg: any, i: number) => (
+                                <MessageRow key={i} msg={msg} />
                             ))
                         )}
                     </div>
                 </div>
 
-                {/* AI Agents Command Center */}
-                <div className="bg-[#0F172A] rounded-[48px] p-8 md:p-10 text-white shadow-2xl relative overflow-hidden h-full">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-purple-600 rounded-full blur-[80px] -mr-20 -mt-20 opacity-30" />
-                    <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-10">
-                            <div>
-                                <h3 className="text-2xl font-black tracking-tight">Agent Command</h3>
-                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mt-1">Autonomous Compute Stacks</p>
+                {/* Recent Campaigns */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
+                        <div>
+                            <h3 className="text-xs font-black text-gray-900">Campaigns</h3>
+                            <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Recent broadcasts</p>
+                        </div>
+                        <Link href={`${base}/campaigns`} className="flex items-center gap-1 text-[10px] font-black text-blue-600 hover:underline">
+                            <Plus size={12} /> New
+                        </Link>
+                    </div>
+                    <div className="p-2 max-h-[220px] overflow-y-auto scrollbar-none">
+                        {recentCampaigns.length === 0 ? (
+                            <div className="flex flex-col items-center py-8 text-center">
+                                <Send size={24} className="text-gray-200 mb-2" />
+                                <p className="text-[10px] text-gray-300 font-semibold uppercase tracking-widest">No campaigns yet</p>
+                                <Link href={`${base}/campaigns`} className="mt-3 text-[10px] font-black text-blue-600 hover:underline">Create one →</Link>
                             </div>
-                            <Link href="/ai-agent" className="p-3 bg-white/5 text-white/40 rounded-xl hover:bg-white hover:text-black transition-all active:scale-90"><Plus size={20} /></Link>
-                        </div>
-                        
-                        <div className="space-y-4 flex-1">
-                            <AIAgentCardPremium name="Synapse-X" status="Active" capacity={85} conversations={1234} />
-                            <AIAgentCardPremium name="Delta-9" status="Standby" capacity={42} conversations={567} dimmed />
-                            
-                            {planFeatures.aiAgents <= 1 && (
-                                <div className="mt-8 p-10 bg-white/5 border-2 border-dashed border-white/10 rounded-[32px] text-center group cursor-pointer hover:bg-white/10 transition-all">
-                                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white/20 group-hover:scale-110 transition-transform"><Plus size={24} /></div>
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Spawn Agent Instance</h4>
-                                    <p className="text-[9px] font-bold text-white/20 uppercase tracking-tight mt-2 italic">Requires Compute Upgrade</p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-12 pt-8 border-t border-white/5">
-                            <div className="flex items-center justify-between px-2">
-                                <div className="flex flex-col">
-                                    <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">Total Capacity</p>
-                                    <p className="text-xl font-black tracking-tighter">{stats?.totalAgents || 0} / {planFeatures.aiAgents === -1 ? '∞' : planFeatures.aiAgents}</p>
-                                </div>
-                                <Sparkles size={24} className="text-purple-500 animate-pulse" />
-                            </div>
-                        </div>
+                        ) : (
+                            recentCampaigns.slice(0, 5).map((c: any, i: number) => (
+                                <CampaignRow key={i} campaign={c} />
+                            ))
+                        )}
                     </div>
                 </div>
-            </div>
 
-            {/* Global Feature Matrix */}
-            <div className="flex flex-col md:flex-row items-center gap-6 p-10 bg-gray-50 rounded-[48px] border-2 border-gray-100">
-                <div className="p-6 bg-white rounded-[32px] shadow-sm border-2 border-gray-50 shrink-0">
-                    <Workflow size={32} className="text-gray-400" />
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Protocol Ecosystem</h3>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Status of integrated sub-systems and developer tools</p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto">
-                    <StatusBadge label="API 3.0" active={planFeatures.apiAccess} />
-                    <StatusBadge label="Webhooks" active={planFeatures.webhooks} />
-                    <StatusBadge label="Flows" active={true} />
-                    <StatusBadge label="WhiteLabel" active={planFeatures.whiteLabel} />
+                {/* Features + Metrics panel */}
+                <div className="space-y-3">
+                    {/* Metrics row */}
+                    {planFeatures.advancedAnalytics ? (
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Performance</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { label: 'Deliverability', value: '98.5%', icon: CheckCircle, color: 'text-emerald-500' },
+                                    { label: 'Engagement', value: '76.2%', icon: Eye, color: 'text-blue-500' },
+                                    { label: 'Conversion', value: '34.8%', icon: MousePointer, color: 'text-purple-500' },
+                                    { label: 'Growth', value: '+12.4%', icon: TrendingUp, color: 'text-amber-500' },
+                                ].map((m, i) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                        <m.icon size={13} className={m.color} strokeWidth={2.5} />
+                                        <div>
+                                            <p className="text-sm font-black text-gray-900 leading-none">{m.value}</p>
+                                            <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">{m.label}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 border-dashed p-4 text-center">
+                            <Lock size={16} className="text-gray-300 mx-auto mb-2" />
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Analytics Locked</p>
+                            <p className="text-[9px] text-gray-400 mt-1 mb-2">Upgrade to Growth for advanced metrics</p>
+                            <Link href={`${base}/billing`} className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-wide">Upgrade Plan →</Link>
+                        </div>
+                    )}
+
+                    {/* Platform status */}
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Platform Status</p>
+                        <div className="flex flex-wrap gap-2">
+                            <FeatureBadge label="API" active={planFeatures.apiAccess} />
+                            <FeatureBadge label="Webhooks" active={planFeatures.webhooks} />
+                            <FeatureBadge label="Flows" active={true} />
+                            <FeatureBadge label="WhiteLabel" active={planFeatures.whiteLabel} />
+                        </div>
+                    </div>
+
+                    {/* AI Agents mini panel */}
+                    <div className="bg-gradient-to-br from-[#0F172A] to-[#1E293B] rounded-xl p-4 text-white shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <h4 className="text-xs font-black">AI Agents</h4>
+                                <p className="text-[9px] text-white/40 font-semibold uppercase tracking-wide">Autonomous stacks</p>
+                            </div>
+                            <Link href={`${base}/agents`} className="p-1 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-all">
+                                <Plus size={13} />
+                            </Link>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xl font-black tracking-tighter">
+                                    {stats?.totalAgents || 0}
+                                    <span className="text-white/30 text-sm"> / {planFeatures.aiAgents === -1 ? '∞' : planFeatures.aiAgents}</span>
+                                </p>
+                                <p className="text-[9px] text-white/40 uppercase tracking-widest font-semibold">Active agents</p>
+                            </div>
+                            <Sparkles size={20} className="text-purple-400 animate-pulse" />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
