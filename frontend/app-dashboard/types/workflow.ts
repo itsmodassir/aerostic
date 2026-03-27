@@ -32,7 +32,13 @@ export type NodeType =
     | 'openai_model'
     | 'gemini_model'
     | 'chat'
-    | 'api';
+    | 'api'
+    | 'api_request'
+    | 'webhook'
+    | 'whatsapp_flow'
+    | 'wa_form'
+    | 'memory'
+    | 'knowledge_query';
 
 /**
  * Base interface for all node data
@@ -51,7 +57,7 @@ export interface BaseNodeData extends Record<string, unknown> {
  * Trigger Node - Starts the workflow
  */
 export interface TriggerNodeData extends BaseNodeData {
-    triggerType: 'manual' | 'webhook' | 'schedule' | 'event' | 'new_message' | 'flow_response' | 'whatsapp_response';
+    triggerType: 'manual' | 'webhook' | 'schedule' | 'event' | 'new_message' | 'flow_response' | 'whatsapp_response' | 'template_reply';
     webhookUrl?: string;
     schedule?: string; // Cron expression
     eventType?: string;
@@ -63,9 +69,11 @@ export interface TriggerNodeData extends BaseNodeData {
  */
 export interface ActionNodeData extends BaseNodeData {
     message: string;
-    messageType: 'text' | 'template' | 'media';
+    messageType: 'text' | 'image' | 'video' | 'document';
     templateId?: string;
     mediaUrl?: string;
+    mediaCaption?: string;
+    mediaFilename?: string;
 }
 
 /**
@@ -137,10 +145,33 @@ export interface ContactNodeData extends BaseNodeData {
  * Template Node - Message templates
  */
 export interface TemplateNodeData extends BaseNodeData {
-    templateId: string;
+    templateId?: string;
     templateName?: string;
     language?: string;
     variables?: Record<string, string>;
+    components?: string;
+}
+
+export interface WhatsAppFlowNodeData extends BaseNodeData {
+    flowId: string;
+    flowName?: string;
+    ctaText?: string;
+    flowAction?: 'NAVIGATE' | 'DATA_EXCHANGE';
+    screenId?: string;
+    payload?: string;
+    bodyText?: string;
+    footerText?: string;
+}
+
+export interface WaFormNodeData extends BaseNodeData {
+    formId?: string;
+    formName?: string;
+    metaFlowId?: string;
+    ctaText?: string;
+    flowAction?: 'NAVIGATE' | 'DATA_EXCHANGE';
+    screenId?: string;
+    payload?: string;
+    bodyText?: string;
 }
 
 /**
@@ -227,6 +258,8 @@ export type NodeData =
     | GoogleSheetsNodeData
     | ContactNodeData
     | TemplateNodeData
+    | WhatsAppFlowNodeData
+    | WaFormNodeData
     | EmailNodeData
     | GoogleDriveNodeData
     | OpenAIModelNodeData

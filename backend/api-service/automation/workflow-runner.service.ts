@@ -238,6 +238,9 @@ export class WorkflowRunnerService {
         return { status: "triggered", data: context.trigger?.data || {} };
 
       case "action":
+      case "template":
+      case "whatsapp_flow":
+      case "wa_form":
         return this.actionExecutor.execute(node, context);
 
       case "email":

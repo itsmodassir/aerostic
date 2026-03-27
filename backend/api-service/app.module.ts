@@ -36,6 +36,7 @@ import { GoogleModule } from "./google/google.module";
 import { ResellerModule } from "./reseller/reseller.module";
 import { ApiKeysModule } from "./api-keys/api-keys.module";
 import { TenantContextMiddleware } from "@shared/middleware/tenant-context.middleware";
+import { WaFormsModule } from "./wa-forms/wa-forms.module";
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { TenantContextMiddleware } from "@shared/middleware/tenant-context.middl
     GoogleModule,
     ResellerModule,
     ApiKeysModule,
+    WaFormsModule,
   ],
   controllers: [AppController],
   providers: [

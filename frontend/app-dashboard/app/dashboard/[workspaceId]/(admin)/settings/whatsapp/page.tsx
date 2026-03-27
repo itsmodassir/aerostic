@@ -122,10 +122,13 @@ export default function WhatsappSettingsPage() {
         launchWhatsAppSignup(
             metaConfig.configId,
             tenantId || '',
-            (code) => {
+            (code, wabaId, phoneNumberId) => {
                 // When we get the code, redirect to our callback page to finish the process
                 const state = tenantId || '';
-                window.location.href = `/meta/callback?code=${code}&state=${state}`;
+                let url = `/meta/callback?code=${code}&state=${state}`;
+                if (wabaId) url += `&wabaId=${wabaId}`;
+                if (phoneNumberId) url += `&phoneNumberId=${phoneNumberId}`;
+                window.location.href = url;
             }
         );
     };
@@ -215,6 +218,9 @@ export default function WhatsappSettingsPage() {
                 <div className="flex gap-4">
                     <Link href="/settings/whatsapp/trigger-flow" className="px-5 py-4 bg-gray-900 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3">
                         <Workflow size={16} /> Trigger Flow
+                    </Link>
+                    <Link href="/settings/whatsapp/forms" className="px-5 py-4 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-3">
+                        <Workflow size={16} /> WA Forms
                     </Link>
                      <button
                         onClick={toggleSound}

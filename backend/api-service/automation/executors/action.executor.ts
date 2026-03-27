@@ -15,15 +15,125 @@ export class ActionExecutor implements NodeExecutor {
   async execute(node: any, context: any): Promise<any> {
     const data = node.data;
     const tenantId = context.tenantId;
-    const to = context.contact?.phone || context.trigger?.data?.from;
+    const to =
+      context.from ||
+      context.contact?.phone ||
+      context.trigger?.data?.from ||
+      context.trigger?.from;
 
     if (!to) {
       throw new Error("Destination phone number not found in context");
     }
 
-    const message = this.variableResolver.resolve(data.message || "", context);
+    if (node.type === "template") {
+      const rawComponents = data.components;
+      let parsedComponents: any[] = [];
+      if (typeof rawComponents === "string" && rawComponents.trim()) {
+        try {
+          const decoded = JSON.parse(this.variableResolver.resolve(rawComponents, context));
+          if (Array.isArray(decoded)) parsedComponents = decoded;
+        } catch {
+          parsedComponents = [];
+        }
+      }
 
-    this.logger.log(`Executing Action: Send Message to ${to}`);
+      await this.messagesService.send({
+        tenantId,
+        to,
+        type: "template",
+        payload: {
+          name: data.templateName,
+          language: { code: data.language || "en_US" },
+          ...(parsedComponents.length ? { components: parsedComponents } : {}),
+        },
+      });
+
+      return { status: "sent", to, type: "template", template: data.templateName };
+    }
+
+    if (node.type === "whatsapp_flow" || node.type === "wa_form") {
+      const resolvedFlowId = data.flowId || data.metaFlowId || data.formId;
+      if (!resolvedFlowId) {
+        throw new Error("WA Form/WhatsApp Flow node requires flowId");
+      }
+
+      const resolvedBody = this.variableResolver.resolve(
+        data.bodyText || "Please complete the form to continue.",
+        context,
+      );
+
+      let flowPayloadData: any = undefined;
+      if (data.payload) {
+        try {
+          flowPayloadData = JSON.parse(this.variableResolver.resolve(data.payload, context));
+        } catch {
+          flowPayloadData = this.variableResolver.resolve(data.payload, context);
+        }
+      }
+
+      await this.messagesService.send({
+        tenantId,
+        to,
+        type: "interactive",
+        payload: {
+          type: "flow",
+          body: { text: resolvedBody },
+          action: {
+            name: "flow",
+            parameters: {
+              flow_message_version: "3",
+              flow_token: data.flowToken || `aimstors_${Date.now()}`,
+              flow_id: String(resolvedFlowId),
+              flow_cta: String(data.ctaText || "Open Form"),
+              flow_action: String(data.flowAction || "NAVIGATE"),
+              ...(data.screenId || flowPayloadData
+                ? {
+                    flow_action_payload: {
+                      ...(data.screenId ? { screen: data.screenId } : {}),
+                      ...(flowPayloadData ? { data: flowPayloadData } : {}),
+                    },
+                  }
+                : {}),
+            },
+          },
+        },
+      });
+
+      return {
+        status: "sent",
+        to,
+        type: node.type === "wa_form" ? "wa_form" : "whatsapp_flow",
+        flowId: resolvedFlowId,
+      };
+    }
+
+    const message = this.variableResolver.resolve(data.message || "", context);
+    const messageType = String(data.messageType || "text").toLowerCase();
+
+    this.logger.log(`Executing Action: Send ${messageType} message to ${to}`);
+
+    if (messageType === "image" || messageType === "video" || messageType === "document") {
+      const mediaUrl = this.variableResolver.resolve(data.mediaUrl || "", context);
+      if (!mediaUrl) {
+        throw new Error(`Action node requires mediaUrl for ${messageType}`);
+      }
+
+      const payload: Record<string, any> = {
+        link: mediaUrl,
+      };
+      if (message) payload.caption = message;
+      if (messageType === "document" && data.mediaFilename) {
+        payload.filename = this.variableResolver.resolve(data.mediaFilename, context);
+      }
+
+      await this.messagesService.send({
+        tenantId,
+        to,
+        type: messageType,
+        payload,
+      });
+      return { status: "sent", to, type: messageType, mediaUrl };
+    }
 
     await this.messagesService.send({
       tenantId,
@@ -36,6 +146,7 @@ export class ActionExecutor implements NodeExecutor {
       status: "sent",
       to,
       message,
+      type: "text",
     };
   }
 }

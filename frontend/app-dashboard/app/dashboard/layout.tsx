@@ -71,6 +71,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             permission: 'billing:manage',
                 children: [
                 { name: 'WhatsApp', href: '/settings/whatsapp' },
+                { name: 'WA Forms', href: '/settings/whatsapp/forms' },
                 { name: 'Trigger Flow', href: '/settings/whatsapp/trigger-flow' },
                 { name: 'Email Flow', href: '/settings/email' },
                 { name: 'AI Models', href: '/settings/ai' },

@@ -44,6 +44,7 @@ export function proxy(request: NextRequest) {
         '/referrals': `/dashboard/${activeTenant}/referrals`,
         '/knowledge-base': `/dashboard/${activeTenant}/knowledge`,
         '/settings/whatsapp': `/dashboard/${activeTenant}/settings/whatsapp`,
+        '/settings/whatsapp/forms': `/dashboard/${activeTenant}/settings/whatsapp/forms`,
         '/settings/whatsapp/trigger-flow': `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow`,
         '/settings/whatsapp/flows': `/dashboard/${activeTenant}/settings/whatsapp/flows`,
         '/trigger-flow': `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow`,
@@ -61,6 +62,7 @@ export function proxy(request: NextRequest) {
         ['/campaigns/', `/dashboard/${activeTenant}/campaigns/`],
         ['/settings/whatsapp/trigger-flow/', `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow/`],
         ['/settings/whatsapp/flows/', `/dashboard/${activeTenant}/settings/whatsapp/flows/`],
+        ['/settings/whatsapp/forms/', `/dashboard/${activeTenant}/settings/whatsapp/forms/`],
     ];
 
     // 0. API Subdomain

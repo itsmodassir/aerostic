@@ -32,7 +32,7 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
                     autoLogAppEvents: true,
                     cookie: true,
                     xfbml: true,
-                    version: 'v19.0'
+                    version: 'v25.0'
                 });
                 window._fbInitialized = cleanAppId;
                 console.log('[MetaSDK] FB.init complete for:', cleanAppId);
@@ -61,7 +61,7 @@ export default function FacebookSDKLoader({ appId }: FacebookSDKLoaderProps) {
 export function launchWhatsAppSignup(
     configId: string,
     state: string,
-    callback: (code: string) => void
+    callback: (code: string, wabaId?: string, phoneNumberId?: string) => void
 ) {
     console.log('[MetaSDK] launchWhatsAppSignup called', { configId, state });
 
@@ -81,8 +81,12 @@ export function launchWhatsAppSignup(
         window.FB.login(
             (response: any) => {
                 if (response?.authResponse?.code) {
-                    console.log('[MetaSDK] Got auth code');
-                    callback(response.authResponse.code);
+                    console.log('[MetaSDK] Got auth code', response.authResponse);
+                    callback(
+                        response.authResponse.code,
+                        response.authResponse.waba_id,
+                        response.authResponse.phone_number_id
+                    );
                 } else {
                     console.warn('[MetaSDK] Signup cancelled or failed', response);
                 }
@@ -93,7 +97,7 @@ export function launchWhatsAppSignup(
                 override_default_response_type: true,
                 redirect_uri: redirectUri,
                 extras: {
-                    version: 'v3',
+                    feature_type: 'whatsapp_business_app_onboarding',
                     session_info: {
                         version: 'v3'
                     },

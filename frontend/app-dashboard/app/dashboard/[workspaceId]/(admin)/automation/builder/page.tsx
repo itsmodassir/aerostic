@@ -86,6 +86,8 @@ const TriggerNode = ({ data }: NodeProps<WorkflowUIFlowNode<TriggerNodeData>>) =
             <p className="text-[10px] text-gray-500 mt-1">
                 {data.triggerType === 'flow_response'
                     ? 'Starts when a WhatsApp flow response is received'
+                    : data.triggerType === 'template_reply'
+                        ? 'Starts when a template quick-reply/list response is received'
                     : data.triggerType === 'new_message' || data.triggerType === 'whatsapp_response'
                         ? 'Starts when a WhatsApp reply is received'
                         : 'Starts when a new message is received'}
@@ -104,7 +106,7 @@ const ActionNode = ({ data }: NodeProps<WorkflowUIFlowNode<ActionNodeData>>) => 
         </div>
         <div className="p-4">
             <h4 className="font-bold text-gray-900">{data.label}</h4>
-            <p className="text-[10px] text-gray-500 mt-1">Send a WhatsApp reply</p>
+            <p className="text-[10px] text-gray-500 mt-1">Send a WhatsApp {(data.messageType || 'text') as string} reply</p>
         </div>
         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
     </div>
@@ -207,6 +209,7 @@ const MemoryNode = ({ data }: NodeProps<WorkflowUIFlowNode>) => (
 );
 
 import FlowNode from './FlowNode';
+import WaFormNode from './WaFormNode';
 
 const nodeTypes = {
     trigger: TriggerNode,
@@ -219,6 +222,7 @@ const nodeTypes = {
     contact: ContactNode,
     template: TemplateNode,
     whatsapp_flow: FlowNode,
+    wa_form: WaFormNode,
     email: EmailNode,
     chat: ChatNode,
     webhook: WebhookNode,
@@ -387,6 +391,7 @@ function WorkflowBuilder() {
             case 'google_drive': label = 'Google Drive'; break;
             case 'knowledge_query': label = 'Knowledge Query'; break;
             case 'memory': label = 'Memory'; break;
+            case 'wa_form': label = 'WA Form'; break;
             default: label = 'New Node';
         }
 
@@ -403,6 +408,8 @@ function WorkflowBuilder() {
                 ...(type === 'google_sheets' && { operation: 'read' }),
                 ...(type === 'contact' && { operation: 'get', matchField: 'phone' }),
                 ...(type === 'template' && { templateName: 'hello_world', language: 'en_US' }),
+                ...(type === 'whatsapp_flow' && { flowAction: 'NAVIGATE', ctaText: 'Open Flow', bodyText: 'Please complete the form to continue.' }),
+                ...(type === 'wa_form' && { flowAction: 'NAVIGATE', ctaText: 'Open Form', bodyText: 'Please complete this form to continue.' }),
                 ...(type === 'email' && { to: '{{CONTACT_EMAIL}}', provider: 'smtp' }),
                 ...(type === 'openai_model' && { modelName: 'gpt-4o', temperature: 0.7 }),
                 ...(type === 'gemini_model' && { modelName: 'gemini-1.5-pro', temperature: 0.7 }),
@@ -674,6 +681,10 @@ function WorkflowBuilder() {
                         <button onClick={() => addNode('whatsapp_flow')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Zap size={20} />
                             <span className="text-sm font-bold">WhatsApp Flow</span>
+                        </button>
+                        <button onClick={() => addNode('wa_form')} className="p-3 hover:bg-orange-50 text-orange-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                            <FileSpreadsheet size={20} />
+                            <span className="text-sm font-bold">WA Form</span>
                         </button>
                         <button onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3 text-left">
                             <Mail size={20} />

@@ -200,9 +200,14 @@ export class WorkflowsService {
     let handled = false;
 
     for (const workflow of activeWorkflows) {
-      const triggerNode = workflow.nodes.find(
-        (n) => n.type === "trigger" && n.data?.triggerType === triggerType,
-      );
+      const triggerNode = workflow.nodes.find((n) => {
+        if (n.type !== "trigger") return false;
+        const configured = String(n.data?.triggerType || "new_message");
+        if (configured === triggerType) return true;
+        // Backward-compatible alias: older builders used whatsapp_response
+        if (configured === "whatsapp_response" && triggerType === "new_message") return true;
+        return false;
+      });
 
       // Check if conversation is in handoff mode
       if (context.conversationId) {
@@ -288,6 +293,12 @@ export class WorkflowsService {
           case "template":
             await this.handleTemplateNode(workflow.tenantId, nextNode, context);
             break;
+          case "whatsapp_flow":
+            await this.handleWhatsappFlowNode(workflow.tenantId, nextNode, context);
+            break;
+          case "wa_form":
+            await this.handleWhatsappFlowNode(workflow.tenantId, nextNode, context);
+            break;
           case "chat":
             await this.handleChatNode(workflow.tenantId, nextNode, context);
             shouldContinue = false; // Stop workflow execution
@@ -345,15 +356,57 @@ export class WorkflowsService {
   }
 
   private async executeAction(tenantId: string, node: any, context: any) {
-    const { actionType, payload } = node.data;
+    const { actionType, payload, message, messageType, mediaUrl, mediaCaption, mediaFilename } = node.data;
+    const destination = context.from;
+
+    if (!destination) return;
 
     if (actionType === "send_whatsapp" || !actionType) {
-      // default to whatsapp
+      const resolvedMessage = String(message || payload?.text || "Hello from Automation");
+      const normalizedType = String(messageType || "text").toLowerCase();
+
+      if (normalizedType === "image") {
+        if (!mediaUrl) throw new Error("Action node requires mediaUrl for image messages");
+        await this.messagesService.send({
+          tenantId,
+          to: destination,
+          type: "image",
+          payload: { link: String(mediaUrl), caption: resolvedMessage || mediaCaption || undefined },
+        });
+        return;
+      }
+
+      if (normalizedType === "video") {
+        if (!mediaUrl) throw new Error("Action node requires mediaUrl for video messages");
+        await this.messagesService.send({
+          tenantId,
+          to: destination,
+          type: "video",
+          payload: { link: String(mediaUrl), caption: resolvedMessage || mediaCaption || undefined },
+        });
+        return;
+      }
+
+      if (normalizedType === "document") {
+        if (!mediaUrl) throw new Error("Action node requires mediaUrl for document messages");
+        await this.messagesService.send({
+          tenantId,
+          to: destination,
+          type: "document",
+          payload: {
+            link: String(mediaUrl),
+            filename: mediaFilename || "attachment",
+            caption: resolvedMessage || mediaCaption || undefined,
+          },
+        });
+        return;
+      }
+
       await this.messagesService.send({
         tenantId,
-        to: context.from,
+        to: destination,
         type: "text",
-        payload: { text: payload?.text || "Hello from Automation" },
+        payload: { text: resolvedMessage },
       });
     }
   }
@@ -363,7 +416,10 @@ export class WorkflowsService {
     context: any,
     edge: any,
   ): Promise<boolean> {
-    const { condition, value, field } = node.data;
+    const { condition, operator, value, keyword, field, input } = node.data;
+    const normalizedCondition = condition || operator || "contains";
+    const normalizedField = field || input;
+    const normalizedValue = value ?? keyword;
 
     const resolveField = (source: any, path?: string) => {
       if (!path) return source?.messageBody ?? "";
@@ -373,14 +429,14 @@ export class WorkflowsService {
       }, source);
     };
 
-    const rawValue = resolveField(context, field);
+    const rawValue = resolveField(context, normalizedField);
     const target = typeof rawValue === "string"
       ? rawValue.toLowerCase()
       : JSON.stringify(rawValue ?? "").toLowerCase();
-    const val = String(value || "").toLowerCase();
+    const val = String(normalizedValue || "").toLowerCase();
 
     let match = false;
-    switch (condition) {
+    switch (normalizedCondition) {
       case "contains":
         match = target.includes(val);
         break;
@@ -401,10 +457,10 @@ export class WorkflowsService {
         match = rawValue === undefined || rawValue === null || rawValue === "";
         break;
       case "greater_than":
-        match = Number(rawValue) > Number(value);
+        match = Number(rawValue) > Number(normalizedValue);
         break;
       case "less_than":
-        match = Number(rawValue) < Number(value);
+        match = Number(rawValue) < Number(normalizedValue);
         break;
       default:
         match = true; // default pass if no condition specified
@@ -527,13 +583,24 @@ export class WorkflowsService {
   }
 
   private async handleTemplateNode(tenantId: string, node: any, context: any) {
-    const { templateName, language, variables } = node.data;
+    const { templateName, language, variables, components } = node.data;
 
     // Parse variables
-    const components = [];
-    if (variables) {
+    const parsedComponents = [];
+    if (typeof components === "string" && components.trim().startsWith("[")) {
+      try {
+        const decoded = JSON.parse(components);
+        if (Array.isArray(decoded)) {
+          parsedComponents.push(...decoded);
+        }
+      } catch {
+        // ignore malformed JSON and fallback to variables
+      }
+    }
+
+    if (parsedComponents.length === 0 && variables) {
       const vars = variables.split(",").map((v: string) => v.trim());
-      components.push({
+      parsedComponents.push({
         type: "body",
         parameters: vars.map((v: string) => ({ type: "text", text: v })),
       });
@@ -548,7 +615,60 @@ export class WorkflowsService {
       payload: {
         name: templateName,
         language: { code: language || "en_US" },
-        components,
+        components: parsedComponents,
+      },
+    });
+  }
+
+  private async handleWhatsappFlowNode(tenantId: string, node: any, context: any) {
+    const {
+      flowId,
+      formId,
+      metaFlowId,
+      ctaText,
+      flowAction,
+      screenId,
+      payload,
+      bodyText,
+      footerText,
+      flowToken,
+    } = node.data;
+
+    const resolvedFlowId = flowId || metaFlowId || formId;
+    if (!resolvedFlowId) {
+      throw new Error("WhatsApp Flow node requires flowId");
+    }
+
+    const action = String(flowAction || "NAVIGATE");
+    const actionPayload: Record<string, any> = {};
+    if (screenId) actionPayload.screen = screenId;
+    if (payload) {
+      try {
+        actionPayload.data = typeof payload === "string" ? JSON.parse(payload) : payload;
+      } catch {
+        actionPayload.data = payload;
+      }
+    }
+
+    await this.messagesService.send({
+      tenantId,
+      to: context.from,
+      type: "interactive",
+      payload: {
+        type: "flow",
+        body: { text: bodyText || "Please complete the form to continue." },
+        ...(footerText ? { footer: { text: footerText } } : {}),
+        action: {
+          name: "flow",
+          parameters: {
+            flow_message_version: "3",
+            flow_token: flowToken || `aimstors_${Date.now()}`,
+            flow_id: String(resolvedFlowId),
+            flow_cta: String(ctaText || "Open Form"),
+            flow_action: action,
+            ...(Object.keys(actionPayload).length > 0 ? { flow_action_payload: actionPayload } : {}),
+          },
+        },
       },
     });
   }

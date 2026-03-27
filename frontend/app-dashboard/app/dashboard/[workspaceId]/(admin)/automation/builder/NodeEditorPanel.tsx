@@ -19,6 +19,7 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
     const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
     const [whatsappTemplates, setWhatsappTemplates] = useState<any[]>([]);
     const [whatsappFlows, setWhatsappFlows] = useState<any[]>([]);
+    const [waForms, setWaForms] = useState<any[]>([]);
 
     useEffect(() => {
         setLocalData(node.data);
@@ -39,6 +40,10 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 if (node.type === 'whatsapp_flow') {
                     const res = await api.get('/whatsapp/flows/published');
                     setWhatsappFlows(res.data);
+                }
+                if (node.type === 'wa_form') {
+                    const res = await api.get('/wa-forms/published');
+                    setWaForms(res.data);
                 }
             } catch (err) {
                 console.error('Failed to fetch node data', err);
@@ -144,6 +149,27 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     placeholder="e.g. Book Appointment"
                 />
             </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Body Text</label>
+                <VariableInput
+                    value={localData.bodyText || 'Please complete the form to continue.'}
+                    onChange={(v) => handleChange('bodyText', v)}
+                    nodes={nodes}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                    placeholder="Message shown above flow CTA"
+                />
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Flow Payload (JSON)</label>
+                <VariableInput
+                    value={localData.payload || '{}'}
+                    onChange={(v) => handleChange('payload', v)}
+                    nodes={nodes}
+                    textarea
+                    className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-mono resize-none"
+                    placeholder='{"leadId":"{{contact.id}}"}'
+                />
+            </div>
         </div>
     );
 
@@ -196,6 +222,65 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                         placeholder="variable_name"
                     />
                 </div>
+            </div>
+        </div>
+    );
+
+    const renderWaFormConfig = () => (
+        <div className="space-y-4">
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Published WA Form</label>
+                <select
+                    value={localData.formId || ''}
+                    onChange={(e) => {
+                        const selected = waForms.find((f: any) => f.id === e.target.value);
+                        handleChange('formId', e.target.value);
+                        handleChange('formName', selected?.name || '');
+                        handleChange('metaFlowId', selected?.metaFlowId || '');
+                    }}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
+                >
+                    <option value="">Select published WA Form...</option>
+                    {waForms.map((f: any) => (
+                        <option key={f.id} value={f.id}>
+                            {f.name} {f.metaFlowId ? `(${f.metaFlowId})` : ''}
+                        </option>
+                    ))}
+                </select>
+                <p className="mt-2 text-[11px] text-gray-500">
+                    Only forms with published Meta flow IDs are listed.
+                </p>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Button Text</label>
+                <VariableInput
+                    value={localData.ctaText || 'Open Form'}
+                    onChange={(v) => handleChange('ctaText', v)}
+                    nodes={nodes}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                    placeholder="e.g. Complete Form"
+                />
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Body Text</label>
+                <VariableInput
+                    value={localData.bodyText || 'Please complete this form to continue.'}
+                    onChange={(v) => handleChange('bodyText', v)}
+                    nodes={nodes}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                    placeholder="Message shown above CTA"
+                />
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Flow Payload (JSON)</label>
+                <VariableInput
+                    value={localData.payload || '{}'}
+                    onChange={(v) => handleChange('payload', v)}
+                    nodes={nodes}
+                    textarea
+                    className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-mono resize-none"
+                    placeholder='{"leadId":"{{contact.id}}"}'
+                />
             </div>
         </div>
     );
@@ -257,7 +342,22 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
     const renderActionConfig = () => (
         <div className="space-y-4">
             <div>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Message Text</label>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Reply Type</label>
+                <select
+                    value={localData.messageType || 'text'}
+                    onChange={(e) => handleChange('messageType', e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
+                >
+                    <option value="text">Text</option>
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="document">Document</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+                    {(localData.messageType || 'text') === 'text' ? 'Message Text' : 'Caption / Supporting Text'}
+                </label>
                 <VariableInput
                     value={localData.message || ''}
                     onChange={(v) => handleChange('message', v)}
@@ -268,6 +368,32 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 />
                 <p className="mt-2 text-[10px] text-gray-400">Use {'{{variable}}'} for dynamic data.</p>
             </div>
+            {(localData.messageType || 'text') !== 'text' && (
+                <>
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Media URL</label>
+                        <VariableInput
+                            value={localData.mediaUrl || ''}
+                            onChange={(v) => handleChange('mediaUrl', v)}
+                            nodes={nodes}
+                            className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                            placeholder="https://cdn.example.com/file.jpg"
+                        />
+                    </div>
+                    {(localData.messageType || 'text') === 'document' && (
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Document Filename</label>
+                            <VariableInput
+                                value={localData.mediaFilename || ''}
+                                onChange={(v) => handleChange('mediaFilename', v)}
+                                nodes={nodes}
+                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
+                                placeholder="brochure.pdf"
+                            />
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 
@@ -276,35 +402,67 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Input Source</label>
                 <VariableInput
-                    value={localData.input || ''}
-                    onChange={(v) => handleChange('input', v)}
+                    value={localData.field || localData.input || 'messageBody'}
+                    onChange={(v) => {
+                        handleChange('input', v);
+                        handleChange('field', v);
+                    }}
                     nodes={nodes}
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
-                    placeholder="{{trigger.body}}"
+                    placeholder="messageBody or flowData.email"
                 />
             </div>
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Operator</label>
                 <select
-                    value={localData.operator || 'contains'}
-                    onChange={(e) => handleChange('operator', e.target.value)}
+                    value={localData.condition || localData.operator || 'contains'}
+                    onChange={(e) => {
+                        handleChange('operator', e.target.value);
+                        handleChange('condition', e.target.value);
+                    }}
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
                 >
                     <option value="contains">Contains</option>
                     <option value="equals">Equals</option>
-                    <option value="startsWith">Starts With</option>
-                    <option value="endsWith">Ends With</option>
+                    <option value="not_contains">Does Not Contain</option>
+                    <option value="not_equals">Not Equals</option>
+                    <option value="exists">Exists</option>
+                    <option value="not_exists">Does Not Exist</option>
                 </select>
             </div>
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Keyword / Value</label>
                 <VariableInput
-                    value={localData.keyword || ''}
-                    onChange={(v) => handleChange('keyword', v)}
+                    value={localData.value || localData.keyword || ''}
+                    onChange={(v) => {
+                        handleChange('keyword', v);
+                        handleChange('value', v);
+                    }}
                     nodes={nodes}
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                     placeholder="e.g. price"
                 />
+            </div>
+        </div>
+    );
+
+    const renderTriggerConfig = () => (
+        <div className="space-y-4">
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Trigger Type</label>
+                <select
+                    value={localData.triggerType || 'new_message'}
+                    onChange={(e) => handleChange('triggerType', e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm bg-white"
+                >
+                    <option value="new_message">New Message</option>
+                    <option value="template_reply">Template Reply</option>
+                    <option value="flow_response">Flow Response</option>
+                    <option value="whatsapp_response">WhatsApp Response (Legacy)</option>
+                </select>
+            </div>
+            <div className="text-[11px] text-gray-500 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                `template_reply` listens for template button/list replies and `flow_response` listens for WhatsApp Flow form submissions.
             </div>
         </div>
     );
@@ -607,6 +765,7 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
             case 'memory': return <Cpu className="text-indigo-600" />;
             case 'knowledge_query': return <Globe className="text-cyan-600" />;
             case 'webhook': return <Zap className="text-pink-600" />;
+            case 'wa_form': return <FileSpreadsheet className="text-orange-600" />;
             default: return <Info className="text-gray-600" />;
         }
     };
@@ -645,20 +804,24 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                         {node.type === 'api_request' && "Perform dynamic HTTP requests to integrate with your existing software and external APIs."}
                         {node.type === 'action' && "Automatically reply to incoming messages. You can use dynamic variables here."}
                         {node.type === 'condition' && "Branch your workflow based on incoming text or data matching specific rules."}
+                        {node.type === 'trigger' && "Pick exactly what starts this flow: new message, template reply, or flow submission."}
                         {node.type === 'ai_agent' && "Use generative AI to process messages, summarize info, or generate smart replies."}
                         {node.type === 'lead_update' && "Automatically keep your CRM in sync by updating contact fields as they move through the flow."}
                         {node.type === 'memory' && "Store and retrieve persistent information about this contact to maintain state across different interactions."}
                         {node.type === 'knowledge_query' && "Search your uploaded documents and company knowledge using AI embeddings to provide context to your agent."}
+                        {node.type === 'wa_form' && "Send a published WhatsApp form (flow) and capture structured responses in your automation trigger."}
                     </p>
                 </div>
 
                 <div className="space-y-6">
+                    {node.type === 'trigger' && renderTriggerConfig()}
                     {node.type === 'action' && renderActionConfig()}
                     {node.type === 'condition' && renderConditionConfig()}
                     {node.type === 'api_request' && renderApiConfig()}
                     {(node.type === 'ai_agent' || node.type === 'gemini_model') && renderAiConfig()}
                     {node.type === 'template' && renderTemplateConfig()}
                     {node.type === 'whatsapp_flow' && renderWhatsappFlowConfig()}
+                    {node.type === 'wa_form' && renderWaFormConfig()}
                     {node.type === 'lead_update' && renderLeadConfig()}
                     {node.type === 'memory' && renderMemoryConfig()}
                     {node.type === 'knowledge_query' && renderKnowledgeConfig()}
