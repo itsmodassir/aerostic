@@ -24,16 +24,67 @@ export class WhatsappService {
     private encryptionService: EncryptionService,
   ) {}
 
+  private reconnectRequiredMessage() {
+    return "WhatsApp session expired or invalid. Please reconnect your WhatsApp account in Settings > WhatsApp.";
+  }
+
+  private resolveAccessToken(account: WhatsappAccount) {
+    const decrypted = this.encryptionService.decrypt(account.accessToken);
+    const token = typeof decrypted === "string" ? decrypted.trim() : "";
+
+    // If decrypt failed in legacy service, it may return iv:tag:ciphertext.
+    // Meta access tokens do not use this colon-delimited encrypted format.
+    if (!token || token.split(":").length === 3) {
+      throw new BadRequestException(this.reconnectRequiredMessage());
+    }
+
+    return token;
+  }
+
+  private isMetaTokenError(metaError: any) {
+    const code = metaError?.error?.code;
+    const subcode = metaError?.error?.error_subcode;
+    return code === 190 || subcode === 463 || subcode === 467;
+  }
+
+  private async markSessionInvalid(tenantId: string) {
+    await this.whatsappAccountRepo.update(
+      { tenantId },
+      { status: "disconnected", tokenExpiresAt: new Date() },
+    );
+    await this.redisService.del(`whatsapp:token:${tenantId}`);
+  }
+
   async getEmbeddedSignupUrl(tenantId: string) {
     const appId = await this.adminConfigService.getConfigValue("meta.app_id");
+    const configId = await this.adminConfigService.getConfigValue("meta.config_id");
     const redirectUri =
       await this.adminConfigService.getConfigValue("meta.redirect_uri");
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
+
+    if (!appId) {
+      throw new BadRequestException(
+        "Meta App ID is not configured. Please set meta.app_id in admin system settings.",
+      );
+    }
+
+    if (!redirectUri) {
+      throw new BadRequestException(
+        "Meta redirect URI is not configured. Please set meta.redirect_uri in admin system settings.",
+      );
+    }
+
+    if (!configId) {
+      throw new BadRequestException(
+        "Meta Embedded Signup config_id is missing. Please set meta.config_id in admin system settings.",
+      );
+    }
 
     const params = qs.stringify({
       client_id: appId,
+      config_id: configId,
       redirect_uri: redirectUri,
       scope: [
         "whatsapp_business_management",
@@ -42,6 +93,12 @@ export class WhatsappService {
       ].join(","),
       response_type: "code",
       state: tenantId,
+      extras: JSON.stringify({
+        feature_type: "whatsapp_business_app_onboarding",
+        session_info: {
+          version: "v3",
+        },
+      }),
     });
 
     return `https://www.facebook.com/${apiVersion}/dialog/oauth?${params}`;
@@ -62,7 +119,7 @@ export class WhatsappService {
     const credentials = {
       wabaId: account.wabaId,
       phoneNumberId: account.phoneNumberId,
-      accessToken: this.encryptionService.decrypt(account.accessToken),
+      accessToken: this.resolveAccessToken(account),
     };
 
     // Cache for 1 hour
@@ -76,6 +133,42 @@ export class WhatsappService {
       where: { tenantId },
     });
     if (!account) return { connected: false };
+
+    if (account.status === "connected") {
+      try {
+        const accessToken = this.resolveAccessToken(account);
+        const apiVersion =
+          (await this.adminConfigService.getConfigValue("meta.api_version")) ||
+          "v25.0";
+
+        const probe = await fetch(
+          `https://graph.facebook.com/${apiVersion}/${account.wabaId}?fields=id&access_token=${accessToken}`,
+        );
+
+        if (!probe.ok) {
+          const probeData = await probe.json();
+          if (this.isMetaTokenError(probeData)) {
+            await this.markSessionInvalid(tenantId);
+            return {
+              connected: false,
+              mode: account.mode,
+              phoneNumber: account.displayPhoneNumber,
+              wabaId: account.wabaId,
+              qualityRating: account.qualityRating,
+            };
+          }
+        }
+      } catch {
+        await this.markSessionInvalid(tenantId);
+        return {
+          connected: false,
+          mode: account.mode,
+          phoneNumber: account.displayPhoneNumber,
+          wabaId: account.wabaId,
+          qualityRating: account.qualityRating,
+        };
+      }
+    }
 
     return {
       connected: account.status === "connected",
@@ -175,10 +268,10 @@ export class WhatsappService {
       throw new BadRequestException("WhatsApp account not connected");
     }
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const accessToken = this.resolveAccessToken(account);
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
 
     try {
       // Fetch phone number details from Meta Graph API
@@ -249,25 +342,33 @@ export class WhatsappService {
       throw new BadRequestException("WhatsApp account not connected");
     }
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const accessToken = this.resolveAccessToken(account);
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
 
     try {
       const response = await fetch(
         `https://graph.facebook.com/${apiVersion}/${account.wabaId}/flows?fields=id,name,status,updated_at&access_token=${accessToken}`,
       );
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new BadRequestException("Failed to fetch flows from Meta");
+        if (this.isMetaTokenError(data)) {
+          await this.markSessionInvalid(tenantId);
+          throw new BadRequestException(this.reconnectRequiredMessage());
+        }
+        throw new BadRequestException(
+          data?.error?.message || "Failed to fetch flows from Meta",
+        );
       }
 
-      const data = await response.json();
       return data.data || [];
     } catch (error) {
       console.error("Error fetching flows from Meta:", error);
-      throw new BadRequestException("Failed to fetch flows. Please try again.");
+      throw error instanceof BadRequestException
+        ? error
+        : new BadRequestException("Failed to fetch flows. Please try again.");
     }
   }
 
@@ -280,10 +381,10 @@ export class WhatsappService {
       throw new BadRequestException("WhatsApp account not connected");
     }
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
+    const accessToken = this.resolveAccessToken(account);
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
 
     try {
       const response = await fetch(
@@ -331,8 +432,8 @@ export class WhatsappService {
     });
     if (!account) return;
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
-    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+    const accessToken = this.resolveAccessToken(account);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v25.0";
 
     const flowJson = customJson || {
       version: "7.3",
@@ -397,8 +498,8 @@ export class WhatsappService {
     });
     if (!account) throw new BadRequestException("WhatsApp account not connected");
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
-    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+    const accessToken = this.resolveAccessToken(account);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v25.0";
 
     try {
       const response = await fetch(
@@ -424,8 +525,8 @@ export class WhatsappService {
     });
     if (!account) throw new BadRequestException("WhatsApp account not connected");
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
-    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+    const accessToken = this.resolveAccessToken(account);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v25.0";
 
     try {
       const response = await fetch(
@@ -453,8 +554,8 @@ export class WhatsappService {
     });
     if (!account) throw new BadRequestException("WhatsApp account not connected");
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
-    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+    const accessToken = this.resolveAccessToken(account);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v25.0";
 
     try {
       // First get the list of assets
@@ -488,8 +589,8 @@ export class WhatsappService {
     const account = await this.whatsappAccountRepo.findOne({ where: { tenantId } });
     if (!account) throw new BadRequestException("WhatsApp account not connected");
 
-    const accessToken = this.encryptionService.decrypt(account.accessToken);
-    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v21.0";
+    const accessToken = this.resolveAccessToken(account);
+    const apiVersion = (await this.adminConfigService.getConfigValue("meta.api_version")) || "v25.0";
 
     try {
       const response = await fetch(

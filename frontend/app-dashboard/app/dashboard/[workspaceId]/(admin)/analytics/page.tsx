@@ -46,20 +46,27 @@ const GRADIENTS = [
 export default function AnalyticsPage() {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
-            try {
-                const res = await api.get('/analytics/overview');
-                setData(res.data);
-            } catch (err) {
-                console.error('Failed to fetch analytics', err);
-            } finally {
-                setLoading(false);
+    const fetchAnalytics = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await api.get('/analytics/overview');
+            setData(res.data);
+        } catch (err: any) {
+            const status = err?.response?.status;
+            if (status === 401 || status === 403) {
+                setError('auth');
+            } else {
+                setError(err?.response?.data?.message || 'Failed to connect to analytics engine.');
             }
-        };
-        fetchAnalytics();
-    }, []);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchAnalytics(); }, []);
 
     if (loading) {
         return (
@@ -72,11 +79,23 @@ export default function AnalyticsPage() {
         );
     }
 
-    if (!data) return (
+    if (error || !data) return (
         <div className="flex flex-col items-center justify-center min-h-[40vh] p-8 text-center bg-gray-50 rounded-[40px] border-2 border-dashed border-gray-200">
             <AlertCircle size={48} className="text-gray-300 mb-4" />
-            <h3 className="text-xl font-black text-gray-900 tracking-tight">Telemetry Offline</h3>
-            <p className="text-sm font-bold text-gray-400 max-w-xs mt-2 uppercase tracking-widest leading-loose">Failed to establish connection with the analytics engine.</p>
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                {error === 'auth' ? 'Session Expired' : 'Telemetry Offline'}
+            </h3>
+            <p className="text-sm font-bold text-gray-400 max-w-xs mt-2 uppercase tracking-widest leading-loose">
+                {error === 'auth'
+                    ? 'Your session has expired. Please refresh the page and log in again.'
+                    : error || 'Failed to establish connection with the analytics engine.'}
+            </p>
+            <button
+                onClick={fetchAnalytics}
+                className="mt-6 px-6 py-3 bg-blue-600 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl hover:bg-black transition-all active:scale-95"
+            >
+                Retry
+            </button>
         </div>
     );
 

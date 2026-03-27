@@ -55,7 +55,7 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
     isSecret: false,
   },
   "meta.api_version": {
-    value: "v21.0",
+    value: "v25.0",
     description: "Meta Graph API Version",
     category: "whatsapp",
     isSecret: false,

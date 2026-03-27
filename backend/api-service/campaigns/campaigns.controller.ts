@@ -25,6 +25,11 @@ export class CampaignsController {
     return this.campaignsService.create(tenantId, body);
   }
 
+  @Get("recent")
+  findRecent(@UserTenant() tenantId: string) {
+    return this.campaignsService.getRecent(tenantId);
+  }
+
   @Get()
   @Authorize({ resource: "campaign", action: "read" })
   findAll(@UserTenant() tenantId: string) {

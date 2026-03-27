@@ -19,7 +19,7 @@ import {
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
-type TriggerMode = 'new_message' | 'flow_response';
+type TriggerMode = 'new_message' | 'template_reply' | 'flow_response';
 type MatchOperator = 'contains' | 'exact';
 
 type WorkflowSummary = {
@@ -45,6 +45,13 @@ const MODE_PRESETS: Record<TriggerMode, {
         description: 'Routes incoming WhatsApp replies into a reusable workflow.',
         triggerLabel: 'Incoming WhatsApp Reply',
         example: 'price, yes, help, menu',
+    },
+    template_reply: {
+        title: 'Template Button/List Reply',
+        subtitle: 'Use this when customers answer through template quick buttons or list replies.',
+        description: 'Routes structured template reply clicks into a reusable workflow.',
+        triggerLabel: 'Template Reply Event',
+        example: 'yes_continue, callback, pricing_menu',
     },
     flow_response: {
         title: 'WhatsApp Flow Response',
@@ -222,7 +229,7 @@ export default function TriggerFlowPage() {
             const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
             const matchesNode = nodes.some((node: any) => {
                 const triggerType = node?.data?.triggerType;
-                return node?.type === 'trigger' && (triggerType === 'new_message' || triggerType === 'flow_response' || triggerType === 'whatsapp_response');
+                return node?.type === 'trigger' && (triggerType === 'new_message' || triggerType === 'template_reply' || triggerType === 'flow_response' || triggerType === 'whatsapp_response');
             });
 
             return description.includes('trigger flow') || matchesNode;
@@ -376,6 +383,7 @@ export default function TriggerFlowPage() {
                                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:border-blue-400 bg-white"
                                 >
                                     <option value="new_message">Template / Quick Reply Response</option>
+                                    <option value="template_reply">Template Button/List Reply</option>
                                     <option value="flow_response">WhatsApp Flow Response</option>
                                 </select>
                             </label>
@@ -500,7 +508,7 @@ export default function TriggerFlowPage() {
 
                         <div className="space-y-4">
                             {[
-                                { title: '1. Inbound reply arrives', body: 'WhatsApp text replies use new_message. Form/interactive replies use flow_response.' },
+                                { title: '1. Inbound reply arrives', body: 'Text replies use new_message, template button/list replies use template_reply, and form submissions use flow_response.' },
                                 { title: '2. Condition checks the payload', body: 'We read the selected field and compare it with contains or exact.' },
                                 { title: '3. Matching branch sends a reply', body: 'The true branch sends your primary automated reply.' },
                                 { title: '4. Fallback branch catches the rest', body: 'Anything unmatched can route to a fallback reply or handoff.' },

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param, UseGuards, Req } from "@nestjs/common";
+import { Body, Controller, Post, Get, Param, Query, UseGuards, Req } from "@nestjs/common";
 import { MessagesService } from "./messages.service";
 import { SendMessageDto } from "./dto/send-message.dto";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
@@ -22,6 +22,11 @@ export class MessagesController {
       dto.agentId = req.user.id;
     }
     return this.messagesService.send(dto);
+  }
+
+  @Get("recent")
+  async getRecentMessages(@UserTenant() tenantId: string, @Query("limit") limit?: string) {
+    return this.messagesService.getRecentMessages(tenantId, parseInt(limit || '5', 10));
   }
 
   @Get("conversations")

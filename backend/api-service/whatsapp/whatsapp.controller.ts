@@ -8,6 +8,7 @@ import {
   Delete,
   Param,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import { WhatsappService } from "./whatsapp.service";
 import type { Response } from "express";
@@ -19,12 +20,37 @@ export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Get("embedded/url")
+  async getEmbeddedSignupUrl(
+    @UserTenant() tenantId: string,
+    @Query("mode") mode?: string,
+  ) {
+    const selectedMode = mode || "coexistence";
+    if (!["coexistence", "cloud"].includes(selectedMode)) {
+      throw new BadRequestException("Invalid embedded signup mode");
+    }
+    const url = await this.whatsappService.getEmbeddedSignupUrl(
+      tenantId,
+      selectedMode,
+    );
+    return { url };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get("embedded/start")
   async startEmbeddedSignup(
     @UserTenant() tenantId: string,
+    @Query("mode") mode: string | undefined,
     @Res() res: Response,
   ) {
-    const url = await this.whatsappService.getEmbeddedSignupUrl(tenantId);
+    const selectedMode = mode || "coexistence";
+    if (!["coexistence", "cloud"].includes(selectedMode)) {
+      throw new BadRequestException("Invalid embedded signup mode");
+    }
+    const url = await this.whatsappService.getEmbeddedSignupUrl(
+      tenantId,
+      selectedMode,
+    );
     return res.redirect(url);
   }
   @UseGuards(JwtAuthGuard)

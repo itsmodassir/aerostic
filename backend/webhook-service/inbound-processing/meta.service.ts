@@ -32,7 +32,7 @@ export class MetaService {
   private async getApiVersion(): Promise<string> {
     return (
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0"
+      "v25.0"
     );
   }
 

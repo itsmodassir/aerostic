@@ -116,7 +116,7 @@ export class MessagesService {
     // 4. Construct Meta Graph API Payload
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
     const url = `https://graph.facebook.com/${apiVersion}/${account.phoneNumberId}/messages`;
 
     const body: any = {
@@ -131,6 +131,12 @@ export class MessagesService {
       body.template = dto.payload;
     } else if (dto.type === "interactive") {
       body.interactive = dto.payload;
+    } else if (dto.type === "image") {
+      body.image = dto.payload;
+    } else if (dto.type === "video") {
+      body.video = dto.payload;
+    } else if (dto.type === "document") {
+      body.document = dto.payload;
     }
 
     // 5. Pre-send Wallet Deduction (Only for Templates and not skipped)
@@ -276,6 +282,24 @@ export class MessagesService {
       relations: ["contact"],
       order: { lastMessageAt: "DESC" },
     });
+  }
+
+  async getRecentMessages(tenantId: string, limit: number = 5) {
+    const messages = await this.messageRepo.find({
+      where: { tenantId },
+      order: { createdAt: "DESC" },
+      take: limit,
+      relations: ["conversation", "conversation.contact"],
+    });
+    return messages.map((m) => ({
+      id: m.id,
+      type: m.type,
+      direction: m.direction,
+      status: m.status,
+      createdAt: m.createdAt,
+      contactName: m.conversation?.contact?.name || "Unknown",
+      content: m.content,
+    }));
   }
 
   async getMessages(tenantId: string, conversationId: string) {

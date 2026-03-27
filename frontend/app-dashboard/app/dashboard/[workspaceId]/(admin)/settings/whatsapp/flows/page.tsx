@@ -338,8 +338,22 @@ export default function WhatsAppFlowsPage() {
                         ) : error ? (
                             <tr><td colSpan={6} className="text-center py-16">
                                 <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
-                                <p className="text-sm text-red-600 font-semibold mb-3">{error}</p>
-                                <button onClick={fetchFlows} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold">Retry</button>
+                                <p className="text-sm text-red-600 font-semibold mb-1">{
+                                    error.includes('not found') || error.includes('not connected') || error.includes('account')
+                                        ? 'No WhatsApp account connected to this workspace.'
+                                        : error
+                                }</p>
+                                {(error.includes('not found') || error.includes('not connected') || error.includes('account') || error.includes('session') || error.includes('token')) && (
+                                    <p className="text-xs text-gray-400 mb-4">Please connect your WhatsApp account in Settings to use Flows.</p>
+                                )}
+                                <div className="flex items-center justify-center gap-3">
+                                    <button onClick={fetchFlows} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-200">Retry</button>
+                                    {(error.includes('not found') || error.includes('not connected') || error.includes('account') || error.includes('session') || error.includes('token') || error.includes('Unauthorized')) && (
+                                        <Link href={`/dashboard/${workspaceId}/settings/whatsapp`} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">
+                                            Go to WhatsApp Settings
+                                        </Link>
+                                    )}
+                                </div>
                             </td></tr>
                         ) : filteredFlows.length === 0 ? (
                             <tr><td colSpan={6} className="text-center py-20">
@@ -437,8 +451,20 @@ export default function WhatsAppFlowsPage() {
                     ) : error ? (
                         <div className="text-center py-16 px-4">
                             <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
-                            <p className="text-sm text-red-600 font-semibold mb-3">{error}</p>
-                            <button onClick={fetchFlows} className="w-full py-3 bg-red-600 text-white rounded-xl text-sm font-bold">Retry</button>
+                            <p className="text-sm text-red-600 font-semibold mb-1">
+                                {error.includes('not found') || error.includes('not connected') || error.includes('account')
+                                    ? 'No WhatsApp account connected to this workspace.'
+                                    : error}
+                            </p>
+                            {(error.includes('not found') || error.includes('not connected') || error.includes('account') || error.includes('session') || error.includes('token') || error.includes('Unauthorized')) && (
+                                <p className="text-xs text-gray-400 mb-4">Please connect your WhatsApp account in Settings to use Flows.</p>
+                            )}
+                            <div className="flex flex-col gap-2">
+                                <button onClick={fetchFlows} className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold">Retry</button>
+                                <Link href={`/dashboard/${workspaceId}/settings/whatsapp`} className="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-black text-center">
+                                    Go to WhatsApp Settings
+                                </Link>
+                            </div>
                         </div>
                     ) : filteredFlows.length === 0 ? (
                         <div className="text-center py-20 px-4">

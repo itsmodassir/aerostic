@@ -26,7 +26,7 @@ export class WhatsappService {
   async getApiVersion(): Promise<string> {
     return (
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0"
+      "v25.0"
     );
   }
 
@@ -36,7 +36,7 @@ export class WhatsappService {
       await this.adminConfigService.getConfigValue("meta.redirect_uri");
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
 
     const params = qs.stringify({
       client_id: appId,
@@ -48,6 +48,12 @@ export class WhatsappService {
       ].join(","),
       response_type: "code",
       state: tenantId,
+      extras: JSON.stringify({
+        feature_type: "whatsapp_business_app_onboarding",
+        session_info: {
+          version: "v3",
+        },
+      }),
     });
 
     return `https://www.facebook.com/${apiVersion}/dialog/oauth?${params}`;
@@ -184,7 +190,7 @@ export class WhatsappService {
     const accessToken = this.encryptionService.decrypt(account.accessToken);
     const apiVersion =
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
-      "v21.0";
+      "v25.0";
 
     try {
       // Fetch phone number details from Meta Graph API

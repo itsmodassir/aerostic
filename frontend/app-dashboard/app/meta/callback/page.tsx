@@ -12,14 +12,18 @@ function CallbackContent() {
     useEffect(() => {
         const code = searchParams.get('code');
         const state = searchParams.get('state'); // tenantId
+        const persistTenantContext = (tenantId: string) => {
+            localStorage.setItem('x-tenant-id', tenantId);
+            document.cookie = `selected_tenant=${tenantId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+        };
 
         if (code && state) {
             // Pass the code to the backend to finish the exchange
-            api.get(`/meta/callback?code=${code}&state=${state}`)
+            api.get(`/meta/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`)
                 .then(() => {
                     setStatus('Success! WhatsApp Connected.');
                     setTimeout(() => {
-                        localStorage.setItem('x-tenant-id', state);
+                        persistTenantContext(state);
                         router.push('/settings/whatsapp');
                     }, 2000);
                 })
@@ -27,7 +31,7 @@ function CallbackContent() {
                     console.error('[MetaCallback] Exchange Failed:', err);
                     setStatus('Failed to connect WhatsApp. Please try again from settings.');
                     setTimeout(() => {
-                        localStorage.setItem('x-tenant-id', state);
+                        persistTenantContext(state);
                         router.push('/settings/whatsapp');
                     }, 3000);
                 });

@@ -188,9 +188,17 @@ export class WebhooksService {
       });
 
       let workflowHandled = false;
+      const interactiveType = messageData.interactive?.type;
+      const interactiveText =
+        messageData.interactive?.button_reply?.title ||
+        messageData.interactive?.button_reply?.id ||
+        messageData.interactive?.list_reply?.title ||
+        messageData.interactive?.list_reply?.id ||
+        "";
+      const fallbackText = messageData.text?.body || interactiveText || "";
 
       // 🔥 Handle WhatsApp Flow Responses (nfm_reply)
-      if (messageData.type === 'interactive' && messageData.interactive?.type === 'nfm_reply') {
+      if (messageData.type === 'interactive' && interactiveType === 'nfm_reply') {
         try {
           const flowResponse = JSON.parse(messageData.interactive.nfm_reply.response_json);
           this.logger.log(`Flow submission received from ${from}: ${JSON.stringify(flowResponse)}`);
@@ -219,6 +227,19 @@ export class WebhooksService {
         } catch (e) {
           this.logger.error(`Failed to parse flow response: ${e.message}`);
         }
+      } else if (messageData.type === "interactive" && (interactiveType === "button_reply" || interactiveType === "list_reply")) {
+        workflowHandled = await this.workflowsService.executeTrigger(
+          account.tenantId,
+          "template_reply",
+          {
+            from,
+            messageBody: fallbackText,
+            contactId: contact.id,
+            conversationId: conversation.id,
+            interactiveType,
+            interactive: messageData.interactive,
+          },
+        );
       } else {
         // 🔥 Trigger New Visual Automation Workflows for regular messages
         workflowHandled = await this.workflowsService.executeTrigger(
@@ -226,9 +247,11 @@ export class WebhooksService {
           "new_message",
           {
             from,
-            messageBody: messageData.text?.body || "",
+            messageBody: fallbackText,
             contactId: contact.id,
             conversationId: conversation.id,
+            interactiveType,
+            interactive: messageData.interactive,
           },
         );
       }
@@ -237,7 +260,7 @@ export class WebhooksService {
       const legacyHandled = await this.automationService.evaluate(
         account.tenantId,
         from,
-        messageData.text?.body || "",
+        fallbackText,
       );
 
       // 🔥 AI Handover Gate
@@ -254,9 +277,9 @@ export class WebhooksService {
           }
 
           // If it was a flow, pass the JSON to AI so it can acknowledge
-          const aiInput = (messageData.type === 'interactive' && messageData.interactive?.type === 'nfm_reply')
+          const aiInput = (messageData.type === 'interactive' && interactiveType === 'nfm_reply')
             ? `[USER_SUBMITTED_FLOW]: ${messageData.interactive.nfm_reply.response_json}`
-            : (messageData.text?.body || "");
+            : fallbackText;
 
           if (aiInput) {
             await this.aiService.process(

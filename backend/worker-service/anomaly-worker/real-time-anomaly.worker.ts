@@ -22,7 +22,7 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
   async onModuleInit() {
     // Subscribe to usage events
     await this.kafkaService.subscribe(
-      "anomaly-engine-group",
+      "anomaly-engine-usage-group",
       "aimstors.usage.events",
       async ({ message }) => {
         if (!message.value) return;
@@ -33,7 +33,7 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
 
     // Subscribe to security events
     await this.kafkaService.subscribe(
-      "anomaly-engine-group",
+      "anomaly-engine-security-group",
       "aimstors.security.events",
       async ({ message }) => {
         if (!message.value) return;

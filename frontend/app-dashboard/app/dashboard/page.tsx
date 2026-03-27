@@ -1,6 +1,10 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+function isRedirectSignal(error: unknown): boolean {
+    return !!(error as { digest?: string })?.digest?.startsWith('NEXT_REDIRECT');
+}
+
 export default async function DashboardResolverPage() {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
@@ -34,8 +38,7 @@ export default async function DashboardResolverPage() {
 
         if (preferredSlug) {
             console.log(`[DashboardResolver] Redirecting to preferred workspace: ${preferredSlug}`);
-            redirectTo = `/dashboard/${preferredSlug}`;
-            return;
+            redirect(`/dashboard/${preferredSlug}`);
         }
 
         // 2. Get Workspaces if no preferred slug
@@ -49,16 +52,19 @@ export default async function DashboardResolverPage() {
             const slug = workspaces?.[0]?.tenant?.slug || workspaces?.[0]?.slug;
             if (slug) {
                 console.log(`[DashboardResolver] Redirecting to first available workspace: ${slug}`);
-                redirectTo = `/dashboard/${slug}`;
-                return;
+                redirect(`/dashboard/${slug}`);
             }
         } else {
             console.warn(`[DashboardResolver] /auth/workspaces failed with status ${wsRes.status}`);
         }
 
         console.log('[DashboardResolver] No workspaces found, redirecting to new workspace setup');
-    } catch (error: any) {
-        console.error('[DashboardResolver] Server-side resolution CRITICAL FAILURE:', error.message || error);
+    } catch (error: unknown) {
+        if (isRedirectSignal(error)) {
+            throw error;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[DashboardResolver] Server-side resolution CRITICAL FAILURE:', message);
         // Fallback to login if all resolution attempts fail
         redirectTo = '/login';
     }

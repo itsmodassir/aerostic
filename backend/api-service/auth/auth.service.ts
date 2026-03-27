@@ -44,7 +44,8 @@ export class AuthService {
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    this.logger.warn(`Attempting login for: ${email}`);
+    const maskedEmail = email.replace(/^(.)(.*)(@.*)$/, (_, f, m, l) => f + "*".repeat(m.length) + l);
+    this.logger.debug(`Attempting login for: ${maskedEmail}`);
     const user = await this.usersService.findOneByEmail(email);
 
     if (!user) {

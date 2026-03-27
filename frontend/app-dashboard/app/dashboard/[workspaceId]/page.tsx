@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { 
     LayoutDashboard, Code, Users, Settings, 
     Lock, Sparkles, UserPlus, Zap
@@ -16,10 +16,10 @@ import TeamTab from '@/components/dashboard/TeamTab';
 import SettingsTab from '@/components/dashboard/SettingsTab';
 import PartnerDashboardView from '@/components/dashboard/PartnerDashboardView';
 import { resolveWorkspaceId } from '@/components/dashboard/DashboardComponents';
+import api from '@/lib/api';
 
 export default function DashboardPage() {
     const params = useParams();
-    const router = useRouter();
     const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
     
     // UI State
@@ -36,11 +36,6 @@ export default function DashboardPage() {
     const [walletBalance, setWalletBalance] = useState(0);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
         fetchDashboardData();
     }, [workspaceId]);
 
@@ -54,40 +49,44 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Parallel fetch for core data
-            const [userRes, msgRes, campaignRes, walletRes] = await Promise.all([
-                fetch('/api/v1/users/me', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-                fetch('/api/v1/messages/recent', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-                fetch('/api/v1/campaigns/recent', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }),
-                fetch('/api/v1/billing/wallet-balance', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+            // Parallel fetch for core data — each wrapped independently so one failure doesn't blank the page
+            const [userRes, msgRes, campaignRes, walletRes] = await Promise.allSettled([
+                api.get('/users/me'),
+                api.get('/messages/recent'),
+                api.get('/campaigns/recent'),
+                api.get('/billing/wallet-balance')
             ]);
 
-            if (userRes.ok) {
-                const userData = await userRes.json();
+            if (userRes.status === 'fulfilled' && userRes.value.status === 200) {
+                const userData = userRes.value.data;
                 setUser(userData);
                 const member = userData.memberships?.find((m: any) => m.workspaceId === workspaceId);
                 setMembership(member);
                 setUserPlan(normalizePlan(member?.planName || 'Starter'));
 
                 // Fetch context-aware stats
-                if (member?.tenantType === 'reseller') {
-                    const res = await fetch('/api/v1/admin/reseller-stats', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-                    if (res.ok) setStats(await res.json());
-                } else {
-                    const res = await fetch('/api/v1/analytics/overview', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-                    if (res.ok) setStats(await res.json());
+                try {
+                    if (member?.tenantType === 'reseller') {
+                        const res = await api.get('/admin/reseller-stats');
+                        if (res.status === 200) setStats(res.data);
+                    } else {
+                        const res = await api.get('/analytics/overview');
+                        if (res.status === 200) setStats(res.data);
+                    }
+                } catch {
+                    // Stats failure is non-fatal — dashboard still renders
                 }
             }
 
-            if (msgRes.ok) setRecentMsgs(await msgRes.json());
-            if (campaignRes.ok) setRecentCampaigns(await campaignRes.json());
-            if (walletRes.ok) {
-                const wData = await walletRes.json();
+            if (msgRes.status === 'fulfilled' && msgRes.value.status === 200) setRecentMsgs(msgRes.value.data);
+            if (campaignRes.status === 'fulfilled' && campaignRes.value.status === 200) setRecentCampaigns(campaignRes.value.data);
+            if (walletRes.status === 'fulfilled' && walletRes.value.status === 200) {
+                const wData = walletRes.value.data;
                 setWalletBalance(wData.balance || 0);
             }
 
         } catch (error) {
-            console.error('Fatal Telemetry Error:', error);
+            console.error('Fatal Dashboard Error:', error);
         } finally {
             setLoading(false);
         }

@@ -28,6 +28,7 @@ export function useAuth() {
                 });
 
                 if (!res.ok) {
+                    console.warn(`[useAuth] Auth check failed: ${res.status} ${res.statusText}`);
                     setUser(null);
                     setLoading(false);
                     // Determine redirect based on subdomain
@@ -42,8 +43,8 @@ export function useAuth() {
                 const data = await res.json();
                 console.log('[useAuth] Fetched user:', data);
                 setUser(data);
-            } catch (err) {
-                console.error('Auth check failed', err);
+            } catch (err: any) {
+                console.error('[useAuth] Fetch context CRITICAL ERROR:', err.message || err);
                 setUser(null);
                 if (window.location.hostname.startsWith('admin.')) {
                     router.push('/admin/login');

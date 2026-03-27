@@ -49,6 +49,14 @@ export class CampaignsService {
     });
   }
 
+  async getRecent(tenantId: string, limit: number = 5) {
+    return this.campaignRepo.find({
+      where: { tenantId },
+      order: { createdAt: "DESC" },
+      take: limit,
+    });
+  }
+
   async dispatch(tenantId: string, campaignId: string) {
     const campaign = await this.campaignRepo.findOneBy({
       id: campaignId,

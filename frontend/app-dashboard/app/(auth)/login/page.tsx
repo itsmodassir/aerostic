@@ -25,15 +25,12 @@ export default function LoginPage() {
     const [branding, setBranding] = useState<any>(null);
 
     useEffect(() => {
-        // Aggressively clear any existing session data on mount
-        localStorage.clear();
-
-        // Clear cookies for all possible domains
-        const domains = [window.location.hostname, '.aimstore.in', 'app.aimstore.in'];
-        domains.forEach(domain => {
-            document.cookie = `access_token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
-            document.cookie = `access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
-        });
+        // Only clear data if we are not in the middle of a redirection or already authenticated
+        // Aggressively clearing on every mount can cause race conditions during fast redirects.
+        const hasActiveSession = document.cookie.includes('access_token');
+        if (!hasActiveSession) {
+            localStorage.clear();
+        }
 
         // Fetch branding
         const host = window.location.host;

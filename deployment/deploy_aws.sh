@@ -60,6 +60,13 @@ if [ -f "../../.env" ]; then
 fi
 export NEXT_JS_IGNORE_ESLINT=1
 npm run build
+
+# Keep nginx static mount stable across rebuilds.
+# .next/static is recreated by Next build, which can stale bind-mount inodes.
+echo "🧱 Syncing frontend static runtime assets..."
+mkdir -p static_runtime
+find static_runtime -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+cp -a .next/static/. static_runtime/
 cd ../..
 
 # 5. Run Migrations
