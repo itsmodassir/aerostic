@@ -80,7 +80,9 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
     // 2. Optimized Switcher Logic
     const switchWorkspace = (workspace: Workspace) => {
         localStorage.setItem('x-tenant-id', workspace.id);
-        router.push('/dashboard');
+        localStorage.setItem('selected_tenant_id', workspace.id);
+        document.cookie = `selected_tenant=${workspace.slug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+        router.push(`/dashboard/${workspace.slug}`);
         setOpen(false);
     };
 

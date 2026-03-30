@@ -55,8 +55,13 @@ export default function LoginPage() {
 
             // Redirect to workspace-specific dashboard
             const workspaceId = res.data.workspaceId;
+            const workspaceSlug = res.data.workspaceSlug;
             if (workspaceId && UUID_V4_REGEX.test(workspaceId)) {
                 localStorage.setItem('x-tenant-id', workspaceId);
+                localStorage.setItem('selected_tenant_id', workspaceId);
+            }
+            if (workspaceSlug) {
+                document.cookie = `selected_tenant=${workspaceSlug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
             }
             if (workspaceId) {
                 router.push('/dashboard');

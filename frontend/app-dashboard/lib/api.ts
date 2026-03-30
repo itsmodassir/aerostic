@@ -46,10 +46,17 @@ api.interceptors.request.use(async (config) => {
                     tenantId = savedTenantId;
                 }
             }
+            if (!tenantId) {
+                const selectedTenantId = localStorage.getItem('selected_tenant_id');
+                if (isUuid(selectedTenantId)) {
+                    tenantId = selectedTenantId;
+                }
+            }
 
             if (tenantId) {
                 config.headers['x-tenant-id'] = tenantId;
                 localStorage.setItem('x-tenant-id', tenantId);
+                localStorage.setItem('selected_tenant_id', tenantId);
             }
         }
 

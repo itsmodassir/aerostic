@@ -117,11 +117,19 @@ export default function InboxPage() {
             try {
                 const res = await api.get('/auth/workspaces');
                 const memberships = res.data;
-                const activeMembership = memberships.find((m: any) => m.tenant?.slug === workspaceSlug);
+                const activeMembership = memberships.find((m: any) =>
+                    m.tenant?.slug === workspaceSlug || m.tenant?.id === workspaceSlug
+                );
 
                 if (activeMembership && activeMembership.tenant?.id && mounted) {
                     const tid = activeMembership.tenant.id;
                     setTenantId(tid);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('x-tenant-id', tid);
+                        if (activeMembership.tenant?.slug) {
+                            document.cookie = `selected_tenant=${activeMembership.tenant.slug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+                        }
+                    }
 
                     setCurrentUser({
                         id: user.id || '1',
@@ -132,9 +140,9 @@ export default function InboxPage() {
                     });
                     try {
                         const [teamRes, walletRes, templatesRes] = await Promise.all([
-                            api.get(`/users?tenantId=${tid}`).catch(e => ({ data: [] })),
-                            api.get(`/billing/wallet/balance?tenantId=${tid}`).catch(e => ({ data: { balance: 0, rates: { marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 } } })),
-                            api.get(`/templates?tenantId=${tid}`).catch(e => ({ data: [] }))
+                            api.get(`/users?tenantId=${tid}`, { headers: { 'x-tenant-id': tid } }).catch(e => ({ data: [] })),
+                            api.get(`/billing/wallet/balance?tenantId=${tid}`, { headers: { 'x-tenant-id': tid } }).catch(e => ({ data: { balance: 0, rates: { marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 } } })),
+                            api.get(`/templates?tenantId=${tid}`, { headers: { 'x-tenant-id': tid } }).catch(e => ({ data: [] }))
                         ]);
 
                         if (teamRes.data && mounted) {
@@ -183,7 +191,9 @@ export default function InboxPage() {
 
     const fetchAiStatus = async (convId: string) => {
         try {
-            const res = await api.get(`/messages/conversations/${convId}/status`);
+            const res = await api.get(`/messages/conversations/${convId}/status`, {
+                headers: tenantId ? { 'x-tenant-id': tenantId } : undefined,
+            });
             setAiStatus(res.data);
         } catch (e) {
             console.error('Failed to fetch AI status', e);
@@ -201,7 +211,9 @@ export default function InboxPage() {
         if (!selectedConversation) return;
         setAiModeLoading(true);
         try {
-            await api.post(`/messages/conversations/${selectedConversation.id}/ai-mode`, { mode, pauseMinutes });
+            await api.post(`/messages/conversations/${selectedConversation.id}/ai-mode`, { mode, pauseMinutes }, {
+                headers: tenantId ? { 'x-tenant-id': tenantId } : undefined,
+            });
             await fetchAiStatus(selectedConversation.id);
         } catch (e) {
             console.error('Failed to set AI mode', e);
@@ -292,7 +304,9 @@ export default function InboxPage() {
             if (cached) setConversations(cached);
 
             try {
-                const res = await api.get(`/messages/conversations?tenantId=${tenantId}`);
+                const res = await api.get('/messages/conversations', {
+                    headers: { 'x-tenant-id': tenantId },
+                });
                 if (res.data) {
                     const mapped = res.data.map((conv: any) => ({
                         ...conv,
@@ -322,7 +336,9 @@ export default function InboxPage() {
             if (cached) setMessages(cached);
 
             try {
-                const res = await api.get(`/messages/conversations/${selectedConversation.id}?tenantId=${tenantId}`);
+                const res = await api.get(`/messages/conversations/${selectedConversation.id}`, {
+                    headers: { 'x-tenant-id': tenantId },
+                });
                 if (res.data) {
                     setMessages(res.data);
                     setCachedMessages(tenantId, currentUser.id, selectedConversation.id, res.data);
@@ -376,6 +392,8 @@ export default function InboxPage() {
                 to: selectedConversation.contact.phoneNumber,
                 type: 'text',
                 payload: { text: inputText }
+            }, {
+                headers: { 'x-tenant-id': tenantId },
             });
 
             setMessages(prev => {
@@ -428,6 +446,8 @@ export default function InboxPage() {
             await api.post('/messages/send', {
                 tenantId, to: selectedConversation.contact.phoneNumber,
                 type: 'template', payload,
+            }, {
+                headers: { 'x-tenant-id': tenantId },
             });
             setWalletBalance(prev => prev - templateRate);
             setMessages(prev => prev.map(m => m.id === newMessage.id ? { ...m, status: 'delivered' } : m));
