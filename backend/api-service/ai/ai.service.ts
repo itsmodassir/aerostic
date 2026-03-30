@@ -31,7 +31,9 @@ export class AiService {
    * Falls back to env var for backward compatibility.
    */
   private async getGeminiClient(): Promise<GoogleGenerativeAI | null> {
-    const key = await this.adminConfigService.getConfigValue("ai.gemini_api_key");
+    const key =
+      (await this.adminConfigService.getConfigValue("ai.gemini_api_key")) ||
+      this.configService.get<string>("GEMINI_API_KEY");
     if (!key) return null;
     return new GoogleGenerativeAI(key);
   }
@@ -41,7 +43,9 @@ export class AiService {
    * Falls back to env var for backward compatibility.
    */
   private async getOpenAIClient(): Promise<OpenAI | null> {
-    const key = await this.adminConfigService.getConfigValue("ai.openai_api_key");
+    const key =
+      (await this.adminConfigService.getConfigValue("ai.openai_api_key")) ||
+      this.configService.get<string>("OPENAI_API_KEY");
     if (!key) return null;
     return new OpenAI({ apiKey: key });
   }
