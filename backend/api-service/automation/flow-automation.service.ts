@@ -202,9 +202,9 @@ export class FlowAutomationService {
   }
 
   private async continueFlow(currentNode: FlowNode, automation: any, context: ExecutionContext) {
-    const nextEdges = automation.edges.filter((e) => e.sourceNodeId === currentNode.nodeId);
+    const nextEdges = automation.edges.filter((e: FlowEdge) => e.sourceNodeId === currentNode.nodeId);
     for (const edge of nextEdges) {
-      const nextNode = automation.nodes.find((n) => n.nodeId === edge.targetNodeId);
+      const nextNode = automation.nodes.find((n: FlowNode) => n.nodeId === edge.targetNodeId);
       if (nextNode) {
         await this.executeNode(nextNode, automation, context);
       }
@@ -215,9 +215,13 @@ export class FlowAutomationService {
 
   private async handleSendMessage(node: FlowNode, context: ExecutionContext) {
     const text = this.resolveVariables(node.data.message || "", context.variables);
-    
+
+    if (!context.contactId) {
+      throw new Error("Contact ID missing in execution context");
+    }
+
     // Resolve contact phone
-    const contact = await this.contactsService.findOne(context.contactId);
+    const contact = await this.contactsService.findOne(context.contactId, context.tenantId);
     if (!contact || !contact.phoneNumber) {
       throw new Error("Contact not found or missing phone number");
     }
@@ -246,7 +250,7 @@ export class FlowAutomationService {
   }
 
   private async handleConditions(node: FlowNode, automation: any, context: ExecutionContext) {
-    const { condition, value, operator } = node.data;
+    const { value, operator } = node.data;
     const resolvedValue = this.resolveVariables(value, context.variables);
     const inputValue = context.lastUserMessage || "";
 
@@ -262,13 +266,13 @@ export class FlowAutomationService {
     await this.logNodeStatus(context.executionId, node, "completed", { match, inputValue, operator, resolvedValue });
 
     // Route based on match
-    const edges = automation.edges.filter((e) => e.sourceNodeId === node.nodeId);
+    const edges = automation.edges.filter((e: FlowEdge) => e.sourceNodeId === node.nodeId);
     // Convention: First edge is TRUE, Second edge is FALSE (if exists)
     const nextEdges = match ? [edges[0]] : edges.length > 1 ? [edges[1]] : [];
 
     for (const edge of nextEdges) {
       if (!edge) continue;
-      const nextNode = automation.nodes.find((n) => n.nodeId === edge.targetNodeId);
+      const nextNode = automation.nodes.find((n: FlowNode) => n.nodeId === edge.targetNodeId);
       if (nextNode) await this.executeNode(nextNode, automation, context);
     }
   }

@@ -8,7 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { Tenant } from "../core/tenant.entity";
+import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { Workflow } from "./workflow.entity";
 
 @Entity("automation_executions")
