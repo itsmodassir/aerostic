@@ -8,7 +8,7 @@ import {
   Delete,
   UseGuards,
 } from "@nestjs/common";
-import { WhatsappService } from "./whatsapp.service";
+import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 import type { Response } from "express";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { UserTenant } from "@api/auth/decorators/user-tenant.decorator";

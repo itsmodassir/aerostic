@@ -10,7 +10,7 @@ import {
   UseGuards,
   BadRequestException,
 } from "@nestjs/common";
-import { WhatsappService } from "./whatsapp.service";
+import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 import type { Response } from "express";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
