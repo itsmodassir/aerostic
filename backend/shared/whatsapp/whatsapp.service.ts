@@ -13,6 +13,16 @@ import { EncryptionService } from "../encryption.service";
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
+  private readonly allowedFlowCategories = new Set([
+    "OTHER",
+    "SIGN_UP",
+    "SIGN_IN",
+    "APPOINTMENT_BOOKING",
+    "LEAD_GENERATION",
+    "CONTACT_US",
+    "CUSTOMER_SUPPORT",
+    "SURVEY",
+  ]);
 
   constructor(
     private configService: ConfigService,
@@ -245,27 +255,72 @@ export class WhatsappService {
     const creds = await this.getCredentials(tenantId);
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
+    const normalizedName = this.normalizeFlowName(name);
+    const normalizedCategories = this.normalizeFlowCategories(categories);
 
-    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?access_token=${creds.accessToken}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, categories }),
-    });
+    const response = await fetch(
+      `https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?access_token=${creds.accessToken}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: normalizedName, categories: normalizedCategories }),
+      },
+    );
 
     const data = await response.json();
-    if (!response.ok) throw new BadRequestException(data.error?.message || "Failed to create flow");
+    if (!response.ok) {
+      const metaMessage = data?.error?.message || "Failed to create flow";
+      const code = Number(data?.error?.code || 0);
+
+      if (code === 100 || /invalid parameter/i.test(metaMessage)) {
+        throw new BadRequestException(
+          `Meta rejected the flow payload. Check flow name and categories. Sent categories: ${normalizedCategories.join(", ")}`,
+        );
+      }
+
+      throw new BadRequestException(metaMessage);
+    }
 
     // Automatically upload a default "Hello World" asset
     try {
       await this.uploadFlowAsset(tenantId, data.id, "flow.json", {
         version: "7.3",
-        screens: [{ id: "WELCOME_SCREEN", title: "Welcome", terminal: true, layout: { type: "SingleColumnLayout", children: [{ type: "TextHeading", text: name || "Welcome" }, { type: "TextBody", text: "Cloud Preview" }, { type: "Footer", label: "Complete", "on-click-action": { name: "complete", payload: { status: "done" } } }] } }]
+        screens: [{
+          id: "WELCOME_SCREEN",
+          title: "Welcome",
+          terminal: true,
+          layout: {
+            type: "SingleColumnLayout",
+            children: [
+              { type: "TextHeading", text: normalizedName || "Welcome" },
+              { type: "TextBody", text: "Cloud Preview" },
+              { type: "Footer", label: "Complete", "on-click-action": { name: "complete", payload: { status: "done" } } },
+            ],
+          },
+        }],
       });
     } catch (err) {
       this.logger.error("Default flow asset upload failed", err);
     }
 
     return data;
+  }
+
+  private normalizeFlowName(name?: string): string {
+    const base = (name || "").trim();
+    if (!base) return `flow_${Date.now()}`;
+    return base
+      .replace(/[^a-zA-Z0-9 _-]/g, "")
+      .replace(/\s+/g, " ")
+      .slice(0, 64)
+      .trim() || `flow_${Date.now()}`;
+  }
+
+  private normalizeFlowCategories(categories?: string[]): string[] {
+    const normalized = (Array.isArray(categories) ? categories : [])
+      .map((c) => String(c || "").trim().toUpperCase())
+      .filter((c) => this.allowedFlowCategories.has(c));
+    return normalized.length > 0 ? normalized : ["OTHER"];
   }
 
   async uploadFlowAsset(tenantId: string, flowId: string, filename: string, json: any) {

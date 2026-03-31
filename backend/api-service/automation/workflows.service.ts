@@ -15,6 +15,7 @@ import { GoogleService } from "../google/google.service";
 export class WorkflowsService {
   private readonly logger = new Logger(WorkflowsService.name);
   private readonly MAX_DEPTH = 10;
+  private readonly TEMPLATE_NOT_FOUND_CODE = 132001;
 
   constructor(
     @InjectRepository(Workflow)
@@ -615,17 +616,55 @@ export class WorkflowsService {
     }
 
     this.logger.log(`Sending Template: ${templateName} to ${context.from}`);
+    const resolvedTemplateName =
+      typeof templateName === "string" && templateName.trim().length > 0
+        ? templateName.trim()
+        : "hello_world";
 
-    await this.messagesService.send({
-      tenantId,
-      to: context.from,
-      type: "template",
-      payload: {
-        name: templateName,
-        language: { code: language || "en_US" },
-        components: parsedComponents,
-      },
-    });
+    try {
+      await this.messagesService.send({
+        tenantId,
+        to: context.from,
+        type: "template",
+        payload: {
+          name: resolvedTemplateName,
+          language: { code: language || "en_US" },
+          components: parsedComponents,
+        },
+      });
+    } catch (error: any) {
+      if (!this.isTemplateMissingError(error)) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `Template "${resolvedTemplateName}" missing for tenant ${tenantId}. Falling back to text message.`,
+      );
+
+      const fallbackText = this.buildTemplateFallbackText(resolvedTemplateName);
+      await this.messagesService.send({
+        tenantId,
+        to: context.from,
+        type: "text",
+        payload: { body: fallbackText },
+      });
+    }
+  }
+
+  private isTemplateMissingError(error: any): boolean {
+    const message = String(error?.message || "").toLowerCase();
+    const nested = error?.response?.data?.error;
+    const code = Number(nested?.error_data?.details?.code || nested?.code || error?.code);
+
+    return (
+      code === this.TEMPLATE_NOT_FOUND_CODE ||
+      message.includes("template name does not exist") ||
+      message.includes("template does not exist")
+    );
+  }
+
+  private buildTemplateFallbackText(templateName: string): string {
+    return `The configured template "${templateName}" is unavailable right now. Please update the automation template or reconnect WhatsApp settings.`;
   }
 
   private async handleWhatsappFlowNode(tenantId: string, node: any, context: any) {
