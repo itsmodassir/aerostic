@@ -31,12 +31,12 @@ export default function AccountDetailsCard({
         return (
             <div className="flex items-center justify-between py-5 border-b-2 border-gray-50 last:border-0 group">
                 <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                        <Icon className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors border border-gray-100">
+                        <Icon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1.5">{label}</p>
-                        <p className="text-sm font-black text-gray-900 truncate tracking-tight">{value}</p>
+                        <p className="text-xs text-gray-500 font-semibold mb-0.5">{label}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{value}</p>
                     </div>
                 </div>
                 <button
@@ -57,11 +57,11 @@ export default function AccountDetailsCard({
     };
 
     return (
-        <div className="bg-white rounded-[32px] border-2 border-gray-50 p-6 md:p-8 shadow-xl shadow-gray-200/30 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-8">
+        <div className="bg-white rounded-2xl border border-gray-200/60 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Account Profile</h3>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Official Meta Credentials</p>
+                    <h3 className="text-lg font-bold text-gray-900">Account Profile</h3>
+                    <p className="text-sm text-gray-500 mt-1">Official Meta Credentials</p>
                 </div>
                 {verifiedName && (
                     <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-green-100 shadow-sm shadow-green-100">

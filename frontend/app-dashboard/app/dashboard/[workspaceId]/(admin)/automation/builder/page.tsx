@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     ReactFlow,
     addEdge,
@@ -242,6 +242,13 @@ function WorkflowBuilder() {
     const searchParams = useSearchParams();
     const workspaceId = params.workspaceId as string;
     const template = searchParams.get('template');
+    const prefillTemplateName = searchParams.get('templateName');
+    const prefillTemplateLanguage = searchParams.get('templateLanguage') || 'en_US';
+    const prefillTriggerType = searchParams.get('triggerType') || 'new_message';
+    const prefillFormId = searchParams.get('formId');
+    const prefillFlowId = searchParams.get('flowId');
+    const prefillFormName = searchParams.get('formName') || 'Selected WA Form';
+    const prefillFlowName = searchParams.get('flowName') || 'Selected WhatsApp Flow';
 
     const [nodes, setNodes] = useState<WorkflowUIFlowNode[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
@@ -251,6 +258,8 @@ function WorkflowBuilder() {
     const [hasChanges, setHasChanges] = useState(false);
     const [selectedNode, setSelectedNode] = useState<WorkflowUIFlowNode | null>(null);
     const [showTestPanel, setShowTestPanel] = useState(false);
+    const flowWrapperRef = useRef<HTMLDivElement | null>(null);
+    const { screenToFlowPosition } = useReactFlow();
 
     const workflowId = searchParams.get('id');
 
@@ -277,7 +286,58 @@ function WorkflowBuilder() {
     // Initialize with templates
     useEffect(() => {
         if (!workflowId || workflowId === 'new') {
-            if (template === 'ai-sales') {
+            if (prefillTemplateName) {
+                setName(`Template Reply: ${prefillTemplateName}`);
+                setNodes([
+                    {
+                        id: '1',
+                        type: 'trigger',
+                        data: { label: 'Template Reply Trigger', triggerType: prefillTriggerType || 'template_reply' },
+                        position: { x: 100, y: 120 },
+                    },
+                    {
+                        id: '2',
+                        type: 'template',
+                        data: {
+                            label: `Send Template: ${prefillTemplateName}`,
+                            templateName: prefillTemplateName,
+                            language: prefillTemplateLanguage,
+                        },
+                        position: { x: 450, y: 120 },
+                    },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([{ id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } }]);
+            } else if (prefillFormId || prefillFlowId) {
+                const nodeType = prefillFormId ? 'wa_form' : 'whatsapp_flow';
+                const resolvedId = prefillFormId || prefillFlowId;
+                const resolvedName = prefillFormId ? prefillFormName : prefillFlowName;
+                setName(`${prefillFormId ? 'WA Form' : 'WhatsApp Flow'} Trigger`);
+                setNodes([
+                    {
+                        id: '1',
+                        type: 'trigger',
+                        data: { label: 'Flow Response Trigger', triggerType: prefillTriggerType || 'flow_response' },
+                        position: { x: 100, y: 140 },
+                    },
+                    {
+                        id: '2',
+                        type: nodeType,
+                        data: {
+                            label: resolvedName,
+                            flowId: resolvedId,
+                            formId: prefillFormId || undefined,
+                            metaFlowId: prefillFormId || prefillFlowId,
+                            ctaText: prefillFormId ? 'Open Form' : 'Open Flow',
+                            bodyText: prefillFormId
+                                ? 'Please complete this form to continue.'
+                                : 'Please open this flow to continue.',
+                            flowAction: 'NAVIGATE',
+                        },
+                        position: { x: 450, y: 140 },
+                    },
+                ] as WorkflowUIFlowNode[]);
+                setEdges([{ id: 'e1-2', source: '1', target: '2', markerEnd: { type: MarkerType.ArrowClosed } }]);
+            } else if (template === 'ai-sales') {
                 setName('AI Sales Assistant');
                 setNodes([
                     { id: '1', type: 'trigger', data: { label: 'New Message' }, position: { x: 100, y: 100 } },
@@ -373,7 +433,7 @@ function WorkflowBuilder() {
         []
     );
 
-    const addNode = (type: string) => {
+    const addNode = (type: string, position?: { x: number; y: number }) => {
         const id = Date.now().toString();
         let label = '';
         switch (type) {
@@ -398,7 +458,7 @@ function WorkflowBuilder() {
         const newNode: WorkflowUIFlowNode = {
             id,
             type,
-            position: { x: Math.random() * 400, y: Math.random() * 400 },
+            position: position || { x: Math.random() * 400, y: Math.random() * 400 },
             data: {
                 label,
                 ...(type === 'action' && { message: 'Hello! How can I help you today?' }),
@@ -423,6 +483,29 @@ function WorkflowBuilder() {
         setNodes((nds) => nds.concat(newNode));
         setHasChanges(true);
     };
+
+    const onDragStart = useCallback((event: React.DragEvent<HTMLButtonElement>, nodeType: string) => {
+        event.dataTransfer.setData('application/reactflow', nodeType);
+        event.dataTransfer.effectAllowed = 'move';
+    }, []);
+
+    const onDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
+
+    const onDrop = useCallback((event: React.DragEvent) => {
+        event.preventDefault();
+        const type = event.dataTransfer.getData('application/reactflow');
+        if (!type || !flowWrapperRef.current) return;
+
+        const bounds = flowWrapperRef.current.getBoundingClientRect();
+        const position = screenToFlowPosition({
+            x: event.clientX - bounds.left,
+            y: event.clientY - bounds.top,
+        });
+        addNode(type, position);
+    }, [addNode, screenToFlowPosition]);
 
     const onNodeClick = useCallback((event: React.MouseEvent, node: WorkflowUIFlowNode) => {
         setSelectedNode(node);
@@ -611,7 +694,7 @@ function WorkflowBuilder() {
             )}
 
             {/* Main Builder Area */}
-            <div className="flex-1 relative bg-[#f8fafc]">
+            <div ref={flowWrapperRef} className="flex-1 relative bg-[#f8fafc]">
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -622,6 +705,8 @@ function WorkflowBuilder() {
                     onPaneClick={() => setSelectedNode(null)}
                     nodeTypes={nodeTypes}
                     isValidConnection={isValidConnection}
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
                     fitView
                 >
                     <Background />
@@ -630,75 +715,75 @@ function WorkflowBuilder() {
 
                     <Panel position="top-right" className="bg-white p-2 rounded-2xl shadow-xl border flex flex-col gap-2 max-h-[85vh] overflow-y-auto">
                         <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b mb-1">Add Elements</div>
-                        <button onClick={() => addNode('action')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'action')} onClick={() => addNode('action')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <MessageSquare size={20} />
                             <span className="text-sm font-bold">Reply Action</span>
                         </button>
-                        <button onClick={() => addNode('condition')} className="p-3 hover:bg-amber-50 text-amber-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'condition')} onClick={() => addNode('condition')} className="p-3 hover:bg-amber-50 text-amber-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Settings2 size={20} />
                             <span className="text-sm font-bold">Condition</span>
                         </button>
-                        <button onClick={() => addNode('webhook')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'webhook')} onClick={() => addNode('webhook')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Zap size={20} />
                             <span className="text-sm font-bold">Webhook Trigger</span>
                         </button>
-                        <button onClick={() => addNode('api_request')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'api_request')} onClick={() => addNode('api_request')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Globe size={20} />
                             <span className="text-sm font-bold">HTTP Request</span>
                         </button>
-                        <button onClick={() => addNode('ai_agent')} className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-left flex items-center gap-3 border border-purple-200 shadow-sm group">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'ai_agent')} onClick={() => addNode('ai_agent')} className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-left flex items-center gap-3 border border-purple-200 shadow-sm group cursor-grab active:cursor-grabbing">
                             <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Bot size={18} className="text-purple-600" /></div>
                             <div><div className="font-bold text-sm">AI Agent</div><div className="text-[10px] opacity-70">Smart Assistant</div></div>
                         </button>
-                        <button onClick={() => addNode('openai_model')} className="p-3 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition text-left flex items-center gap-3 border border-teal-200 shadow-sm group">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'openai_model')} onClick={() => addNode('openai_model')} className="p-3 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition text-left flex items-center gap-3 border border-teal-200 shadow-sm group cursor-grab active:cursor-grabbing">
                             <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Cpu size={18} className="text-teal-600" /></div>
                             <div><div className="font-bold text-sm">OpenAI Model</div><div className="text-[10px] opacity-70">GPT-4 Config</div></div>
                         </button>
-                        <button onClick={() => addNode('gemini_model')} className="p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition text-left flex items-center gap-3 border border-blue-200 shadow-sm group">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'gemini_model')} onClick={() => addNode('gemini_model')} className="p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition text-left flex items-center gap-3 border border-blue-200 shadow-sm group cursor-grab active:cursor-grabbing">
                             <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Sparkles size={18} className="text-blue-600" /></div>
                             <div><div className="font-bold text-sm">Gemini Model</div><div className="text-[10px] opacity-70">Gemini Pro Config</div></div>
                         </button>
-                        <button onClick={() => addNode('lead_update')} className="p-3 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'lead_update')} onClick={() => addNode('lead_update')} className="p-3 hover:bg-emerald-50 text-emerald-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Users size={20} />
                             <span className="text-sm font-bold">Update Lead</span>
                         </button>
-                        <button onClick={() => addNode('broadcast_trigger')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'broadcast_trigger')} onClick={() => addNode('broadcast_trigger')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Megaphone size={20} />
                             <span className="text-sm font-bold">Broadcast</span>
                         </button>
-                        <button onClick={() => addNode('google_sheets')} className="p-3 hover:bg-green-50 text-green-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'google_sheets')} onClick={() => addNode('google_sheets')} className="p-3 hover:bg-green-50 text-green-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <FileSpreadsheet size={20} />
                             <span className="text-sm font-bold">Google Sheets</span>
                         </button>
-                        <button onClick={() => addNode('contact')} className="p-3 hover:bg-purple-50 text-purple-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'contact')} onClick={() => addNode('contact')} className="p-3 hover:bg-purple-50 text-purple-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Users size={20} />
                             <span className="text-sm font-bold">Contact</span>
                         </button>
-                        <button onClick={() => addNode('template')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'template')} onClick={() => addNode('template')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Zap size={20} />
                             <span className="text-sm font-bold">Send Template</span>
                         </button>
-                        <button onClick={() => addNode('whatsapp_flow')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'whatsapp_flow')} onClick={() => addNode('whatsapp_flow')} className="p-3 hover:bg-pink-50 text-pink-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Zap size={20} />
                             <span className="text-sm font-bold">WhatsApp Flow</span>
                         </button>
-                        <button onClick={() => addNode('wa_form')} className="p-3 hover:bg-orange-50 text-orange-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'wa_form')} onClick={() => addNode('wa_form')} className="p-3 hover:bg-orange-50 text-orange-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <FileSpreadsheet size={20} />
                             <span className="text-sm font-bold">WA Form</span>
                         </button>
-                        <button onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'email')} onClick={() => addNode('email')} className="p-3 hover:bg-sky-50 text-sky-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Mail size={20} />
                             <span className="text-sm font-bold">Send Email</span>
                         </button>
-                        <button onClick={() => addNode('chat')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'chat')} onClick={() => addNode('chat')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <MessageSquare size={20} />
                             <span className="text-sm font-bold">Agent Handoff</span>
                         </button>
-                        <button onClick={() => addNode('memory')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'memory')} onClick={() => addNode('memory')} className="p-3 hover:bg-indigo-50 text-indigo-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Cpu size={20} />
                             <span className="text-sm font-bold">Memory</span>
                         </button>
-                        <button onClick={() => addNode('knowledge_query')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left">
+                        <button draggable onDragStart={(e) => onDragStart(e, 'knowledge_query')} onClick={() => addNode('knowledge_query')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Globe size={20} />
                             <span className="text-sm font-bold">Knowledge Query</span>
                         </button>

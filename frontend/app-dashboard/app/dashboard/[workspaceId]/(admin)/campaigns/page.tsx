@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Plus, Send, Copy, AlertCircle, FileSpreadsheet, Users, UserCheck, ChevronRight, ChevronLeft, Upload, Megaphone, BarChart3, Wallet, X, CheckCircle2 } from 'lucide-react';
+import { Plus, Send, Copy, AlertCircle, FileSpreadsheet, Users, UserCheck, ChevronRight, ChevronLeft, Upload, Megaphone, BarChart3, Wallet, X, CheckCircle2, Calendar } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import Papa from 'papaparse';
@@ -213,58 +213,66 @@ export default function CampaignsPage() {
                     </div>
                 ) : (
                     campaigns.map((camp) => (
-                        <div key={camp.id} className="bg-white p-5 sm:p-6 rounded-[32px] border-2 border-gray-50 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/50 transition-all group">
-                            <div className="flex flex-col lg:flex-row gap-6 lg:items-center">
+                        <div key={camp.id} className="bg-white p-4 sm:p-6 rounded-[32px] border-2 border-gray-50 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/50 transition-all group">
+                            <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 lg:items-center">
                                 {/* Left Section: Name & Status */}
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h3 className="font-black text-gray-900 text-lg leading-tight">{camp.name}</h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${camp.status === 'completed' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}>{camp.status}</span>
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">{camp.recipientType || 'ALL'}</span>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <h3 className="font-black text-gray-900 text-base sm:text-lg leading-tight truncate">{camp.name}</h3>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                                <span className={clsx(
+                                                    "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border shrink-0",
+                                                    camp.status === 'completed' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-gray-50 text-gray-500 border-gray-100'
+                                                )}>
+                                                    {camp.status}
+                                                </span>
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 shrink-0">
+                                                    {camp.recipientType || 'ALL'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="lg:hidden text-right">
-                                            <div className="text-lg font-black text-gray-900">{camp.totalContacts || 0}</div>
-                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Targeted</div>
+                                        <div className="lg:hidden text-right shrink-0">
+                                            <div className="text-base sm:text-lg font-black text-gray-900 leading-none">{camp.totalContacts || 0}</div>
+                                            <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Targeted</div>
                                         </div>
                                     </div>
-                                    <div className="text-[11px] text-gray-400 font-medium italic">
-                                        Launched on {new Date(camp.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    <div className="text-[10px] text-gray-400 font-medium mt-3 flex items-center gap-1.5">
+                                        <Calendar size={10} />
+                                        {new Date(camp.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                     </div>
                                 </div>
 
-                                {/* Right Section: Stats Grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-8 lg:border-l lg:pl-8 border-gray-100">
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-black text-green-600 flex items-center gap-1.5">
+                                {/* Right Section: Stats Grid - High Density */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100">
+                                    <div className="bg-gray-50/50 p-2 sm:p-0 rounded-xl sm:bg-transparent">
+                                        <div className="text-sm font-black text-green-600 flex items-center gap-1.5 leading-none">
                                             {((camp.deliveredCount || 0) / Math.max(camp.totalContacts || 1, 1) * 100).toFixed(0)}%
-                                            <BarChart3 size={12} />
+                                            <BarChart3 size={11} />
                                         </div>
-                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Delivered</div>
+                                        <div className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Delivered</div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-black text-blue-600 flex items-center gap-1.5">
+                                    <div className="bg-gray-50/50 p-2 sm:p-0 rounded-xl sm:bg-transparent">
+                                        <div className="text-sm font-black text-blue-600 flex items-center gap-1.5 leading-none">
                                             {((camp.readCount || 0) / Math.max(camp.totalContacts || 1, 1) * 100).toFixed(0)}%
-                                            <CheckCircle2 size={12} />
+                                            <CheckCircle2 size={11} />
                                         </div>
-                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Read Rate</div>
+                                        <div className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Read Rate</div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-black text-red-500">{camp.failedCount || 0}</div>
-                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Failed</div>
+                                    <div className="bg-gray-50/50 p-2 sm:p-0 rounded-xl sm:bg-transparent">
+                                        <div className="text-sm font-black text-red-500 leading-none">{camp.failedCount || 0}</div>
+                                        <div className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Failed</div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm font-black text-gray-900">₹{Number(camp.totalCost || 0).toFixed(2)}</div>
-                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Spend</div>
+                                    <div className="bg-gray-50/50 p-2 sm:p-0 rounded-xl sm:bg-transparent">
+                                        <div className="text-sm font-black text-gray-900 leading-none">₹{(camp.totalCost || 0).toFixed(1)}</div>
+                                        <div className="text-[8px] sm:text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Spend</div>
                                     </div>
                                 </div>
 
                                 {/* Desktop only targeted count */}
-                                <div className="hidden lg:block text-right border-l pl-8 border-gray-100">
-                                    <div className="text-2xl font-black text-gray-900">{camp.totalContacts || 0}</div>
-                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Targeted</div>
+                                <div className="hidden lg:block text-right border-l pl-8 border-gray-100 min-w-[100px]">
+                                    <div className="text-2xl font-black text-gray-900 leading-none">{camp.totalContacts || 0}</div>
+                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Targeted</div>
                                 </div>
                             </div>
                         </div>
@@ -279,12 +287,12 @@ export default function CampaignsPage() {
                     <div className="relative w-full max-w-xl bg-white sm:rounded-[40px] rounded-t-[40px] shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] overflow-hidden">
                         
                         {/* Modal Header */}
-                        <div className="p-6 sm:p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+                        <div className="p-5 sm:p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                             <div>
-                                <h2 className="text-xl font-black text-gray-900 tracking-tight">New Broadcast</h2>
-                                <div className="flex items-center gap-2 mt-1">
+                                <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">New Broadcast</h2>
+                                <div className="flex items-center gap-1.5 mt-1.5">
                                     {[1, 2, 3].map(s => (
-                                        <div key={s} className={clsx("h-1 rounded-full transition-all", s === step ? "w-8 bg-indigo-600" : s < step ? "w-4 bg-green-500" : "w-4 bg-gray-200")} />
+                                        <div key={s} className={clsx("h-1 rounded-full transition-all", s === step ? "w-6 sm:w-8 bg-indigo-600" : s < step ? "w-3 sm:w-4 bg-green-500" : "w-3 sm:w-4 bg-gray-200")} />
                                     ))}
                                 </div>
                             </div>
@@ -292,7 +300,7 @@ export default function CampaignsPage() {
                         </div>
 
                         {/* Modal Content */}
-                        <div className="p-6 sm:p-10 overflow-y-auto flex-1 space-y-8">
+                        <div className="p-5 sm:p-10 overflow-y-auto flex-1 space-y-6 sm:space-y-8">
                             
                             {step === 1 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
@@ -410,22 +418,22 @@ export default function CampaignsPage() {
 
                             {step === 3 && (
                                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                    <div className="bg-indigo-600 rounded-[32px] p-8 text-white shadow-xl shadow-indigo-200">
+                                    <div className="bg-indigo-600 rounded-[32px] p-6 sm:p-8 text-white shadow-xl shadow-indigo-200">
                                         <div className="flex justify-between items-start mb-6">
                                             <div>
                                                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Ready to Launch</h4>
-                                                <p className="text-2xl font-black mt-1 leading-tight">{formData.name}</p>
+                                                <p className="text-xl sm:text-2xl font-black mt-1 leading-tight">{formData.name}</p>
                                             </div>
-                                            <Megaphone size={32} className="opacity-40" />
+                                            <Megaphone className="w-6 h-6 sm:w-8 sm:h-8 opacity-40 shrink-0" />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
+                                        <div className="grid grid-cols-2 gap-4 sm:gap-6 pt-6 border-t border-white/10">
                                             <div>
                                                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Recipients</p>
-                                                <p className="text-xl font-black">{estimatedContacts}</p>
+                                                <p className="text-lg sm:text-xl font-black">{estimatedContacts}</p>
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Est. Cost</p>
-                                                <p className="text-xl font-black">₹{estimatedCost.toFixed(2)}</p>
+                                                <p className="text-lg sm:text-xl font-black">₹{estimatedCost.toFixed(2)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -449,10 +457,10 @@ export default function CampaignsPage() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-6 sm:p-8 bg-gray-50/50 border-t border-gray-100 flex gap-3 sm:gap-4">
+                        <div className="p-5 sm:p-8 bg-gray-50/50 border-t border-gray-100 flex gap-3 sm:gap-4">
                             <button
                                 onClick={() => step === 1 ? setShowModal(false) : setStep(step - 1)}
-                                className="flex-1 px-6 py-4 bg-white border-2 border-gray-100 text-gray-400 font-black rounded-2xl hover:bg-gray-50 transition-all active:scale-95 text-xs sm:text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                                className="flex-1 px-4 sm:px-6 py-4 bg-white border-2 border-gray-100 text-gray-400 font-black rounded-2xl hover:bg-gray-50 transition-all active:scale-95 text-[10px] sm:text-sm uppercase tracking-widest flex items-center justify-center gap-2"
                             >
                                 {step === 1 ? 'Cancel' : <><ChevronLeft size={16} /> Back</>}
                             </button>

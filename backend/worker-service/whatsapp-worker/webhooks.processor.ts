@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { Logger } from "@nestjs/common";
-import { WebhooksService } from "./webhooks.service";
+import { WebhooksService } from "@shared/whatsapp/webhooks.service";
 
 @Processor("whatsapp-webhooks")
 export class WebhooksProcessor extends WorkerHost {
@@ -16,7 +16,6 @@ export class WebhooksProcessor extends WorkerHost {
     this.logger.log(`Processing enqueued webhook event: ${JSON.stringify(body)}`);
 
     try {
-      // We call a dedicated internal method to avoid re-enqueuing
       await this.webhooksService.handleProcessedPayload(body);
       return { success: true };
     } catch (error: any) {

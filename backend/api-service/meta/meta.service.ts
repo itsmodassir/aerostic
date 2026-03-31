@@ -10,7 +10,7 @@ import { RedisService } from "@shared/redis.service";
 import { EncryptionService } from "@shared/encryption.service";
 import { Template } from "../templates/entities/template.entity";
 import { AdminConfigService } from "../admin/services/admin-config.service";
-import { WebhooksService } from "../webhooks/webhooks.service";
+import { WebhooksService } from "@shared/whatsapp/webhooks.service";
 
 @Injectable()
 export class MetaService {
@@ -77,7 +77,7 @@ export class MetaService {
 
           // 🔥 Handle Incoming Messages (Delegated to WebhooksService)
           if (value.messages || value.statuses) {
-            await this.webhooksService.processWebhook(body);
+            await this.webhooksService.enqueuePayload(body);
             // We can break here as processWebhook handles the whole body
             return "EVENT_RECEIVED";
           }
@@ -120,24 +120,35 @@ export class MetaService {
     providedWabaId?: string,
     providedPhoneNumberId?: string,
     providedRedirectUri?: string,
+    signupMode?: string,
   ) {
     const appId =
-      (await this.adminConfigService.getConfigValue("meta.app_id")) || "";
+      (await this.adminConfigService.getConfigValue("meta.app_id")) ||
+      this.configService.get("META_APP_ID") ||
+      "";
     const appSecret =
-      (await this.adminConfigService.getConfigValue("meta.app_secret")) || "";
+      (await this.adminConfigService.getConfigValue("meta.app_secret")) ||
+      this.configService.get("META_APP_SECRET") ||
+      "";
     const redirectUri =
       providedRedirectUri ||
       (await this.adminConfigService.getConfigValue("meta.redirect_uri")) ||
+      this.configService.get("META_REDIRECT_URI") ||
       "https://app.aimstore.in/meta/callback";
     const apiVersion = await this.getApiVersion();
 
-    this.logger.debug(`--- OAuth Callback Debug (${apiVersion}) ---`);
+    if (!appId || !appSecret) {
+      throw new BadRequestException(
+        "Meta app credentials are missing. Configure meta.app_id and meta.app_secret.",
+      );
+    }
+
+    this.logger.log(`Initiating Meta OAuth code exchange...`);
+    this.logger.debug(`--- OAuth Handshake ---`);
     this.logger.debug(`App ID: ${appId}`);
     this.logger.debug(`Redirect URI: ${redirectUri}`);
     this.logger.debug(`Tenant ID: ${tenantId}`);
-    this.logger.debug(`Provided WABA: ${providedWabaId || "None"}`);
-    this.logger.debug(`Provided Phone: ${providedPhoneNumberId || "None"}`);
-    this.logger.debug("-------------------");
+    this.logger.debug(`-----------------------`);
 
     try {
       // 1. Exchange auth code for short-lived access token
@@ -300,12 +311,18 @@ export class MetaService {
 
       const encryptedToken = this.encryptionService.encrypt(accessToken);
 
+      const resolvedMode =
+        signupMode === "cloud" || signupMode === "coexistence"
+          ? signupMode
+          : "coexistence";
+
       if (existing) {
         existing.tenantId = tenantId;
         existing.wabaId = wabaId;
         existing.displayPhoneNumber = displayPhoneNumber;
         existing.accessToken = encryptedToken;
         existing.tokenExpiresAt = expiresAt;
+        existing.mode = resolvedMode;
         existing.status = "connected";
         await this.whatsappAccountRepo.save(existing);
       } else {
@@ -316,7 +333,7 @@ export class MetaService {
           displayPhoneNumber,
           accessToken: encryptedToken,
           tokenExpiresAt: expiresAt,
-          mode: "coexistence",
+          mode: resolvedMode,
           status: "connected",
         });
       }

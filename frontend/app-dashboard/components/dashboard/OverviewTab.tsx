@@ -95,14 +95,14 @@ function QuickAction({ icon: Icon, label, href, color, disabled }: any) {
         <Link
             href={disabled ? '#' : href}
             className={clsx(
-                "group flex flex-col items-center gap-2 p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all text-center",
+                "group flex flex-col items-center gap-1.5 p-2 sm:p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all text-center h-full",
                 disabled && "opacity-40 pointer-events-none grayscale"
             )}
         >
-            <div className={clsx("w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform", colorMap[color] || colorMap.blue)}>
-                <Icon size={16} strokeWidth={2.5} />
+            <div className={clsx("w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform", colorMap[color] || colorMap.blue)}>
+                <Icon size={14} sm={16} strokeWidth={2.5} />
             </div>
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-wide group-hover:text-gray-800 leading-tight">{label}</span>
+            <span className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-tight sm:tracking-wide group-hover:text-gray-800 leading-tight truncate w-full">{label}</span>
         </Link>
     );
 }
@@ -238,7 +238,7 @@ export default function OverviewTab({
 
             {/* Row 3: Quick Actions */}
             <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quick Actions</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Quick Actions</p>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                     <QuickAction icon={Send} label="Campaigns" href={`${base}/campaigns`} color="blue" />
                     <QuickAction icon={Users2} label="Contacts" href={`${base}/contacts`} color="emerald" />

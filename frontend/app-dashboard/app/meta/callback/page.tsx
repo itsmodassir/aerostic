@@ -11,19 +11,32 @@ function CallbackContent() {
 
     useEffect(() => {
         const code = searchParams.get('code');
-        const state = searchParams.get('state'); // tenantId
+        const state = searchParams.get('state'); // tenantId:mode
+        const wabaId = searchParams.get('wabaId');
+        const phoneNumberId = searchParams.get('phoneNumberId');
+        const tenantIdFromState = state?.split(':')[0] || '';
         const persistTenantContext = (tenantId: string) => {
             localStorage.setItem('x-tenant-id', tenantId);
             document.cookie = `selected_tenant=${tenantId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
         };
 
         if (code && state) {
-            // Pass the code to the backend to finish the exchange
-            api.get(`/meta/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`)
+            // Dynamically determine the redirect URI used in the initial request
+            const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://app.aimstore.in';
+            const redirectUri = `${currentOrigin}/meta/callback`;
+            
+            // Pass the code and extracted FB assets to the backend
+            let apiUrl = `/meta/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
+            if (wabaId) apiUrl += `&wabaId=${encodeURIComponent(wabaId)}`;
+            if (phoneNumberId) apiUrl += `&phoneNumberId=${encodeURIComponent(phoneNumberId)}`;
+
+            api.get(apiUrl)
                 .then(() => {
                     setStatus('Success! WhatsApp Connected.');
                     setTimeout(() => {
-                        persistTenantContext(state);
+                        if (tenantIdFromState) {
+                            persistTenantContext(tenantIdFromState);
+                        }
                         router.push('/settings/whatsapp');
                     }, 2000);
                 })
@@ -31,7 +44,9 @@ function CallbackContent() {
                     console.error('[MetaCallback] Exchange Failed:', err);
                     setStatus('Failed to connect WhatsApp. Please try again from settings.');
                     setTimeout(() => {
-                        persistTenantContext(state);
+                        if (tenantIdFromState) {
+                            persistTenantContext(tenantIdFromState);
+                        }
                         router.push('/settings/whatsapp');
                     }, 3000);
                 });

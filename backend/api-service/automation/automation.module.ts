@@ -36,6 +36,22 @@ import { WorkflowVersion } from "./entities/workflow-version.entity";
 import { AutomationExecution } from "./entities/automation-execution.entity";
 import { EmailTemplate } from "./entities/email-template.entity";
 import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
+import { FlowAutomation } from "./entities/flow/flow-automation.entity";
+import { FlowNode } from "./entities/flow/flow-node.entity";
+import { FlowEdge } from "./entities/flow/flow-edge.entity";
+import { FlowExecution } from "./entities/flow/flow-execution.entity";
+import { FlowExecutionLog } from "./entities/flow/flow-execution-log.entity";
+import { FlowAutomationService } from "./flow-automation.service";
+import { FlowAutomationsController } from "./flow-automations.controller";
+import {
+  AutomationFlow,
+  AutomationNode,
+  AutomationEdge,
+  AutomationExecution as NewAutomationExecution,
+  AutomationExecutionLog as NewAutomationExecutionLog,
+} from "@shared/database/entities/core/automation-flow.entity";
+import { NewAutomationService } from "@api/automation/new-automation.service";
+import { NewAutomationController } from "@api/automation/new-automation.controller";
 
 @Module({
   imports: [
@@ -49,6 +65,16 @@ import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
       AutomationExecution,
       EmailTemplate,
       Mailbox,
+      FlowAutomation,
+      FlowNode,
+      FlowEdge,
+      FlowExecution,
+      FlowExecutionLog,
+      AutomationFlow,
+      AutomationNode,
+      AutomationEdge,
+      NewAutomationExecution,
+      NewAutomationExecutionLog,
     ]),
     MessagesModule,
     AuditModule,
@@ -62,6 +88,8 @@ import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
     WorkflowsController,
     EmailTemplatesController,
     AutomationWebhooksController,
+    FlowAutomationsController,
+    NewAutomationController,
   ],
   providers: [
     AutomationService,
@@ -80,6 +108,8 @@ import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
     MemoryExecutor,
     KnowledgeExecutor,
     AutomationGateway,
+    FlowAutomationService,
+    NewAutomationService,
   ],
   exports: [
     AutomationService,
@@ -98,6 +128,8 @@ import { Mailbox } from "@shared/database/entities/core/mailbox.entity";
     MemoryExecutor,
     KnowledgeExecutor,
     AutomationGateway,
+    FlowAutomationService,
+    NewAutomationService,
   ],
 })
 export class AutomationModule { }

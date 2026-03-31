@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { Plus, RefreshCw, Rocket, Trash2 } from 'lucide-react';
+import { Link2, Plus, RefreshCw, Rocket, Trash2 } from 'lucide-react';
 
 type WaForm = {
     id: string;
@@ -182,6 +182,13 @@ export default function WhatsappFormsListPage() {
                                             <Rocket size={12} />
                                             Publish
                                         </button>
+                                        <Link
+                                            href={`/automation/builder?id=new&formId=${encodeURIComponent(form.id)}&formName=${encodeURIComponent(form.name)}&triggerType=flow_response`}
+                                            className="px-3 py-1.5 rounded-lg border border-indigo-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-50 inline-flex items-center gap-1"
+                                        >
+                                            <Link2 size={12} />
+                                            Attach Trigger
+                                        </Link>
                                         <button
                                             onClick={() => removeForm(form.id)}
                                             className="px-2 py-1.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50"
@@ -198,4 +205,3 @@ export default function WhatsappFormsListPage() {
         </div>
     );
 }
-

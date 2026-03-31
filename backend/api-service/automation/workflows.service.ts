@@ -257,9 +257,19 @@ export class WorkflowsService {
       status: "processing",
     });
 
+    const currentNode = workflow.nodes.find((n) => n.id === nodeId);
     const edges = workflow.edges.filter((e) => e.source === nodeId);
 
     for (const edge of edges) {
+      // Condition branching must be evaluated on the outgoing edges of the condition node.
+      // This ensures true/false handles route execution correctly.
+      if (currentNode?.type === "condition") {
+        const branchAllowed = await this.evaluateCondition(currentNode, context, edge);
+        if (!branchAllowed) {
+          continue;
+        }
+      }
+
       const nextNode = workflow.nodes.find((n) => n.id === edge.target);
       if (!nextNode) continue;
 
@@ -271,11 +281,9 @@ export class WorkflowsService {
             await this.executeAction(workflow.tenantId, nextNode, context);
             break;
           case "condition":
-            shouldContinue = await this.evaluateCondition(
-              nextNode,
-              context,
-              edge,
-            );
+            // Enter condition nodes unconditionally; branching is evaluated
+            // when processing their outgoing edges above.
+            shouldContinue = true;
             break;
           case "ai_agent":
             await this.handleAiNode(workflow, nextNode, context);

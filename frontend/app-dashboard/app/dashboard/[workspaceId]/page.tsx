@@ -129,65 +129,69 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-gray-50/30">
             {/* Compact Header */}
-            <div className="bg-white border-b border-gray-100 px-6 py-4">
+            <div className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
                 <div className="max-w-[1400px] mx-auto">
                     {/* Top row: greeting + actions */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-100">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-100 shrink-0">
                                 {user?.name?.[0]?.toUpperCase() || 'U'}
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-400 font-semibold">{greeting}</p>
-                                <h1 className="text-base font-black text-gray-900 tracking-tight leading-none">
+                            <div className="min-w-0">
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{greeting}</p>
+                                <h1 className="text-base font-black text-gray-900 tracking-tight leading-none truncate">
                                     {user?.name || 'Commander'} 
-                                    <span className="ml-2 text-xs font-bold text-gray-400">— {workspaceId?.slice(0, 8)}...</span>
+                                    <span className="ml-2 text-[10px] font-bold text-gray-400 hidden sm:inline">— {workspaceId?.slice(0, 8)}...</span>
                                 </h1>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wide">Operational</span>
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wide">Operational</span>
                             </div>
-                            <span className="text-[11px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 uppercase tracking-wide">
+                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 uppercase tracking-wide">
                                 {planFeatures.name}
                             </span>
-                            <button
-                                onClick={handleRefresh}
-                                disabled={refreshing}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-gray-100"
-                            >
-                                <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-                            </button>
-                            <Link
-                                href={`/dashboard/${workspaceId}/campaigns`}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-black hover:bg-blue-700 transition-all shadow-sm shadow-blue-200"
-                            >
-                                <Plus size={13} strokeWidth={3} />
-                                New Campaign
-                            </Link>
+                            <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                                <button
+                                    onClick={handleRefresh}
+                                    disabled={refreshing}
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-gray-100 shrink-0"
+                                >
+                                    <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+                                </button>
+                                <Link
+                                    href={`/dashboard/${workspaceId}/campaigns`}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 transition-all shadow-sm shadow-blue-200 shrink-0 uppercase tracking-wider"
+                                >
+                                    <Plus size={12} strokeWidth={3} />
+                                    New Campaign
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Tab Navigation — inline pill style */}
-                    <div className="flex items-center gap-1">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={clsx(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                                    activeTab === tab.id
-                                        ? "bg-gray-900 text-white shadow-sm"
-                                        : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-                                )}
-                            >
-                                <tab.icon size={13} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                                <span>{tab.label}</span>
-                                {tab.locked && <Lock size={10} className="opacity-50" />}
-                            </button>
-                        ))}
+                    {/* Tab Navigation — scrollable on mobile */}
+                    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <div className="flex items-center gap-1 min-w-max pb-1">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as any)}
+                                    className={clsx(
+                                        "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all shrink-0",
+                                        activeTab === tab.id
+                                            ? "bg-gray-900 text-white shadow-md shadow-gray-200 scale-[1.02]"
+                                            : "text-gray-500 hover:text-gray-900 hover:bg-gray-100 border border-transparent"
+                                    )}
+                                >
+                                    <tab.icon size={13} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                                    <span>{tab.label}</span>
+                                    {tab.locked && <Lock size={10} className="opacity-50" />}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

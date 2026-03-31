@@ -7,7 +7,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { Tenant } from "@shared/database/entities/core/tenant.entity";
+import { Tenant } from "../core/tenant.entity";
 
 @Entity("automation_rules")
 export class AutomationRule {

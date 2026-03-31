@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { RefreshCw, Search, CheckCircle, XCircle, Clock, Plus, AlertCircle, FileText, Workflow } from 'lucide-react';
+import { RefreshCw, Search, CheckCircle, XCircle, Clock, Plus, AlertCircle, FileText, Workflow, Link2 } from 'lucide-react';
 import CreateTemplateModal from './CreateTemplateModal';
 
 interface Template {
@@ -193,12 +194,23 @@ export default function TemplatesPage() {
                                                     <td className="px-6 py-4"><StatusBadge status={tpl.status} /></td>
                                                     <td className="px-6 py-4 text-xs text-gray-400">Mar 21, 2026</td>
                                                     <td className="px-6 py-4 text-right">
-                                                        {tpl.status === 'REJECTED' && tpl.rejectionReason && (
-                                                            <div className="flex items-center gap-1.5 text-[10px] text-red-500 font-semibold max-w-[140px] text-right ml-auto">
-                                                                <AlertCircle size={12} className="shrink-0" />
-                                                                <span>{tpl.rejectionReason}</span>
-                                                            </div>
-                                                        )}
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {tpl.status === 'APPROVED' && (
+                                                                <Link
+                                                                    href={`/automation/builder?id=new&templateName=${encodeURIComponent(tpl.name)}&templateLanguage=${encodeURIComponent(tpl.language || 'en_US')}&triggerType=template_reply`}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-[11px] font-bold hover:bg-blue-100 transition-colors"
+                                                                >
+                                                                    <Link2 size={12} />
+                                                                    Attach Flow
+                                                                </Link>
+                                                            )}
+                                                            {tpl.status === 'REJECTED' && tpl.rejectionReason && (
+                                                                <div className="flex items-center gap-1.5 text-[10px] text-red-500 font-semibold max-w-[140px] text-right ml-auto">
+                                                                    <AlertCircle size={12} className="shrink-0" />
+                                                                    <span>{tpl.rejectionReason}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );

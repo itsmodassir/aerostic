@@ -10,6 +10,7 @@ export default function AiSettingsPage() {
         systemPrompt: "You are a helpful and friendly customer support agent for Aimstors Solution. Answer concisely.",
         intentDetection: false,
         personalizationEnabled: false,
+        webSearchEnabled: false,
     });
 
     const [defaultKb, setDefaultKb] = useState<any>(null);
@@ -37,6 +38,7 @@ export default function AiSettingsPage() {
                     systemPrompt: data.systemPrompt || '',
                     intentDetection: data.intentDetection || false,
                     personalizationEnabled: data.personalizationEnabled || false,
+                    webSearchEnabled: data.webSearchEnabled || false,
                 });
             }
 
@@ -73,7 +75,8 @@ export default function AiSettingsPage() {
                     active: agent.isActive,
                     systemPrompt: agent.systemPrompt,
                     intentDetection: agent.intentDetection,
-                    personalizationEnabled: agent.personalizationEnabled
+                    personalizationEnabled: agent.personalizationEnabled,
+                    webSearchEnabled: agent.webSearchEnabled
                 })
             });
             if (res.ok) {
@@ -135,13 +138,13 @@ export default function AiSettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-12">
+        <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 pb-12 px-1 sm:px-0">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Sparkles className="text-purple-600 w-6 h-6" />
-                    Advanced AI Configuration
+                <h1 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2 tracking-tight">
+                    <Sparkles className="text-purple-600 w-5 h-5 sm:w-6 sm:h-6" />
+                    AI Intelligence
                 </h1>
-                <p className="text-gray-500 text-sm mt-1">Train your AI with custom documents and personalize conversation routing.</p>
+                <p className="text-gray-500 text-xs sm:text-sm mt-1 font-medium">Train your agent with custom knowledge and behavior.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -173,7 +176,7 @@ export default function AiSettingsPage() {
                             </p>
                             <textarea
                                 rows={5}
-                                className="w-full border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-purple-500 outline-none leading-relaxed"
+                                className="w-full border border-gray-200 rounded-xl p-4 text-base sm:text-sm focus:ring-2 focus:ring-purple-500 outline-none leading-relaxed bg-gray-50/30"
                                 value={agent.systemPrompt}
                                 onChange={(e) => setAgent({ ...agent, systemPrompt: e.target.value })}
                                 placeholder="e.g. You are a sales assistant for..."
@@ -220,6 +223,22 @@ export default function AiSettingsPage() {
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </label>
                             </div>
+
+                            <div className="flex items-start justify-between border-t pt-6">
+                                <div>
+                                    <p className="font-semibold text-gray-800">AI Web Search (Google Search)</p>
+                                    <p className="text-xs text-gray-500 mt-1 max-w-sm">Enable AI to research the internet in real-time to provide up-to-date answers using Google Search grounding.</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer mt-1">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={agent.webSearchEnabled}
+                                        onChange={(e) => setAgent({ ...agent, webSearchEnabled: e.target.checked })}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -227,10 +246,10 @@ export default function AiSettingsPage() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="flex items-center gap-2 px-8 py-3 bg-purple-600 font-bold text-white rounded-xl hover:bg-purple-700 shadow-md active:scale-95 disabled:opacity-70 transition-all"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-gray-900 font-black text-white rounded-2xl hover:bg-black shadow-lg shadow-gray-200 active:scale-95 disabled:opacity-70 transition-all text-xs uppercase tracking-widest"
                         >
                             <Save size={18} />
-                            {saving ? 'Saving Changes...' : 'Save Configuration'}
+                            {saving ? 'Saving...' : 'Save Configuration'}
                         </button>
                     </div>
                 </div>

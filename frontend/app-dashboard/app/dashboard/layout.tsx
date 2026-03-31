@@ -433,23 +433,27 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 "flex flex-col w-full min-h-screen transition-all duration-300",
                 isSidebarCollapsed ? "sm:pl-20" : "sm:pl-64"
             )}>
-                <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 md:px-8 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="p-2 -ml-2 text-muted-foreground hover:text-foreground sm:hidden"
-                        >
-                            <Menu className="w-6 h-6" />
-                        </button>
-                        {/* Breadcrumb / Title Stub */}
-                        <h2 className="text-base md:text-lg font-bold text-gray-900 capitalize truncate max-w-[150px] sm:max-w-none">
-                            {isReseller && (pathname === '/dashboard' || pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
-                                ? 'Partner Console'
-                                : pathname.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ') || 'Overview'}
-                        </h2>
+                <header className="sticky top-0 z-30 flex flex-col sm:flex-row h-auto sm:h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 md:px-8 py-3 sm:py-0 shadow-sm gap-4 sm:gap-0">
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="p-2 -ml-2 text-muted-foreground hover:text-foreground sm:hidden"
+                            >
+                                <Menu className="w-6 h-6" />
+                            </button>
+                            {/* Breadcrumb / Title Stub */}
+                            <h2 className="text-base md:text-lg font-bold text-gray-900 capitalize truncate max-w-[200px] sm:max-w-none">
+                                {isReseller && (pathname === '/dashboard' || pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
+                                    ? 'Partner Console'
+                                    : pathname.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ') || 'Overview'}
+                            </h2>
+                        </div>
+                        
+                        {/* Mobile-only toggle for profile/notif if we want to save space, but let's just keep them for now */}
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
                         {/* Plan Badge */}
                         <Link
                             href="/billing"

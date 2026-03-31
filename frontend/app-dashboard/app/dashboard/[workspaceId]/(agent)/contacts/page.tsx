@@ -113,89 +113,139 @@ export default function ContactsPage() {
                 </div>
             </div>
 
-            {/* Filters & Search */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            {/* Filters & Search - Stacked on Mobile */}
+            <div className="flex flex-col sm:flex-row gap-3 px-1 sm:px-0">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                     <input
                         type="text"
-                        placeholder="Search by name, phone or email..."
-                        className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-sm transition-all"
+                        placeholder="Search audience..."
+                        className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-base sm:text-sm transition-all shadow-sm"
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button className="px-5 py-3 bg-gray-50 text-gray-400 rounded-2xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center gap-2 font-bold text-sm">
+                <button className="h-[52px] px-6 bg-gray-50 text-gray-500 rounded-2xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center gap-2 font-bold text-sm shrink-0">
                     <Filter size={18} />
                     Filters
                 </button>
             </div>
 
-            {/* Contacts Container */}
-            <div className="bg-white border-2 border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
-                <div className="overflow-x-auto no-scrollbar">
-                    <table className="w-full text-left min-w-[700px]">
-                        <thead>
-                            <tr className="bg-gray-50/50 border-b-2 border-gray-100">
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact details</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Communication</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Added on</th>
-                                <th className="px-6 py-5"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr><td colSpan={4} className="py-20 text-center text-gray-400 font-bold">Fetching your audience...</td></tr>
-                            ) : filteredContacts.length === 0 ? (
-                                <tr>
-                                    <td colSpan={4} className="py-20 text-center">
-                                        <div className="flex flex-col items-center gap-2 opacity-30">
-                                            <Users2 size={48} />
-                                            <p className="font-bold">No contacts found</p>
-                                        </div>
-                                    </td>
+            {/* Contacts Container - Responsive View */}
+            <div className="space-y-4">
+                {/* Desktop Table */}
+                <div className="hidden sm:block bg-white border-2 border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto no-scrollbar">
+                        <table className="w-full text-left min-w-[700px]">
+                            <thead>
+                                <tr className="bg-gray-50/50 border-b-2 border-gray-100">
+                                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact details</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Communication</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Added on</th>
+                                    <th className="px-6 py-5"></th>
                                 </tr>
-                            ) : (
-                                filteredContacts.map((contact) => (
-                                    <tr key={contact.id} className="group hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
-                                                    {contact.name[0]?.toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="font-black text-gray-900 text-sm">{contact.name}</div>
-                                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ID: {contact.id.slice(0, 8)}</div>
-                                                </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
+                                    <tr><td colSpan={4} className="py-20 text-center text-gray-400 font-bold">Fetching your audience...</td></tr>
+                                ) : filteredContacts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="py-20 text-center">
+                                            <div className="flex flex-col items-center gap-2 opacity-30">
+                                                <Users2 size={48} />
+                                                <p className="font-bold">No contacts found</p>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-5 space-y-1">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
-                                                <Phone size={12} className="text-gray-300" />
-                                                {contact.phoneNumber}
-                                            </div>
-                                            {contact.email && (
-                                                <div className="flex items-center gap-2 text-[11px] font-medium text-gray-400">
-                                                    <Mail size={12} className="text-gray-300" />
-                                                    {contact.email}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
-                                                <Calendar size={12} className="text-gray-300" />
-                                                {new Date(contact.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <button className="p-2 hover:bg-white rounded-lg transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-transparent hover:border-gray-200">
-                                                <MoreVertical size={16} className="text-gray-400" />
-                                            </button>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    filteredContacts.map((contact) => (
+                                        <tr key={contact.id} className="group hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
+                                                        {contact.name[0]?.toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-black text-gray-900 text-sm">{contact.name}</div>
+                                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ID: {contact.id.slice(0, 8)}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 space-y-1">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
+                                                    <Phone size={12} className="text-gray-300" />
+                                                    {contact.phoneNumber}
+                                                </div>
+                                                {contact.email && (
+                                                    <div className="flex items-center gap-2 text-[11px] font-medium text-gray-400">
+                                                        <Mail size={12} className="text-gray-300" />
+                                                        {contact.email}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
+                                                    <Calendar size={12} className="text-gray-300" />
+                                                    {new Date(contact.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <button className="p-2 hover:bg-white rounded-lg transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-transparent hover:border-gray-200">
+                                                    <MoreVertical size={16} className="text-gray-400" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="sm:hidden space-y-3 px-1">
+                    {loading ? (
+                        <div className="py-20 text-center text-gray-400 font-bold">Fetching your audience...</div>
+                    ) : filteredContacts.length === 0 ? (
+                        <div className="py-20 text-center opacity-30">
+                            <Users2 size={48} className="mx-auto" />
+                            <p className="font-bold mt-2">No contacts found</p>
+                        </div>
+                    ) : (
+                        filteredContacts.map((contact) => (
+                            <div key={contact.id} className="bg-white p-4 rounded-3xl border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
+                                            {contact.name[0]?.toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-gray-900 text-sm leading-tight">{contact.name}</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ID: {contact.id.slice(0, 8)}</p>
+                                        </div>
+                                    </div>
+                                    <button className="p-2 text-gray-400">
+                                        <MoreVertical size={18} />
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 border-t border-gray-50 pt-3">
+                                    <div className="flex items-center gap-3 text-xs font-bold text-gray-600 bg-gray-50/50 p-2 rounded-xl">
+                                        <Phone size={14} className="text-blue-500" />
+                                        {contact.phoneNumber}
+                                    </div>
+                                    {contact.email && (
+                                        <div className="flex items-center gap-3 text-[11px] font-bold text-gray-500 bg-gray-50/50 p-2 rounded-xl">
+                                            <Mail size={14} className="text-indigo-500" />
+                                            {contact.email}
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 p-2">
+                                        <Calendar size={14} className="text-gray-300" />
+                                        Added on {new Date(contact.createdAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

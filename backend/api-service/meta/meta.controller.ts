@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, BadRequestException } from "@nestjs/common";
 import { MetaService } from "./meta.service";
 
 @Controller("meta")
@@ -8,17 +8,21 @@ export class MetaController {
   @Get("callback")
   async metaCallback(
     @Query("code") code: string,
-    @Query("state") tenantId: string,
+    @Query("state") state: string,
     @Query("wabaId") wabaId?: string,
     @Query("phoneNumberId") phoneNumberId?: string,
-    @Query("redirectUri") redirectUri?: string,
   ) {
+    const [tenantId, mode] = (state || "").split(":");
+    if (!tenantId) {
+      throw new BadRequestException("Invalid OAuth state");
+    }
     await this.metaService.handleOAuthCallback(
       code,
       tenantId,
       wabaId,
       phoneNumberId,
-      redirectUri,
+      undefined,
+      mode,
     );
     return { success: true, message: "WhatsApp Connected Successfully" };
   }

@@ -3,7 +3,7 @@ set -e
 
 # Configuration
 APP_DIR="/var/www/aimstors"
-REPO_URL="https://github.com/itsmodassir/aimstors.git"
+REPO_URL="https://github.com/itsmodassir/aerostic.git"
 
 echo "🚀 Starting Aimstors Solution Production Deployment..."
 

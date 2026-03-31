@@ -9,7 +9,7 @@ import {
   HttpStatus,
   Logger,
 } from "@nestjs/common";
-import { WebhooksService } from "./webhooks.service";
+import { WebhooksService } from "@shared/whatsapp/webhooks.service";
 import type { Request, Response } from "express";
 
 @Controller("webhooks")
@@ -26,7 +26,7 @@ export class WebhooksController {
   ) {
     this.logger.log(`Received verification request: mode=${mode}, token=${token}`);
     try {
-      const result = await this.webhooksService.verifyWebhook(mode, token, challenge);
+      const result = this.webhooksService.verifyWebhook(mode, token, challenge);
       this.logger.log("Verification successful");
       return res.status(HttpStatus.OK).send(result);
     } catch (e) {
@@ -45,12 +45,8 @@ export class WebhooksController {
       return res.status(HttpStatus.FORBIDDEN).send("Signature missing");
     }
 
-    // Use rawBody if available, otherwise fallback to stringified body (less reliable)
     const rawBody = (req as any).rawBody || JSON.stringify(body);
-    const isValid = await this.webhooksService.verifySignature(
-      rawBody,
-      signature,
-    );
+    const isValid = this.webhooksService.verifySignature(rawBody, signature);
 
     if (!isValid) {
       this.logger.error("Invalid signature detected for webhook payload");
@@ -58,7 +54,7 @@ export class WebhooksController {
     }
 
     this.logger.log("Signature valid, enqueuing payload for processing");
-    await this.webhooksService.processWebhook(body);
+    await this.webhooksService.enqueuePayload(body);
     return res.status(HttpStatus.OK).json({ status: "ok" });
   }
 }

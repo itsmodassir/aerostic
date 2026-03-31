@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
 import { AnomalyWorkerModule } from "./anomaly-worker/anomaly.module";
+import { WhatsappWorkerModule } from "./whatsapp-worker/whatsapp-worker.module";
 import { METRICS_QUEUE } from "../shared/queue/queue-names";
 
 // Assuming entities are shared
@@ -46,6 +47,7 @@ import { CommonModule } from "@shared/common.module";
 
     // Feature Modules
     AnomalyWorkerModule,
+    WhatsappWorkerModule,
   ],
 })
 export class AppModule { }

@@ -8,7 +8,7 @@ import {
   JoinColumn,
   Index,
 } from "typeorm";
-import { Tenant } from "@shared/database/entities/core/tenant.entity";
+import { Tenant } from "../core/tenant.entity";
 
 @Entity("workflows")
 export class Workflow {

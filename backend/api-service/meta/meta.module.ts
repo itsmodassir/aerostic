@@ -10,6 +10,7 @@ import { MetaTokenService } from "./meta-token.service";
 import { AuditModule } from "../audit/audit.module";
 import { AdminModule } from "../admin/admin.module";
 import { WebhooksModule } from "../webhooks/webhooks.module";
+import { WhatsappModule } from "@shared/whatsapp/whatsapp.module";
 
 import { Template } from "../templates/entities/template.entity";
 
@@ -24,6 +25,7 @@ import { Template } from "../templates/entities/template.entity";
     AuditModule,
     AdminModule,
     WebhooksModule,
+    WhatsappModule,
   ],
   controllers: [MetaController],
   providers: [MetaService, MetaTokenService],

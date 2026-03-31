@@ -62,22 +62,22 @@ export default function MessagingLimitsCard({
     };
 
     return (
-        <div className={clsx("bg-white rounded-[32px] border-2 border-gray-50 p-6 md:p-8 shadow-xl shadow-gray-200/30 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200", className)}>
-            <div className="flex items-center gap-4 mb-8">
-                <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm", bgMap[config.colorClass])}>
-                    <TrendingUp className={clsx("w-7 h-7", textMap[config.colorClass])} />
+        <div className={clsx("bg-white rounded-2xl border border-gray-200/60 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200", className)}>
+            <div className="flex items-center gap-4 mb-6">
+                <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm", bgMap[config.colorClass])}>
+                    <TrendingUp className={clsx("w-5 h-5", textMap[config.colorClass])} />
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Messaging Scale</h3>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{config.tier} Verification Status</p>
+                    <h3 className="text-lg font-bold text-gray-900">Messaging Scale</h3>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-0.5">{config.tier} Verification Status</p>
                 </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-6">
                 <div>
-                    <div className="flex items-baseline justify-between mb-3 px-1">
-                        <span className="text-4xl font-black text-gray-900 tracking-tighter">{config.label}</span>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ 24h cycle</span>
+                    <div className="flex items-baseline justify-between mb-2.5 px-1">
+                        <span className="text-3xl font-bold text-gray-900">{config.label}</span>
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">/ 24h cycle</span>
                     </div>
 
                     {config.value !== Infinity && (
@@ -105,16 +105,16 @@ export default function MessagingLimitsCard({
                     )}
                 </div>
 
-                <div className="pt-8 border-t-2 border-gray-50">
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-1">Daily Entitlements</h4>
-                    <div className="space-y-3">
+                <div className="pt-6 border-t border-gray-100">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 ml-1">Daily Entitlements</h4>
+                    <div className="space-y-2.5">
                         {[
                             { icon: Zap, text: 'Automatic tier progression after quality usage', activeColor: textMap[config.colorClass] },
                             { icon: Users, text: `${config.label} unique customer initiations daily`, activeColor: textMap[config.colorClass] }
                         ].map((item, idx) => (
-                            <div key={idx} className="flex items-start gap-4 p-4 bg-gray-50/50 rounded-2xl border-2 border-transparent hover:border-gray-100 transition-all">
-                                <item.icon className={clsx("w-5 h-5 shrink-0 mt-0.5", item.activeColor)} />
-                                <p className="text-xs font-bold text-gray-600 leading-relaxed tracking-tight">{item.text}</p>
+                            <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 transition-colors">
+                                <item.icon className={clsx("w-4 h-4 shrink-0 mt-0.5", item.activeColor)} />
+                                <p className="text-xs text-gray-600">{item.text}</p>
                             </div>
                         ))}
                     </div>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/lib/api';
-import { ArrowLeft, Plus, Rocket, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Link2, Plus, Rocket, Save, Trash2 } from 'lucide-react';
 
 type QuestionType =
     | 'short_text'
@@ -265,6 +265,13 @@ export default function WhatsappFormEditorPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Link
+                        href={`/automation/builder?id=new&formId=${encodeURIComponent(formId)}&formName=${encodeURIComponent(name || form?.name || 'WA Form')}&triggerType=flow_response`}
+                        className="px-4 py-2 rounded-xl border border-indigo-200 text-indigo-700 font-semibold hover:bg-indigo-50 inline-flex items-center gap-2"
+                    >
+                        <Link2 size={16} />
+                        Attach Trigger Flow
+                    </Link>
                     <button
                         onClick={saveForm}
                         disabled={saving}
@@ -427,4 +434,3 @@ export default function WhatsappFormEditorPage() {
         </div>
     );
 }
-

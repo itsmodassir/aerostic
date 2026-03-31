@@ -9,7 +9,6 @@ import {
   Param,
   UseGuards,
   BadRequestException,
-  Req,
 } from "@nestjs/common";
 import { WhatsappService } from "./whatsapp.service";
 import type { Response } from "express";
@@ -31,7 +30,8 @@ export class WhatsappController {
       throw new BadRequestException("Invalid embedded signup mode");
     }
     const url = await this.whatsappService.getEmbeddedSignupUrl(
-      tenantId
+      tenantId,
+      selectedMode as "coexistence" | "cloud",
     );
     return { url };
   }
@@ -48,7 +48,8 @@ export class WhatsappController {
       throw new BadRequestException("Invalid embedded signup mode");
     }
     const url = await this.whatsappService.getEmbeddedSignupUrl(
-      tenantId
+      tenantId,
+      selectedMode as "coexistence" | "cloud",
     );
     return res.redirect(url);
   }
