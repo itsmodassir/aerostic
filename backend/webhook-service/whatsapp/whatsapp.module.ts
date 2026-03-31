@@ -1,27 +1,16 @@
 import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { WhatsappService } from "./whatsapp.service";
+import { WhatsappModule as SharedWhatsappModule } from "@shared/whatsapp/whatsapp.module";
 import { WhatsappController } from "./whatsapp.controller";
-import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
-import { WhatsappAccount } from "./entities/whatsapp-account.entity";
-import { MetaToken } from "../inbound-processing/entities/meta-token.entity";
-import { BullModule } from "@nestjs/bullmq";
-import { CommonModule } from "@shared/common.module";
 import { AuditModule } from "@api/audit/audit.module";
 import { AdminModule } from "@api/admin/admin.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SystemConfig, WhatsappAccount, MetaToken]),
-    BullModule.registerQueue({
-      name: "whatsapp-messages",
-    }),
-    CommonModule,
+    SharedWhatsappModule,
     AuditModule,
     AdminModule,
   ],
   controllers: [WhatsappController],
-  providers: [WhatsappService],
-  exports: [WhatsappService],
+  providers: [],
 })
 export class WhatsappModule {}

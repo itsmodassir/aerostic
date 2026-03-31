@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { Logger, BadRequestException } from "@nestjs/common";
 import axios from "axios";
-import { WhatsappService } from "./whatsapp.service";
+import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 
 @Processor("whatsapp-messages")
 export class WhatsappProcessor extends WorkerHost {
