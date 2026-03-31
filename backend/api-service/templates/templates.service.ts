@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Template } from "./entities/template.entity";
 import { MetaService } from "../meta/meta.service";
-import { WhatsappService } from "../whatsapp/whatsapp.service";
+import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 
 @Injectable()
 export class TemplatesService {

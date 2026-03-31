@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { WaForm } from "./entities/wa-form.entity";
-import { WhatsappService } from "@api/whatsapp/whatsapp.service";
+import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 
 @Injectable()
 export class WaFormsService {
