@@ -22,6 +22,10 @@ else
     git pull origin main
 fi
 
+# 1.1 Hotfix Backend (Dependency Resolution)
+echo "🔧 Applying backend dependency hotfix..."
+sed -i "s/providers: \[\],/exports: \[SharedWhatsappModule\],/" backend/api-service/whatsapp/whatsapp.module.ts
+
 # 2. Sync Environment Variables
 echo "🔑 Syncing environment variables..."
 if [ ! -f ".env" ] && [ -f "apps/backend/.env" ]; then
@@ -56,7 +60,9 @@ echo "📱 Building App Dashboard..."
 cd frontend/app-dashboard
 npm install --production=false --legacy-peer-deps
 if [ -f "../../.env" ]; then
-    export $(grep -v '^#' ../../.env | xargs)
+    set -a
+    source ../../.env
+    set +a
 fi
 export NEXT_JS_IGNORE_ESLINT=1
 npm run build
@@ -69,15 +75,27 @@ find static_runtime -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 cp -a .next/static/. static_runtime/
 cd ../..
 
-# 5. Run Migrations
+# 5. Restart Infrastructure (Docker)
+echo "🐳 Starting Infrastructure Services..."
+cd infrastructure/docker
+docker-compose up -d --build --force-recreate nginx ml-service redis postgres kafka zookeeper
+cd ../..
+
+echo "⏳ Waiting 10 seconds for initial database startup..."
+sleep 10
+
+# 6. Run Migrations
 echo "🗄️ Running Database Migrations..."
 cd backend
 npx ts-node -P tsconfig.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d shared/database/data-source.ts
 cd ..
 
-# 6. Restart Services
-echo "🔄 Restarting Services..."
-pm2 delete all || true
+# 7. Restart Services
+echo "🔄 Restarting Node Services..."
+pm2 delete aimstors-api || true
+pm2 delete aimstors-webhook || true
+pm2 delete aimstors-worker || true
+pm2 delete aimstors-frontend || true
 
 # Backend
 pm2 start backend/dist/api-service/main.js --name aimstors-api
@@ -86,11 +104,6 @@ pm2 start backend/dist/worker-service/main.js --name aimstors-worker
 
 # Frontend
 PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
-
-# Nginx + ML Service (Docker)
-cd infrastructure/docker
-docker-compose up -d --build --force-recreate nginx ml-service redis postgres kafka zookeeper
-cd ../..
 
 pm2 save
 

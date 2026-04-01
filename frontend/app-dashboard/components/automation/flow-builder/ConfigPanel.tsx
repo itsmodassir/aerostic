@@ -11,7 +11,13 @@ import {
   Variable,
   Info,
   X,
-  Plus
+  Plus,
+  Image,
+  Video,
+  FileText,
+  Split,
+  Link,
+  Upload
 } from "lucide-react";
 import { BuilderNode, BuilderNodeData } from "./types";
 import { Button } from "../../ui/button";
@@ -102,6 +108,80 @@ export function ConfigPanel({ selected, onChange, onDelete }: ConfigPanelProps) 
                             value={data.message || ''}
                             onChange={(e) => onChange({ message: e.target.value })}
                         />
+                    </div>
+                    
+                    {/* Common Button Editor for message nodes */}
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 flex items-center justify-between">
+                            Interactive Buttons
+                            <span className="text-[9px] text-slate-400 lowercase">{(data.buttons?.length || 0)} / 3 used</span>
+                        </label>
+                        <div className="space-y-2">
+                            {(data.buttons || []).map((btn: any, idx: number) => (
+                                <div key={btn.id} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100 group">
+                                    <div className="flex-1 space-y-1">
+                                        <Input 
+                                            className="w-full bg-transparent border-none text-[11px] font-bold h-7 p-0 px-2 focus:ring-0"
+                                            value={btn.text}
+                                            placeholder="Button label..."
+                                            onChange={(e) => {
+                                                const newButtons = [...(data.buttons || [])];
+                                                newButtons[idx] = { ...btn, text: e.target.value };
+                                                onChange({ buttons: newButtons });
+                                            }}
+                                        />
+                                        <div className="flex gap-2 px-2">
+                                            <select 
+                                                className="bg-transparent border-none text-[9px] font-black text-slate-400 uppercase outline-none"
+                                                value={btn.type}
+                                                onChange={(e) => {
+                                                    const newButtons = [...(data.buttons || [])];
+                                                    newButtons[idx] = { ...btn, type: e.target.value as 'reply' | 'url' };
+                                                    onChange({ buttons: newButtons });
+                                                }}
+                                            >
+                                                <option value="reply">Reply</option>
+                                                <option value="url">URL</option>
+                                            </select>
+                                            {btn.type === 'url' && (
+                                                <input 
+                                                    className="flex-1 bg-transparent border-none text-[9px] font-medium text-blue-500 outline-none"
+                                                    placeholder="https://..."
+                                                    value={btn.url || ''}
+                                                    onChange={(e) => {
+                                                        const newButtons = [...(data.buttons || [])];
+                                                        newButtons[idx] = { ...btn, url: e.target.value };
+                                                        onChange({ buttons: newButtons });
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            const newButtons = (data.buttons || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ buttons: newButtons });
+                                        }}
+                                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            {(data.buttons?.length || 0) < 3 && (
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full border-dashed border-slate-200 text-slate-400 hover:text-blue-500 hover:border-blue-200 h-10 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all"
+                                    onClick={() => {
+                                        const newId = `btn_${Math.random().toString(36).substr(2, 9)}`;
+                                        onChange({ buttons: [...(data.buttons || []), { id: newId, text: 'New Button', type: 'reply' }] });
+                                    }}
+                                >
+                                    <Plus size={14} className="mr-2" />
+                                    Add Button
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -198,6 +278,168 @@ export function ConfigPanel({ selected, onChange, onDelete }: ConfigPanelProps) 
                                 <option value="days">Days</option>
                             </select>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {['photo', 'video', 'doc'].includes(type) && (
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Media Config</label>
+                        <div className="p-8 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 group hover:bg-white hover:border-blue-200 transition-all cursor-pointer">
+                            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-slate-400 shadow-sm group-hover:text-blue-500 group-hover:shadow-md transition-all">
+                                <Upload size={24} />
+                            </div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-blue-600">Upload {type}</span>
+                        </div>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                <Link size={12} />
+                            </span>
+                            <Input 
+                                className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold pl-9 p-3"
+                                placeholder={`Or paste ${type} URL...`}
+                                value={data.mediaUrl || ''}
+                                onChange={(e) => onChange({ 
+                                    mediaUrl: e.target.value, 
+                                    imagePreview: type === 'photo' ? e.target.value : undefined,
+                                    videoPreview: type === 'video' ? e.target.value : undefined 
+                                })}
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Caption / Message</label>
+                        <Textarea 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-medium p-4 outline-none focus:ring-2 focus:ring-blue-500/20 resize-none min-h-[100px] shadow-inner"
+                            placeholder="Add a caption to your media..."
+                            value={data.message || ''}
+                            onChange={(e) => onChange({ message: e.target.value })}
+                        />
+                    </div>
+
+                    {/* Button editor for media nodes too */}
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 flex items-center justify-between">
+                            Interactive Buttons
+                            <span className="text-[9px] text-slate-400 lowercase">{(data.buttons?.length || 0)} / 3 used</span>
+                        </label>
+                        <div className="space-y-2">
+                             {(data.buttons || []).map((btn: any, idx: number) => (
+                                <div key={btn.id} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100 group">
+                                     <div className="flex-1 space-y-1">
+                                        <Input 
+                                            className="w-full bg-transparent border-none text-[11px] font-bold h-7 p-0 px-2 focus:ring-0"
+                                            value={btn.text}
+                                            placeholder="Button label..."
+                                            onChange={(e) => {
+                                                const newButtons = [...(data.buttons || [])];
+                                                newButtons[idx] = { ...btn, text: e.target.value };
+                                                onChange({ buttons: newButtons });
+                                            }}
+                                        />
+                                        <div className="flex gap-2 px-2">
+                                            <select 
+                                                className="bg-transparent border-none text-[9px] font-black text-slate-400 uppercase outline-none"
+                                                value={btn.type}
+                                                onChange={(e) => {
+                                                    const newButtons = [...(data.buttons || [])];
+                                                    newButtons[idx] = { ...btn, type: e.target.value as 'reply' | 'url' };
+                                                    onChange({ buttons: newButtons });
+                                                }}
+                                            >
+                                                <option value="reply">Reply</option>
+                                                <option value="url">URL</option>
+                                            </select>
+                                            {btn.type === 'url' && (
+                                                <input 
+                                                    className="flex-1 bg-transparent border-none text-[9px] font-medium text-blue-500 outline-none"
+                                                    placeholder="https://..."
+                                                    value={btn.url || ''}
+                                                    onChange={(e) => {
+                                                        const newButtons = [...(data.buttons || [])];
+                                                        newButtons[idx] = { ...btn, url: e.target.value };
+                                                        onChange({ buttons: newButtons });
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            const newButtons = (data.buttons || []).filter((_: any, i: number) => i !== idx);
+                                            onChange({ buttons: newButtons });
+                                        }}
+                                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            {(data.buttons?.length || 0) < 3 && (
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full border-dashed border-slate-200 text-slate-400 hover:text-blue-500 hover:border-blue-200 h-10 text-[10px] uppercase font-black rounded-xl"
+                                    onClick={() => {
+                                        const newId = `btn_${Math.random().toString(36).substr(2, 9)}`;
+                                        onChange({ buttons: [...(data.buttons || []), { id: newId, text: 'New Button', type: 'reply' }] });
+                                    }}
+                                >
+                                    <Plus size={14} className="mr-2" />
+                                    Add Button
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {type === 'if_else' && (
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Logic Condition</label>
+                        <div className="space-y-3">
+                            <div className="space-y-1">
+                                <span className="text-[9px] font-black uppercase text-slate-300 px-1">Variable</span>
+                                <Input 
+                                    className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                                    placeholder="e.g. user_intent or {{trigger.body}}"
+                                    value={data.variable || ''}
+                                    onChange={(e) => onChange({ variable: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[9px] font-black uppercase text-slate-300 px-1">Operator</span>
+                                <select 
+                                    className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3 outline-none"
+                                    value={data.operator || 'equals'}
+                                    onChange={(e) => onChange({ operator: e.target.value })}
+                                >
+                                    <option value="equals">Equals</option>
+                                    <option value="contains">Contains</option>
+                                    <option value="exists">Exists</option>
+                                    <option value="isEmpty">Is Empty</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[9px] font-black uppercase text-slate-300 px-1">Value to match</span>
+                                <Input 
+                                    className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                                    placeholder="Value to compare against"
+                                    value={data.value || ''}
+                                    onChange={(e) => onChange({ value: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-orange-50 border border-orange-100 space-y-2">
+                        <div className="flex items-center gap-2 text-orange-700">
+                            <Split size={14} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Branching Guide</span>
+                        </div>
+                        <p className="text-[10px] text-orange-600 leading-relaxed font-medium">
+                            If the condition is met, the flow follows the <span className="font-bold underline">True</span> branch. Otherwise, it follows <span className="font-bold underline">False</span>.
+                        </p>
                     </div>
                 </div>
             )}

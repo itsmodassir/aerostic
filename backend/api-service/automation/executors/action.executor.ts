@@ -108,38 +108,81 @@ export class ActionExecutor implements NodeExecutor {
     }
 
     const message = this.variableResolver.resolve(data.message || "", context);
-    const messageType = String(data.messageType || "text").toLowerCase();
+    const nodeType = node.type;
 
-    this.logger.log(`Executing Action: Send ${messageType} message to ${to}`);
-
-    if (messageType === "image" || messageType === "video" || messageType === "document") {
+    // Handle Media Nodes or Message Nodes with Media
+    if (nodeType === "photo" || nodeType === "video" || nodeType === "doc" || data.mediaUrl) {
+      const mediaType = nodeType === "photo" ? "image" : nodeType === "video" ? "video" : nodeType === "doc" ? "document" : "image";
       const mediaUrl = this.variableResolver.resolve(data.mediaUrl || "", context);
-      if (!mediaUrl) {
-        throw new Error(`Action node requires mediaUrl for ${messageType}`);
-      }
+      
+      if (mediaUrl) {
+        // If buttons are present, send as interactive media message
+        if (data.buttons && data.buttons.length > 0) {
+          await this.messagesService.send({
+            tenantId,
+            to,
+            type: "interactive",
+            payload: {
+              type: "button",
+              header: { 
+                type: mediaType, 
+                [mediaType]: { link: mediaUrl } 
+              },
+              body: { text: message || "Select an option" },
+              action: {
+                buttons: data.buttons.slice(0, 3).map((b: any) => ({
+                  type: "reply",
+                  reply: { id: b.id, title: b.text.substring(0, 20) }
+                }))
+              }
+            }
+          });
+          return { status: "sent", to, type: "interactive_media", mediaType, buttons: data.buttons.length };
+        }
 
-      const payload: Record<string, any> = {
-        link: mediaUrl,
-      };
-      if (message) payload.caption = message;
-      if (messageType === "document" && data.mediaFilename) {
-        payload.filename = this.variableResolver.resolve(data.mediaFilename, context);
-      }
+        // Otherwise send as standard media message
+        const payload: Record<string, any> = { link: mediaUrl };
+        if (message) payload.caption = message;
+        if (mediaType === "document" && data.mediaFilename) {
+          payload.filename = this.variableResolver.resolve(data.mediaFilename, context);
+        }
 
+        await this.messagesService.send({
+          tenantId,
+          to,
+          type: mediaType,
+          payload,
+        });
+        return { status: "sent", to, type: mediaType, mediaUrl };
+      }
+    }
+
+    // Handle Text Message with Buttons
+    if (data.buttons && data.buttons.length > 0) {
       await this.messagesService.send({
         tenantId,
         to,
-        type: messageType,
-        payload,
+        type: "interactive",
+        payload: {
+          type: "button",
+          body: { text: message || "Select an option" },
+          action: {
+            buttons: data.buttons.slice(0, 3).map((b: any) => ({
+              type: "reply",
+              reply: { id: b.id, title: b.text.substring(0, 20) }
+            }))
+          }
+        }
       });
-      return { status: "sent", to, type: messageType, mediaUrl };
+      return { status: "sent", to, type: "interactive_text", buttons: data.buttons.length };
     }
 
+    // Fallback to standard Text Message
     await this.messagesService.send({
       tenantId,
       to,
       type: "text",
-      payload: { text: message },
+      payload: { text: message || "..." },
     });
 
     return {

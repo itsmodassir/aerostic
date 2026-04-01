@@ -241,6 +241,9 @@ export class WorkflowRunnerService {
       case "template":
       case "whatsapp_flow":
       case "wa_form":
+      case "photo":
+      case "video":
+      case "doc":
         return this.actionExecutor.execute(node, context);
 
       case "email":
@@ -251,6 +254,7 @@ export class WorkflowRunnerService {
         return this.apiExecutor.execute(node, context);
 
       case "condition":
+      case "if_else":
         return this.conditionExecutor.execute(node, context);
 
       case "gemini_model":

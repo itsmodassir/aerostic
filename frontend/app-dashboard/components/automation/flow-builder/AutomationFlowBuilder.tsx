@@ -124,6 +124,7 @@ export default function AutomationFlowBuilder({
         edges: edges.map(e => ({
           sourceNodeId: e.source,
           targetNodeId: e.target,
+          sourceHandle: e.sourceHandle,
           animated: e.animated,
         })),
       };

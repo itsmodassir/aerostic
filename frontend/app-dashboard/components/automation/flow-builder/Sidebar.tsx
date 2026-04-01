@@ -9,6 +9,10 @@ import {
   Variable,
   Info,
   Zap,
+  Image,
+  Video,
+  FileText,
+  Split,
 } from "lucide-react";
 import { NodeKind } from "./types";
 import {
@@ -50,6 +54,33 @@ const nodeCategories = [
         border: "border-blue-200",
         tip: "Send an automated response to the customer.",
       },
+      {
+        kind: "photo" as NodeKind,
+        name: "Photo",
+        icon: Image,
+        color: "text-emerald-500",
+        bg: "bg-emerald-50",
+        border: "border-emerald-200",
+        tip: "Send an image to the customer.",
+      },
+      {
+        kind: "video" as NodeKind,
+        name: "Video",
+        icon: Video,
+        color: "text-rose-500",
+        bg: "bg-rose-50",
+        border: "border-rose-200",
+        tip: "Send a video to the customer.",
+      },
+      {
+        kind: "doc" as NodeKind,
+        name: "Document",
+        icon: FileText,
+        color: "text-indigo-500",
+        bg: "bg-indigo-50",
+        border: "border-indigo-200",
+        tip: "Send a document or PDF to the customer.",
+      },
     ],
   },
   {
@@ -63,6 +94,15 @@ const nodeCategories = [
         bg: "bg-purple-50",
         border: "border-purple-200",
         tip: "Check message keywords to branch the flow.",
+      },
+      {
+        kind: "if_else" as NodeKind,
+        name: "If / Else",
+        icon: Split,
+        color: "text-orange-500",
+        bg: "bg-orange-50",
+        border: "border-orange-200",
+        tip: "Branch the flow based on complex logic or variables.",
       },
       {
         kind: "delay" as NodeKind,

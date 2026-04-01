@@ -11,6 +11,6 @@ import { AdminModule } from "../admin/admin.module";
     AdminModule,
   ],
   controllers: [WhatsappController],
-  providers: [],
+  exports: [SharedWhatsappModule],
 })
 export class WhatsappModule {}

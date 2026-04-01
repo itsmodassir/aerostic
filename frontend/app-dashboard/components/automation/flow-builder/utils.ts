@@ -31,6 +31,10 @@ export const defaultsByKind: Record<string, Partial<BuilderNodeData>> = {
     waitUnit: "minutes",
   },
   end: { kind: "end", label: "End Flow" },
+  photo: { kind: "photo", label: "Send Photo", message: "", mediaUrl: "" },
+  video: { kind: "video", label: "Send Video", message: "", mediaUrl: "" },
+  doc: { kind: "doc", label: "Send Document", message: "", mediaUrl: "", filename: "attachment.pdf" },
+  if_else: { kind: "if_else", label: "If / Else", variable: "{{trigger.body}}", operator: "equals", value: "" },
 };
 
 export function transformAutomationToFlow(automation: any): {
@@ -59,9 +63,10 @@ export function transformAutomationToFlow(automation: any): {
   }));
 
   const edges: Edge[] = (automation.edges || []).map((edge: any) => ({
-    id: edge.id || `e-${edge.sourceNodeId}-${edge.targetNodeId}`,
+    id: edge.id || `e-${edge.sourceNodeId}-${edge.targetNodeId}-${edge.sourceHandle || 'default'}`,
     source: edge.sourceNodeId,
     target: edge.targetNodeId,
+    sourceHandle: edge.sourceHandle,
     animated: edge.animated !== false,
     type: "custom",
   }));

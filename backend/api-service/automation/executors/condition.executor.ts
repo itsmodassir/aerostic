@@ -11,30 +11,33 @@ export class ConditionExecutor implements NodeExecutor {
   async execute(node: any, context: any): Promise<any> {
     const data = node.data;
     const operator = data.operator || "contains";
-    const keyword = this.variableResolver
-      .resolve(data.keyword || "", context)
+    const variable = data.variable || data.input || "{{trigger.body}}";
+    const value = this.variableResolver
+      .resolve(data.value || data.keyword || "", context)
       .toLowerCase();
 
-    // Default input is the trigger message body or a specific variable
-    const inputRaw = data.input
-      ? this.variableResolver.resolve(data.input, context)
-      : context.trigger?.data?.body || "";
-
-    const input = String(inputRaw).toLowerCase();
+    const inputRaw = this.variableResolver.resolve(variable, context);
+    const input = String(inputRaw || "").toLowerCase();
 
     let match = false;
     switch (operator) {
       case "contains":
-        match = input.includes(keyword);
+        match = input.includes(value);
         break;
       case "equals":
-        match = input === keyword;
+        match = input === value;
+        break;
+      case "exists":
+        match = !!inputRaw;
+        break;
+      case "isEmpty":
+        match = !inputRaw || input === "";
         break;
       case "startsWith":
-        match = input.startsWith(keyword);
+        match = input.startsWith(value);
         break;
       case "endsWith":
-        match = input.endsWith(keyword);
+        match = input.endsWith(value);
         break;
       default:
         this.logger.warn(`Unsupported operator: ${operator}`);
@@ -42,7 +45,7 @@ export class ConditionExecutor implements NodeExecutor {
     }
 
     this.logger.log(
-      `Condition evaluated: "${input}" ${operator} "${keyword}" -> ${match}`,
+      `Condition evaluated: "${input}" ${operator} "${value}" -> ${match}`,
     );
 
     return {

@@ -11,7 +11,11 @@ export type NodeKind =
   | "user_reply"
   | "send_template"
   | "send_message"
-  | "set_variable";
+  | "set_variable"
+  | "photo"
+  | "video"
+  | "doc"
+  | "if_else";
 
 export interface BuilderNodeData {
   label: string;
@@ -37,6 +41,7 @@ export interface BuilderNodeData {
   headerImageId?: string;
   waitDuration?: number;
   waitUnit?: "minutes" | "hours" | "days";
+  buttons?: Array<{ id: string, text: string, type: 'reply' | 'url', url?: string }>;
   [key: string]: any;
 }
 

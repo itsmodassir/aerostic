@@ -9,7 +9,12 @@ import {
   Variable, 
   Settings2,
   ChevronDown,
-  Info
+  Info,
+  Image,
+  Video,
+  FileText,
+  Split,
+  ExternalLink
 } from "lucide-react";
 import { BuilderNodeData } from "./types";
 import { cn } from "@/lib/utils";
@@ -64,7 +69,119 @@ export const CustomReplyNode = ({ data, selected }: NodeProps<XYNode<BuilderNode
         )}
     </div>
     <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    
+    {/* Default output handle */}
+    {(!data.buttons || data.buttons.length === 0) && (
+      <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+    )}
+
+    {/* Dynamic button handles */}
+    {data.buttons?.map((button: any, index: number) => (
+      <div 
+        key={button.id} 
+        className="absolute -right-3 flex flex-col items-center gap-1"
+        style={{ top: `${(index + 1) * (100 / ((data.buttons?.length || 0) + 1))}%` }}
+      >
+        <Handle 
+          type="source" 
+          position={Position.Right} 
+          id={button.id} 
+          className="!w-4 !h-4 !bg-blue-500 !border-2 !border-white !static" 
+        />
+        <span className="text-[7px] font-black text-blue-600 uppercase max-w-[40px] truncate">
+          {button.text}
+        </span>
+      </div>
+    ))}
+  </NodeWrapper>
+);
+
+export const PhotoNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="Photo" icon={Image} color="text-emerald-500" bg="bg-emerald-50/50" selected={selected}>
+    <div className="space-y-2">
+      {data.imagePreview ? (
+        <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-100 shadow-inner">
+          <img src={data.imagePreview} alt="Preview" className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-1">
+          <Image size={20} className="text-slate-300" />
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">No Image selected</span>
+        </div>
+      )}
+      {data.message && (
+        <p className="text-[10px] text-slate-500 font-medium italic truncate">{data.message}</p>
+      )}
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
     <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
+export const VideoNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="Video" icon={Video} color="text-rose-500" bg="bg-rose-50/50" selected={selected}>
+    <div className="space-y-2">
+      {data.videoPreview ? (
+        <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-100 shadow-inner bg-slate-900 flex items-center justify-center">
+          <Video size={24} className="text-white/50" />
+        </div>
+      ) : (
+        <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-1">
+          <Video size={20} className="text-slate-300" />
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">No Video selected</span>
+        </div>
+      )}
+      {data.message && (
+        <p className="text-[10px] text-slate-500 font-medium italic truncate">{data.message}</p>
+      )}
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
+export const DocNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="Document" icon={FileText} color="text-indigo-500" bg="bg-indigo-50/50" selected={selected}>
+    <div className="space-y-2">
+      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+          <FileText size={16} />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <p className="text-[10px] font-bold text-slate-700 truncate">{data.filename || 'attachment.pdf'}</p>
+          <p className="text-[8px] text-slate-400 font-black uppercase">{data.fileSize || 'Unknown Size'}</p>
+        </div>
+      </div>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
+export const IfElseNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="If / Else" icon={Split} color="text-orange-500" bg="bg-orange-50/50" selected={selected}>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Badge className="bg-orange-100 text-orange-700 text-[8px] font-black uppercase px-1.5">If</Badge>
+        <span className="text-[10px] font-bold text-slate-600 truncate">{data.variable || 'Variable'}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{data.operator || 'equals'}</span>
+        <span className="text-[10px] font-black text-orange-600 truncate">{data.value || 'Value'}</span>
+      </div>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    
+    {/* True Branch */}
+    <div className="absolute -right-3 top-1/3 -translate-y-1/2 flex flex-col items-center gap-1">
+        <Handle type="source" position={Position.Right} id="true" className="!w-4 !h-4 !bg-emerald-500 !border-2 !border-white !static" />
+        <span className="text-[8px] font-black text-emerald-600 uppercase">True</span>
+    </div>
+    {/* False Branch */}
+    <div className="absolute -right-3 top-2/3 -translate-y-1/2 flex flex-col items-center gap-1">
+        <Handle type="source" position={Position.Right} id="false" className="!w-4 !h-4 !bg-rose-500 !border-2 !border-white !static" />
+        <span className="text-[8px] font-black text-rose-600 uppercase">False</span>
+    </div>
   </NodeWrapper>
 );
 
@@ -152,4 +269,8 @@ export const nodeTypes = {
   set_variable: SetVariableNode,
   delay: DelayNode,
   end: EndNode,
+  photo: PhotoNode,
+  video: VideoNode,
+  doc: DocNode,
+  if_else: IfElseNode,
 };
