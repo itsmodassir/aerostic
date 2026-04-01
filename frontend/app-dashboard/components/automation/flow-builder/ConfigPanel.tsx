@@ -282,7 +282,7 @@ export function ConfigPanel({ selected, onChange, onDelete }: ConfigPanelProps) 
                 </div>
             )}
 
-            {['photo', 'video', 'doc'].includes(type) && (
+            {['photo', 'video', 'doc'].includes(type as any) && (
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Media Config</label>
