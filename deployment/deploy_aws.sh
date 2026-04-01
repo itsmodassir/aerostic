@@ -67,12 +67,18 @@ fi
 export NEXT_JS_IGNORE_ESLINT=1
 npm run build
 
-# Keep nginx static mount stable across rebuilds.
-# .next/static is recreated by Next build, which can stale bind-mount inodes.
+# 4. Sync Static Assets for Nginx
 echo "🧱 Syncing frontend static runtime assets..."
+cd frontend/app-dashboard
+
+# Standard Next.js standalone requirements:
+mkdir -p .next/standalone/frontend/app-dashboard/.next/
+cp -r .next/static .next/standalone/frontend/app-dashboard/.next/
+cp -r public .next/standalone/frontend/app-dashboard/
+
+# Merge new assets into stable runtime (additive cp prevents breaking old caches)
 mkdir -p static_runtime
-find static_runtime -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-cp -a .next/static/. static_runtime/
+cp -an .next/static/. static_runtime/
 sudo chmod -R 755 static_runtime/
 cd ../..
 
