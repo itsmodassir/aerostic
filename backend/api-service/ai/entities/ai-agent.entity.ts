@@ -93,6 +93,9 @@ export class AiAgent {
   @Column({ name: "web_search_enabled", default: false })
   webSearchEnabled: boolean;
 
+  @Column({ name: "browser_control_enabled", default: false })
+  browserControlEnabled: boolean;
+
   @Column({ name: "handoff_keywords", type: "simple-array", nullable: true })
   handoffKeywords: string[]; // ['agent', 'human', 'speak to someone']
 

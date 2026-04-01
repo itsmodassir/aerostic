@@ -17,7 +17,9 @@ import {
   FileText,
   Split,
   Link,
-  Upload
+  Upload,
+  Globe,
+  Bot
 } from "lucide-react";
 import { BuilderNode, BuilderNodeData } from "./types";
 import { Button } from "../../ui/button";
@@ -440,6 +442,44 @@ export function ConfigPanel({ selected, onChange, onDelete }: ConfigPanelProps) 
                         <p className="text-[10px] text-orange-600 leading-relaxed font-medium">
                             If the condition is met, the flow follows the <span className="font-bold underline">True</span> branch. Otherwise, it follows <span className="font-bold underline">False</span>.
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {type === 'browser_agent' && (
+                <div className="space-y-6">
+                    <div className="p-4 rounded-2xl bg-violet-50 border border-violet-100 flex gap-3">
+                        <Globe size={16} className="text-violet-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-violet-800 font-black uppercase tracking-wider">Autonomous Browser Agent</p>
+                            <p className="text-[10px] text-violet-600 leading-relaxed font-medium">
+                                Describe a task for the agent to perform in the browser. It can navigate, research, and extract data.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Task Prompt</label>
+                        <Textarea 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-medium p-4 outline-none focus:ring-2 focus:ring-violet-500/20 resize-none min-h-[140px] shadow-inner"
+                            placeholder="e.g. Navigate to example.com and find the latest pricing for the 'Premium' plan..."
+                            value={data.taskPrompt || ''}
+                            onChange={(e) => onChange({ taskPrompt: e.target.value })}
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium px-1 flex items-center gap-1.5">
+                            <Bot size={10} />
+                            Be specific about the URL and the data you need.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">System Instructions (Optional)</label>
+                        <Textarea 
+                            className="w-full bg-slate-50 border-none rounded-xl text-[10px] font-medium p-3 outline-none focus:ring-2 focus:ring-violet-500/10 resize-none min-h-[80px]"
+                            placeholder="Guidelines for the agent..."
+                            value={data.systemPrompt || ''}
+                            onChange={(e) => onChange({ systemPrompt: e.target.value })}
+                        />
                     </div>
                 </div>
             )}

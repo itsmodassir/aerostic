@@ -22,6 +22,7 @@ import { GeminiExecutor } from "./executors/gemini.executor";
 import { LeadUpdateExecutor } from "./executors/lead-update.executor";
 import { MemoryExecutor } from "./executors/memory.executor";
 import { KnowledgeExecutor } from "./executors/knowledge.executor";
+import { BrowserAgentExecutor } from "./executors/browser-agent.executor";
 import { DAGTraversalService } from "./dag-traversal.service";
 
 @Injectable()
@@ -48,6 +49,7 @@ export class WorkflowRunnerService {
     private leadUpdateExecutor: LeadUpdateExecutor,
     private memoryExecutor: MemoryExecutor,
     private knowledgeExecutor: KnowledgeExecutor,
+    private browserAgentExecutor: BrowserAgentExecutor,
     private dagService: DAGTraversalService,
   ) { }
 
@@ -269,6 +271,9 @@ export class WorkflowRunnerService {
 
       case "knowledge_query":
         return this.knowledgeExecutor.execute(node, context);
+
+      case "browser_agent":
+        return this.browserAgentExecutor.execute(node, context);
 
       default:
         this.logger.warn(`No executor for node type: ${node.type}`);

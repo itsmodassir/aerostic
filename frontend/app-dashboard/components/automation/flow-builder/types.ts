@@ -15,7 +15,8 @@ export type NodeKind =
   | "photo"
   | "video"
   | "doc"
-  | "if_else";
+  | "if_else"
+  | "browser_agent";
 
 export interface BuilderNodeData {
   label: string;
@@ -41,6 +42,7 @@ export interface BuilderNodeData {
   headerImageId?: string;
   waitDuration?: number;
   waitUnit?: "minutes" | "hours" | "days";
+  taskPrompt?: string;
   buttons?: Array<{ id: string, text: string, type: 'reply' | 'url', url?: string }>;
   [key: string]: any;
 }

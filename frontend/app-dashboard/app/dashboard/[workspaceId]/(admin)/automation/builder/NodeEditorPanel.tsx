@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { X, ChevronRight, Info, Zap, Settings2, MessageSquare, Globe, Bot, Cpu, Sparkles, Users, FileSpreadsheet, Mail, Megaphone, Braces, Plus } from 'lucide-react';
+import { X, ChevronRight, Info, Zap, Settings2, MessageSquare, Globe, Bot, Cpu, Sparkles, Users, FileSpreadsheet, Mail, Megaphone, Braces, Plus, Image, Video, FileText, Trash2, Link } from 'lucide-react';
 import { WorkflowUIFlowNode } from './page';
 import { VariableInput } from './VariableInput';
 
@@ -354,6 +354,34 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     <option value="document">Document</option>
                 </select>
             </div>
+
+            {(node.type === 'photo' || node.type === 'video' || node.type === 'doc' || (localData.messageType && localData.messageType !== 'text')) && (
+                <div className="space-y-4 pt-2">
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Media URL</label>
+                        <VariableInput
+                            value={localData.mediaUrl || ''}
+                            onChange={(v) => handleChange('mediaUrl', v)}
+                            nodes={nodes}
+                            className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm shadow-sm"
+                            placeholder="https://example.com/media.jpg"
+                        />
+                    </div>
+                    {((node.type === 'doc') || localData.messageType === 'document') && (
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Filename</label>
+                            <VariableInput
+                                value={localData.mediaFilename || ''}
+                                onChange={(v) => handleChange('mediaFilename', v)}
+                                nodes={nodes}
+                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm shadow-sm"
+                                placeholder="brochure.pdf"
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
                     {(localData.messageType || 'text') === 'text' ? 'Message Text' : 'Caption / Supporting Text'}
@@ -368,32 +396,7 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                 />
                 <p className="mt-2 text-[10px] text-gray-400">Use {'{{variable}}'} for dynamic data.</p>
             </div>
-            {(localData.messageType || 'text') !== 'text' && (
-                <>
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Media URL</label>
-                        <VariableInput
-                            value={localData.mediaUrl || ''}
-                            onChange={(v) => handleChange('mediaUrl', v)}
-                            nodes={nodes}
-                            className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
-                            placeholder="https://cdn.example.com/file.jpg"
-                        />
-                    </div>
-                    {(localData.messageType || 'text') === 'document' && (
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Document Filename</label>
-                            <VariableInput
-                                value={localData.mediaFilename || ''}
-                                onChange={(v) => handleChange('mediaFilename', v)}
-                                nodes={nodes}
-                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
-                                placeholder="brochure.pdf"
-                            />
-                        </div>
-                    )}
-                </>
-            )}
+            {renderButtonEditor()}
         </div>
     );
 
@@ -442,6 +445,130 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm"
                     placeholder="e.g. price"
                 />
+            </div>
+        </div>
+    );
+
+    const renderBrowserAgentConfig = () => (
+        <div className="space-y-6">
+            <div className="p-4 rounded-xl bg-violet-50 border border-violet-100 flex gap-3">
+                <Globe size={18} className="text-violet-600 shrink-0" />
+                <p className="text-xs text-violet-700 leading-relaxed font-medium">
+                    Describe a task for the agent to perform in the browser. It can navigate, research, and extract data.
+                </p>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Task Prompt</label>
+                <VariableInput
+                    value={localData.taskPrompt || ''}
+                    onChange={(v) => handleChange('taskPrompt', v)}
+                    nodes={nodes}
+                    textarea
+                    className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all text-sm resize-none"
+                    placeholder="e.g. Navigate to example.com and find the pricing..."
+                />
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">System Instructions (Optional)</label>
+                <VariableInput
+                    value={localData.systemPrompt || ''}
+                    onChange={(v) => handleChange('systemPrompt', v)}
+                    nodes={nodes}
+                    textarea
+                    className="w-full h-24 p-3 rounded-xl border border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all text-sm resize-none"
+                    placeholder="e.g. Only look for prices in USD..."
+                />
+            </div>
+        </div>
+    );
+
+    const renderButtonEditor = () => (
+        <div className="space-y-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">Interactive Buttons</label>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{(localData.buttons?.length || 0)} / 3</span>
+            </div>
+            <div className="space-y-2">
+                {(localData.buttons || []).map((btn: any, idx: number) => (
+                    <div key={btn.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 group space-y-2">
+                        <div className="flex items-center gap-2">
+                            <input 
+                                className="flex-1 bg-white border border-gray-200 rounded-lg text-xs font-bold p-2 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                value={btn.text}
+                                placeholder="Button Text"
+                                onChange={(e) => {
+                                    const newButtons = [...(localData.buttons || [])];
+                                    newButtons[idx] = { ...btn, text: e.target.value };
+                                    handleChange('buttons', newButtons);
+                                }}
+                            />
+                            <button 
+                                onClick={() => {
+                                    const newButtons = (localData.buttons || []).filter((_: any, i: number) => i !== idx);
+                                    handleChange('buttons', newButtons);
+                                }}
+                                className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-4 px-1">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    className="w-3 h-3 text-blue-600"
+                                    checked={btn.type === 'reply' || !btn.type}
+                                    onChange={() => {
+                                        const newButtons = [...(localData.buttons || [])];
+                                        newButtons[idx] = { ...btn, type: 'reply' };
+                                        handleChange('buttons', newButtons);
+                                    }}
+                                />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase">Reply</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    className="w-3 h-3 text-blue-600"
+                                    checked={btn.type === 'url'}
+                                    onChange={() => {
+                                        const newButtons = [...(localData.buttons || [])];
+                                        newButtons[idx] = { ...btn, type: 'url', url: btn.url || '' };
+                                        handleChange('buttons', newButtons);
+                                    }}
+                                />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase">URL</span>
+                            </label>
+                        </div>
+                        {btn.type === 'url' && (
+                            <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-100">
+                                <Link size={12} className="text-gray-400" />
+                                <input 
+                                    className="flex-1 text-[10px] font-medium outline-none bg-transparent"
+                                    placeholder="https://example.com"
+                                    value={btn.url || ''}
+                                    onChange={(e) => {
+                                        const newButtons = [...(localData.buttons || [])];
+                                        newButtons[idx] = { ...btn, url: e.target.value };
+                                        handleChange('buttons', newButtons);
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {(localData.buttons?.length || 0) < 3 && (
+                    <button 
+                        onClick={() => {
+                            const newId = `btn_${Math.random().toString(36).substr(2, 9)}`;
+                            handleChange('buttons', [...(localData.buttons || []), { id: newId, text: 'New Button', type: 'reply' }]);
+                        }}
+                        className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:border-blue-200 hover:text-blue-500 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Plus size={14} />
+                        Add Button
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -766,6 +893,10 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
             case 'knowledge_query': return <Globe className="text-cyan-600" />;
             case 'webhook': return <Zap className="text-pink-600" />;
             case 'wa_form': return <FileSpreadsheet className="text-orange-600" />;
+            case 'photo': return <Image className="text-blue-600" />;
+            case 'video': return <Video className="text-blue-600" />;
+            case 'doc': return <FileText className="text-blue-600" />;
+            case 'browser_agent': return <Globe className="text-violet-600" />;
             default: return <Info className="text-gray-600" />;
         }
     };
@@ -810,6 +941,10 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                         {node.type === 'memory' && "Store and retrieve persistent information about this contact to maintain state across different interactions."}
                         {node.type === 'knowledge_query' && "Search your uploaded documents and company knowledge using AI embeddings to provide context to your agent."}
                         {node.type === 'wa_form' && "Send a published WhatsApp form (flow) and capture structured responses in your automation trigger."}
+                        {node.type === 'photo' && "Send a high-quality photo to your contacts. You can include a caption and interactive buttons."}
+                        {node.type === 'video' && "Share project videos or tutorials. Supports standard video formats with interactive button overlays."}
+                        {node.type === 'doc' && "Send PDFs, brochures, or invoices. Make sure to specify a clear filename for the recipient."}
+                        {node.type === 'browser_agent' && "Enable your flow to autonomously browse the web, research competitors, or extract live data using AI."}
                     </p>
                 </div>
 
@@ -826,6 +961,8 @@ export const NodeEditorPanel: React.FC<NodeEditorPanelProps> = ({ node, nodes, o
                     {node.type === 'memory' && renderMemoryConfig()}
                     {node.type === 'knowledge_query' && renderKnowledgeConfig()}
                     {node.type === 'email' && renderEmailConfig()}
+                    {(node.type === 'photo' || node.type === 'video' || node.type === 'doc') && renderActionConfig()}
+                    {node.type === 'browser_agent' && renderBrowserAgentConfig()}
                 </div>
             </div>
 

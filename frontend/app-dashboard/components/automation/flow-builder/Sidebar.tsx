@@ -13,6 +13,7 @@ import {
   Video,
   FileText,
   Split,
+  Globe,
 } from "lucide-react";
 import { NodeKind } from "./types";
 import {
@@ -121,6 +122,15 @@ const nodeCategories = [
         bg: "bg-violet-50",
         border: "border-violet-200",
         tip: "Store custom data during flow execution.",
+      },
+      {
+        kind: "browser_agent" as NodeKind,
+        name: "Browser Agent",
+        icon: Globe,
+        color: "text-violet-600",
+        bg: "bg-violet-50",
+        border: "border-violet-200",
+        tip: "Autonomous browser interaction to research web and extract data.",
       },
     ],
   },

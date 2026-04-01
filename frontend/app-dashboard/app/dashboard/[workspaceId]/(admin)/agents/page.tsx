@@ -6,7 +6,7 @@ import {
     Bot, Plus, Settings, Trash2, Play, Pause, MessageSquare, TrendingUp,
     Users, Lock, Crown, Sparkles, AlertCircle, CheckCircle, X,
     Brain, Headphones, ShoppingCart, UserPlus, HelpCircle, Edit,
-    ArrowRight, ChevronLeft
+    ArrowRight, ChevronLeft, Globe
 } from 'lucide-react';
 import { AGENT_TEMPLATES, AgentTemplate } from '@/lib/agent-templates';
 import api from '@/lib/api';
@@ -21,6 +21,7 @@ interface Agent {
     totalConversations: number;
     successfulResolutions: number;
     handoffsTriggered: number;
+    browserControlEnabled?: boolean;
 }
 
 // Plan limits for agents
@@ -55,6 +56,7 @@ export default function AgentsPage() {
     const [newAgentType, setNewAgentType] = useState('customer_support');
     const [newAgentDescription, setNewAgentDescription] = useState('');
     const [newAgentPrompt, setNewAgentPrompt] = useState('');
+    const [browserControlEnabled, setBrowserControlEnabled] = useState(false);
     const [creating, setCreating] = useState(false);
     const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
     const [step, setStep] = useState<'gallery' | 'form'>('gallery');
@@ -132,6 +134,7 @@ export default function AgentsPage() {
         setNewAgentType(agent.type || 'customer_support');
         setNewAgentDescription(agent.description || '');
         setNewAgentPrompt(agent.systemPrompt || '');
+        setBrowserControlEnabled(agent.browserControlEnabled || false);
         setStep('form');
         setShowCreateModal(true);
     };
@@ -144,6 +147,7 @@ export default function AgentsPage() {
         setNewAgentPrompt(template.systemPrompt);
         setNewAgentNodes(template.initialNodes);
         setNewAgentEdges(template.initialEdges);
+        setBrowserControlEnabled(false);
         setStep('form');
     };
 
@@ -164,6 +168,7 @@ export default function AgentsPage() {
                 edges: newAgentEdges,
                 tenantId,
                 isActive: true,
+                browserControlEnabled: browserControlEnabled,
             };
 
             let res;
@@ -213,6 +218,7 @@ export default function AgentsPage() {
         setSelectedTemplate(null);
         setNewAgentNodes([]);
         setNewAgentEdges([]);
+        setBrowserControlEnabled(false);
     };
 
     const getTypeColor = (type: string) => {
@@ -557,6 +563,28 @@ export default function AgentsPage() {
                                         <p className="text-xs text-gray-500 mt-1">
                                             Define your agent's personality, knowledge, and behavior
                                         </p>
+                                    </div>
+
+                                    {/* Browser Control Toggle */}
+                                    <div className="p-4 rounded-2xl border-2 border-violet-100 bg-violet-50/30 flex items-center justify-between group hover:border-violet-300 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600">
+                                                <Globe size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-gray-900">Browser Control</h4>
+                                                <p className="text-xs text-gray-500 line-clamp-1">Allow agent to research web and extract data</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer"
+                                                checked={browserControlEnabled}
+                                                onChange={(e) => setBrowserControlEnabled(e.target.checked)}
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                                        </label>
                                     </div>
 
                                     {/* Plan Info */}

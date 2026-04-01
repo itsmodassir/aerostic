@@ -14,7 +14,9 @@ import {
   Video,
   FileText,
   Split,
-  ExternalLink
+  ExternalLink,
+  Globe,
+  Bot
 } from "lucide-react";
 import { BuilderNodeData } from "./types";
 import { cn } from "@/lib/utils";
@@ -256,6 +258,25 @@ export const EndNode = ({ selected }: NodeProps<XYNode<BuilderNodeData>>) => (
   </div>
 );
 
+export const BrowserAgentNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="Browser Agent" icon={Globe} color="text-violet-600" bg="bg-violet-50/50" selected={selected}>
+    <div className="space-y-2">
+      <div className="p-2.5 rounded-xl bg-violet-50 border border-violet-100 flex items-start gap-2.5">
+        <Bot size={14} className="text-violet-500 mt-0.5 shrink-0" />
+        <p className="text-[10px] text-violet-700 font-medium leading-relaxed italic line-clamp-3">
+          {data.taskPrompt || 'No task prompt defined...'}
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5 px-1">
+        <div className="w-1 h-1 rounded-full bg-violet-400" />
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Autonomous Browser</span>
+      </div>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-violet-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
 const Badge = ({ children, className }: any) => (
     <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold", className)}>
         {children}
@@ -273,4 +294,5 @@ export const nodeTypes = {
   video: VideoNode,
   doc: DocNode,
   if_else: IfElseNode,
+  browser_agent: BrowserAgentNode,
 };

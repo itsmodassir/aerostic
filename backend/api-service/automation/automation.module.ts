@@ -30,6 +30,7 @@ import { GeminiExecutor } from "./executors/gemini.executor";
 import { LeadUpdateExecutor } from "./executors/lead-update.executor";
 import { MemoryExecutor } from "./executors/memory.executor";
 import { KnowledgeExecutor } from "./executors/knowledge.executor";
+import { BrowserAgentExecutor } from "./executors/browser-agent.executor";
 import { AutomationGateway } from "./automation.gateway";
 
 import { WorkflowVersion } from "./entities/workflow-version.entity";
@@ -107,6 +108,7 @@ import { NewAutomationController } from "@api/automation/new-automation.controll
     DAGTraversalService,
     MemoryExecutor,
     KnowledgeExecutor,
+    BrowserAgentExecutor,
     AutomationGateway,
     FlowAutomationService,
     NewAutomationService,
@@ -127,6 +129,7 @@ import { NewAutomationController } from "@api/automation/new-automation.controll
     DAGTraversalService,
     MemoryExecutor,
     KnowledgeExecutor,
+    BrowserAgentExecutor,
     AutomationGateway,
     FlowAutomationService,
     NewAutomationService,

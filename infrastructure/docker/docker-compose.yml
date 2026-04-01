@@ -84,6 +84,20 @@ services:
       - redis
       - kafka
 
+  pinchtab:
+    image: pinchtab/pinchtab:latest
+    container_name: aimstors-pinchtab
+    restart: always
+    ports:
+      - "127.0.0.1:9867:9867"
+    environment:
+      - PORT=9867
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9867/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres_data:
   redis_data:

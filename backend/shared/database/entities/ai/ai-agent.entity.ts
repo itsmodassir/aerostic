@@ -90,6 +90,12 @@ export class AiAgent {
   @Column({ name: "business_hours_only", default: false })
   businessHoursOnly: boolean;
 
+  @Column({ name: "web_search_enabled", default: false })
+  webSearchEnabled: boolean;
+
+  @Column({ name: "browser_control_enabled", default: false })
+  browserControlEnabled: boolean;
+
   // Training Data (JSON)
   @Column({ name: "knowledge_base", type: "text", nullable: true })
   knowledgeBase: string; // JSON array of Q&A pairs

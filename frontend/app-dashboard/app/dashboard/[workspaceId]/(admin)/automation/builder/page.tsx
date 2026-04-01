@@ -45,7 +45,10 @@ import {
     Mail,
     Globe,
     Cpu,
-    Sparkles
+    Sparkles,
+    Image,
+    Video,
+    FileText
 } from 'lucide-react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
@@ -208,6 +211,50 @@ const MemoryNode = ({ data }: NodeProps<WorkflowUIFlowNode>) => (
     </div>
 );
 
+const MediaNode = ({ data, type }: any) => {
+    const Icon = type === 'photo' ? Image : type === 'video' ? Video : FileText;
+    const label = type === 'photo' ? 'Photo' : type === 'video' ? 'Video' : 'Document';
+    
+    return (
+        <div className="bg-white border-2 border-blue-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
+            <Handle type="target" position={Position.Left} className="w-3 h-3 bg-blue-500" />
+            <div className="bg-blue-500 p-2 flex items-center gap-2 text-white">
+                <Icon size={16} />
+                <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+            </div>
+            <div className="p-4">
+                <h4 className="font-bold text-gray-900">{data.label}</h4>
+                <p className="text-[10px] text-gray-500 mt-1">Send a WhatsApp {label.toLowerCase()}</p>
+                {data.buttons && data.buttons.length > 0 && (
+                    <div className="mt-2 flex gap-1">
+                        {data.buttons.map((btn: any) => (
+                             <div key={btn.id} className="text-[8px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold truncate max-w-[60px]">
+                                {btn.text}
+                             </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
+        </div>
+    );
+};
+
+const BrowserAgentNode = ({ data }: any) => (
+    <div className="bg-white border-2 border-violet-500 rounded-xl shadow-lg min-w-[200px] overflow-hidden">
+        <Handle type="target" position={Position.Left} className="w-3 h-3 bg-violet-500" />
+        <div className="bg-violet-500 p-2 flex items-center gap-2 text-white">
+            <Globe size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Browser Agent</span>
+        </div>
+        <div className="p-4">
+            <h4 className="font-bold text-gray-900">{data.label}</h4>
+            <p className="text-[10px] text-gray-500 mt-1 leading-relaxed line-clamp-2">Task: {data.taskPrompt || 'Researching...'}</p>
+        </div>
+        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-violet-500" />
+    </div>
+);
+
 import FlowNode from './FlowNode';
 import WaFormNode from './WaFormNode';
 
@@ -232,6 +279,10 @@ const nodeTypes = {
     gemini_model: GeminiModelNode,
     knowledge_query: KnowledgeNode,
     memory: MemoryNode,
+    photo: MediaNode,
+    video: MediaNode,
+    doc: MediaNode,
+    browser_agent: BrowserAgentNode,
 };
 
 // --- Main Builder Component ---
@@ -452,6 +503,10 @@ function WorkflowBuilder() {
             case 'knowledge_query': label = 'Knowledge Query'; break;
             case 'memory': label = 'Memory'; break;
             case 'wa_form': label = 'WA Form'; break;
+            case 'photo': label = 'Send Photo'; break;
+            case 'video': label = 'Send Video'; break;
+            case 'doc': label = 'Send Document'; break;
+            case 'browser_agent': label = 'Browser Agent'; break;
             default: label = 'New Node';
         }
 
@@ -478,6 +533,10 @@ function WorkflowBuilder() {
                 ...(type === 'api_request' && { method: 'GET', url: 'https://', headers: '{}', body: '{}', variableName: 'apiResponse' }),
                 ...(type === 'google_drive' && { operation: 'list', variableName: 'driveResult' }),
                 ...(type === 'knowledge_query' && { knowledgeBaseId: 'default' }),
+                ...(type === 'photo' && { messageType: 'image', message: '', mediaUrl: '' }),
+                ...(type === 'video' && { messageType: 'video', message: '', mediaUrl: '' }),
+                ...(type === 'doc' && { messageType: 'document', message: '', mediaUrl: '' }),
+                ...(type === 'browser_agent' && { taskPrompt: '', systemPrompt: '' }),
             },
         };
         setNodes((nds) => nds.concat(newNode));
@@ -786,6 +845,24 @@ function WorkflowBuilder() {
                         <button draggable onDragStart={(e) => onDragStart(e, 'knowledge_query')} onClick={() => addNode('knowledge_query')} className="p-3 hover:bg-cyan-50 text-cyan-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
                             <Globe size={20} />
                             <span className="text-sm font-bold">Knowledge Query</span>
+                        </button>
+
+                        <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b mb-1 mt-2">Media & AI</div>
+                        <button draggable onDragStart={(e) => onDragStart(e, 'photo')} onClick={() => addNode('photo')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
+                            <Image size={20} />
+                            <span className="text-sm font-bold">Photo</span>
+                        </button>
+                        <button draggable onDragStart={(e) => onDragStart(e, 'video')} onClick={() => addNode('video')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
+                            <Video size={20} />
+                            <span className="text-sm font-bold">Video</span>
+                        </button>
+                        <button draggable onDragStart={(e) => onDragStart(e, 'doc')} onClick={() => addNode('doc')} className="p-3 hover:bg-blue-50 text-blue-600 rounded-xl transition-colors flex items-center gap-3 text-left cursor-grab active:cursor-grabbing">
+                            <FileText size={20} />
+                            <span className="text-sm font-bold">Document</span>
+                        </button>
+                        <button draggable onDragStart={(e) => onDragStart(e, 'browser_agent')} onClick={() => addNode('browser_agent')} className="p-3 bg-violet-50 text-violet-700 rounded-lg hover:bg-violet-100 transition text-left flex items-center gap-3 border border-violet-200 shadow-sm group cursor-grab active:cursor-grabbing">
+                            <div className="p-2 bg-white rounded-md shadow-sm group-hover:scale-110 transition-transform"><Globe size={18} className="text-violet-600" /></div>
+                            <div><div className="font-bold text-sm">Browser Agent</div><div className="text-[10px] opacity-70">Research Web</div></div>
                         </button>
                     </Panel>
 

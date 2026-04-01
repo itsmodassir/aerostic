@@ -9,6 +9,7 @@ import { KnowledgeBase } from "./entities/knowledge-base.entity";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import { AdminConfigService } from "../admin/services/admin-config.service";
+import { PinchtabService } from "./pinchtab.service";
 
 @Injectable()
 export class AiService {
@@ -24,6 +25,7 @@ export class AiService {
     private chunkRepo: Repository<KnowledgeChunk>,
     @InjectRepository(KnowledgeBase)
     private kbRepo: Repository<KnowledgeBase>,
+    private pinchtabService: PinchtabService,
   ) {}
 
   /**
@@ -230,9 +232,11 @@ export class AiService {
         }
       } else if (genAI) {
         const agent = await this.aiAgentRepo.findOneBy({ tenantId });
-        const tools: any[] = [];
+        const geminiTools: any[] = [];
+        
+        // 1. Built-in Search
         if (agent?.webSearchEnabled) {
-          tools.push({
+          geminiTools.push({
             googleSearchRetrieval: {
               dynamicRetrievalConfig: {
                 mode: "DYNAMIC",
@@ -242,19 +246,152 @@ export class AiService {
           });
         }
 
+        // 2. Custom Function Tools (including Browser Tools if enabled)
+        const customTools = [...tools];
+        if (agent?.browserControlEnabled) {
+          customTools.push(...this.getBrowserTools());
+        }
+
+        if (customTools.length > 0) {
+          geminiTools.push({
+            functionDeclarations: customTools.map(t => ({
+              name: t.name,
+              description: t.description,
+              parameters: t.parameters
+            }))
+          });
+        }
+
         const model = genAI.getGenerativeModel({
           model: "gemini-1.5-flash",
-          tools: tools.length > 0 ? tools : undefined,
+          tools: geminiTools.length > 0 ? geminiTools : undefined,
         });
 
-        const result = await model.generateContent(`${systemPrompt}\n\nUser: ${messageBody}`);
-        return result.response.text();
+        const chat = model.startChat();
+        let result = await chat.sendMessage(`${systemPrompt}\n\nUser: ${messageBody}`);
+        let response = result.response;
+
+        // Gemini Tool Calling Loop
+        let turns = 0;
+        const MAX_TURNS = 10;
+        
+        while (turns < MAX_TURNS) {
+          const calls = response.functionCalls();
+          if (!calls || calls.length === 0) return response.text();
+
+          const toolResults: any[] = [];
+          for (const call of calls) {
+            const tool = toolMap.get(call.name);
+            if (tool) {
+              try {
+                const output = await tool.execute(call.args);
+                toolResults.push({
+                  functionResponse: {
+                    name: call.name,
+                    response: { content: output }
+                  }
+                });
+              } catch (err: any) {
+                toolResults.push({
+                  functionResponse: {
+                    name: call.name,
+                    response: { error: err.message }
+                  }
+                });
+              }
+            } else if (call.name.startsWith("pinchtab__")) {
+                const output = await this.handlePinchtabTool(call.name, call.args);
+                toolResults.push({
+                  functionResponse: {
+                    name: call.name,
+                    response: { content: output }
+                  }
+                });
+            }
+          }
+
+          result = await chat.sendMessage(toolResults);
+          response = result.response;
+          turns++;
+        }
+        
+        return response.text();
       }
 
       return messages[messages.length - 1]?.content || "Agent execution finished.";
     } catch (e: any) {
       this.logger.error("Agent Execution Failed:", e);
       return `Agent Error: ${e.message}`;
+    }
+  }
+
+  private getBrowserTools(): any[] {
+    return [
+      {
+        name: "pinchtab__navigate",
+        description: "Navigates the browser to a specific URL",
+        parameters: {
+          type: "object",
+          properties: {
+            url: { type: "string", description: "The URL to navigate to" }
+          },
+          required: ["url"]
+        }
+      },
+      {
+        name: "pinchtab__snapshot",
+        description: "Captures the current page structure and interactive elements",
+        parameters: { type: "object", properties: {} }
+      },
+      {
+        name: "pinchtab__click",
+        description: "Clicks on an element given its reference (e.g., e1, e2)",
+        parameters: {
+          type: "object",
+          properties: {
+            ref: { type: "string", description: "The element reference ID" }
+          },
+          required: ["ref"]
+        }
+      },
+      {
+        name: "pinchtab__type",
+        description: "Types text into an input field or element",
+        parameters: {
+          type: "object",
+          properties: {
+            ref: { type: "string", description: "The element reference ID" },
+            text: { type: "string", description: "The text to type" }
+          },
+          required: ["ref", "text"]
+        }
+      },
+      {
+        name: "pinchtab__extract_text",
+        description: "Extracts all text content from the current page",
+        parameters: { type: "object", properties: {} }
+      }
+    ];
+  }
+
+  private async handlePinchtabTool(name: string, args: any): Promise<any> {
+    try {
+      switch (name) {
+        case "pinchtab__navigate":
+          return await this.pinchtabService.executeTask(args.url, "navigate");
+        case "pinchtab__snapshot":
+          // Need an existing context, but for MVP we use default URL if none provided
+          return await this.pinchtabService.executeTask("https://google.com", "snapshot");
+        case "pinchtab__extract_text":
+          return await this.pinchtabService.executeTask("https://google.com", "text");
+        case "pinchtab__click":
+        case "pinchtab__type":
+          return "Interaction tools require a persistent browser session (Instance ID). Coming soon.";
+        default:
+          return "Tool not recognized.";
+      }
+    } catch (err: any) {
+      return `Browser Error: ${err.message}`;
     }
   }
 
