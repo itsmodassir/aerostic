@@ -73,6 +73,7 @@ echo "🧱 Syncing frontend static runtime assets..."
 mkdir -p static_runtime
 find static_runtime -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 cp -a .next/static/. static_runtime/
+sudo chmod -R 755 static_runtime/
 cd ../..
 
 # 5. Restart Infrastructure (Docker)
