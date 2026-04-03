@@ -4,7 +4,11 @@ import {
     Link as LinkIcon, Phone, Mail, Image as ImageIcon, Film, FileText
 } from "lucide-react";
 
-export default function FlowSidebar() {
+interface FlowSidebarProps {
+    isCollapsed?: boolean;
+}
+
+export default function FlowSidebar({ isCollapsed }: FlowSidebarProps) {
     const categories = [
         {
             title: 'SCREENS',
@@ -46,47 +50,55 @@ export default function FlowSidebar() {
     };
 
     return (
-        <aside className="w-80 border-r border-slate-200 bg-white flex flex-col h-full overflow-hidden shrink-0">
-            <div className="p-4 border-b border-slate-100">
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Components</h2>
-                <p className="text-[10px] text-slate-400 font-medium">Drag onto canvas to add</p>
-            </div>
+        <aside className={`${isCollapsed ? 'w-16' : 'w-full'} border-slate-200 bg-white flex flex-col h-full overflow-hidden shrink-0 transition-all duration-300`}>
+            {!isCollapsed && (
+                <div className="p-4 border-b border-slate-100">
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Components</h2>
+                    <p className="text-[10px] text-slate-400 font-medium">Drag onto canvas to add</p>
+                </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
                 {categories.map((cat, i) => (
                     <div key={i} className="space-y-4">
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat.title}</h3>
+                        {!isCollapsed && <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat.title}</h3>}
                         <div className="space-y-3">
                             {cat.items.map((item, j) => (
                                 <div
                                     key={j}
                                     draggable
                                     onDragStart={(e) => onDragStart(e, item.type)}
-                                    className="group flex items-start gap-4 p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50/50 transition-all cursor-grab active:cursor-grabbing"
+                                    className={`group flex items-start ${isCollapsed ? 'justify-center p-2' : 'gap-4 p-3'} bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-50/50 transition-all cursor-grab active:cursor-grabbing`}
+                                    title={isCollapsed ? item.label : undefined}
                                 >
-                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors shrink-0">
-                                        <item.icon size={18} className="text-slate-400 group-hover:text-blue-500" />
+                                    <div className={`${isCollapsed ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors shrink-0`}>
+                                        <item.icon size={isCollapsed ? 16 : 18} className="text-slate-400 group-hover:text-blue-500" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{item.label}</h4>
-                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed truncate">{item.desc}</p>
-                                    </div>
+                                    {!isCollapsed && (
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{item.label}</h4>
+                                            <p className="text-[10px] text-slate-400 font-medium leading-relaxed truncate">{item.desc}</p>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
+                        {isCollapsed && i < categories.length - 1 && <div className="border-b border-slate-100 mx-2" />}
                     </div>
                 ))}
             </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Info size={14} className="text-blue-600" />
+            {!isCollapsed && (
+                <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Info size={14} className="text-blue-600" />
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-medium leading-normal">
+                        Need help building flows? <br />
+                        Check our <span className="text-blue-600 font-bold hover:underline cursor-pointer">Flow API Docs</span>
+                    </p>
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium leading-normal">
-                    Need help building flows? <br />
-                    Check our <span className="text-blue-600 font-bold hover:underline cursor-pointer">Flow API Docs</span>
-                </p>
-            </div>
+            )}
         </aside>
     );
 }

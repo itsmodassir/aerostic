@@ -164,7 +164,7 @@ function ComponentEditor({ component, index, onUpdate, onRemove }: ComponentEdit
 export default function PropertiesPanel({ selectedNode, onChange, onDelete }: PropertiesPanelProps) {
     if (!selectedNode) {
         return (
-            <aside className="w-80 border-l border-slate-200 bg-white flex flex-col items-center justify-center p-8 text-center h-full shrink-0">
+            <aside className="flex-1 bg-white flex flex-col items-center justify-center p-8 text-center h-full shrink-0">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                     <MousePointer2 size={32} className="text-slate-200" />
                 </div>
@@ -194,7 +194,7 @@ export default function PropertiesPanel({ selectedNode, onChange, onDelete }: Pr
     };
 
     return (
-        <aside className="w-80 border-l border-slate-200 bg-white flex flex-col h-full overflow-hidden shrink-0">
+        <aside className="flex-1 bg-white flex flex-col h-full overflow-hidden shrink-0">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white z-10">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">

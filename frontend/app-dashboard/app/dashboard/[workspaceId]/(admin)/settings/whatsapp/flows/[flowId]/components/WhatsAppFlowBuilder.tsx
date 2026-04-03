@@ -23,7 +23,10 @@ import { flowToNodes, nodesToFlow, uid } from "./utils";
 import ScreenNode from "./ScreenNode";
 import FlowSidebar from "./FlowSidebar";
 import PropertiesPanel from "./PropertiesPanel";
-import { Save, Play, Code, Layout, RefreshCw, Smartphone } from "lucide-react";
+import { 
+  Save, Play, Code, Layout, RefreshCw, Smartphone, 
+  Settings, ChevronLeft, ChevronRight, PanelLeft, PanelRight 
+} from "lucide-react";
 
 const nodeTypes = {
   screen: ScreenNode,
@@ -38,6 +41,8 @@ interface WhatsAppFlowBuilderProps {
 export default function WhatsAppFlowBuilder({ flowData, onSave, onToggleCode }: WhatsAppFlowBuilderProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
 
   const initial = useMemo(() => flowToNodes(flowData), [flowData]);
   const [nodes, setNodes, onNodesChange] = useNodesState<WhatsAppFlowNode>(initial.nodes as WhatsAppFlowNode[]);
@@ -59,6 +64,7 @@ export default function WhatsAppFlowBuilder({ flowData, onSave, onToggleCode }: 
 
   const onNodeClick = useCallback((_: any, node: WhatsAppFlowNode) => {
     setSelectedId(node.id);
+    setIsPanelCollapsed(false); // Open panel when node is clicked
   }, []);
 
   const onPaneClick = useCallback(() => {
@@ -133,8 +139,17 @@ export default function WhatsAppFlowBuilder({ flowData, onSave, onToggleCode }: 
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-slate-50 font-sans">
-      <FlowSidebar />
+    <div className="flex-1 flex overflow-hidden bg-slate-50 font-sans relative">
+      {/* Sidebar Tool */}
+      <div className={`${isSidebarCollapsed ? 'w-16' : 'w-80'} shrink-0 h-full transition-all duration-300 border-r border-slate-200 bg-white relative group`}>
+        <FlowSidebar isCollapsed={isSidebarCollapsed} />
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute -right-3 top-24 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-md text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all z-20 opacity-0 group-hover:opacity-100"
+        >
+          {isSidebarCollapsed ? <ChevronRight size={10} /> : <ChevronLeft size={10} />}
+        </button>
+      </div>
 
       <div className="flex-1 flex flex-col relative overflow-hidden" ref={reactFlowWrapper}>
         <div className="flex-1">
@@ -216,11 +231,30 @@ export default function WhatsAppFlowBuilder({ flowData, onSave, onToggleCode }: 
         </div>
       </div>
 
-      <PropertiesPanel 
-        selectedNode={selectedNode} 
-        onChange={patchSelected}
-        onDelete={deleteNode}
-      />
+      {/* Properties Panel */}
+      <div className={`${isPanelCollapsed ? 'w-0 opacity-0 invisible overflow-hidden' : 'w-80'} shrink-0 h-full transition-all duration-300 border-l border-slate-200 bg-white relative group flex`}>
+        <PropertiesPanel 
+          selectedNode={selectedNode} 
+          onChange={patchSelected}
+          onDelete={deleteNode}
+        />
+        <button 
+          onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+          className="absolute -left-3 top-24 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-md text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all z-20 opacity-0 group-hover:opacity-100"
+        >
+          {isPanelCollapsed ? <ChevronLeft size={10} /> : <ChevronRight size={10} />}
+        </button>
+      </div>
+
+      {/* Panel Restore Button */}
+      {isPanelCollapsed && (
+        <button 
+          onClick={() => setIsPanelCollapsed(false)}
+          className="absolute right-4 bottom-24 w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-lg text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all z-30 group"
+        >
+          <Settings size={20} className="group-hover:rotate-45 transition-transform" />
+        </button>
+      )}
     </div>
   );
 }
