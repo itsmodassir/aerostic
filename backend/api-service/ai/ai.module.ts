@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AiService } from "./ai.service";
+import { PinchtabService } from "./pinchtab.service";
 import { MessagesModule } from "../messages/messages.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AiAgent } from "./entities/ai-agent.entity";
@@ -18,7 +19,7 @@ import { AdminModule } from "../admin/admin.module";
     AdminModule,
   ],
   controllers: [AiController],
-  providers: [AiService, KnowledgeBaseService],
-  exports: [AiService, KnowledgeBaseService],
+  providers: [PinchtabService, KnowledgeBaseService, AiService],
+  exports: [AiService, KnowledgeBaseService, PinchtabService],
 })
 export class AiModule {}

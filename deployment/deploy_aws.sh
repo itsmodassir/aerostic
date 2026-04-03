@@ -43,6 +43,7 @@ echo "📦 Root dependencies skipped (Monorepo structure)..."
 # 3. Build Backend
 echo "🏗️ Building Backend..."
 cd backend
+rm -rf dist
 npm install --production=false --legacy-peer-deps
 npx nest build api
 npx nest build webhook

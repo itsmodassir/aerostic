@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
 import { Repository } from "typeorm";
@@ -25,6 +25,7 @@ export class AiService {
     private chunkRepo: Repository<KnowledgeChunk>,
     @InjectRepository(KnowledgeBase)
     private kbRepo: Repository<KnowledgeBase>,
+    @Inject(forwardRef(() => PinchtabService))
     private pinchtabService: PinchtabService,
   ) {}
 
