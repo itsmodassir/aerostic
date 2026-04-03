@@ -22,6 +22,10 @@ else
     git pull origin main
 fi
 
+# 1.05 Fix Permissions
+echo "🔐 Fixing directory permissions..."
+sudo chown -R $USER:$USER $APP_DIR
+
 # 1.1 Hotfix Backend (Dependency Resolution)
 echo "🔧 Applying backend dependency hotfix..."
 sed -i "s/providers: \[\],/exports: \[SharedWhatsappModule\],/" backend/api-service/whatsapp/whatsapp.module.ts
