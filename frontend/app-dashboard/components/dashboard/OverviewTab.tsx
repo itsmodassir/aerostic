@@ -125,7 +125,11 @@ function MessageRow({ msg }: { msg: any }) {
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-800 truncate">{msg.contactName || 'Unknown'}</p>
-                <p className="text-[10px] text-gray-400 truncate">{msg.content?.body?.slice(0, 40) || '—'}</p>
+                <p className="text-[10px] text-gray-400 truncate">
+                    {typeof msg.content?.body === 'string' 
+                        ? msg.content.body.slice(0, 40) 
+                        : msg.content?.text || '—'}
+                </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
                 <span className={clsx("text-[9px] font-black uppercase px-2 py-0.5 rounded-full", statusColor[msg.status] || statusColor.sent)}>

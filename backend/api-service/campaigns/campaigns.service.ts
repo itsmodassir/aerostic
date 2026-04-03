@@ -50,6 +50,7 @@ export class CampaignsService {
   }
 
   async getRecent(tenantId: string, limit: number = 5) {
+    if (!tenantId) return [];
     return this.campaignRepo.find({
       where: { tenantId },
       order: { createdAt: "DESC" },

@@ -51,7 +51,7 @@ export default function DashboardPage() {
         setLoading(true);
         try {
             const [userRes, msgRes, campaignRes, walletRes] = await Promise.allSettled([
-                api.get('/users/me'),
+                api.get('/auth/me'),
                 api.get('/messages/recent'),
                 api.get('/campaigns/recent'),
                 api.get('/billing/wallet-balance')

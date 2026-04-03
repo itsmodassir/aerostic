@@ -10,7 +10,7 @@ export const UserTenant = createParamDecorator(
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    const rawHeaderId = request.headers["x-tenant-id"];
+    const rawHeaderId = request.headers["x-tenant-id"] || request.headers["x-workspace-id"];
     const headerId = Array.isArray(rawHeaderId) ? rawHeaderId[0] : rawHeaderId;
     const targetTenantId = request.targetTenantId;
     const jwtTenantId = request.user?.tenantId;
