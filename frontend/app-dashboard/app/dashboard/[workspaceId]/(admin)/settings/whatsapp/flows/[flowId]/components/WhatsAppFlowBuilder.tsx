@@ -157,6 +157,37 @@ export default function WhatsAppFlowBuilder({ flowData, onSave, onToggleCode }: 
             
             <Panel position="top-right" className="flex gap-2">
                 <button 
+                    onClick={() => {
+                        const json = JSON.stringify(nodesToFlow(nodes as WhatsAppFlowNode[], edges, flowData), null, 2);
+                        navigator.clipboard.writeText(json);
+                        alert('Flow JSON copied to clipboard!');
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
+                >
+                    <RefreshCw size={14} />
+                    <span>Copy JSON</span>
+                </button>
+                <button 
+                    onClick={() => {
+                        const json = prompt('Paste Flow JSON to import:');
+                        if (json) {
+                            try {
+                                const parsed = JSON.parse(json);
+                                const { nodes: newNodes, edges: newEdges } = flowToNodes(parsed);
+                                setNodes(newNodes as WhatsAppFlowNode[]);
+                                setEdges(newEdges);
+                                alert('Flow imported successfully!');
+                            } catch (e) {
+                                alert('Invalid JSON format');
+                            }
+                        }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
+                >
+                    <Smartphone size={14} />
+                    <span>Import JSON</span>
+                </button>
+                <button 
                     onClick={onToggleCode}
                     className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all"
                 >

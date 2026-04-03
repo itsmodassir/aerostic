@@ -1,6 +1,7 @@
 import { 
     Layout, Type, MessageSquare, List, Calendar, 
-    CheckSquare, Star, Info, MousePointer2 
+    CheckSquare, Star, Info, MousePointer2,
+    Link as LinkIcon, Phone, Mail, Image as ImageIcon, Film, FileText
 } from "lucide-react";
 
 export default function FlowSidebar() {
@@ -19,6 +20,22 @@ export default function FlowSidebar() {
                 { type: 'DatePicker', label: 'Date Picker', icon: Calendar, desc: 'Let user pick a date/time' },
                 { type: 'CheckboxGroup', label: 'Opt-in Checkbox', icon: CheckSquare, desc: 'Consent / terms agreement' },
                 { type: 'Rating', label: 'Rating', icon: Star, desc: 'Star rating or NPS score' },
+            ]
+        },
+        {
+            title: 'ACTIONS',
+            items: [
+                { type: 'Link', label: 'Website Link', icon: LinkIcon, desc: 'Open a URL in browser' },
+                { type: 'Call', label: 'Call Node', icon: Phone, desc: 'Initiate a phone call' },
+                { type: 'Email', label: 'Email Node', icon: Mail, desc: 'Send an email message' },
+            ]
+        },
+        {
+            title: 'MEDIA',
+            items: [
+                { type: 'Image', label: 'Photo Node', icon: ImageIcon, desc: 'Display an image/photo' },
+                { type: 'Video', label: 'Video Node', icon: Film, desc: 'Play a video clip' },
+                { type: 'Document', label: 'Docs Node', icon: FileText, desc: 'Share a PDF or document' },
             ]
         }
     ];

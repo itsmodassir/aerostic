@@ -2,7 +2,8 @@ import { Handle, Position } from "@xyflow/react";
 import { FlowComponent, ScreenNodeData } from "./types";
 import { 
     MessageSquare, Type, List, Calendar, CheckSquare, 
-    Star, Layout, MoreHorizontal, MousePointer2 
+    Star, Layout, MoreHorizontal, MousePointer2, 
+    Link as LinkIcon, Phone, Mail, Image as ImageIcon, Film, FileText 
 } from "lucide-react";
 
 const ComponentIcon = ({ type }: { type: string }) => {
@@ -13,6 +14,12 @@ const ComponentIcon = ({ type }: { type: string }) => {
         case 'DatePicker': return <Calendar size={12} className="text-slate-400" />;
         case 'CheckboxGroup': return <CheckSquare size={12} className="text-slate-400" />;
         case 'Footer': return <MousePointer2 size={12} className="text-slate-400" />;
+        case 'Link': return <LinkIcon size={12} className="text-slate-400" />;
+        case 'Call': return <Phone size={12} className="text-slate-400" />;
+        case 'Email': return <Mail size={12} className="text-slate-400" />;
+        case 'Image': return <ImageIcon size={12} className="text-slate-400" />;
+        case 'Video': return <Film size={12} className="text-slate-400" />;
+        case 'Document': return <FileText size={12} className="text-slate-400" />;
         default: return <Layout size={12} className="text-slate-400" />;
     }
 };

@@ -5,6 +5,8 @@ export type FlowComponentType =
     | 'TextSubheading' 
     | 'TextBody' 
     | 'Image' 
+    | 'Video' 
+    | 'Document' 
     | 'TextInput' 
     | 'Dropdown' 
     | 'RadioButtonsGroup' 
@@ -12,7 +14,10 @@ export type FlowComponentType =
     | 'DatePicker' 
     | 'OptIn' 
     | 'Footer'
-    | 'Form';
+    | 'Form'
+    | 'Link'
+    | 'Call'
+    | 'Email';
 
 export interface FlowComponent {
     type: FlowComponentType;
@@ -21,6 +26,10 @@ export interface FlowComponent {
     label?: string;
     name?: string;
     src?: string;
+    url?: string;
+    phoneNumber?: string;
+    emailAddress?: string;
+    fileName?: string;
     required?: boolean;
     children?: FlowComponent[];
     'on-click-action'?: {
