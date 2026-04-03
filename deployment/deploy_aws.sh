@@ -55,6 +55,7 @@ echo "🏗️ Building Frontends..."
 # 4.1 Landing Page
 echo "🌐 Building Landing Page..."
 cd frontend/landing
+sudo rm -rf dist
 npm install --production=false --legacy-peer-deps
 npm run build
 cd ../..
