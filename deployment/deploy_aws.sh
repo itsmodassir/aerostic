@@ -74,7 +74,6 @@ npm run build
 
 # 4. Sync Static Assets for Nginx
 echo "🧱 Syncing frontend static runtime assets..."
-cd frontend/app-dashboard
 
 # Standard Next.js standalone requirements:
 mkdir -p .next/standalone/frontend/app-dashboard/.next/
