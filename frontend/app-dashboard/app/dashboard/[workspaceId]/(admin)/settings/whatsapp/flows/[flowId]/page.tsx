@@ -294,11 +294,13 @@ export default function FlowEditorPage() {
             alert('Flow submitted to Meta for validation and publishing!');
             router.push('/settings/whatsapp/flows');
         } catch (err: any) {
-            const errorMsg = err.response?.data?.message || 'Publishing attempt failed.';
-            alert(`${errorMsg}\n\nTip: Ensure your Flow version is "7.3" for API v21.0 in 2026.`);
+            const metaError = err.response?.data?.message || err.response?.data?.error?.message || 'Publishing attempt failed.';
+            const message = `Meta API Error: ${metaError}\n\nTip: Ensure all Screen IDs are unique and alphanumeric. Flow Version should be "7.3" for current standards.`;
+            alert(message);
         } finally {
             setPublishing(false);
         }
+
     };
 
     if (loading) {

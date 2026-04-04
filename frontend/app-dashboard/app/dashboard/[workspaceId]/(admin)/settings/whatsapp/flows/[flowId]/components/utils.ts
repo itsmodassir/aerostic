@@ -42,23 +42,27 @@ export function flowToNodes(flow: WhatsAppFlowJSON): { nodes: Node<ScreenNodeDat
     return { nodes, edges };
 }
 
+export const sanitizeId = (name: string) => 
+    name.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_').replace(/_+/g, '_').slice(0, 64);
+
 export function nodesToFlow(nodes: Node<ScreenNodeData>[], edges: Edge[], originalFlow: WhatsAppFlowJSON): WhatsAppFlowJSON {
     const screens: FlowScreen[] = nodes.map(node => {
-        const screenId = node.id;
+        const screenId = sanitizeId(node.id);
         const components = [...(node.data.components || [])];
 
         // Ensure connections are reflected in the JSON
-        const outboundEdges = edges.filter(e => e.source === screenId);
+        const outboundEdges = edges.filter(e => e.source === node.id);
         
         // This is a simplified mapper. In a real scenario, we'd need to know which 
         // component triggers which navigation. For now, we'll assume the Footer 
         // or the first clickable component navigates if there's only one edge.
         outboundEdges.forEach(edge => {
             const footer = components.find(c => c.type === 'Footer');
+            const targetId = sanitizeId(edge.target);
             if (footer) {
                 footer['on-click-action'] = {
                     name: 'navigate',
-                    next: { type: 'screen', name: edge.target }
+                    next: { type: 'screen', name: targetId }
                 };
             }
         });
@@ -75,6 +79,8 @@ export function nodesToFlow(nodes: Node<ScreenNodeData>[], edges: Edge[], origin
 
     return {
         ...originalFlow,
+        version: originalFlow.version || "7.3",
         screens
     };
 }
+

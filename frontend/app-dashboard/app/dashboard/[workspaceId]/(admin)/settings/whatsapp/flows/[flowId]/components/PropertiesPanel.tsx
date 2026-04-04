@@ -179,7 +179,11 @@ export default function PropertiesPanel({ selectedNode, onChange, onDelete }: Pr
     const { id, data } = selectedNode;
 
     const updateTitle = (val: string) => onChange(id, { ...data, title: val });
-    const updateId = (val: string) => onChange(id, { ...data, id: val });
+    const updateId = (val: string) => {
+        const sanitized = val.toUpperCase().replace(/[^A-Z0-9_]/g, '_').replace(/_+/g, '_');
+        onChange(id, { ...data, id: sanitized });
+    };
+
 
     const updateComponent = (index: number, patch: Partial<FlowComponent>) => {
         const components = [...data.components];

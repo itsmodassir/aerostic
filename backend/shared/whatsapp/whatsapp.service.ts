@@ -360,9 +360,15 @@ export class WhatsappService {
 
     const response = await fetch(`https://graph.facebook.com/${apiVersion}/${flowId}/publish?access_token=${creds.accessToken}`, { method: "POST" });
     const data = await response.json();
-    if (!response.ok) throw new BadRequestException(data.error?.message || "Publish failed");
+    
+    if (!response.ok) {
+      this.logger.error(`Meta Flow Publish Failed for ${flowId}:`, JSON.stringify(data));
+      throw new BadRequestException(data.error?.message || "Publish failed. Check flow structure and IDs.");
+    }
+    
     return { success: true };
   }
+
 
   async getFlowAssets(tenantId: string, flowId: string) {
     const creds = await this.getCredentials(tenantId);
