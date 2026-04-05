@@ -28,6 +28,7 @@ import { AdminModule } from "../admin/admin.module";
     AuditModule,
     BillingModule,
     AdminModule,
+    WhatsappModule,
   ],
   controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway],

@@ -27,7 +27,14 @@ async function bootstrap() {
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
   const allowedOrigins = allowedOriginsEnv
     ? allowedOriginsEnv.split(",")
-    : ["*"];
+    : [
+        "https://aimstore.in",
+        "https://app.aimstore.in",
+        "https://admin.aimstore.in",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+      ];
 
   app.enableCors({
     origin: (
