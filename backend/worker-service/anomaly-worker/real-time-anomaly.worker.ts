@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { KafkaService } from "@shared/kafka.service";
+import { KafkaTopic, KafkaEvent } from "@shared/kafka-events.constants";
 import { RedisService } from "@shared/redis.service";
 import { GlobalAnomalyService } from "./global-anomaly.service";
 import { KillSwitchService } from "./kill-switch.service";
@@ -100,11 +101,15 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
         this.logger.warn(
           `PLATFORM CLUSTER DETECTED: ${spikingTenants} tenants spiking simultaneously!`,
         );
-        await this.kafkaService.emit("aimstors.anomaly.alerts", {
-          type: "PLATFORM_CLUSTER",
-          affectedTenants: spikingTenants,
-          timestamp: now,
-        });
+        await this.kafkaService.emit(
+          KafkaTopic.ML_ANOMALIES,
+          KafkaEvent.ANOMALY_DETECTED,
+          {
+            type: "PLATFORM_CLUSTER",
+            affectedTenants: spikingTenants,
+            timestamp: now,
+          }
+        );
       }
     }
   }
@@ -149,12 +154,17 @@ export class RealTimeAnomalyWorker implements OnModuleInit {
       `REAL-TIME ANOMALY: Tenant ${tenantId} - ${reason} (${magnitude})`,
     );
 
-    await this.kafkaService.emit("aimstors.anomaly.alerts", {
-      type: "TENANT_ANOMALY",
-      tenantId,
-      reason,
-      magnitude,
-      timestamp: Date.now(),
-    });
+    await this.kafkaService.emit(
+      KafkaTopic.ML_ANOMALIES,
+      KafkaEvent.ANOMALY_DETECTED,
+      {
+        type: "TENANT_ANOMALY",
+        tenantId,
+        reason,
+        magnitude,
+        timestamp: Date.now(),
+      },
+      tenantId
+    );
   }
 }
