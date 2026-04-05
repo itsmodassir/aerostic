@@ -76,7 +76,7 @@ npm run build
 # Standalone requirements for App Dashboard
 mkdir -p .next/standalone/frontend/app-dashboard/.next/
 cp -r .next/static .next/standalone/frontend/app-dashboard/.next/
-cp -r public .next/standalone/frontend/app-dashboard/
+[ -d "public" ] && cp -r public .next/standalone/frontend/app-dashboard/ || echo "No public folder for app-dashboard"
 cd ../..
 
 # 4.3 Admin Panel (NEW)
@@ -94,7 +94,7 @@ npm run build
 # Standalone requirements for Admin Panel
 mkdir -p .next/standalone/frontend/admin-panel/.next/
 cp -r .next/static .next/standalone/frontend/admin-panel/.next/
-cp -r public .next/standalone/frontend/admin-panel/
+[ -d "public" ] && cp -r public .next/standalone/frontend/admin-panel/ || echo "No public folder for admin-panel"
 
 # Merge new assets into stable runtime for Admin Panel
 mkdir -p static_runtime
