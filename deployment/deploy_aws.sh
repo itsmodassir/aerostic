@@ -77,6 +77,11 @@ npm run build
 mkdir -p .next/standalone/frontend/app-dashboard/.next/
 cp -r .next/static .next/standalone/frontend/app-dashboard/.next/
 [ -d "public" ] && cp -r public .next/standalone/frontend/app-dashboard/ || echo "No public folder for app-dashboard"
+
+# Merge new assets into stable runtime for App Dashboard
+mkdir -p static_runtime
+cp -an .next/static/. static_runtime/
+sudo chmod -R 755 static_runtime/
 cd ../..
 
 # 4.3 Admin Panel (NEW)
@@ -132,7 +137,7 @@ pm2 start backend/dist/worker-service/main.js --name aimstors-worker
 
 # Frontends
 PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
-PORT=3001 pm2 start frontend/admin-panel/.next/standalone/server.js --name aimstors-admin
+PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aimstors-admin
 
 pm2 save
 
