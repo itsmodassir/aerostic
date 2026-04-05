@@ -136,9 +136,14 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(refreshToken: string, sessionId: string, req: Request) {
+  async refreshTokens(refreshToken: string, req: Request) {
+    if (!refreshToken) {
+      throw new UnauthorizedException("Refresh token missing");
+    }
+
+    const hash = this.hashToken(refreshToken);
     const session = await this.sessionRepo.findOne({
-      where: { id: sessionId },
+      where: { refreshTokenHash: hash },
       relations: ["user"],
     });
 
@@ -149,18 +154,6 @@ export class AuthService {
     // Verify token version for global logout support
     if (session.user.tokenVersion > (session as any).tokenVersionAtLogin) {
       // Note: We'll ideally store version at login in session, but user.tokenVersion is our global master
-    }
-
-    const hash = this.hashToken(refreshToken);
-    if (session.refreshTokenHash !== hash) {
-      // DETECTED: Someone is reusing an old refresh token!
-      // Revoke the entire session immediately for security
-      session.revokedAt = new Date();
-      await this.sessionRepo.save(session);
-      this.logger.error(
-        `Refresh token reuse detected for session ${sessionId}. Account compromised? Revoking all tokens.`,
-      );
-      throw new UnauthorizedException("Security Breach: Session Revoked");
     }
 
     // Rotate tokens

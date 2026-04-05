@@ -32,6 +32,7 @@ services:
       - /var/www/aimstors/frontend/landing/dist:/usr/share/nginx/html/landing:ro
       # Stable parent mount to prevent stale inodes after builds
       - /var/www/aimstors/frontend/app-dashboard:/usr/share/nginx/html/app:ro
+      - /var/www/aimstors/frontend/admin-panel:/usr/share/nginx/html/admin:ro
 
   redis:
     image: redis:7-alpine

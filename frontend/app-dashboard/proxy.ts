@@ -74,10 +74,9 @@ export function proxy(request: NextRequest) {
     }
 
     // 1. Admin Subdomain
+    // [DEPRECATED] Admin logic has been migrated to the standalone 'admin-panel' project.
+    // The admin subdomain is now an independent application and should be handled by its own server.
     if (hostname.startsWith(`admin.${baseDomain}`)) {
-        if (!pathname.startsWith('/admin')) {
-            return NextResponse.rewrite(new URL(`/admin${pathname === '/' ? '' : pathname}${search}`, request.url));
-        }
         return NextResponse.next();
     }
 

@@ -19,7 +19,7 @@ export class PythonMLResultWorker implements OnModuleInit {
 
     await this.kafkaService.subscribe(
       "python-ml-result-group",
-      "aimstors.anomaly.results",
+      "aerostic.anomaly.results",
       async ({ message }) => {
         if (!message.value) return;
         const result = JSON.parse(message.value.toString());
@@ -32,24 +32,27 @@ export class PythonMLResultWorker implements OnModuleInit {
     const { tenant_id, api_key_id, score, model } = result;
 
     this.logger.warn(
-      `📊 [Shadow Mode] Python ML (${model}) detected anomaly: Tenant=${tenant_id}, Score=${score}`,
+      `📊 [ACTIVE MODE] Python ML (${model}) detected anomaly: Tenant=${tenant_id}, Score=${score}`,
     );
 
-    // In Shadow Mode, we log and aggregate risk but DON'T immediately trigger a kill-switch
-    // unless the score is exceptionally high (extreme outliers).
+    // In Active Mode, we aggregate risk and trigger safety protocols
+    // if the ML signal is highly confident.
 
     if (api_key_id && tenant_id) {
-      // Contribute to risk score but with a specialized ML Signal
+      // Contribute to risk score with a specialized ML Signal
       // This allows the Node system to see the RL-tuned impact.
+      const riskWeight = score > 80 ? 50 : 25;
+      
       await this.killSwitchService.addRiskSignal(
         api_key_id,
         tenant_id,
         RiskType.AI_ML_SIGNAL,
-        20, // Moderate additional weight from AI
+        riskWeight,
         { mlScore: score, model },
       );
 
-      await this.riskAggregator.updateTenantRiskScore(tenant_id, 5);
+      // Persist to aggregation
+      await this.riskAggregator.updateTenantRiskScore(tenant_id, score / 10);
     }
   }
 }

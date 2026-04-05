@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ChevronDown, Plus, Check, Building2, LogOut } from 'lucide-react';
+import { ChevronDown, Plus, Check, Building2, LogOut, Crown } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 
@@ -13,26 +13,25 @@ interface Workspace {
     role: 'owner' | 'admin' | 'agent' | 'viewer';
 }
 
-export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
+export const WorkspaceSwitcher = memo(function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const params = useParams();
-    const rawWorkspaceId = params?.workspaceId as string | string[] | undefined;
-    const currentWorkspaceId = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
+    
+    const currentWorkspaceId = useMemo(() => {
+        const raw = params?.workspaceId;
+        return Array.isArray(raw) ? raw[0] : raw;
+    }, [params?.workspaceId]);
 
     useEffect(() => {
         const fetchWorkspaces = async () => {
             try {
-                // Ensure backend returns flat structure or map it here if needed
-                const response = await fetch('/api/v1/auth/workspaces', {
-                    credentials: 'include'
-                });
+                const response = await fetch('/api/v1/auth/workspaces', { credentials: 'include' });
                 if (response.ok) {
                     const data = await response.json();
-                    // Adapter if backend still returns nested tenant object
                     const flatWorkspaces = (Array.isArray(data) ? data : []).map((w: any) => ({
                         id: w.tenant?.id || w.id,
                         name: w.tenant?.name || w.name,
@@ -47,21 +46,19 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                 setLoading(false);
             }
         };
-
         fetchWorkspaces();
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/v1/auth/logout', {
-                method: 'POST',
-                credentials: 'include'
-            });
-            router.push('/login');
-        } catch (error) {
-            console.error('Logout failed', error);
-            router.push('/login');
-        }
+    const activeWorkspace = useMemo(() => 
+        workspaces.find(w => w.slug === currentWorkspaceId || w.id === currentWorkspaceId) || workspaces[0]
+    , [workspaces, currentWorkspaceId]);
+
+    const switchWorkspace = (workspace: Workspace) => {
+        localStorage.setItem('x-tenant-id', workspace.id);
+        localStorage.setItem('selected_tenant_id', workspace.id);
+        document.cookie = `selected_tenant=${workspace.slug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+        router.push(`/dashboard/${workspace.slug}`);
+        setOpen(false);
     };
 
     useEffect(() => {
@@ -74,19 +71,7 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const activeWorkspace =
-        workspaces.find(w => w.slug === currentWorkspaceId || w.id === currentWorkspaceId) || workspaces[0];
-
-    // 2. Optimized Switcher Logic
-    const switchWorkspace = (workspace: Workspace) => {
-        localStorage.setItem('x-tenant-id', workspace.id);
-        localStorage.setItem('selected_tenant_id', workspace.id);
-        document.cookie = `selected_tenant=${workspace.slug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
-        router.push(`/dashboard/${workspace.slug}`);
-        setOpen(false);
-    };
-
-    if (loading) return <div className="h-10 w-48 bg-muted animate-pulse rounded-lg" />;
+    if (loading) return <div className="h-10 w-full bg-muted animate-pulse rounded-lg" />;
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -94,9 +79,8 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                 onClick={() => setOpen(!open)}
                 className={clsx(
                     "flex items-center rounded-lg border bg-background hover:bg-muted font-medium text-sm transition-all shadow-sm w-full",
-                    isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2 max-w-[240px]"
+                    isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
                 )}
-                title={isCollapsed ? (activeWorkspace?.name || 'Select Workspace') : undefined}
             >
                 <div className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs uppercase shrink-0">
                     {(activeWorkspace?.name || 'A')[0]}
@@ -114,7 +98,26 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
             {open && (
                 <div className="absolute top-full left-0 mt-2 w-64 bg-background rounded-xl shadow-xl border border-border z-50 py-2 overflow-hidden animate-in fade-in zoom-in duration-200">
                     <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Your Workspaces
+                        Authorized Protocols
+                    </div>
+                    <div className="px-2 mb-2">
+                        <Link 
+                            href="/reseller"
+                            className="flex items-center gap-3 w-full px-3 py-4 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/20 hover:scale-[1.02] active:scale-95 transition-all group"
+                            onClick={() => setOpen(false)}
+                        >
+                            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white shrink-0 group-hover:rotate-12 transition-transform">
+                                <Crown className="w-4 h-4" strokeWidth={3} />
+                            </div>
+                            <div className="flex-1 text-left overflow-hidden">
+                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">Partner Hub</p>
+                                <p className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em] mt-1 shrink-0 italic">Distributor Protocol_</p>
+                            </div>
+                        </Link>
+                    </div>
+
+                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-t">
+                        Active Ecosystems
                     </div>
 
                     <div className="max-h-64 overflow-y-auto mt-1">
@@ -123,19 +126,19 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                                 key={w.id}
                                 onClick={() => switchWorkspace(w)}
                                 className={clsx(
-                                    "flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-muted transition-colors",
-                                    (w.id === currentWorkspaceId || w.slug === currentWorkspaceId) && "bg-muted/50 font-medium"
+                                    "flex items-center gap-3 w-full px-3 py-3 text-sm hover:bg-muted transition-colors group",
+                                    (w.id === currentWorkspaceId || w.slug === currentWorkspaceId) && "bg-indigo-50/50 font-medium"
                                 )}
                             >
-                                <div className="w-8 h-8 rounded bg-muted flex items-center justify-center text-muted-foreground">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 border border-slate-100 group-hover:bg-white group-hover:text-indigo-500 transition-all">
                                     <Building2 className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 text-left overflow-hidden">
-                                    <p className="truncate text-foreground">{w.name}</p>
-                                    <p className="text-[10px] text-muted-foreground capitalize">{w.role}</p>
+                                    <p className="truncate text-slate-900 font-bold lowercase italic">{w.name}</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{w.role}</p>
                                 </div>
                                 {(w.id === currentWorkspaceId || w.slug === currentWorkspaceId) && (
-                                    <Check className="w-4 h-4 text-primary" />
+                                    <Check className="w-4 h-4 text-indigo-500" strokeWidth={3} />
                                 )}
                             </button>
                         ))}
@@ -150,19 +153,9 @@ export function WorkspaceSwitcher({ isCollapsed }: { isCollapsed?: boolean }) {
                             <Plus className="w-4 h-4" />
                             Create New Workspace
                         </Link>
-                        <button
-                            onClick={() => {
-                                setOpen(false);
-                                handleLogout();
-                            }}
-                            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            Log out
-                        </button>
                     </div>
                 </div>
             )}
         </div>
     );
-}
+});

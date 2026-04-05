@@ -240,20 +240,20 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = req.cookies?.refresh_token;
-    const sessionId = req.body.sessionId || req.headers["x-session-id"]; // Strategy: Access token contains sessionId
 
-    // Note: Since access token is expired, we need to extract sessionId from it without validation (expired is OK)
-    // or just let the client pass it. Better: Extract from cookie/header if possible.
-    // For now, let's assume the body/header for simplicity in this flow.
     const { access_token, refresh_token: newRefreshToken } =
-      await this.authService.refreshTokens(refreshToken, sessionId, req);
+      await this.authService.refreshTokens(refreshToken, req);
 
     const isProduction = process.env.NODE_ENV === "production";
+    const domain = isProduction
+      ? `.${process.env.BASE_DOMAIN || "aimstore.in"}`
+      : undefined;
+
     res.cookie("access_token", access_token, {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: isProduction ? ".aimstore.in" : undefined,
+      domain,
       path: "/",
       maxAge: 15 * 60 * 1000,
     });
@@ -262,7 +262,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      domain: isProduction ? ".aimstore.in" : undefined,
+      domain,
       path: "/",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });

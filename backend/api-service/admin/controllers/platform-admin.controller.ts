@@ -40,6 +40,11 @@ export class PlatformAdminController {
     };
   }
 
+  @Get("pillars/health")
+  async getPillarsHealth() {
+    return this.healthService.getPillarsHealth();
+  }
+
   @Get("system-logs")
   async getLogs() {
     return this.healthService.getSystemLogs();

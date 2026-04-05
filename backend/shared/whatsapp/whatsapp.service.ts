@@ -64,6 +64,33 @@ export class WhatsappService {
     await this.redisService.del(`whatsapp:token:${tenantId}`);
   }
 
+  private async callMetaApi(url: string, options: RequestInit = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(id);
+
+      const data = await response.json();
+      if (!response.ok) {
+        this.logger.error(`Meta API Error [${response.status}] for ${url}:`, JSON.stringify(data));
+        return { ok: false, data, status: response.status };
+      }
+      return { ok: true, data, status: response.status };
+    } catch (error) {
+      clearTimeout(id);
+      if (error.name === 'AbortError') {
+        this.logger.error(`Meta API Timeout (${timeoutMs}ms) for ${url}`);
+        throw new BadRequestException("Meta API timeout. Please try again.");
+      }
+      throw error;
+    }
+  }
+
   async getApiVersion(): Promise<string> {
     return this.configService.get("META_API_VERSION") || "v25.0";
   }
@@ -149,13 +176,12 @@ export class WhatsappService {
         const accessToken = this.resolveAccessToken(account);
         const apiVersion = await this.getApiVersion();
 
-        const probe = await fetch(
+        const probe = await this.callMetaApi(
           `https://graph.facebook.com/${apiVersion}/${account.wabaId}?fields=id&access_token=${accessToken}`,
         );
 
         if (!probe.ok) {
-          const probeData = await probe.json();
-          if (this.isMetaTokenError(probeData)) {
+          if (this.isMetaTokenError(probe.data)) {
             await this.markSessionInvalid(tenantId);
             return { connected: false, ...account };
           }
@@ -245,10 +271,9 @@ export class WhatsappService {
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
 
-    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?fields=id,name,status,updated_at&access_token=${creds.accessToken}`);
-    const data = await response.json();
-    if (!response.ok) throw new BadRequestException(data.error?.message || "Failed to fetch flows");
-    return data.data || [];
+    const response = await this.callMetaApi(`https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?fields=id,name,status,updated_at&access_token=${creds.accessToken}`);
+    if (!response.ok) throw new BadRequestException(response.data.error?.message || "Failed to fetch flows");
+    return response.data.data || [];
   }
 
   async createFlow(tenantId: string, name: string, categories: string[]) {
@@ -258,7 +283,7 @@ export class WhatsappService {
     const normalizedName = this.normalizeFlowName(name);
     const normalizedCategories = this.normalizeFlowCategories(categories);
 
-    const response = await fetch(
+    const result = await this.callMetaApi(
       `https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?access_token=${creds.accessToken}`,
       {
         method: "POST",
@@ -267,10 +292,9 @@ export class WhatsappService {
       },
     );
 
-    const data = await response.json();
-    if (!response.ok) {
-      const metaMessage = data?.error?.message || "Failed to create flow";
-      const code = Number(data?.error?.code || 0);
+    if (!result.ok) {
+      const metaMessage = result.data?.error?.message || "Failed to create flow";
+      const code = Number(result.data?.error?.code || 0);
 
       if (code === 100 || /invalid parameter/i.test(metaMessage)) {
         throw new BadRequestException(
@@ -280,6 +304,8 @@ export class WhatsappService {
 
       throw new BadRequestException(metaMessage);
     }
+
+    const data = result.data;
 
     // Automatically upload a default "Hello World" asset
     try {
@@ -337,6 +363,32 @@ export class WhatsappService {
 
     const response = await axios.post(
       `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${creds.accessToken}`,
+      formData,
+      { timeout: 15000 } // Extended timeout for larger asset uploads
+    );
+    return response.data;
+  }
+
+  async uploadMedia(tenantId: string, file: Buffer, filename: string, mimetype: string) {
+    const creds = await this.getCredentials(tenantId);
+    if (!creds) throw new BadRequestException("Account not connected");
+    const apiVersion = await this.getApiVersion();
+
+    const formData = new FormData();
+    // Use Uint8Array for broader compatibility in Node.js environments
+    const blob = new Blob([new Uint8Array(file)], { type: mimetype });
+    formData.append("file", blob, filename);
+    formData.append("messaging_product", "whatsapp");
+    
+    // Meta expects 'image', 'video', 'audio', 'document'
+    let metaType = mimetype.split('/')[0];
+    if (metaType === 'application' || !['image', 'video', 'audio'].includes(metaType)) {
+      metaType = 'document';
+    }
+    formData.append("type", metaType);
+
+    const response = await axios.post(
+      `https://graph.facebook.com/${apiVersion}/${creds.phoneNumberId}/media?access_token=${creds.accessToken}`,
       formData
     );
     return response.data;
@@ -347,9 +399,8 @@ export class WhatsappService {
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
 
-    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${flowId}?access_token=${creds.accessToken}`, { method: "DELETE" });
-    const data = await response.json();
-    if (!response.ok) throw new BadRequestException(data.error?.message || "Delete failed");
+    const response = await this.callMetaApi(`https://graph.facebook.com/${apiVersion}/${flowId}?access_token=${creds.accessToken}`, { method: "DELETE" });
+    if (!response.ok) throw new BadRequestException(response.data.error?.message || "Delete failed");
     return { success: true };
   }
 
@@ -366,6 +417,22 @@ export class WhatsappService {
       throw new BadRequestException(data.error?.message || "Publish failed. Check flow structure and IDs.");
     }
     
+    return { success: true };
+  }
+
+  async deprecateFlow(tenantId: string, flowId: string) {
+    const creds = await this.getCredentials(tenantId);
+    if (!creds) throw new BadRequestException("Account not connected");
+    const apiVersion = await this.getApiVersion();
+
+    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${flowId}/deprecate?access_token=${creds.accessToken}`, { method: "POST" });
+    const data = await response.json();
+
+    if (!response.ok) {
+      this.logger.error(`Meta Flow Deprecate Failed for ${flowId}:`, JSON.stringify(data));
+      throw new BadRequestException(data.error?.message || "Deprecate failed.");
+    }
+
     return { success: true };
   }
 

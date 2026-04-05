@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import api from '@/lib/api';
 import Editor from '@monaco-editor/react';
 import {
@@ -10,9 +9,12 @@ import {
     Smartphone, Workflow, CheckCircle, Clock, XCircle, LayoutTemplate, X, Menu, ChevronRight, AlertCircle,
     ChevronLeft, Loader2, Zap, Code, RefreshCw
 } from 'lucide-react';
+import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import WhatsAppFlowBuilder from './components/WhatsAppFlowBuilder';
 import { WhatsAppFlowJSON } from './components/types';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface Flow {
     id: string;
@@ -29,13 +31,13 @@ function StatusBadge({ status }: { status?: string }) {
         APPROVED: { label: 'Approved', class: 'bg-green-50 text-green-700 border-green-100', icon: CheckCircle },
         DRAFT: { label: 'Draft', class: 'bg-amber-50 text-amber-700 border-amber-100', icon: Clock },
         PENDING: { label: 'Pending', class: 'bg-blue-50 text-blue-700 border-blue-100', icon: Clock },
-        REJECTED: { label: 'Rejected', class: 'bg-red-50 text-red-700 border-red-100', icon: XCircle },
+        REJECTED: { label: 'Rejected', class: 'bg-rose-50 text-rose-700 border-rose-100', icon: XCircle },
     };
-    const s = map[status] || { label: status, class: 'bg-gray-100 text-gray-500 border-gray-200', icon: Clock };
+    const s = map[status] || { label: status, class: 'bg-slate-100 text-slate-500 border-slate-200', icon: Clock };
     const Icon = s.icon;
     return (
-        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${s.class}`}>
-            <Icon size={10} />
+        <span className={clsx("inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider", s.class)}>
+            <Icon size={10} strokeWidth={3} />
             {s.label}
         </span>
     );
@@ -81,88 +83,100 @@ function FlowLivePreview({ flowJsonString, selectedScreenId }: { flowJsonString:
     const formImages = formChildren.filter(c => c.type === 'Image').map(c => c.src);
 
     return (
-        <div className="flex flex-col items-center justify-start pt-6 h-full bg-slate-50 overflow-y-auto">
+        <div className="flex flex-col items-center justify-start pt-8 pb-32 h-full bg-slate-50/50 overflow-y-auto custom-scrollbar">
             <div className="relative w-[280px]">
                 {/* Phone frame */}
-                <div className="relative bg-white rounded-[40px] shadow-2xl border-[8px] border-slate-900 overflow-hidden" style={{ minHeight: 600 }}>
+                <div className="relative bg-white rounded-[48px] shadow-2xl border-[10px] border-slate-900 overflow-hidden" style={{ minHeight: 580 }}>
                     {/* Camera notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-slate-900 rounded-b-3xl z-10" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-slate-900 rounded-b-3xl z-10" />
                     
                     {/* WhatsApp chat header */}
-                    <div className="bg-[#128C7E] pt-8 pb-3 px-4 flex items-center justify-between">
+                    <div className="bg-[#075E54] pt-8 pb-3 px-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <ArrowLeft size={16} className="text-white" />
-                            <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center">
-                                <div className="w-4 h-4 rounded-full bg-white/60" />
+                            <div className="w-8 h-8 rounded-full bg-slate-200/20 flex items-center justify-center">
+                                <div className="w-4 h-4 rounded-full bg-white/40" />
                             </div>
-                            <span className="text-white text-sm font-bold">Business</span>
+                            <span className="text-white text-xs font-bold tracking-tight">Business</span>
                         </div>
-                        <MoreHorizontal size={18} className="text-white" />
+                        <MoreHorizontal size={18} className="text-white opacity-60" />
                     </div>
 
-                    {/* Chat Bubble */}
-                    <div className="bg-[#ECE5DD] p-3 flex flex-col items-start min-h-[50px]">
-                         <div className="bg-white rounded-r-xl rounded-bl-xl p-3 shadow-sm max-w-[85%] mt-2">
-                             <p className="text-xs text-gray-800 mb-1">Interactive Flow</p>
-                             <button className="w-full mt-2 py-2 bg-gray-100 text-[#075E54] font-bold text-xs rounded-lg flex items-center justify-center gap-2">
-                                <LayoutTemplate size={14} /> Open Form
+                    {/* Chat Bubble Interface */}
+                    <div className="bg-[#E5DDD5] p-3 flex flex-col items-start min-h-[50px] relative h-full">
+                         {/* Background watermark */}
+                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                              style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")' }} />
+                         
+                         <div className="bg-white rounded-r-2xl rounded-bl-2xl p-3 shadow-md max-w-[90%] mt-2 relative z-10">
+                             <div className="flex items-center gap-2 mb-2">
+                                <Workflow size={12} className="text-teal-600" />
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Interactive Flow</p>
+                             </div>
+                             <p className="text-[11px] text-slate-700 leading-relaxed mb-3">Hi! Please tap below to complete the secure form.</p>
+                             <button className="w-full py-2.5 bg-slate-50 text-teal-700 font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 border border-slate-100 hover:bg-slate-100 transition-colors">
+                                <LayoutTemplate size={14} strokeWidth={2.5} /> Open Form
                              </button>
                          </div>
                     </div>
 
                     {/* Flow Modal Overlay (simulating opened flow) */}
-                    <div className="absolute inset-x-0 bottom-0 bg-white h-full rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col z-20 transition-transform">
+                    <div className="absolute inset-x-0 bottom-0 bg-white h-full rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col z-20 transition-transform">
                         {/* Modal Header */}
-                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
                             <div className="flex items-center gap-3">
-                                <X size={20} className="text-gray-500" />
-                                <h3 className="text-sm font-bold text-gray-900 truncate max-w-[180px]">{title}</h3>
+                                <X size={18} className="text-slate-400" />
+                                <h3 className="text-xs font-black text-slate-900 truncate max-w-[150px] tracking-tight">{title}</h3>
                             </div>
-                            <MoreHorizontal size={20} className="text-gray-500" />
+                            <MoreHorizontal size={18} className="text-slate-300" />
                         </div>
                         
                         {/* Modal Content */}
-                        <div className="p-4 flex-1 overflow-y-auto w-full space-y-4">
+                        <div className="p-5 flex-1 overflow-y-auto w-full space-y-5 custom-scrollbar">
                             {/* Main Image */}
                             {(imageSrc || formImages[0]) && (
-                                <div className="w-full h-40 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                                <div className="w-full h-44 bg-slate-50 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-100">
                                     <img src={imageSrc || formImages[0]} alt="Flow content" className="w-full h-full object-cover" onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5Y2FlYmYiIGZvbnQtc2l6ZT0iMTIiPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                                        (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjhmYWZjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNjYmQ1ZTEiIGZvbnQtc2l6ZT0iMTIiPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
                                     }} />
                                 </div>
                             )}
 
                             {/* Texts */}
-                            {[...texts, ...formTexts].map((text, i) => (
-                                <p key={i} className={`text-sm ${i===0 && !imageSrc ? 'font-bold text-gray-900' : 'text-gray-600'}`}>{text}</p>
-                            ))}
+                            <div className="space-y-2">
+                                {[...texts, ...formTexts].map((text, i) => (
+                                    <p key={i} className={clsx("text-xs leading-relaxed", i === 0 && !imageSrc ? 'font-black text-slate-900 text-sm' : 'text-slate-500 font-medium')}>
+                                        {text}
+                                    </p>
+                                ))}
+                            </div>
                             
                             {/* Inputs */}
                             {inputs.length > 0 ? (
-                                <div className="space-y-4 mt-4">
+                                <div className="space-y-5 mt-6">
                                     {inputs.map((input, i) => (
-                                        <div key={i} className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{input.label || input.name || 'Input field'}</label>
-                                            <div className="flex items-center justify-between px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50/50">
-                                                <span className="text-xs text-gray-400 italic">Select option...</span>
-                                                <ChevronRight size={14} className="text-gray-300" />
+                                        <div key={i} className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{input.label || input.name || 'Input field'}</label>
+                                            <div className="flex items-center justify-between px-4 py-3 border border-slate-100 rounded-2xl bg-slate-50/50 group hover:border-blue-200 transition-colors cursor-pointer">
+                                                <span className="text-[11px] text-slate-400 font-medium italic">Select option...</span>
+                                                <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-400 transition-colors" />
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-40 text-center space-y-2">
-                                    <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center">
-                                        <Zap size={20} className="text-slate-300" />
+                                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-30">
+                                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center">
+                                        <Zap size={24} className="text-slate-400" />
                                     </div>
-                                    <p className="text-[10px] text-slate-400 font-medium">Add form components to see them here</p>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Awaiting components</p>
                                 </div>
                             )}
 
                         </div>
                         {/* Footer */}
-                        <div className="p-4 border-t border-gray-100">
-                             <button className="w-full py-3 bg-[#0866FF] text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-200">
+                        <div className="p-5 border-t border-slate-50 bg-white/50 backdrop-blur-md">
+                             <button className="w-full py-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.1em] rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98]">
                                 {formChildren.find(c => c.type === 'Footer')?.label || 'Continue'}
                             </button>
                         </div>
@@ -170,9 +184,12 @@ function FlowLivePreview({ flowJsonString, selectedScreenId }: { flowJsonString:
                 </div>
             </div>
             
-            <div className="mt-4 px-6 py-3 w-full border-t border-slate-200/60 flex items-center gap-2">
-                <Smartphone size={14} className="text-teal-600" />
-                <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">Live Preview • Version {parsed?.version || '7.3'}</span>
+            <div className="mt-8 px-6 py-4 w-full border-t border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Smartphone size={14} className="text-blue-500" />
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Environment: Meta Sandbox</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-black">v{parsed?.version || '7.3'}</span>
             </div>
         </div>
     );
@@ -263,8 +280,6 @@ export default function FlowEditorPage() {
             const flowsRes = await api.get('/whatsapp/flows');
             const matchedFlow = flowsRes.data.find((f: Flow) => f.id === flowId);
             if (matchedFlow) setFlow(matchedFlow);
-            
-            // alert('Flow saved successfully.');
         } catch (err: any) {
             alert(err.response?.data?.message || 'Failed to save Flow');
         } finally {
@@ -292,192 +307,284 @@ export default function FlowEditorPage() {
         try {
             await api.post(`/whatsapp/flows/${flowId}/publish`);
             alert('Flow submitted to Meta for validation and publishing!');
-            router.push('/settings/whatsapp/flows');
+            // Refresh flow data
+            const flowsRes = await api.get('/whatsapp/flows');
+            const matchedFlow = flowsRes.data.find((f: Flow) => f.id === flowId);
+            if (matchedFlow) setFlow(matchedFlow);
         } catch (err: any) {
             const metaError = err.response?.data?.message || err.response?.data?.error?.message || 'Publishing attempt failed.';
-            const message = `Meta API Error: ${metaError}\n\nTip: Ensure all Screen IDs are unique and alphanumeric. Flow Version should be "7.3" for current standards.`;
-            alert(message);
+            alert(`Meta API Error: ${metaError}`);
         } finally {
             setPublishing(false);
         }
+    };
 
+    const handleUnpublish = async () => {
+        if (!confirm('Are you sure you want to unpublish (deprecate) this flow? This will retire the flow on Meta and it cannot be easily undone.')) {
+            return;
+        }
+
+        setPublishing(true);
+        try {
+            await api.post(`/whatsapp/flows/${flowId}/unpublish`);
+            alert('Flow has been deprecated (unpublished) on Meta.');
+            // Refresh flow data
+            const flowsRes = await api.get('/whatsapp/flows');
+            const matchedFlow = flowsRes.data.find((f: Flow) => f.id === flowId);
+            if (matchedFlow) setFlow(matchedFlow);
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to unpublish Flow');
+        } finally {
+            setPublishing(false);
+        }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="w-8 h-8 border-4 border-[#0866FF] border-t-blue-200 rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-slate-100 rounded-full" />
+                    <div className="absolute inset-0 w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+                <div className="flex flex-col items-center">
+                    <p className="text-lg font-black text-slate-900 tracking-tight">Synchronizing Assets</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Connecting to Meta Graph API</p>
+                </div>
             </div>
         );
     }
 
     const hasUnsavedChanges = jsonContent !== originalJson;
+    
+    let safeFlowData = {};
+    try {
+        safeFlowData = JSON.parse(jsonContent);
+    } catch (e) {
+        try {
+            safeFlowData = JSON.parse(originalJson);
+        } catch (e2) {}
+    }
 
     return (
         <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
-            {/* Top Toolbar (Aerostic Premium Style) */}
-            <div className="h-16 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 shrink-0 bg-white z-20 shadow-sm relative">
-                <div className="flex items-center gap-3 sm:gap-6">
-                    {/* Back button & Breadcrumb */}
-                    <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                        <button onClick={() => router.push('/settings/whatsapp/flows')} 
-                            className="p-2 hover:bg-slate-100 rounded-xl transition-all border border-transparent hover:border-slate-200 group">
-                            <ChevronLeft size={20} className="text-slate-400 group-hover:text-slate-600" />
-                        </button>
-                        <div className="flex flex-col overflow-hidden">
-                            <div className="hidden sm:flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                <span>WhatsApp Manager</span>
-                                <span className="text-slate-300">›</span>
-                                <span>Automation Flows</span>
-                            </div>
-                            <div className="flex items-center gap-3 mt-0.5 overflow-hidden">
-                                <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-100 shrink-0">
-                                    <Workflow size={12} className="text-white" />
-                                </div>
-                                <h1 className="text-sm sm:text-base font-black text-slate-900 leading-none truncate tracking-tight">{flow?.name || 'Untitled Flow'}</h1>
-                                <StatusBadge status={flow?.status} />
-                            </div>
+            {/* Top Toolbar */}
+            <div className="h-20 border-b border-slate-200 flex items-center justify-between px-6 shrink-0 bg-white z-20 shadow-sm relative">
+                <div className="flex items-center gap-6">
+                    <button onClick={() => router.push('/settings/whatsapp/flows')} 
+                        className="p-3 hover:bg-slate-50 rounded-2xl transition-all border border-slate-100 group">
+                        <ChevronLeft size={20} className="text-slate-400 group-hover:text-slate-900" />
+                    </button>
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">
+                            <span>Meta Platform</span>
+                            <span className="text-slate-200">/</span>
+                            <span>Flow Architect</span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1">
+                            <h1 className="text-xl font-black text-slate-900 leading-none tracking-tight">{flow?.name || 'Untitled Flow'}</h1>
+                            <StatusBadge status={flow?.status} />
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="hidden lg:flex items-center gap-2 mr-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest pl-6 border-l border-slate-200">
+                <div className="flex items-center gap-4">
+                    {/* Real-time Status Indicator */}
+                    <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 mr-4">
                         {saving ? (
-                            <div className="flex items-center gap-2 text-blue-500">
-                                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                <span>Saving changes...</span>
+                            <div className="flex items-center gap-2 text-blue-600">
+                                <Loader2 size={14} className="animate-spin" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Auto-saving...</span>
                             </div>
                         ) : hasUnsavedChanges ? (
-                            <span className="text-amber-500">Unsaved changes</span>
+                            <div className="flex items-center gap-2 text-amber-500">
+                                <AlertCircle size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Unsaved edits</span>
+                            </div>
                         ) : (
-                            <span className="text-teal-500 flex items-center gap-1.5">
-                                <CheckCircle size={12} />
-                                Changes synced
-                            </span>
+                            <div className="flex items-center gap-2 text-emerald-500">
+                                <CheckCircle size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Sync healthy</span>
+                            </div>
                         )}
                     </div>
-                    
-                    <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+
+                    {/* View Controls */}
+                    <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
                         <button 
                             onClick={() => setViewMode('designer')}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'designer' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={clsx(
+                                "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                viewMode === 'designer' ? "bg-white text-blue-600 shadow-md shadow-blue-500/5" : "text-slate-400 hover:text-slate-600"
+                            )}
                         >
                             Designer
                         </button>
                         <button 
                             onClick={() => setViewMode('json')}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'json' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={clsx(
+                                "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                viewMode === 'json' ? "bg-white text-blue-600 shadow-md shadow-blue-500/5" : "text-slate-400 hover:text-slate-600"
+                            )}
                         >
-                            JSON
+                            Source
                         </button>
                     </div>
 
-                    <div className="h-8 w-px bg-slate-200 mx-1" />
+                    {viewMode === 'designer' && (
+                        <button 
+                            onClick={() => setActiveTab(activeTab === 'preview' ? 'editor' : 'preview')}
+                            className={clsx(
+                                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                activeTab === 'preview' ? "bg-indigo-600 border-indigo-700 text-white shadow-lg shadow-indigo-100" : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                            )}
+                        >
+                            <Smartphone size={16} strokeWidth={3} />
+                            Preview
+                        </button>
+                    )}
 
-                    <button 
-                        onClick={() => handlePublish()}
-                        disabled={publishing || hasUnsavedChanges || flow?.status === 'PUBLISHED'}
-                        className="px-4 py-2 bg-teal-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-100 border border-teal-700/10 flex items-center gap-2"
-                    >
-                        {publishing ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
-                        <span>Publish</span>
-                    </button>
+                    <div className="h-10 w-px bg-slate-100 mx-2" />
+
+                    {/* Lifecycle Controls */}
+                    {['PUBLISHED', 'DEPRECATED', 'APPROVED', 'LIVE'].includes(flow?.status || '') ? (
+                        <button 
+                            onClick={handleUnpublish}
+                            disabled={publishing || flow?.status === 'DEPRECATED'}
+                            className="px-6 py-3 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-[0.1em] rounded-2xl hover:bg-rose-100 disabled:opacity-50 transition-all border border-rose-100 flex items-center gap-2"
+                        >
+                            {publishing ? <RefreshCw size={14} className="animate-spin" /> : <XCircle size={14} strokeWidth={3} />}
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handlePublish}
+                            disabled={publishing || hasUnsavedChanges}
+                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-[10px] font-black uppercase tracking-[0.1em] rounded-2xl hover:shadow-xl hover:shadow-blue-200 disabled:opacity-50 transition-all border border-blue-700/10 flex items-center gap-2 shadow-lg shadow-blue-100"
+                        >
+                            {publishing ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} strokeWidth={3} />}
+                            Go Live
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            {viewMode === 'designer' ? (
-                <div className="flex-1 flex overflow-hidden">
-                    <WhatsAppFlowBuilder 
-                        flowData={JSON.parse(jsonContent)}
-                        onSave={(updated) => handleSave(updated)}
-                        onToggleCode={() => setViewMode('json')}
-                    />
-                    
-                    {/* Live Preview (Conditional Overlay or Sidebar) */}
-                    {activeTab === 'preview' && (
-                        <div className="w-[400px] border-l border-slate-200 bg-white flex flex-col shrink-0">
-                            <div className="h-12 border-b border-slate-100 flex items-center justify-between px-4 shrink-0">
-                                <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">Phone Preview</span>
-                                <select 
-                                    value={selectedScreen}
-                                    onChange={(e) => setSelectedScreen(e.target.value)}
-                                    className="text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none"
+            {/* Main Editor Surface */}
+            <div className="flex-1 flex overflow-hidden">
+                {viewMode === 'designer' ? (
+                    <div className="flex-1 flex overflow-hidden">
+                        <div className="flex-1 relative">
+                            <ErrorBoundary name="DesignerSurface">
+                                <WhatsAppFlowBuilder 
+                                    flowData={safeFlowData as any}
+                                    onSave={handleSave}
+                                    onToggleCode={() => setViewMode('json')}
+                                />
+                            </ErrorBoundary>
+                        </div>
+                        
+                        <AnimatePresence>
+                            {activeTab === 'preview' && (
+                                <motion.div 
+                                    initial={{ x: 420 }}
+                                    animate={{ x: 0 }}
+                                    exit={{ x: 420 }}
+                                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                    className="w-[420px] border-l border-slate-100 bg-white flex flex-col shrink-0 z-10 shadow-2xl overflow-hidden"
                                 >
-                                    {screens.map(id => <option key={id} value={id}>{id}</option>)}
-                                </select>
+                                    <div className="h-14 border-b border-slate-50 flex items-center justify-between px-6 shrink-0 bg-slate-50/20">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-[10px]">P</div>
+                                            <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">Real-time Preview</span>
+                                        </div>
+                                        <select 
+                                            value={selectedScreen}
+                                            onChange={(e) => setSelectedScreen(e.target.value)}
+                                            className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-blue-500 transition-colors"
+                                        >
+                                            {screens.map(id => <option key={id} value={id}>{id}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <ErrorBoundary name="PhonePreview">
+                                            <FlowLivePreview flowJsonString={jsonContent} selectedScreenId={selectedScreen} />
+                                        </ErrorBoundary>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                ) : (
+                    <div className="flex-1 flex overflow-hidden">
+                        <div className="flex-1 flex flex-col bg-[#1e1e1e] overflow-hidden">
+                            <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 shrink-0 bg-[#252526]">
+                                <div className="flex items-center gap-3">
+                                    <Code size={16} className="text-blue-400" />
+                                    <span className="font-black text-[10px] text-slate-400 uppercase tracking-widest">JSON Manifest</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                     <span className={clsx(
+                                         "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                                         jsonError ? "bg-rose-500/20 text-rose-400" : "bg-emerald-500/20 text-emerald-400"
+                                     )}>
+                                        {jsonError ? 'Syntax Error' : 'Valid Schema'}
+                                    </span>
+                                    <button 
+                                        onClick={() => handleSave()}
+                                        disabled={saving || !!jsonError || !hasUnsavedChanges}
+                                        className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                                    >
+                                        Push Changes
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex-1 relative">
+                                <Editor
+                                    height="100%"
+                                    defaultLanguage="json"
+                                    theme="vs-dark"
+                                    value={jsonContent}
+                                    onChange={handleEditorChange}
+                                    options={{
+                                        minimap: { enabled: false },
+                                        fontSize: 14,
+                                        lineNumbers: 'on',
+                                        scrollBeyondLastLine: false,
+                                        wordWrap: 'on',
+                                        tabSize: 2,
+                                        padding: { top: 20 },
+                                        fontFamily: 'JetBrains Mono, monospace'
+                                    }}
+                                />
+                                {jsonError && (
+                                    <div className="absolute bottom-6 left-6 right-6 bg-rose-500/10 backdrop-blur-md border border-rose-500/20 p-4 rounded-2xl flex items-start gap-3 z-30">
+                                        <AlertCircle size={20} className="text-rose-500 shrink-0" />
+                                        <div className="flex-1">
+                                            <p className="text-[10px] text-rose-300 font-black uppercase tracking-widest mb-1">JSON Validation Error</p>
+                                            <p className="text-xs text-rose-200/80 font-medium leading-relaxed">{jsonError}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* Static Preview in Source Mode */}
+                        <div className="w-[420px] bg-white flex flex-col shrink-0 border-l border-slate-100">
+                            <div className="h-14 border-b border-slate-50 flex items-center justify-between px-6 shrink-0 bg-slate-50/20">
+                                <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">Static Preview</span>
+                                <div className="flex items-center gap-2">
+                                    <Smartphone size={14} className="text-slate-400" />
+                                    <span className="text-[10px] font-black text-slate-400">MANIFEST V7.3</span>
+                                </div>
                             </div>
                             <div className="flex-1 overflow-hidden">
-                                <FlowLivePreview flowJsonString={jsonContent} selectedScreenId={selectedScreen} />
+                                <ErrorBoundary name="SourcePreview">
+                                    <FlowLivePreview flowJsonString={jsonContent} selectedScreenId={selectedScreen} />
+                                </ErrorBoundary>
                             </div>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="flex-1 flex overflow-hidden">
-                    {/* JSON Editor View */}
-                    <div className="flex-1 flex flex-col bg-white overflow-hidden border-r border-slate-200">
-                        <div className="h-12 border-b border-slate-100 flex items-center justify-between px-4 shrink-0 bg-white">
-                            <div className="flex items-center gap-3">
-                                <Code size={14} className="text-blue-500" />
-                                <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">JSON Source</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                 <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${jsonError ? 'bg-red-50 text-red-500' : 'bg-teal-50 text-teal-500'}`}>
-                                    {jsonError ? 'Invalid Format' : 'Valid JSON'}
-                                </span>
-                                <button 
-                                    onClick={() => handleSave()}
-                                    disabled={saving || !!jsonError || !hasUnsavedChanges}
-                                    className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all disabled:opacity-50"
-                                >
-                                    Save JSON
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex-1 w-full bg-[#1e1e1e] relative">
-                            <Editor
-                                height="100%"
-                                defaultLanguage="json"
-                                theme="vs-dark"
-                                value={jsonContent}
-                                onChange={handleEditorChange}
-                                options={{
-                                    minimap: { enabled: false },
-                                    fontSize: 13,
-                                    lineNumbers: 'on',
-                                    scrollBeyondLastLine: false,
-                                    wordWrap: 'on',
-                                    tabSize: 2,
-                                    padding: { top: 20 }
-                                }}
-                            />
-                            {jsonError && (
-                                <div className="absolute bottom-4 left-4 right-4 bg-red-500/10 backdrop-blur-md border border-red-500/20 p-3 rounded-xl flex items-start gap-3 z-30">
-                                    <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
-                                    <p className="text-[10px] text-red-200 font-medium leading-relaxed">{jsonError}</p>
-                                </div>
-                            )}
                         </div>
                     </div>
-                    
-                    {/* Side Preview in JSON Mode */}
-                    <div className="w-[400px] bg-white flex flex-col shrink-0">
-                        <div className="h-12 border-b border-slate-100 flex items-center justify-between px-4 shrink-0">
-                            <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">Live Preview</span>
-                            <div className="flex items-center gap-2">
-                                <Smartphone size={12} className="text-slate-400" />
-                                <span className="text-[10px] font-bold text-slate-400">v7.3</span>
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <FlowLivePreview flowJsonString={jsonContent} selectedScreenId={selectedScreen} />
-                        </div>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }
-

@@ -73,15 +73,30 @@ fi
 export NEXT_JS_IGNORE_ESLINT=1
 npm run build
 
-# 4. Sync Static Assets for Nginx
-echo "🧱 Syncing frontend static runtime assets..."
-
-# Standard Next.js standalone requirements:
+# Standalone requirements for App Dashboard
 mkdir -p .next/standalone/frontend/app-dashboard/.next/
 cp -r .next/static .next/standalone/frontend/app-dashboard/.next/
 cp -r public .next/standalone/frontend/app-dashboard/
+cd ../..
 
-# Merge new assets into stable runtime (additive cp prevents breaking old caches)
+# 4.3 Admin Panel (NEW)
+echo "🛡️ Building Standalone Admin Panel..."
+cd frontend/admin-panel
+npm install --production=false --legacy-peer-deps
+if [ -f "../../.env" ]; then
+    set -a
+    source ../../.env
+    set +a
+fi
+export NEXT_JS_IGNORE_ESLINT=1
+npm run build
+
+# Standalone requirements for Admin Panel
+mkdir -p .next/standalone/frontend/admin-panel/.next/
+cp -r .next/static .next/standalone/frontend/admin-panel/.next/
+cp -r public .next/standalone/frontend/admin-panel/
+
+# Merge new assets into stable runtime for Admin Panel
 mkdir -p static_runtime
 cp -an .next/static/. static_runtime/
 sudo chmod -R 755 static_runtime/
@@ -108,14 +123,16 @@ pm2 delete aimstors-api || true
 pm2 delete aimstors-webhook || true
 pm2 delete aimstors-worker || true
 pm2 delete aimstors-frontend || true
+pm2 delete aimstors-admin || true
 
 # Backend
 pm2 start backend/dist/api-service/main.js --name aimstors-api
 pm2 start backend/dist/webhook-service/main.js --name aimstors-webhook
 pm2 start backend/dist/worker-service/main.js --name aimstors-worker
 
-# Frontend
+# Frontends
 PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
+PORT=3001 pm2 start frontend/admin-panel/.next/standalone/server.js --name aimstors-admin
 
 pm2 save
 

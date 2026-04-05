@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Plus, Upload, Search, Users2, Mail, Phone, Calendar, MoreVertical, X, Filter } from 'lucide-react';
+import { Plus, Upload, Search, Users2, Mail, Phone, Calendar, MoreVertical, X, Filter, BarChart3, TrendingUp, Target } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
+import ContactRow from '@/components/crm/ContactRow';
 
 interface Contact {
     id: string;
@@ -21,14 +23,27 @@ export default function ContactsPage() {
     const [newContact, setNewContact] = useState({ name: '', phoneNumber: '', email: '' });
     const [tenantId, setTenantId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterType, setFilterType] = useState<'all' | 'with_email' | 'recent'>('all');
+    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
 
     const params = useParams();
 
-    const filteredContacts = contacts.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.phoneNumber.includes(searchTerm) ||
-        (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredContacts = contacts.filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.phoneNumber.includes(searchTerm) ||
+            (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        if (filterType === 'with_email') return matchesSearch && !!c.email;
+        if (filterType === 'recent') {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return matchesSearch && new Date(c.createdAt) > weekAgo;
+        }
+        return matchesSearch;
+    });
 
     useEffect(() => {
         const initTenant = async () => {
@@ -57,6 +72,7 @@ export default function ContactsPage() {
             const res = await api.get(`/contacts?tenantId=${tid}`);
             setContacts(res.data);
         } catch (error) {
+            console.error('Failed to fetch contacts', error);
         } finally {
             setLoading(false);
         }
@@ -76,172 +92,243 @@ export default function ContactsPage() {
         }
     };
 
+    const handleEditContact = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedContact) return;
+        try {
+            await api.put(`/contacts/${selectedContact.id}`, { ...selectedContact, tenantId });
+            setShowEditModal(false);
+            setSelectedContact(null);
+            fetchContacts(tenantId);
+        } catch (error: any) {
+            alert('Failed to update contact.');
+        }
+    };
+
+    const handleDeleteContact = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this contact?')) return;
+        try {
+            await api.delete(`/contacts/${id}?tenantId=${tenantId}`);
+            fetchContacts(tenantId);
+        } catch (error: any) {
+            alert('Failed to delete contact.');
+        }
+    };
+
+    const handleImport = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv';
+        input.onchange = async (e: any) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            alert(`Ready to import ${file.name}. (Backend CSV import endpoint pending)`);
+        };
+        input.click();
+    };
+
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto space-y-8 pb-32 animate-in fade-in duration-700">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <Users2 className="text-blue-600" size={32} />
-                        Contacts
-                    </h1>
-                    <p className="text-gray-400 text-sm mt-1 font-medium">Manage your audience and communication lists</p>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                            <Users2 size={24} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Your Audience</h1>
+                    </div>
+                    <p className="text-sm font-bold text-slate-400">Manage, segment, and grow your communication lists seamlessly.</p>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-white border-2 border-gray-100 text-gray-600 rounded-2xl hover:bg-gray-50 transition-all font-bold text-sm shadow-sm">
-                        <Upload size={18} />
-                        Import
-                    </button>
-                    <button onClick={() => setShowAddModal(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-lg shadow-blue-100">
-                        <Plus size={18} />
-                        Add Contact
-                    </button>
-                </div>
-            </div>
-
-            {/* Stats Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-3xl border-2 border-gray-100 shadow-sm">
-                    <div className="text-2xl font-black text-gray-900">{contacts.length}</div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Audience</div>
-                </div>
-                {/* Placeholder stats */}
-                <div className="bg-white p-4 rounded-3xl border-2 border-gray-100 shadow-sm">
-                    <div className="text-2xl font-black text-green-600">100%</div>
-                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Rate</div>
+                <div className="flex items-center gap-3">
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleImport} 
+                        className="flex items-center gap-2 px-6 py-3 bg-white/70 backdrop-blur-md border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all font-black text-sm shadow-sm"
+                    >
+                        <Upload size={18} strokeWidth={2.5} />
+                        Import CSV
+                    </motion.button>
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-200 transition-all font-black text-sm shadow-lg shadow-blue-100"
+                    >
+                        <Plus size={20} strokeWidth={3} />
+                        Create Contact
+                    </motion.button>
                 </div>
             </div>
 
-            {/* Filters & Search - Stacked on Mobile */}
-            <div className="flex flex-col sm:flex-row gap-3 px-1 sm:px-0">
-                <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+            {/* Stats Dashboard */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {[
+                    { label: 'Total Audience', value: contacts.length, icon: Users2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Recent Growth', value: '+12%', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Verified Emails', value: contacts.filter(c => !!c.email).length, icon: Mail, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Conversion Rate', value: '8.4%', icon: Target, color: 'text-amber-600', bg: 'bg-amber-50' },
+                ].map((stat, idx) => (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        key={stat.label} 
+                        className="bg-white/80 backdrop-blur-md p-6 rounded-[32px] border border-slate-100 shadow-sm group hover:shadow-xl transition-all duration-300"
+                    >
+                        <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
+                            <stat.icon size={20} strokeWidth={2.5} />
+                        </div>
+                        <div className="text-3xl font-black text-slate-800 tracking-tight">{stat.value}</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</div>
+                    </motion.div>
+                ))}
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col sm:flex-row gap-4 px-1 sm:px-0 relative z-30">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={20} />
                     <input
                         type="text"
-                        placeholder="Search audience..."
-                        className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none text-base sm:text-sm transition-all shadow-sm"
+                        placeholder="Search by name, phone, or email..."
+                        className="w-full pl-14 pr-6 py-4 bg-white/70 backdrop-blur-md border-2 border-slate-100 rounded-[28px] focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 outline-none font-bold text-slate-700 transition-all shadow-sm"
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button className="h-[52px] px-6 bg-gray-50 text-gray-500 rounded-2xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center gap-2 font-bold text-sm shrink-0">
-                    <Filter size={18} />
-                    Filters
-                </button>
+                <div className="relative">
+                    <button 
+                        onClick={() => setShowFilters(!showFilters)} 
+                        className={clsx(
+                            "h-[60px] px-8 rounded-[28px] border-2 transition-all flex items-center justify-center gap-3 font-black text-sm shrink-0", 
+                            showFilters ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-transparent hover:border-slate-200"
+                        )}
+                    >
+                        <Filter size={18} strokeWidth={2.5} />
+                        Display Filters
+                    </button>
+                    <AnimatePresence>
+                        {showFilters && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute right-0 top-full mt-3 w-56 bg-white rounded-[24px] shadow-2xl border border-slate-100 p-2 z-50 overflow-hidden"
+                            >
+                                {[
+                                    { id: 'all', label: 'All Contacts' },
+                                    { id: 'with_email', label: 'Verified Contacts' },
+                                    { id: 'recent', label: 'Added Recently' }
+                                ].map(f => (
+                                    <button 
+                                        key={f.id} 
+                                        onClick={() => { setFilterType(f.id as any); setShowFilters(false); }} 
+                                        className={clsx(
+                                            "w-full text-left px-5 py-3 rounded-xl text-[11px] font-black transition-colors uppercase tracking-widest", 
+                                            filterType === f.id ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-50"
+                                        )}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
-            {/* Contacts Container - Responsive View */}
+            {/* Main Content Area */}
             <div className="space-y-4">
-                {/* Desktop Table */}
-                <div className="hidden sm:block bg-white border-2 border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto no-scrollbar">
-                        <table className="w-full text-left min-w-[700px]">
+                {/* Desktop Table View */}
+                <div className="hidden sm:block bg-white/80 backdrop-blur-md border border-slate-100 rounded-[40px] overflow-hidden shadow-xl shadow-slate-200/50">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-left min-w-[900px]">
                             <thead>
-                                <tr className="bg-gray-50/50 border-b-2 border-gray-100">
-                                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact details</th>
-                                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Communication</th>
-                                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Added on</th>
-                                    <th className="px-6 py-5"></th>
+                                <tr className="bg-slate-50/50 border-b border-slate-100">
+                                    <th className="px-8 py-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Audience Identity</th>
+                                    <th className="px-8 py-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Contact Channels</th>
+                                    <th className="px-8 py-6 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Onboarded On</th>
+                                    <th className="px-8 py-6"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-slate-50">
                                 {loading ? (
-                                    <tr><td colSpan={4} className="py-20 text-center text-gray-400 font-bold">Fetching your audience...</td></tr>
+                                    <tr>
+                                        <td colSpan={4} className="py-32 text-center">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Synchronizing audience...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 ) : filteredContacts.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="py-20 text-center">
-                                            <div className="flex flex-col items-center gap-2 opacity-30">
-                                                <Users2 size={48} />
-                                                <p className="font-bold">No contacts found</p>
+                                        <td colSpan={4} className="py-32 text-center">
+                                            <div className="flex flex-col items-center gap-4 opacity-20">
+                                                <div className="p-8 bg-slate-100 rounded-[40px]">
+                                                    <Users2 size={64} />
+                                                </div>
+                                                <p className="font-black text-xl text-slate-900">Audience is empty</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredContacts.map((contact) => (
-                                        <tr key={contact.id} className="group hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
-                                                        {contact.name[0]?.toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-black text-gray-900 text-sm">{contact.name}</div>
-                                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ID: {contact.id.slice(0, 8)}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 space-y-1">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-gray-600">
-                                                    <Phone size={12} className="text-gray-300" />
-                                                    {contact.phoneNumber}
-                                                </div>
-                                                {contact.email && (
-                                                    <div className="flex items-center gap-2 text-[11px] font-medium text-gray-400">
-                                                        <Mail size={12} className="text-gray-300" />
-                                                        {contact.email}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
-                                                    <Calendar size={12} className="text-gray-300" />
-                                                    {new Date(contact.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <button className="p-2 hover:bg-white rounded-lg transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-transparent hover:border-gray-200">
-                                                    <MoreVertical size={16} className="text-gray-400" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    <AnimatePresence mode="popLayout">
+                                        {filteredContacts.map((contact) => (
+                                            <ContactRow 
+                                                key={contact.id} 
+                                                contact={contact}
+                                                isActive={activeActionMenu === contact.id}
+                                                onToggleMenu={() => setActiveActionMenu(activeActionMenu === contact.id ? null : contact.id)}
+                                                onEdit={() => { setSelectedContact(contact); setShowEditModal(true); setActiveActionMenu(null); }}
+                                                onDelete={() => { handleDeleteContact(contact.id); setActiveActionMenu(null); }}
+                                            />
+                                        ))}
+                                    </AnimatePresence>
                                 )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                {/* Mobile Cards */}
-                <div className="sm:hidden space-y-3 px-1">
+                {/* Mobile Cards View */}
+                <div className="sm:hidden space-y-4 px-1">
                     {loading ? (
-                        <div className="py-20 text-center text-gray-400 font-bold">Fetching your audience...</div>
+                        <div className="py-20 text-center text-slate-400 font-bold">Fetching your audience...</div>
                     ) : filteredContacts.length === 0 ? (
                         <div className="py-20 text-center opacity-30">
                             <Users2 size={48} className="mx-auto" />
-                            <p className="font-bold mt-2">No contacts found</p>
+                            <p className="font-bold mt-2 text-slate-900">No contacts found</p>
                         </div>
                     ) : (
                         filteredContacts.map((contact) => (
-                            <div key={contact.id} className="bg-white p-4 rounded-3xl border-2 border-gray-100 shadow-sm flex flex-col gap-4">
+                            <div key={contact.id} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex flex-col gap-5">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-sm">
                                             {contact.name[0]?.toUpperCase()}
                                         </div>
                                         <div>
-                                            <h3 className="font-black text-gray-900 text-sm leading-tight">{contact.name}</h3>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ID: {contact.id.slice(0, 8)}</p>
+                                            <h3 className="font-black text-slate-900 text-sm leading-tight">{contact.name}</h3>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: {contact.id.slice(0, 8)}</p>
                                         </div>
                                     </div>
-                                    <button className="p-2 text-gray-400">
-                                        <MoreVertical size={18} />
+                                    <button onClick={() => { setSelectedContact(contact); setShowEditModal(true); }} className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl">
+                                        <MoreVertical size={20} />
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 border-t border-gray-50 pt-3">
-                                    <div className="flex items-center gap-3 text-xs font-bold text-gray-600 bg-gray-50/50 p-2 rounded-xl">
+                                <div className="grid grid-cols-1 gap-3 border-t border-slate-50 pt-4">
+                                    <div className="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50/50 p-3 rounded-2xl">
                                         <Phone size={14} className="text-blue-500" />
                                         {contact.phoneNumber}
                                     </div>
                                     {contact.email && (
-                                        <div className="flex items-center gap-3 text-[11px] font-bold text-gray-500 bg-gray-50/50 p-2 rounded-xl">
+                                        <div className="flex items-center gap-3 text-[11px] font-bold text-slate-500 bg-slate-50/50 p-3 rounded-2xl">
                                             <Mail size={14} className="text-indigo-500" />
                                             {contact.email}
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 p-2">
-                                        <Calendar size={14} className="text-gray-300" />
-                                        Added on {new Date(contact.createdAt).toLocaleDateString()}
-                                    </div>
                                 </div>
                             </div>
                         ))
@@ -249,76 +336,168 @@ export default function ContactsPage() {
                 </div>
             </div>
 
-            {/* Add Contact Modal - Meta Style */}
-            {showAddModal && (
-                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-                    <div className="relative w-full max-w-lg bg-white sm:rounded-[32px] rounded-t-[32px] shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900 tracking-tight">Add Contact</h2>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">New audience member</p>
-                            </div>
-                            <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400"><X size={20} /></button>
-                        </div>
-                        
-                        <form onSubmit={handleAddContact} className="p-8 space-y-6 overflow-y-auto">
-                            <div className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-black text-gray-700 ml-1">Full Name</label>
-                                    <input
-                                        required
-                                        placeholder="John Doe"
-                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-3 outline-none transition-all font-medium text-gray-900"
-                                        value={newContact.name}
-                                        onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                                    />
+            {/* Add Contact Modal */}
+            <AnimatePresence>
+                {showAddModal && (
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+                            onClick={() => setShowAddModal(false)} 
+                        />
+                        <motion.div 
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="relative w-full max-w-lg bg-white sm:rounded-[40px] rounded-t-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Add Contact</h2>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Growth phase initiated</p>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-black text-gray-700 ml-1">Phone Number</label>
-                                    <div className="relative">
-                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-black">+</div>
-                                        <input
-                                            required
-                                            placeholder="15551234567"
-                                            className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl pl-10 pr-5 py-3 outline-none transition-all font-medium text-gray-900"
-                                            value={newContact.phoneNumber}
-                                            onChange={(e) => setNewContact({ ...newContact, phoneNumber: e.target.value.replace(/\D/g, '') })}
-                                        />
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-1">Include country code, digits only</p>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-black text-gray-700 ml-1">Email (Optional)</label>
-                                    <input
-                                        type="email"
-                                        placeholder="john@example.com"
-                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-5 py-3 outline-none transition-all font-medium text-gray-900"
-                                        value={newContact.email}
-                                        onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                                    />
-                                </div>
+                                <button onClick={() => setShowAddModal(false)} className="p-3 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><X size={20} strokeWidth={3} /></button>
                             </div>
                             
-                            <div className="pt-4 flex flex-col sm:flex-row gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddModal(false)}
-                                    className="flex-1 px-6 py-4 border-2 border-gray-100 text-gray-500 font-black rounded-2xl hover:bg-gray-50 transition-all active:scale-95"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-[2] px-6 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-95"
-                                >
-                                    Save contact
-                                </button>
-                            </div>
-                        </form>
+                            <form onSubmit={handleAddContact} className="p-10 space-y-8 overflow-y-auto">
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Full Name</label>
+                                        <input
+                                            required
+                                            placeholder="e.g. Alexander Pierce"
+                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
+                                            value={newContact.name}
+                                            onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Phone Number</label>
+                                        <div className="relative">
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black">+</div>
+                                            <input
+                                                required
+                                                placeholder="15551234567"
+                                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl pl-12 pr-6 py-4 outline-none transition-all font-bold text-slate-900"
+                                                value={newContact.phoneNumber}
+                                                onChange={(e) => setNewContact({ ...newContact, phoneNumber: e.target.value.replace(/\D/g, '') })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Email Address</label>
+                                        <input
+                                            type="email"
+                                            placeholder="email@example.com"
+                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
+                                            value={newContact.email}
+                                            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="pt-4 flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddModal(false)}
+                                        className="flex-1 px-8 py-5 border-2 border-slate-100 text-slate-400 font-black rounded-3xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-[2] px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-3xl hover:shadow-xl hover:shadow-blue-200 transition-all shadow-lg shadow-blue-100 uppercase tracking-widest text-xs"
+                                    >
+                                        Confirm
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
+
+            {/* Edit Contact Modal */}
+            <AnimatePresence>
+                {showEditModal && selectedContact && (
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+                            onClick={() => setShowEditModal(false)} 
+                        />
+                        <motion.div 
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="relative w-full max-w-lg bg-white sm:rounded-[40px] rounded-t-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Profile</h2>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Refining identity</p>
+                                </div>
+                                <button onClick={() => setShowEditModal(false)} className="p-3 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><X size={20} strokeWidth={3} /></button>
+                            </div>
+                            
+                            <form onSubmit={handleEditContact} className="p-10 space-y-8 overflow-y-auto">
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Full Name</label>
+                                        <input
+                                            required
+                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
+                                            value={selectedContact?.name || ''}
+                                            onChange={(e) => setSelectedContact(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Phone Number</label>
+                                        <div className="relative">
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black">+</div>
+                                            <input
+                                                required
+                                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl pl-12 pr-6 py-4 outline-none transition-all font-bold text-slate-900"
+                                                value={selectedContact?.phoneNumber || ''}
+                                                onChange={(e) => setSelectedContact(prev => prev ? { ...prev, phoneNumber: e.target.value.replace(/\D/g, '') } : null)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Email Address</label>
+                                        <input
+                                            type="email"
+                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
+                                            value={selectedContact?.email || ''}
+                                            onChange={(e) => setSelectedContact(prev => prev ? { ...prev, email: e.target.value } : null)}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="pt-4 flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditModal(false)}
+                                        className="flex-1 px-8 py-5 border-2 border-slate-100 text-slate-400 font-black rounded-3xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
+                                    >
+                                        Discard
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-[2] px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-3xl hover:shadow-xl hover:shadow-blue-200 transition-all shadow-lg shadow-blue-100 uppercase tracking-widest text-xs"
+                                    >
+                                        Update Details
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -144,6 +144,15 @@ export class WhatsappController {
   ) {
     return this.whatsappService.publishFlow(tenantId, flowId);
   }
+  
+  @UseGuards(JwtAuthGuard)
+  @Post("flows/:id/unpublish")
+  async unpublishFlow(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+  ) {
+    return this.whatsappService.deprecateFlow(tenantId, flowId);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get("flows/:id/assets")

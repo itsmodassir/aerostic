@@ -1,13 +1,32 @@
-import { Body, Controller, Post, Get, Param, Query, UseGuards, Req } from "@nestjs/common";
+import { Body, Controller, Post, Get, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { MessagesService } from "./messages.service";
 import { SendMessageDto } from "./dto/send-message.dto";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
+import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 
 @Controller("messages")
 @UseGuards(JwtAuthGuard)
 export class MessagesController {
-  constructor(private readonly messagesService: MessagesService) { }
+  constructor(
+    private readonly messagesService: MessagesService,
+    private readonly whatsappService: WhatsappService,
+  ) { }
+
+  @Post("upload")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadFile(
+    @UserTenant() tenantId: string,
+    @UploadedFile() file: any,
+  ) {
+    return this.whatsappService.uploadMedia(
+      tenantId,
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+    );
+  }
 
   @Post("send")
   async sendMessage(

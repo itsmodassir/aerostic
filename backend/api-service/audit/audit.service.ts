@@ -7,6 +7,7 @@ import { AuditAlertService } from "./audit-alert.service";
 import { AnomalyService } from "../analytics/anomaly.service";
 import { PiiMasker } from "@shared/utils/pii-masker.util";
 import { KafkaService } from "@shared/kafka.service";
+import { KafkaTopic, KafkaEvent } from "@shared/kafka-events.constants";
 import * as crypto from "crypto";
 
 export enum LogLevel {
@@ -146,17 +147,22 @@ export class AuditService implements OnModuleInit {
     this.lastHash = saved.hash;
 
     // Emit to Kafka for real-time stream processing
-    this.kafkaService.emit("aimstors.security.events", {
-      eventId: saved.id,
-      tenantId: saved.tenantId,
-      actorType: saved.actorType,
-      actorId: saved.actorId,
-      action: saved.action,
-      resourceType: saved.resourceType,
-      resourceId: saved.resourceId,
-      timestamp: saved.createdAt.getTime(),
-      metadata: saved.metadata,
-    });
+    this.kafkaService.emit(
+      KafkaTopic.AUDIT_LOGS,
+      KafkaEvent.AUDIT_CREATED,
+      {
+        eventId: saved.id,
+        tenantId: saved.tenantId,
+        actorType: saved.actorType,
+        actorId: saved.actorId,
+        action: saved.action,
+        resourceType: saved.resourceType,
+        resourceId: saved.resourceId,
+        timestamp: saved.createdAt.getTime(),
+        metadata: saved.metadata,
+      },
+      saved.tenantId
+    );
 
     return saved;
   }

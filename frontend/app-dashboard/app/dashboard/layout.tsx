@@ -1,183 +1,48 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter, useParams } from 'next/navigation';
+import React, { useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
-import {
-    LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut, Bell,
-    Megaphone, FileText, Bot, Shield, User, CreditCard, HelpCircle,
-    ChevronDown, Crown, Check, Menu, BarChart2, Calendar, Gift, Target, Globe, Workflow
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { clsx } from 'clsx';
 
-
-import { useSocket } from '@/context/SocketContext';
 import { SocketProvider } from '@/context/SocketContext';
-
-const PLAN_COLORS = {
-    starter: { bg: 'bg-gray-100', text: 'text-gray-700', name: 'Starter' },
-    growth: { bg: 'bg-blue-100', text: 'text-blue-700', name: 'Growth' },
-    enterprise: { bg: 'bg-purple-100', text: 'text-purple-700', name: 'Enterprise' },
-};
+import { DashboardProvider, useDashboard } from '@/components/dashboard/DashboardContext';
+import Sidebar from '@/components/dashboard/Sidebar';
+import Header from '@/components/dashboard/Header';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <SocketProvider>
-            <DashboardContent>{children}</DashboardContent>
+            <DashboardProvider>
+                <DashboardShell>{children}</DashboardShell>
+            </DashboardProvider>
         </SocketProvider>
     );
 }
 
-function DashboardContent({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-    const router = useRouter();
-    const params = useParams();
-    const workspaceId = params?.workspaceId as string || 'default';
+function DashboardShell({ children }: { children: React.ReactNode }) {
     const { user, loading, logout, isAdmin } = useAuth();
+    const { setMembership, membership, isSidebarCollapsed } = useDashboard();
+    const router = useRouter();
 
-    const [userPlan, setUserPlan] = useState<'starter' | 'growth' | 'enterprise'>('starter');
-    const [membership, setMembership] = useState<any>(null);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
-    // notifications - loaded from real audit logs
-    const [notifications, setNotifications] = useState<any[]>([]);
-    const profileRef = useRef<HTMLDivElement>(null);
-    const notifRef = useRef<HTMLDivElement>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    const isReseller = membership?.tenantType === 'reseller';
-
-    const navigation = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Contacts', href: '/contacts', icon: Users2, permission: 'contacts:read' },
-        { name: 'Messages', href: '/message', icon: MessageSquare, permission: 'inbox:read' },
-        { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns:read' },
-        { name: 'Templates', href: '/templates', icon: FileText, permission: 'campaigns:read' },
-        { name: 'WhatsApp Flows', href: '/settings/whatsapp/flows', icon: Workflow, permission: 'campaigns:read' },
-        { name: 'Leads', href: '/leads', icon: Target },
-        { name: 'Analytics', href: '/analytics', icon: BarChart2 },
-        { name: 'Automation', href: '/automation', icon: Zap, permission: 'automation:create' },
-        { name: 'AI Agent', href: '/ai-agent', icon: Bot, permission: 'automation:create' },
-        { name: 'Scheduler', href: '/scheduler', icon: Calendar },
-        {
-            name: 'Settings',
-            icon: Settings,
-            permission: 'billing:manage',
-                children: [
-                { name: 'WhatsApp', href: '/settings/whatsapp' },
-                { name: 'WA Forms', href: '/settings/whatsapp/forms' },
-                { name: 'Trigger Flow', href: '/settings/whatsapp/trigger-flow' },
-                { name: 'Email Flow', href: '/settings/email' },
-                { name: 'AI Models', href: '/settings/ai' },
-                { name: 'Wallet', href: '/wallet' },
-                { name: 'Knowledge Base', href: '/knowledge-base', permission: 'automation:create' },
-                { name: 'Referrals', href: '/referrals' },
-                { name: 'Branding', href: '/reseller/branding', resellerOnly: true }
-            ]
-        },
-        // Platform Admin - only for super_admin or specific platform admins
-        { name: 'Platform Admin', href: '/admin', icon: Shield, adminOnly: true },
-        { name: 'Resellers', href: '/admin/resellers', icon: Users2, adminOnly: true },
-
-        // Reseller Specific
-        { name: 'My Clients', href: '/reseller/clients', icon: Users2, resellerOnly: true },
-    ];
-
-    const { socket, isConnected } = useSocket();
-
-    // 1. Initial State from LocalStorage
+    // 1. Initial Data Fetch (Isolated & Cached)
     useEffect(() => {
-        const savedSound = localStorage.getItem('sound_enabled');
-        if (savedSound === null) {
-            localStorage.setItem('sound_enabled', 'true'); // Default ON
-        }
+        if (!user) return;
 
-        const savedCollapsed = localStorage.getItem('sidebar_collapsed');
-        if (savedCollapsed === 'true') {
-            setIsSidebarCollapsed(true);
-        }
-    }, []);
-
-    const toggleSidebarCollapse = () => {
-        const newState = !isSidebarCollapsed;
-        setIsSidebarCollapsed(newState);
-        localStorage.setItem('sidebar_collapsed', newState.toString());
-    };
-
-    // 2. Real-time Notifications & Sound
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleNewMessage = (payload: any) => {
-            console.log('[Dashboard] New Notification:', payload);
-
-            // Don't duplicate if already in inbox for this conversation
-            // (The inbox page handles its own state, but we want a global alert)
-
-            // Add to notification list
-            setNotifications(prev => [
-                {
-                    id: Date.now(),
-                    title: 'New message received',
-                    message: `From ${payload.phone}`,
-                    time: 'Just now',
-                    unread: true
-                },
-                ...prev.slice(0, 9) // Keep last 10
-            ]);
-
-            // Play sound if enabled
-            const soundEnabled = localStorage.getItem('sound_enabled') !== 'false';
-            if (soundEnabled) {
-                if (!audioRef.current) {
-                    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                }
-                audioRef.current.play().catch(e => console.log('Sound blocked by browser policy'));
-            }
-        };
-
-        socket.on('newMessage', handleNewMessage);
-        return () => { socket.off('newMessage', handleNewMessage); };
-    }, [socket]);
-
-    // Set plan based on user info
-    useEffect(() => {
-        if (user) {
-            if (user.email === 'md@modassir.info') {
-                setUserPlan('growth');
-            } else if (user.email?.includes('enterprise')) {
-                setUserPlan('enterprise');
-            }
-        }
-    }, [user]);
-
-    // Fetch workspace membership and subscription
-    useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Membership
                 const memResponse = await api.get('/auth/membership');
                 if (memResponse.status === 200) {
                     setMembership(memResponse.data);
                 }
 
-                // 2. Fetch Subscription (Guard)
                 if (!isAdmin) {
                     try {
                         const subResponse = await api.get('/billing/subscription');
-                        if (subResponse.status === 200) {
-                            const subData = subResponse.data;
-                            // If no subscription or trial/active status, redirect to onboarding
-                            const validStatuses = ['trial', 'active'];
-                            if (!subData || !validStatuses.includes(subData.status)) {
-                                router.push('/onboarding');
-                            }
+                        const validStatuses = ['trial', 'active'];
+                        if (!subResponse.data || !validStatuses.includes(subResponse.data.status)) {
+                            router.push('/onboarding');
                         }
                     } catch (subErr: any) {
                         if (subErr.response?.status === 401 || subErr.response?.status === 404) {
@@ -186,79 +51,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     }
                 }
             } catch (error) {
-                console.error('Failed to fetch dashboard data:', error);
+                console.error('Failed to fetch dashboard initialization data:', error);
             }
         };
 
-        if (user) {
-            fetchData();
-        }
-    }, [user, isAdmin, router]);
+        fetchData();
+    }, [user, isAdmin, router, setMembership]);
 
-
-
-    useEffect(() => {
-        if (!user) return;
-        api.get('/users/me/notifications')
-            .then(res => { if (Array.isArray(res.data)) setNotifications(res.data); })
-            .catch(() => { /* silently fail - no notifications */ });
-    }, [user]);
-
-    // Close dropdowns on outside click
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-                setShowProfileMenu(false);
-            }
-            if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-                setShowNotifications(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Filter navigation items based on context
-    const permissions = user?.permissions || membership?.permissions || [];
-    const visibleNavigation = navigation.map(item => {
-        if (item.children) {
-            const visibleChildren = item.children.filter(child => {
-                if (isReseller) {
-                    const resellerFeatures = ['Branding'];
-                    if (!resellerFeatures.includes(child.name)) return false;
-                }
-                if (isAdmin && !isReseller) return true;
-                if ((child as any).adminOnly) return false;
-                if ((child as any).resellerOnly && !isReseller) return false;
-                if (child.permission && !permissions.includes(child.permission)) return false;
-                return true;
-            });
-            return { ...item, children: visibleChildren };
-        }
-        return item;
-    }).filter(item => {
-        if (isReseller) {
-            const resellerFeatures = ['Dashboard', 'My Clients', 'Settings'];
-            if (!resellerFeatures.includes(item.name)) return false;
-        }
-
-        if (!isReseller && !isAdmin) {
-            const tenant = membership?.tenant;
-            if (item.name === 'Developer API' && !tenant?.apiAccessEnabled) return false;
-        }
-
-        if (item.children && item.children.length === 0) return false;
-        if (isAdmin && !isReseller) return true;
-        if ((item as any).adminOnly) return false;
-        if ((item as any).resellerOnly && !isReseller) return false;
-        if ((item as any).permission && !permissions.includes((item as any).permission)) return false;
-        return true;
-    });
-
-    const planInfo = PLAN_COLORS[userPlan];
-    const unreadCount = notifications.filter(n => n.unread).length;
-    const userName = user?.name || 'User';
-    const email = user?.email || '';
+    // 2. Memoized Branding Styles
+    const brandingStyles = useMemo(() => {
+        const primary = membership?.branding?.primaryColor || '#7C3AED';
+        return {
+            '--primary': primary,
+            '--primary-hover': `${primary}CC`,
+            '--primary-foreground': '#ffffff'
+        } as React.CSSProperties;
+    }, [membership]);
 
     if (loading) {
         return (
@@ -268,353 +76,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (!user) {
-        return null; // Hook handles redirect
-    }
+    if (!user) return null;
 
     return (
-        <div className="flex h-screen bg-muted/40 font-sans" style={{
-            // @ts-ignore
-            '--primary': membership?.branding?.primaryColor || '#7C3AED',
-            '--primary-hover': (membership?.branding?.primaryColor || '#7C3AED') + 'CC',
-            '--primary-foreground': '#ffffff'
-        }}>
-            {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm sm:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
+        <div className="flex h-screen bg-muted/40 font-sans" style={brandingStyles}>
+            <Sidebar user={user} isAdmin={isAdmin} />
 
-            {/* Sidebar */}
-            <aside className={clsx(
-                "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-all duration-300 sm:translate-x-0",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-                isSidebarCollapsed ? "w-20" : "w-64"
-            )}>
-                <div className="flex h-16 items-center px-4 border-b justify-between">
-                    {/* Logo */}
-                    <Link href="/" className={clsx(
-                        "flex items-center gap-2 font-bold text-xl text-primary overflow-hidden transition-all",
-                        isSidebarCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-                    )}>
-                        <img
-                            src={membership?.branding?.logo || "/logo.png"}
-                            alt={membership?.branding?.brandName || "Aerostic"}
-                            className="w-8 h-8 object-contain rounded-lg"
-                        />
-                        <span>{membership?.branding?.brandName || (isReseller ? membership?.tenant?.name : "Aerostic")}</span>
-                    </Link>
-
-                    {/* Collapse Toggle (Desktop only) */}
-                    <button
-                        onClick={toggleSidebarCollapse}
-                        className="hidden sm:flex p-1.5 hover:bg-muted rounded-md text-muted-foreground transition-colors"
-                    >
-                        {isSidebarCollapsed ? <Crown className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 -rotate-90" />}
-                    </button>
-
-                    {/* Mobile Logo Placeholder when sidebar hidden/collapsed */}
-                    {isSidebarCollapsed && (
-                        <img src="/logo.png" alt="Aerostic" className="w-8 h-8 object-contain sm:block hidden" />
-                    )}
-                </div>
-                <div className={clsx("px-4 py-4 border-b", isSidebarCollapsed && "px-2")}>
-                    <WorkspaceSwitcher isCollapsed={isSidebarCollapsed} />
-                </div>
-                <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                    {visibleNavigation.map((item: any) => {
-                        const hasChildren = item.children && item.children.length > 0;
-                        const isChildActive = hasChildren && item.children.some((c: any) => pathname === c.href || (c.href !== '/dashboard' && pathname.startsWith(c.href)));
-                        const isActive = (item.href && pathname === item.href) || (item.href && item.href !== '/dashboard' && pathname.startsWith(item.href)) || isChildActive;
-
-                        if (hasChildren) {
-                            const isOpen = openSubMenus[item.name] || isChildActive;
-
-                            return (
-                                <div key={item.name} className="flex flex-col mb-1">
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            setOpenSubMenus(prev => ({ ...prev, [item.name]: !prev[item.name] }));
-                                        }}
-                                        className={clsx(
-                                            'flex justify-between items-center rounded-lg text-sm font-medium transition-all duration-200 w-full',
-                                            isSidebarCollapsed ? 'justify-center p-2.5 mx-2' : 'px-3 py-2.5',
-                                            isActive && !openSubMenus[item.name]
-                                                ? 'bg-primary/10 text-primary'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                                            item.adminOnly && !isActive && 'border border-purple-200 bg-purple-50/50'
-                                        )}
-                                        title={isSidebarCollapsed ? item.name : undefined}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <item.icon className={clsx("w-4 h-4 shrink-0", (isActive && !openSubMenus[item.name]) ? "text-primary" : "text-muted-foreground")} />
-                                            {!isSidebarCollapsed && <span>{item.name}</span>}
-                                        </div>
-                                        {!isSidebarCollapsed && (
-                                            <ChevronDown className={clsx("w-4 h-4 transition-transform", isOpen ? "rotate-180" : "")} />
-                                        )}
-                                    </button>
-
-                                    {isOpen && !isSidebarCollapsed && (
-                                        <div className="flex flex-col gap-1 pl-9 pr-2 border-l-2 border-muted ml-4 mt-1 mb-2">
-                                            {item.children.map((child: any) => {
-                                                const isChildItemActive = pathname === child.href || (child.href !== '/dashboard' && pathname.startsWith(child.href));
-                                                return (
-                                                    <Link
-                                                        key={child.name}
-                                                        href={child.href}
-                                                        onClick={() => setIsSidebarOpen(false)}
-                                                        className={clsx(
-                                                            'flex items-center rounded-md text-sm transition-all duration-200 py-2 px-3',
-                                                            isChildItemActive
-                                                                ? 'bg-primary text-primary-foreground shadow-sm font-medium'
-                                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                                                        )}
-                                                    >
-                                                        <span>{child.name}</span>
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        }
-
-                        return (
-                            <Link
-                                key={item.name}
-                                href={item.href as string}
-                                onClick={() => setIsSidebarOpen(false)}
-                                className={clsx(
-                                    'flex items-center rounded-lg text-sm font-medium transition-all duration-200 mb-1',
-                                    isSidebarCollapsed ? 'justify-center p-2.5 mx-2' : 'gap-3 px-3 py-2.5',
-                                    isActive
-                                        ? 'bg-primary text-primary-foreground shadow-md'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                                    item.adminOnly && !isActive && 'border border-purple-200 bg-purple-50/50'
-                                )}
-                                title={isSidebarCollapsed ? item.name : undefined}
-                            >
-                                <item.icon className={clsx("w-4 h-4 shrink-0", isActive ? "text-white" : "text-muted-foreground")} />
-                                {!isSidebarCollapsed && <span>{item.name}</span>}
-                                {item.adminOnly && !isActive && !isSidebarCollapsed && (
-                                    <Shield className="w-3 h-3 text-purple-500 ml-auto" />
-                                )}
-                            </Link>
-                        );
-                    })}
-                </nav>
-                <div className="p-4 border-t bg-muted/20">
-                    <button
-                        onClick={logout}
-                        className={clsx(
-                            "flex items-center text-sm font-medium text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors",
-                            isSidebarCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
-                        )}
-                        title={isSidebarCollapsed ? "Logout" : undefined}
-                    >
-                        <LogOut className="w-4 h-4" />
-                        {!isSidebarCollapsed && <span>Logout</span>}
-                    </button>
-                    {!isSidebarCollapsed && (
-                        <div className="mt-4 text-[10px] text-center text-muted-foreground uppercase tracking-widest font-semibold">
-                            v1.0.0 Alpha
-                        </div>
-                    )}
-                </div>
-            </aside>
-
-            {/* Main Content */}
             <div className={clsx(
                 "flex flex-col w-full min-h-screen transition-all duration-300",
                 isSidebarCollapsed ? "sm:pl-20" : "sm:pl-64"
             )}>
-                <header className="sticky top-0 z-30 flex flex-col sm:flex-row h-auto sm:h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 md:px-8 py-3 sm:py-0 shadow-sm gap-4 sm:gap-0">
-                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => setIsSidebarOpen(true)}
-                                className="p-2 -ml-2 text-muted-foreground hover:text-foreground sm:hidden"
-                            >
-                                <Menu className="w-6 h-6" />
-                            </button>
-                            {/* Breadcrumb / Title Stub */}
-                            <h2 className="text-base md:text-lg font-bold text-gray-900 capitalize truncate max-w-[200px] sm:max-w-none">
-                                {isReseller && (pathname === '/dashboard' || pathname === `/dashboard/${workspaceId}` || pathname.endsWith(workspaceId))
-                                    ? 'Partner Console'
-                                    : pathname.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ') || 'Overview'}
-                            </h2>
-                        </div>
-                        
-                        {/* Mobile-only toggle for profile/notif if we want to save space, but let's just keep them for now */}
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-                        {/* Plan Badge */}
-                        <Link
-                            href="/billing"
-                            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${planInfo.bg} ${planInfo.text} hover:opacity-80 transition-opacity`}
-                        >
-                            <Crown className="w-3 h-3" />
-                            {planInfo.name} Plan
-                        </Link>
-
-                        {/* Notifications */}
-                        <div className="relative" ref={notifRef}>
-                            <button
-                                onClick={() => setShowNotifications(!showNotifications)}
-                                className="text-muted-foreground hover:text-foreground transition-colors relative p-2 rounded-lg hover:bg-muted"
-                            >
-                                <Bell className="w-5 h-5" />
-                                {unreadCount > 0 && (
-                                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Notifications Dropdown */}
-                            {showNotifications && (
-                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                        <h3 className="font-semibold text-gray-900">Notifications</h3>
-                                        <button className="text-xs text-blue-600 hover:text-blue-700">Mark all read</button>
-                                    </div>
-                                    <div className="max-h-80 overflow-y-auto">
-                                        {notifications.length === 0 ? (
-                                            <div className="p-6 text-center text-gray-500 text-sm">No recent activity</div>
-                                        ) : notifications.map(notif => (
-                                            <div key={notif.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${notif.unread ? 'bg-blue-50/50' : ''}`}>
-                                                <div className="flex items-start gap-3">
-                                                    <div className={`w-2 h-2 rounded-full mt-2 ${notif.unread ? 'bg-blue-500' : 'bg-gray-300'}`} />
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium text-gray-900">{notif.title}</p>
-                                                        <p className="text-xs text-gray-500 mt-0.5">{notif.message}</p>
-                                                        <p className="text-xs text-gray-400 mt-1">
-                                                            {notif.time ? notif.time : notif.createdAt ? new Date(notif.createdAt).toLocaleString() : ''}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="p-3 border-t border-gray-100">
-                                        <Link href="/notifications" className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
-                                            View all notifications
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="h-8 w-px bg-border" />
-
-                        {/* Profile Dropdown */}
-                        <div className="relative" ref={profileRef}>
-                            <button
-                                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                                className="flex items-center gap-3 p-1.5 pr-3 rounded-lg hover:bg-muted transition-colors"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-sm">
-                                    {userName[0]?.toUpperCase()}
-                                </div>
-                                <div className="text-left hidden md:block">
-                                    <p className="text-sm font-medium leading-none text-gray-900">
-                                        {isReseller ? (membership?.branding?.brandName || membership?.tenant?.name || userName) : userName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                        {isReseller ? (membership?.branding?.supportEmail || email) : email}
-                                    </p>
-                                </div>
-                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
-                            </button>
-
-                            {/* Profile Menu */}
-                            {showProfileMenu && (
-                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                                    {/* User Info Header */}
-                                    <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center font-bold text-lg">
-                                                {(isReseller ? (membership?.branding?.brandName || membership?.tenant?.name || userName) : userName)[0]?.toUpperCase()}
-                                            </div>
-                                            <div className="text-white">
-                                                <p className="font-semibold">{isReseller ? (membership?.branding?.brandName || membership?.tenant?.name || userName) : userName}</p>
-                                                <p className="text-xs text-white/80">{isReseller ? (membership?.branding?.supportEmail || email) : email}</p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 flex items-center gap-2">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${planInfo.bg} ${planInfo.text}`}>
-                                                {planInfo.name}
-                                            </span>
-                                            {isAdmin && (
-                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                                    Platform Admin
-                                                </span>
-                                            )}
-                                            {membership?.role && (
-                                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 capitalize">
-                                                    {membership.role}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Menu Items */}
-                                    <div className="py-2">
-                                        <Link
-                                            href="/profile"
-                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
-                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <User className="w-4 h-4 text-gray-400" />
-                                            My Profile
-                                        </Link>
-                                        <Link
-                                            href="/billing"
-                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
-                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <CreditCard className="w-4 h-4 text-gray-400" />
-                                            Billing & Plans
-                                        </Link>
-                                        <Link
-                                            href="/settings/whatsapp"
-                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
-                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <Settings className="w-4 h-4 text-gray-400" />
-                                            Settings
-                                        </Link>
-                                        <Link
-                                            href="/docs"
-                                            onClick={() => { setShowProfileMenu(false); setIsSidebarOpen(false); }}
-                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <HelpCircle className="w-4 h-4 text-gray-400" />
-                                            Help & Docs
-                                        </Link>
-                                    </div>
-
-                                    {/* Logout */}
-                                    <div className="border-t border-gray-100 py-2">
-                                        <button
-                                            onClick={logout}
-                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                            Sign out
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </header>
+                <Header user={user} isAdmin={isAdmin} logout={logout} />
                 <main className="flex-1 p-4 md:p-8 overflow-auto">
                     {children}
                 </main>

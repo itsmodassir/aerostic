@@ -13,6 +13,7 @@ import { Conversation } from "./conversation.entity";
 @Entity("messages")
 @Index(["conversationId", "createdAt"])
 @Index(["tenantId", "createdAt"])
+@Index(["tenantId", "conversationId", "createdAt"])
 export class Message {
   @PrimaryGeneratedColumn("uuid")
   id: string;

@@ -50,11 +50,26 @@ export class MessagesService {
     private walletService: WalletService,
   ) { }
 
+  private readonly accountCache = new Map<string, { account: WhatsappAccount; timestamp: number }>();
+  private readonly CACHE_TTL = 300000; // 5 minutes
+
   async send(dto: SendMessageDto) {
-    // 1. Resolve Tenant's WhatsApp Account
-    const account = await this.whatsappAccountRepo.findOneBy({
-      tenantId: dto.tenantId,
-    });
+    // 1. Resolve Tenant's WhatsApp Account (with caching)
+    const now = Date.now();
+    const cached = this.accountCache.get(dto.tenantId || "");
+    let account: WhatsappAccount | null = null;
+
+    if (cached && (now - cached.timestamp < this.CACHE_TTL)) {
+      account = cached.account;
+    } else {
+      account = await this.whatsappAccountRepo.findOneBy({
+        tenantId: dto.tenantId,
+      });
+      if (account) {
+        this.accountCache.set(dto.tenantId || "", { account, timestamp: now });
+      }
+    }
+
     if (!account) {
       throw new NotFoundException("WhatsApp account not found for this tenant");
     }
@@ -190,7 +205,9 @@ export class MessagesService {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "x-tenant-id": dto.tenantId,
         },
+        timeout: 10000, // 10s timeout for Meta API
       });
 
       const metaId = response.data.messages?.[0]?.id;
