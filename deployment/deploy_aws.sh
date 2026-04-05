@@ -94,6 +94,7 @@ if [ -f "../../.env" ]; then
     set +a
 fi
 export NEXT_JS_IGNORE_ESLINT=1
+export NEXT_PUBLIC_BACKEND_URL="https://api.aimstore.in/api/v1"
 npm run build
 
 # Standalone requirements for Admin Panel
@@ -103,7 +104,7 @@ cp -r .next/static .next/standalone/frontend/admin-panel/.next/
 
 # Merge new assets into stable runtime for Admin Panel
 mkdir -p static_runtime
-cp -an .next/static/. static_runtime/
+cp -r .next/static/. static_runtime/
 sudo chmod -R 755 static_runtime/
 cd ../..
 
