@@ -9,6 +9,7 @@ import {
 } from "../../api-service/billing/entities/api-key-risk-event.entity";
 import { RedisService } from "@shared/redis.service";
 import { KafkaService } from "@shared/kafka.service";
+import { KafkaTopic, KafkaEvent } from "@shared/kafka-events.constants";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { AdaptiveThresholdService } from "./adaptive-threshold.service";
 import { SuspensionPolicyService } from "./suspension-policy.service";
@@ -144,13 +145,18 @@ export class KillSwitchService {
       metadata: { apiKeyId: apiKey.id, reason },
     });
 
-    await this.kafkaService.emit("aimstors.security.events", {
-      action: "API_KEY_SUSPENDED",
-      apiKeyId: apiKey.id,
-      tenantId: apiKey.tenantId,
-      reason,
-      timestamp: Date.now(),
-    });
+    await this.kafkaService.emit(
+      KafkaTopic.AUDIT_LOGS,
+      KafkaEvent.AUDIT_CREATED,
+      {
+        action: "API_KEY_SUSPENDED",
+        apiKeyId: apiKey.id,
+        tenantId: apiKey.tenantId,
+        reason,
+        timestamp: Date.now(),
+      },
+      apiKey.tenantId
+    );
   }
 
   private async restoreApiKey(apiKey: ApiKey, reason: string) {
@@ -188,12 +194,17 @@ export class KillSwitchService {
     });
 
     // Kafka Event for downstream services (Webhook, Campaign)
-    await this.kafkaService.emit("aimstors.security.events", {
-      action: "TENANT_SUSPENDED",
-      tenantId,
-      reason,
-      timestamp: Date.now(),
-    });
+    await this.kafkaService.emit(
+      KafkaTopic.AUDIT_LOGS,
+      KafkaEvent.AUDIT_CREATED,
+      {
+        action: "TENANT_SUSPENDED",
+        tenantId,
+        reason,
+        timestamp: Date.now(),
+      },
+      tenantId
+    );
   }
 
   private mapScoreToSeverity(score: number): RiskSeverity {
