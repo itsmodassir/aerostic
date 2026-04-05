@@ -70,11 +70,6 @@ async function bootstrap() {
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains; preload",
     );
-    // CSP (Content-Security-Policy) - Minimal safe policy
-    res.setHeader(
-      "Content-Security-Policy",
-      "default-src 'self'; script-src 'self'; object-src 'none';",
-    );
     // Referrer Policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     next();
