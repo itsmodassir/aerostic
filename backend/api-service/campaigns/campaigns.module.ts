@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { CampaignsService } from "./campaigns.service";
 import { CampaignsController } from "./campaigns.controller";
 import { Campaign } from "./entities/campaign.entity";
+import { CampaignTrigger } from "./entities/campaign-trigger.entity";
 import { ContactsModule } from "../contacts/contacts.module";
 import { MessagesModule } from "../messages/messages.module";
 
@@ -12,9 +13,13 @@ import { AuditModule } from "../audit/audit.module";
 import { AdminModule } from "../admin/admin.module";
 import { BillingModule } from "../billing/billing.module";
 
+import { CampaignCronService } from "./campaign-cron.service";
+import { CampaignAnalyticsService } from "./campaign-analytics.service";
+import { CampaignAnalyticsController } from "./campaign-analytics.controller";
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Campaign]),
+    TypeOrmModule.forFeature([Campaign, CampaignTrigger]),
     BullModule.registerQueue({
       name: "campaign-queue",
     }),
@@ -24,7 +29,12 @@ import { BillingModule } from "../billing/billing.module";
     forwardRef(() => AdminModule),
     forwardRef(() => BillingModule),
   ],
-  controllers: [CampaignsController],
-  providers: [CampaignsService, CampaignProcessor],
+  controllers: [CampaignsController, CampaignAnalyticsController],
+  providers: [
+    CampaignsService, 
+    CampaignProcessor, 
+    CampaignCronService, 
+    CampaignAnalyticsService
+  ],
 })
 export class CampaignsModule { }

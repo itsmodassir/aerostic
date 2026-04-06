@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import axios from "axios";
 import { NodeExecutor } from "./executor.interface";
 import { VariableResolverService } from "../variable-resolver.service";
+import { SafeUrlUtil } from "@shared/utils/safe-url.util";
 
 @Injectable()
 export class ApiRequestExecutor implements NodeExecutor {

@@ -83,4 +83,28 @@ export class ContactsService {
     const contact = await this.findOne(id, tenantId);
     await this.contactsRepository.remove(contact);
   }
+
+  /**
+   * Fetches contacts matching specific segmentation criteria.
+   * @param tenantId The tenant context
+   * @param config Segmentation rules (tags, status, etc.)
+   */
+  async getSegmentedContacts(tenantId: string, config: any): Promise<Contact[]> {
+    const query = this.contactsRepository.createQueryBuilder("contact")
+      .where("contact.tenantId = :tenantId", { tenantId });
+
+    if (config.status) {
+      query.andWhere("contact.status = :status", { status: config.status });
+    }
+
+    if (config.tags && Array.isArray(config.tags) && config.tags.length > 0) {
+      // Assuming tags are stored as an array in contact.attributes.tags
+      // Uses Postgres JSONB containment operator (@>)
+      query.andWhere("contact.attributes->'tags' @> :tags", {
+        tags: JSON.stringify(config.tags),
+      });
+    }
+
+    return query.getMany();
+  }
 }

@@ -246,6 +246,17 @@ const DEFAULT_CONFIG: Record<string, ConfigDef> = {
 
 
 const PROTECTED_KEYS = new Set(Object.keys(DEFAULT_CONFIG));
+const SAFE_ENV_WHITELIST = new Set([
+  "NODE_ENV",
+  "PORT",
+  "APP_URL",
+  "VERSION",
+  "DB_TYPE",
+  "REDIS_HOST",
+  "REDIS_PORT",
+  "LOG_LEVEL",
+  "TIMEZONE",
+]);
 
 @Injectable()
 export class AdminConfigService implements OnModuleInit {
@@ -477,8 +488,7 @@ export class AdminConfigService implements OnModuleInit {
         where: { key, tenantId: tenantId ?? IsNull() },
       });
 
-      const isSecret =
-        DEFAULT_CONFIG[key]?.isSecret || config?.isSecret || false;
+      const isSecret = DEFAULT_CONFIG[key]?.isSecret === true;
       const finalValue = isSecret
         ? this.encryptionService.encrypt(value)
         : value;
@@ -560,35 +570,24 @@ export class AdminConfigService implements OnModuleInit {
     const envVars = process.env;
     const result = [];
 
-    const SENSITIVE_KEYWORDS = [
-      "KEY",
-      "SECRET",
-      "TOKEN",
-      "PASSWORD",
-      "AUTH",
-      "CREDENTIAL",
-    ];
-
     for (const [key, value] of Object.entries(envVars)) {
-      // Skip internal node/system vars that might be too noisy
-      if (
-        key.startsWith("NODE_") ||
-        key.startsWith("npm_") ||
-        key === "PATH" ||
-        key === "PWD" ||
-        key === "HOME"
-      ) {
-        if (!key.includes("PORT") && !key.includes("URL")) continue;
+      const isWhitelisted = SAFE_ENV_WHITELIST.has(key);
+      
+      // If not whitelisted, only show first 4 chars + mask if it's not a secret keyword
+      // But for better security, we just mask EVERYTHING not in whitelist.
+      if (!isWhitelisted) {
+        result.push({
+          key,
+          value: "••••••••••••••••",
+          isSensitive: true,
+        });
+        continue;
       }
-
-      const isSensitive = SENSITIVE_KEYWORDS.some((kw) =>
-        key.toUpperCase().includes(kw),
-      );
 
       result.push({
         key,
-        value: isSensitive ? "••••••••••••••••" : value,
-        isSensitive,
+        value: value,
+        isSensitive: false,
       });
     }
 

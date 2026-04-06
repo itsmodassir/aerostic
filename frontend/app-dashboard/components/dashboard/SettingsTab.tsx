@@ -11,6 +11,8 @@ import {
 import { clsx } from 'clsx';
 import { LockedFeatureCard } from './DashboardComponents';
 
+import api from '@/lib/api';
+
 export default function SettingsTab({ planFeatures, userPlan, membership }: any) {
     const [whatsappConfig, setWhatsappConfig] = useState({
         phoneNumberId: '',
@@ -33,27 +35,29 @@ export default function SettingsTab({ planFeatures, userPlan, membership }: any)
     const fetchConfig = async () => {
         setLoading(true);
         try {
-            const waRes = await fetch('/api/v1/whatsapp/status', { credentials: 'include' });
-            if (waRes.ok) {
-                const waData = await waRes.json();
+            const waRes = await api.get('/whatsapp/status');
+            if (waRes.status === 200) {
+                const waData = waRes.data;
                 if (waData.connected) {
                     setWhatsappConfig({
-                        phoneNumberId: waData.phoneNumber || '',
+                        phoneNumberId: waData.phoneNumberId || '',
                         wabaId: waData.wabaId || '',
                         accessToken: 'Connected via Embedded OAuth'
                     });
                 }
             }
 
-            const configRes = await fetch('/api/v1/admin/config', { credentials: 'include' });
-            if (configRes.ok) {
-                const configData = await configRes.json();
+            const configRes = await api.get('/admin/config');
+            if (configRes.status === 200) {
+                const configData = configRes.data;
                 setAiConfig({
                     model: configData['ai.model']?.value || 'gemini-2.0-flash',
                     systemPrompt: configData['ai.system_prompt']?.value || '',
                     knowledgeBase: configData['ai.knowledge_base']?.value || ''
                 });
             }
+        } catch (error) {
+            console.error('Failed to fetch config', error);
         } finally {
             setLoading(false);
         }
@@ -81,6 +85,25 @@ export default function SettingsTab({ planFeatures, userPlan, membership }: any)
         }
     };
 
+    const handleConnectWhatsApp = async () => {
+        try {
+            const res = await fetch('/api/v1/whatsapp/embedded/url', { credentials: 'include' });
+            const data = await res.json();
+            if (data.url) {
+                const width = 600;
+                const height = 700;
+                const left = window.screen.width / 2 - width / 2;
+                const top = window.screen.height / 2 - height / 2;
+                window.open(data.url, 'MetaSignup', `width=${width},height=${height},top=${top},left=${left}`);
+                
+                // Poll for status change or instruct user to refresh
+                setSuccessMsg('Opening Meta Secure Gateway...');
+            }
+        } catch (error) {
+            console.error('Failed to get signup URL', error);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center p-20">
@@ -91,6 +114,8 @@ export default function SettingsTab({ planFeatures, userPlan, membership }: any)
             </div>
         );
     }
+
+    const isConnected = whatsappConfig.wabaId && whatsappConfig.phoneNumberId;
 
     return (
         <div className="space-y-12 animate-in slide-in-from-bottom-8 duration-700 pb-20">
@@ -112,16 +137,27 @@ export default function SettingsTab({ planFeatures, userPlan, membership }: any)
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Manage Business API and Vector communication</p>
                         </div>
                     </div>
-                    <button 
-                        onClick={saveWhatsAppConfig}
-                        disabled={saving === 'whatsapp'}
-                        className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black transition-all active:scale-95 shadow-xl shadow-emerald-100 flex items-center gap-3"
-                    >
-                        {saving === 'whatsapp' ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : <Save size={18} strokeWidth={3} />}
-                        Sync Protocol
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {!isConnected && (
+                            <button 
+                                onClick={handleConnectWhatsApp}
+                                className="px-8 py-4 bg-black text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all active:scale-95 shadow-xl flex items-center gap-3"
+                            >
+                                <Globe size={18} strokeWidth={3} />
+                                Connect Meta Business
+                            </button>
+                        )}
+                        <button 
+                            onClick={saveWhatsAppConfig}
+                            disabled={saving === 'whatsapp'}
+                            className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black transition-all active:scale-95 shadow-xl shadow-emerald-100 flex items-center gap-3"
+                        >
+                            {saving === 'whatsapp' ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : <Save size={18} strokeWidth={3} />}
+                            Sync Protocol
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-8 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-8">

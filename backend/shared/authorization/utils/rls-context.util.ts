@@ -5,31 +5,23 @@ export class RlsContextUtil {
     target: DataSource | QueryRunner | EntityManager,
     tenantId: string,
   ): Promise<void> {
-    const query = `SET app.current_tenant = '${tenantId}'`;
-    if (target instanceof DataSource) {
-      await target.query(query);
-    } else if (target instanceof EntityManager) {
-      await target.query(query);
-    } else {
-      await target.query(query);
-    }
+    await target.query(`SELECT set_config('app.current_tenant', $1, false)`, [
+      tenantId,
+    ]);
   }
 
   static async setLocalContext(
     target: DataSource | QueryRunner | EntityManager,
     tenantId: string,
   ): Promise<void> {
-    const query = `SET LOCAL app.current_tenant = '${tenantId}'`;
-     if (target instanceof DataSource) {
-      await target.query(query);
-    } else if (target instanceof EntityManager) {
-      await target.query(query);
-    } else {
-      await target.query(query);
-    }
+    await target.query(`SELECT set_config('app.current_tenant', $1, true)`, [
+      tenantId,
+    ]);
   }
 
-  static async clearContext(target: DataSource | QueryRunner | EntityManager): Promise<void> {
-    await target.query(`RESET app.current_tenant`);
+  static async clearContext(
+    target: DataSource | QueryRunner | EntityManager,
+  ): Promise<void> {
+    await target.query(`SELECT set_config('app.current_tenant', '', true)`);
   }
 }

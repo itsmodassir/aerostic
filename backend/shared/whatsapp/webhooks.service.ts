@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { Not, IsNull } from "typeorm";
 import * as crypto from "crypto";
 import axios from "axios";
 import { ConfigService } from "@nestjs/config";
@@ -10,6 +11,9 @@ import { WhatsappAccount } from "./entities/whatsapp-account.entity";
 import { Contact } from "../database/entities/core/contact.entity";
 import { Conversation } from "../database/entities/messaging/conversation.entity";
 import { Message } from "../database/entities/messaging/message.entity";
+import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
+import { AiService } from "../../api-service/ai/ai.service";
+import { forwardRef, Inject } from "@nestjs/common";
 
 @Injectable()
 export class WebhooksService {
@@ -25,8 +29,12 @@ export class WebhooksService {
     private conversationRepo: Repository<Conversation>,
     @InjectRepository(Message)
     private messageRepo: Repository<Message>,
+    @InjectRepository(Campaign)
+    private campaignRepo: Repository<Campaign>,
     @InjectQueue("whatsapp-webhooks")
     private webhookQueue: Queue,
+    @Inject(forwardRef(() => AiService))
+    private aiService: AiService,
   ) {}
 
   verifyWebhook(mode: string, token: string, challenge: string): string {
@@ -185,6 +193,39 @@ export class WebhooksService {
       status: "received",
     });
 
+    // --- NEW: Campaign Conversion Attribution ---
+    // If this is a reply to the last outbound message, or if we can track campaignId
+    // For simplicity, let's look at the most recent outbound campaign message to this contact
+    const lastCampaignMsg = await this.messageRepo.findOne({
+        where: { 
+            tenantId: account.tenantId, 
+            conversationId: conversation.id, 
+            direction: "out",
+            campaignId: Not(IsNull()) 
+        },
+        order: { createdAt: "DESC" }
+    });
+
+    if (lastCampaignMsg) {
+        message.campaignId = lastCampaignMsg.campaignId;
+        // Increment Conversion Count on Campaign
+        await this.campaignRepo.increment({ id: lastCampaignMsg.campaignId }, "conversionCount", 1);
+        this.logger.log(`Campaign ${lastCampaignMsg.campaignId} conversion attributed to reply from ${from}`);
+
+        // --- NEW: AI Auto-Reply for Campaigns ---
+        const messageBody = this.extractMessageBody(msg);
+        if (messageBody) {
+            // Trigger AI response in background
+            this.aiService.processCampaignReply(
+                account.tenantId,
+                from,
+                messageBody,
+                lastCampaignMsg.campaignId
+            ).catch(err => this.logger.error("AI Auto-reply failed", err));
+        }
+    }
+    // --------------------------------------------
+
     await this.messageRepo.save(message);
 
     // TODO: Emit to socket via Gateway (requires sharing Gateway logic or using an event emitter)
@@ -235,8 +276,26 @@ export class WebhooksService {
     for (const statusUpdate of statuses) {
       const msg = await this.messageRepo.findOne({ where: { metaMessageId: statusUpdate.id } });
       if (msg) {
+        const oldStatus = msg.status;
         msg.status = statusUpdate.status;
+        if (statusUpdate.status === "read" && !msg.readAt) {
+            msg.readAt = new Date();
+        }
         await this.messageRepo.save(msg);
+
+        // --- NEW: Campaign Stats Tracking ---
+        if (msg.campaignId) {
+            if (statusUpdate.status === "delivered" && oldStatus !== "delivered" && oldStatus !== "read") {
+                await this.campaignRepo.increment({ id: msg.campaignId }, "deliveredCount", 1);
+            } else if (statusUpdate.status === "read" && oldStatus !== "read") {
+                await this.campaignRepo.increment({ id: msg.campaignId }, "readCount", 1);
+                // Also count as delivered if we somehow missed that status
+                if (oldStatus !== "delivered") {
+                    await this.campaignRepo.increment({ id: msg.campaignId }, "deliveredCount", 1);
+                }
+            }
+        }
+        // -----------------------------------
       }
     }
   }

@@ -17,6 +17,7 @@ function CallbackContent() {
         const tenantIdFromState = state?.split(':')[0] || '';
         const persistTenantContext = (tenantId: string) => {
             localStorage.setItem('x-tenant-id', tenantId);
+            localStorage.setItem('selected_tenant_id', tenantId);
             document.cookie = `selected_tenant=${tenantId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
         };
 

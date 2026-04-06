@@ -53,13 +53,13 @@ cd ..
 # 4. Build Frontends
 echo "🏗️ Building Frontends..."
 
-# 4.1 Landing Page
-echo "🌐 Building Landing Page..."
-cd frontend/landing
-sudo rm -rf dist
-npm install --production=false --legacy-peer-deps
-npm run build
-cd ../..
+# 4.1 Landing Page - DELETED (Migrated to app-dashboard)
+# echo "🌐 Building Landing Page..."
+# cd frontend/landing
+# sudo rm -rf dist
+# npm install --production=false --legacy-peer-deps
+# npm run build
+# cd ../..
 
 # 4.2 App Dashboard
 echo "📱 Building App Dashboard..."

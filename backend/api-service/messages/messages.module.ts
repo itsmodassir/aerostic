@@ -13,6 +13,7 @@ import { MessagesGateway } from "./messages.gateway";
 import { AuditModule } from "../audit/audit.module";
 import { BillingModule } from "../billing/billing.module";
 import { AdminModule } from "../admin/admin.module";
+import { WhatsappModule } from "../whatsapp/whatsapp.module";
 
 @Module({
   imports: [

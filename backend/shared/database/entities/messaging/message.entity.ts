@@ -64,6 +64,14 @@ export class Message {
   @Column({ default: "sent" })
   status: string; // sent, delivered, read, failed, received
 
+  @Column({ name: "template_name", nullable: true })
+  @Index()
+  templateName: string;
+
+  @Column({ name: "read_at", nullable: true })
+  @Index()
+  readAt: Date;
+
   @Column({ type: "jsonb", nullable: true })
   metadata: any;
 

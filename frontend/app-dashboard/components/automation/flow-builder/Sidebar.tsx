@@ -107,12 +107,12 @@ const nodeCategories = [
       },
       {
         kind: "delay" as NodeKind,
-        name: "Delay",
+        name: "Wait",
         icon: Clock,
         color: "text-slate-500",
         bg: "bg-slate-50",
         border: "border-slate-200",
-        tip: "Pause execution for a specific duration.",
+        tip: "Pause execution for a specific duration before continuing.",
       },
       {
         kind: "set_variable" as NodeKind,
@@ -183,10 +183,10 @@ export function Sidebar({ onAddNode }: SidebarProps) {
                            <Icon className="w-5 h-5 fill-current" />
                         </div>
                         <div className="text-left">
-                            <span className="block text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                              <span className="block text-[11px] font-black text-slate-900 uppercase tracking-tight">
                                 {item.name}
-                            </span>
-                             <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Component</span>
+                              </span>
+                              <span className="block text-[9px] text-slate-400 font-black uppercase tracking-tighter">Flow Control</span>
                         </div>
                       </button>
                       

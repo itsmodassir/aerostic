@@ -16,6 +16,7 @@ import { WorkflowExecutionLog } from "./workflow-execution-log.entity";
 export enum ExecutionStatus {
   PENDING = "pending",
   RUNNING = "running",
+  PAUSED = "paused",
   COMPLETED = "completed",
   FAILED = "failed",
   PARTIAL = "partial",

@@ -10,6 +10,7 @@ import { RedisService } from "@shared/redis.service";
 import { EncryptionService } from "@shared/encryption.service";
 import { Template } from "@api/templates/entities/template.entity";
 import { AdminConfigService } from "@api/admin/services/admin-config.service";
+import { PiiMasker } from "@shared/utils/pii-masker.util";
 
 @Injectable()
 export class MetaService {
@@ -40,10 +41,9 @@ export class MetaService {
    * VERIFY Webhook (GET)
    */
   async verifyWebhook(mode: string, token: string, challenge: string) {
-    const verifyToken =
-      (await this.adminConfigService.getConfigValue(
-        "meta.webhook_verify_token",
-      )) || "aimstors_verification_token";
+    const verifyToken = await this.adminConfigService.getConfigValue(
+      "meta.webhook_verify_token",
+    );
 
     // 2. Validate
     if (mode === "subscribe" && token === verifyToken) {
@@ -60,7 +60,9 @@ export class MetaService {
    * HANDLE Webhook Events (POST)
    */
   async handleWebhookEvent(body: any) {
-    this.logger.debug(`Received Webhook: ${JSON.stringify(body)}`);
+    this.logger.debug(
+      `Received Webhook: ${JSON.stringify(PiiMasker.mask(body))}`,
+    );
 
     // Basic structure validation
     if (body.object === "whatsapp_business_account") {

@@ -11,6 +11,7 @@ import { AuditModule } from "@api/audit/audit.module";
 import { AdminModule } from "@api/admin/admin.module";
 
 import { Template } from "@api/templates/entities/template.entity";
+import { MetaSignatureGuard } from "./guards/meta-signature.guard";
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { Template } from "@api/templates/entities/template.entity";
     AdminModule,
   ],
   controllers: [MetaController],
-  providers: [MetaService, MetaTokenService],
+  providers: [MetaService, MetaTokenService, MetaSignatureGuard],
   exports: [MetaService],
 })
 export class MetaModule {}

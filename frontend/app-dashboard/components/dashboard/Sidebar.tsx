@@ -31,6 +31,7 @@ const NAVIGATION: NavItem[] = [
     { name: 'Leads', href: '/leads', icon: Target },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Automation', href: '/automation', icon: Zap, permission: 'automation:create' },
+    { name: 'Automations (AI)', href: '/automations', icon: Bot, permission: 'campaigns:read' },
     { name: 'AI Agent', href: '/ai-agent', icon: Bot, permission: 'automation:create' },
     { name: 'Scheduler', href: '/scheduler', icon: Calendar },
     {

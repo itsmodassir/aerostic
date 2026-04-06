@@ -237,13 +237,19 @@ export const SetVariableNode = ({ data, selected }: NodeProps<XYNode<BuilderNode
 );
 
 export const DelayNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
-  <NodeWrapper title="Wait" icon={Clock} color="text-slate-500" bg="bg-slate-50/50" selected={selected}>
-    <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-black text-slate-700 tracking-tighter">{data.waitDuration || 1}</span>
-        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{data.waitUnit || 'minutes'}</span>
+  <NodeWrapper title="Wait / Delay" icon={Clock} color="text-slate-600" bg="bg-slate-100" selected={selected}>
+    <div className="flex flex-col gap-1">
+        <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-black text-slate-800 tracking-tighter">{data.waitDuration || 1}</span>
+            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{data.waitUnit || 'minutes'}</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-0.5">
+            <div className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">Drip Interval</span>
+        </div>
     </div>
     <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
-    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-600 !border-2 !border-white" />
   </NodeWrapper>
 );
 

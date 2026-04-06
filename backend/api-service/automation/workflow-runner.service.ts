@@ -23,11 +23,16 @@ import { LeadUpdateExecutor } from "./executors/lead-update.executor";
 import { MemoryExecutor } from "./executors/memory.executor";
 import { KnowledgeExecutor } from "./executors/knowledge.executor";
 import { BrowserAgentExecutor } from "./executors/browser-agent.executor";
+import { WaitExecutor } from "./executors/wait.executor";
 import { DAGTraversalService } from "./dag-traversal.service";
+
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
 
 @Injectable()
 export class WorkflowRunnerService {
   private readonly logger = new Logger(WorkflowRunnerService.name);
+  private readonly MAX_RECURSION_DEPTH = 50;
 
   constructor(
     @InjectRepository(Workflow)
@@ -50,7 +55,9 @@ export class WorkflowRunnerService {
     private memoryExecutor: MemoryExecutor,
     private knowledgeExecutor: KnowledgeExecutor,
     private browserAgentExecutor: BrowserAgentExecutor,
+    private waitExecutor: WaitExecutor,
     private dagService: DAGTraversalService,
+    @InjectQueue("workflow-resume") private resumeQueue: Queue,
   ) { }
 
   /**
@@ -112,7 +119,7 @@ export class WorkflowRunnerService {
       }
 
       // 3. Start recursive execution from trigger
-      await this.executeNode(workflow, triggerNode, execution, initialContext);
+      await this.executeNode(workflow, triggerNode, execution, initialContext, 0);
 
       // 4. Mark execution as completed
       execution.status = ExecutionStatus.COMPLETED;
@@ -133,14 +140,20 @@ export class WorkflowRunnerService {
   }
 
   /**
-   * Executes an individual node and its children
+   * Executes an individual node and its children.
+   * Public so it can be resumed by the WorkflowResumeProcessor.
    */
-  private async executeNode(
+  public async executeNode(
     workflow: Workflow,
     node: any,
     execution: WorkflowExecution,
     context: any,
+    currentDepth: number = 0,
   ) {
+    if (currentDepth > this.MAX_RECURSION_DEPTH) {
+      throw new Error(`Maximum workflow recursion depth (${this.MAX_RECURSION_DEPTH}) exceeded`);
+    }
+
     const startTime = Date.now();
 
     // 1. Create log entry
@@ -181,6 +194,30 @@ export class WorkflowRunnerService {
         },
       );
 
+      // --- NEW: Wait/Pause Logic ---
+      if (result?.status === "paused" && result?.resumable) {
+          execution.status = ExecutionStatus.PAUSED;
+          execution.context = context; // Persist context state
+          await this.executionRepo.save(execution);
+
+          log.status = NodeExecutionStatus.WAITING;
+          await this.logRepo.save(log);
+
+          // Schedule Wakeup Job
+          await this.resumeQueue.add("resume-workflow", {
+              executionId: execution.id,
+              nodeId: node.id,
+              tenantId: execution.tenantId,
+          }, {
+              delay: result.delay || 1000,
+              removeOnComplete: true,
+          });
+
+          this.logger.log(`Workflow ${execution.id} paused at node ${node.id} for ${result.delay}ms`);
+          return; // Termination of this branch's recursion
+      }
+      // ----------------------------
+
       // 4. Update overall execution context
       // Store results in nodes section of context
       if (!context.nodes) context.nodes = {};
@@ -209,7 +246,13 @@ export class WorkflowRunnerService {
       for (const edge of filteredEdges) {
         const nextNode = workflow.nodes.find((n) => n.id === edge.target);
         if (nextNode) {
-          await this.executeNode(workflow, nextNode, execution, context);
+          await this.executeNode(
+            workflow,
+            nextNode,
+            execution,
+            context,
+            currentDepth + 1,
+          );
         }
       }
     } catch (error) {
@@ -274,6 +317,10 @@ export class WorkflowRunnerService {
 
       case "browser_agent":
         return this.browserAgentExecutor.execute(node, context);
+
+      case "wait":
+      case "delay":
+        return this.waitExecutor.execute(node);
 
       default:
         this.logger.warn(`No executor for node type: ${node.type}`);

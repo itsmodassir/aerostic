@@ -18,9 +18,16 @@ export class TenantGuard implements CanActivate {
 
     if (!user) return false;
 
-    // Super Admin can access everything
-    if (user.role === SystemRole.SUPER_ADMIN) {
+    // Super Admin can access everything ONLY if not impersonating
+    if (user.role === SystemRole.SUPER_ADMIN && !user.isImpersonation) {
       return true;
+    }
+
+    // Security: If impersonating, block destructive actions (DELETE)
+    if (user.isImpersonation && request.method === "DELETE") {
+      throw new ForbiddenException(
+        "Access Denied: Destructive actions are disabled during impersonation.",
+      );
     }
 
     // Attempt to find tenantId in various locations
@@ -31,16 +38,22 @@ export class TenantGuard implements CanActivate {
     const targetTenantId =
       tenantIdFromRoute || tenantIdFromQuery || tenantIdFromBody;
 
-    // If no tenantId is targetted, we might be in a global context or specific route
-    if (!targetTenantId) {
-      return true;
+    // Fail-Safe: If no tenant is explicitly targeted, we default to the user's
+    // authorized tenant context to ensure RLS fallback is active.
+    const resolvedTenantId = targetTenantId || user.tenantId;
+
+    if (!resolvedTenantId) {
+      throw new ForbiddenException("Access Denied: Missing tenant context.");
     }
 
-    if (user.tenantId !== targetTenantId) {
+    if (user.tenantId !== resolvedTenantId) {
       throw new ForbiddenException(
         "Access Denied: Tenant isolation violation.",
       );
     }
+
+    // Attach to request for downstream (Interceptors, etc.)
+    request.targetTenantId = resolvedTenantId;
 
     return true;
   }

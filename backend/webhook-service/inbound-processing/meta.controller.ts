@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
 import { MetaService } from "./meta.service";
+import { MetaSignatureGuard } from "./guards/meta-signature.guard";
 
 @Controller("meta")
 export class MetaController {
@@ -31,6 +32,7 @@ export class MetaController {
   }
 
   @Post("webhook")
+  @UseGuards(MetaSignatureGuard)
   async handleWebhook(@Body() body: any) {
     return this.metaService.handleWebhookEvent(body);
   }

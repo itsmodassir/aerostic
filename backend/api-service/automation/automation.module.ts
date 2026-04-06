@@ -1,4 +1,5 @@
-import { Module } from "@nestjs/common";
+import { Module, Logger } from "@nestjs/common";
+import { BullModule } from "@nestjs/bullmq";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AutomationService } from "./automation.service";
 import { AutomationController } from "./automation.controller";
@@ -54,6 +55,9 @@ import {
 import { NewAutomationService } from "@api/automation/new-automation.service";
 import { NewAutomationController } from "@api/automation/new-automation.controller";
 
+import { WaitExecutor } from "./executors/wait.executor";
+import { WorkflowResumeProcessor } from "./workflow-resume.processor";
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -77,6 +81,9 @@ import { NewAutomationController } from "@api/automation/new-automation.controll
       NewAutomationExecution,
       NewAutomationExecutionLog,
     ]),
+    BullModule.registerQueue({
+      name: "workflow-resume",
+    }),
     MessagesModule,
     AuditModule,
     AiModule,
@@ -104,7 +111,9 @@ import { NewAutomationController } from "@api/automation/new-automation.controll
     ConditionExecutor,
     GeminiExecutor,
     LeadUpdateExecutor,
+    WaitExecutor,
     WorkflowExecutionService,
+    WorkflowResumeProcessor,
     DAGTraversalService,
     MemoryExecutor,
     KnowledgeExecutor,
@@ -125,7 +134,9 @@ import { NewAutomationController } from "@api/automation/new-automation.controll
     ConditionExecutor,
     GeminiExecutor,
     LeadUpdateExecutor,
+    WaitExecutor,
     WorkflowExecutionService,
+    WorkflowResumeProcessor,
     DAGTraversalService,
     MemoryExecutor,
     KnowledgeExecutor,

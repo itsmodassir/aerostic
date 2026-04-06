@@ -31,6 +31,14 @@ export class TenantIsolationInterceptor implements NestInterceptor {
       request.body?.tenantId;
 
     if (tenantId) {
+      // Strict UUID Validation to prevent SQL injection and malformed context
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(tenantId)) {
+        this.logger.warn(`Invalid tenantId format blocked: ${tenantId}`);
+        return next.handle(); // Fallback to default (likely denied by RLS anyway)
+      }
+
       try {
         // Use SET LOCAL via RlsContextUtil to ensure context is scoped to the connection/transaction
         await RlsContextUtil.setLocalContext(this.dataSource, tenantId);

@@ -4,12 +4,16 @@ import { ConfigService } from "@nestjs/config";
 import { Repository } from "typeorm";
 import { AiAgent } from "./entities/ai-agent.entity";
 import { MessagesService } from "../messages/messages.service";
+import { Campaign } from "../campaigns/entities/campaign.entity";
 import { KnowledgeChunk } from "./entities/knowledge-chunk.entity";
 import { KnowledgeBase } from "./entities/knowledge-base.entity";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import { AdminConfigService } from "../admin/services/admin-config.service";
 import { PinchtabService } from "./pinchtab.service";
+import { WalletService } from "../billing/wallet.service";
+import { TransactionType } from "@shared/database/entities/billing/wallet-transaction.entity";
+import { WalletAccountType } from "@shared/database/entities/billing/wallet-account.entity";
 
 @Injectable()
 export class AiService {
@@ -25,8 +29,11 @@ export class AiService {
     private chunkRepo: Repository<KnowledgeChunk>,
     @InjectRepository(KnowledgeBase)
     private kbRepo: Repository<KnowledgeBase>,
+    @InjectRepository(Campaign)
+    private campaignRepo: Repository<Campaign>,
     @Inject(forwardRef(() => PinchtabService))
     private pinchtabService: PinchtabService,
+    private walletService: WalletService,
   ) {}
 
   /**
@@ -53,6 +60,17 @@ export class AiService {
     return new OpenAI({ apiKey: key });
   }
 
+  /**
+   * Calculates the credit cost of a single AI generation based on the model.
+   */
+  private getModelCost(modelName: string): number {
+    const name = modelName.toLowerCase();
+    if (name.includes("gpt-4o-mini")) return 2;
+    if (name.includes("gpt-4o")) return 15;
+    if (name.includes("gemini")) return 1;
+    return 1; // Default fallback
+  }
+
   async process(
     tenantId: string,
     from: string,
@@ -69,6 +87,22 @@ export class AiService {
 
     try {
       const agent = await this.aiAgentRepo.findOneBy({ tenantId });
+      const preferredModel = options?.model || agent?.model || (genAI ? "gemini-1.5-flash" : "gpt-4o-mini");
+      
+      const creditCost = this.getModelCost(preferredModel);
+
+      // 0. Credit Check & Deduction
+      await this.walletService.processTransaction(
+        tenantId,
+        WalletAccountType.AI_CREDITS,
+        creditCost,
+        TransactionType.DEBIT,
+        {
+          referenceType: "AI_MESSAGE",
+          referenceId: from,
+          description: `AI Response (${preferredModel}) to ${from}`,
+        },
+      );
 
       const systemPrompt =
         options?.systemPrompt ||
@@ -128,35 +162,48 @@ export class AiService {
       if (kbContext) contextStr += `\n[Reference Knowledge Base]:\n${kbContext}\n`;
 
       let aiReply = "";
+      const isGeminiPreferred = preferredModel.toLowerCase().includes("gemini");
 
-      if (isGemini && genAI) {
-        const tools: any[] = [];
-        if (agent?.webSearchEnabled) {
-          tools.push({
-            googleSearchRetrieval: {
-              dynamicRetrievalConfig: {
-                mode: "DYNAMIC",
-                dynamicThreshold: 0.3,
-              },
-            },
-          });
+      // Try Preferred Provider first, then fallback
+      const providers = isGeminiPreferred ? ["gemini", "openai"] : ["openai", "gemini"];
+      
+      for (const provider of providers) {
+        try {
+          if (provider === "gemini" && genAI) {
+            const tools: any[] = [];
+            if (agent?.webSearchEnabled) {
+              tools.push({
+                googleSearchRetrieval: {
+                  dynamicRetrievalConfig: { mode: "DYNAMIC", dynamicThreshold: 0.3 },
+                },
+              });
+            }
+            const model = genAI.getGenerativeModel({ 
+              model: isGeminiPreferred ? preferredModel : "gemini-1.5-flash", 
+              tools: tools.length > 0 ? tools : undefined 
+            });
+            const prompt = `${systemPrompt}\n\nContext:\n${contextStr}\n\nNote: If uncertain, reply exactly "HANDOFF_TO_AGENT".\n\nUser: ${messageBody}`;
+            const result = await model.generateContent(prompt);
+            aiReply = result.response.text();
+            break;
+          } else if (provider === "openai" && openai) {
+            const model = !isGeminiPreferred ? preferredModel : "gpt-4o-mini";
+            const completion = await openai.chat.completions.create({
+              model: model,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "system", content: contextStr },
+                { role: "system", content: `Answer the User. If uncertain, reply exactly "HANDOFF_TO_AGENT".` },
+                { role: "user", content: messageBody },
+              ],
+            });
+            aiReply = completion.choices[0]?.message?.content || "";
+            break;
+          }
+        } catch (err) {
+          this.logger.warn(`AI Provider ${provider} failed, trying fallback...`, err);
+          continue;
         }
-
-        const model = genAI.getGenerativeModel({ model: modelName, tools: tools.length > 0 ? tools : undefined });
-        const prompt = `${systemPrompt}\n\nContext:\n${contextStr}\n\nNote: If uncertain, reply exactly "HANDOFF_TO_AGENT".\n\nUser: ${messageBody}`;
-        const result = await model.generateContent(prompt);
-        aiReply = result.response.text();
-      } else if (openai) {
-        const completion = await openai.chat.completions.create({
-          model: modelName,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "system", content: contextStr },
-            { role: "system", content: `Answer the User. If uncertain, reply exactly "HANDOFF_TO_AGENT".` },
-            { role: "user", content: messageBody },
-          ],
-        });
-        aiReply = completion.choices[0]?.message?.content || "";
       }
 
       if (aiReply.includes("HANDOFF_TO_AGENT")) return;
@@ -170,6 +217,33 @@ export class AiService {
     } catch (e) {
       this.logger.error("AI Generation Failed", e);
     }
+  }
+
+  async processCampaignReply(
+    tenantId: string,
+    from: string,
+    messageBody: string,
+    campaignId: string
+  ) {
+    const agent = await this.aiAgentRepo.findOneBy({ tenantId });
+    if (!agent || !agent.autoResolveCampaignReplies || !agent.isActive) return;
+
+    const campaign = await this.campaignRepo.findOneBy({ id: campaignId }); 
+    
+    const context = `
+      [CAMPAIGN CONTEXT]
+      Campaign Name: ${campaign?.name}
+      Primary Template: ${campaign?.templateName}
+      Secondary Details: ${campaign?.segmentationConfig ? JSON.stringify(campaign.segmentationConfig) : 'N/A'}
+      
+      The user received this campaign message and is replying. 
+      Answer their questions about the offer, product, or service mentioned.
+      If you are unsure about specific details not in your knowledge base, hand over to a human.
+    `;
+
+    return this.process(tenantId, from, messageBody, {
+      systemPrompt: `${agent.systemPrompt}\n\n${context}`
+    });
   }
 
   async runAgent(
@@ -195,13 +269,31 @@ export class AiService {
     ];
 
     try {
+      const agent = await this.aiAgentRepo.findOneBy({ tenantId });
+      const preferredModel = agent?.model || (genAI ? "gemini-1.5-flash" : "gpt-4o-mini");
+      const creditCost = this.getModelCost(preferredModel);
+
+      // 0. Credit Check & Deduction (Agent Execution)
+      await this.walletService.processTransaction(
+        tenantId,
+        WalletAccountType.AI_CREDITS,
+        creditCost,
+        TransactionType.DEBIT,
+        {
+          referenceType: "AI_AGENT_START",
+          referenceId: tenantId,
+          description: `Agent Execution (${preferredModel}): ${messageBody.substring(0, 50)}...`,
+        },
+      );
+
       if (openai) {
         let turns = 0;
         const MAX_TURNS = 10;
+        const model = !preferredModel.includes("gemini") ? preferredModel : "gpt-4o-mini";
 
         while (turns < MAX_TURNS) {
           const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: model,
             messages,
             tools: formattedTools.length > 0 ? formattedTools : undefined,
           });

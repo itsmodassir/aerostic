@@ -5,8 +5,11 @@ import { WhatsappAccount } from "./entities/whatsapp-account.entity";
 import { Contact } from "../database/entities/core/contact.entity";
 import { Conversation } from "../database/entities/messaging/conversation.entity";
 import { Message } from "../database/entities/messaging/message.entity";
+import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
 import { WhatsappService } from "./whatsapp.service";
 import { WebhooksService } from "./webhooks.service";
+import { AiModule } from "../../api-service/ai/ai.module";
+import { forwardRef } from "@nestjs/common";
 
 @Module({
   imports: [
@@ -15,7 +18,9 @@ import { WebhooksService } from "./webhooks.service";
       Contact,
       Conversation,
       Message,
+      Campaign,
     ]),
+    forwardRef(() => AiModule),
     BullModule.registerQueue({
       name: "whatsapp-messages",
     }),

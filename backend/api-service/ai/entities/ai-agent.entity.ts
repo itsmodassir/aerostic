@@ -102,6 +102,9 @@ export class AiAgent {
   @Column({ name: "business_hours_only", default: false })
   businessHoursOnly: boolean;
 
+  @Column({ name: "auto_resolve_campaign_replies", default: false })
+  autoResolveCampaignReplies: boolean;
+
   // Training Data (JSON)
   @Column({ name: "knowledge_base", type: "text", nullable: true })
   knowledgeBase: string; // JSON array of Q&A pairs

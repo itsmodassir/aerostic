@@ -7,18 +7,14 @@ import { DataSource } from "typeorm";
 
 const STRICT_ALLOWED_TABLES = new Set([
   "tenants",
-  "users",
   "subscriptions",
   "plans",
   "messages",
   "campaigns",
-  "wallet_transactions",
   "usage_events",
   "webhooks",
-  "system_configs",
   "mailboxes",
   "email_messages",
-  "audit_logs",
   "system_daily_metrics",
   "tenant_daily_metrics",
 ]);
@@ -33,6 +29,9 @@ const SENSITIVE_COLUMNS = new Set([
   "token_version",
   "refresh_token",
   "encryption_key",
+  "mfa_secret",
+  "metadata",
+  "payload",
 ]);
 
 @Injectable()

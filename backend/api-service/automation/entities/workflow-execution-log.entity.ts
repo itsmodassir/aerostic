@@ -14,6 +14,7 @@ export enum NodeExecutionStatus {
   COMPLETED = "completed",
   FAILED = "failed",
   SKIPPED = "skipped",
+  WAITING = "waiting",
 }
 
 @Entity("workflow_execution_logs")

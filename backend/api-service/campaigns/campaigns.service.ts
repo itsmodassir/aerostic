@@ -1,7 +1,9 @@
-import { Injectable, BadRequestException, Inject, forwardRef } from "@nestjs/common";
+import { Injectable, BadRequestException, Inject, forwardRef, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Campaign } from "./entities/campaign.entity";
+import { CampaignTrigger } from "./entities/campaign-trigger.entity";
+import { Contact } from "../contacts/entities/contact.entity";
 import { ContactsService } from "../contacts/contacts.service";
 import { MessagesService } from "../messages/messages.service";
 import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
@@ -16,9 +18,14 @@ import { AdminConfigService } from "../admin/services/admin-config.service";
 
 @Injectable()
 export class CampaignsService {
+  private readonly logger = new Logger(CampaignsService.name);
   constructor(
     @InjectRepository(Campaign)
-    private campaignRepo: Repository<Campaign>,
+    private readonly campaignRepo: Repository<Campaign>,
+    @InjectRepository(CampaignTrigger)
+    private readonly triggerRepo: Repository<CampaignTrigger>,
+    @InjectRepository(Contact)
+    private readonly contactRepo: Repository<Contact>,
     private contactsService: ContactsService,
     private messagesService: MessagesService,
     @InjectQueue("campaign-queue") private campaignQueue: Queue,
@@ -40,6 +47,33 @@ export class CampaignsService {
       status: "draft",
     });
     return this.campaignRepo.save(campaign);
+  }
+
+  async triggerSingle(apiKey: string, payload: { phone: string, name?: string, variables?: any }) {
+      const trigger = await this.triggerRepo.findOne({
+          where: { apiKey, isActive: true },
+          relations: ["campaign"]
+      });
+
+      if (!trigger) throw new NotFoundException("Invalid or inactive trigger key");
+
+      const campaign = trigger.campaign;
+      const variant = campaign.variants?.[0] || { 
+          templateName: campaign.templateName, 
+          templateLanguage: campaign.templateLanguage 
+      };
+
+      await this.campaignQueue.add("send-message", {
+          campaignId: campaign.id,
+          tenantId: trigger.tenantId,
+          phoneNumber: payload.phone,
+          name: payload.name || "Customer",
+          templateName: variant.templateName,
+          templateLanguage: variant.templateLanguage,
+          variables: { ...(campaign.segmentationConfig || {}), ...payload.variables },
+      });
+
+      return { status: "queued", phone: payload.phone };
   }
 
   async findAll(tenantId: string) {
@@ -65,7 +99,6 @@ export class CampaignsService {
     });
     if (!campaign) throw new Error("Campaign not found");
 
-    // 1. Determine Target Audience
     let contacts: any[] = [];
 
     if (campaign.recipientType === "ALL") {
@@ -73,21 +106,33 @@ export class CampaignsService {
       contacts = allContacts.map((c) => ({
         phoneNumber: c.phoneNumber,
         name: c.name,
+        attributes: c.attributes || {}
+      }));
+    } else if (campaign.recipientType === "SEGMENT") {
+      const segmentedContacts = await this.contactsService.getSegmentedContacts(
+        tenantId,
+        campaign.segmentationConfig,
+      );
+      contacts = segmentedContacts.map((c) => ({
+        phoneNumber: c.phoneNumber,
+        name: c.name,
+        attributes: c.attributes || {}
       }));
     } else if (["CSV", "MANUAL"].includes(campaign.recipientType)) {
-      // Use stored recipients from JSONB
-      // Expected format: [{ name, phoneNumber }, ...]
       contacts = campaign.recipients || [];
     }
 
     if (contacts.length === 0) {
+      if (campaign.isRecurring) {
+        await this.handleRecurrence(campaign);
+        return campaign;
+      }
       throw new Error("No contacts found for this campaign");
     }
 
-    // 2. Fetch Rate & Pre-charge Wallet
     const rateStr = await this.adminConfigService.getConfigValue(
       "whatsapp.template_rate_inr",
-      tenantId
+      tenantId,
     );
     const templateRate = parseFloat(rateStr || "0.80");
     const totalCost = contacts.length * templateRate;
@@ -102,45 +147,69 @@ export class CampaignsService {
           referenceType: "CAMPAIGN_BROADCAST",
           referenceId: campaignId,
           description: `Template broadcast to ${contacts.length} recipients. Rate: ₹${templateRate}/msg`,
-        }
+        },
       );
     } catch (error) {
-      throw new BadRequestException("Insufficient wallet balance for this campaign broadcast");
+      campaign.status = "failed";
+      campaign.errorLog = "Insufficient wallet balance";
+      await this.campaignRepo.save(campaign);
+      throw new BadRequestException(
+        "Insufficient wallet balance for this campaign broadcast",
+      );
     }
 
     campaign.totalContacts = contacts.length;
     campaign.totalCost = totalCost;
+    campaign.sentCount = 0;
+    campaign.failedCount = 0;
     campaign.status = "sending";
+    campaign.lastRunAt = new Date();
+
+    if (campaign.isRecurring) {
+      await this.handleRecurrence(campaign);
+    }
+
     await this.campaignRepo.save(campaign);
 
-    // 3. Add to Queue
-    const jobs = contacts.map((contact) => ({
-      name: "send-message",
-      data: {
-        tenantId,
-        campaignId,
-        to: contact.phoneNumber,
-        type: "template",
-        payload: {
-          name: campaign.templateName || "hello_world",
-          language: { code: campaign.templateLanguage || "en_US" },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                { type: "text", text: contact.name || "Valued Customer" }, // Example param 1
-              ],
-            },
-          ],
-        },
-      },
-    }));
+    const variants = (campaign.variants && campaign.variants.length > 0) 
+        ? campaign.variants 
+        : [{ templateName: campaign.templateName, templateLanguage: campaign.templateLanguage, weight: 1 }];
 
-    await this.campaignQueue.addBulk(jobs);
+    const totalWeight = variants.reduce((sum, v) => sum + (v.weight || 1), 0);
+    let cumulativeContacts = 0;
 
-    // Audit dispatch (Note: passing undefined for actorName if not available here, service might need userId passed in)
+    for (let vIndex = 0; vIndex < variants.length; vIndex++) {
+      const variant = variants[vIndex];
+      const variantCount = Math.floor(contacts.length * ((variant.weight || 1) / totalWeight));
+      const variantContacts = contacts.slice(cumulativeContacts, vIndex === variants.length - 1 ? contacts.length : cumulativeContacts + variantCount);
+      cumulativeContacts += variantCount;
+
+      for (const contact of variantContacts) {
+        await this.campaignQueue.add("send-message", {
+          tenantId,
+          campaignId,
+          to: contact.phoneNumber,
+          templateName: variant.templateName,
+          payload: {
+            name: variant.templateName,
+            language: { code: variant.templateLanguage || "en_US" },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: contact.name || "Valued Customer" },
+                  // Dynamic variables from contact attributes can be added here
+                ],
+              },
+            ],
+          },
+        });
+      }
+    }
+
+    // Audit dispatch
     await this.auditService.logAction(
-      "SYSTEM", // System action or we might want to pass user info to this service
+      "SYSTEM",
       "Campaign Service",
       "DISPATCH_CAMPAIGN",
       `Campaign: ${campaign.name}`,
@@ -153,5 +222,27 @@ export class CampaignsService {
     );
 
     return campaign;
+  }
+
+  /**
+   * Calculates and sets the next run time for a recurring campaign.
+   */
+  private async handleRecurrence(campaign: Campaign) {
+    if (!campaign.recurrenceRule) return;
+
+    try {
+      const parser = require("cron-parser");
+      const interval = parser.parseExpression(campaign.recurrenceRule, {
+        currentDate: new Date(),
+      });
+      campaign.nextRunAt = interval.next().toDate();
+    } catch (err) {
+      this.logger.error(
+        `Failed to parse recurrence rule for campaign ${campaign.id}: ${campaign.recurrenceRule}`,
+        err,
+      );
+      campaign.isRecurring = false; // Disable if rule is invalid to prevent loops
+      campaign.errorLog = `Invalid Recurrence Rule: ${campaign.recurrenceRule}`;
+    }
   }
 }
