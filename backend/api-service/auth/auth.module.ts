@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { UsersModule } from "../users/users.module";
 import { TenantsModule } from "../tenants/tenants.module";
@@ -21,9 +21,9 @@ import { ResellerConfig } from "@shared/database/entities/core/reseller-config.e
 
 @Module({
   imports: [
-    UsersModule,
+    forwardRef(() => UsersModule),
     TenantsModule,
-    AuditModule,
+    forwardRef(() => AuditModule),
     CommonModule,
     AuthorizationModule,
     TypeOrmModule.forFeature([
