@@ -1,4 +1,4 @@
-import { Module, Global } from "@nestjs/common";
+import { Module, Global, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { PolicyEntity } from "../database/entities/core/policy.entity";
 import { PolicyEngineService } from "./engine/policy-engine.service";
@@ -23,6 +23,7 @@ import { User } from "@shared/database/entities/core/user.entity";
       Subscription,
       User,
     ]),
+    forwardRef(() => TenantsModule),
   ],
   providers: [
     AuthzCacheService,

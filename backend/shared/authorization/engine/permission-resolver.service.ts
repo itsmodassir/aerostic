@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TenantsService } from "../../../api-service/tenants/tenants.service";
@@ -12,6 +12,7 @@ export class PermissionResolverService {
   constructor(
     @InjectRepository(PolicyEntity)
     private policyRepo: Repository<PolicyEntity>,
+    @Inject(forwardRef(() => TenantsService))
     private tenantsService: TenantsService,
   ) {}
 
