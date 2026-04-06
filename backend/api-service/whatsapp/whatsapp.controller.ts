@@ -4,12 +4,17 @@ import {
   Query,
   Res,
   Post,
+  Put,
+  Patch,
   Body,
   Delete,
   Param,
   UseGuards,
   BadRequestException,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { WhatsappService } from "@shared/whatsapp/whatsapp.service";
 import type { Response } from "express";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
@@ -176,5 +181,51 @@ export class WhatsappController {
   @Post("smb-sync")
   async triggerSmbSync(@UserTenant() tenantId: string) {
     return this.whatsappService.triggerSmbSync(tenantId);
+  }
+
+  // ─── Business Profile ───────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get("profile")
+  async getProfile(@UserTenant() tenantId: string) {
+    return this.whatsappService.getBusinessProfile(tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("profile") // Using POST for general updates as Meta does
+  async updateProfile(@UserTenant() tenantId: string, @Body() body: any) {
+    return this.whatsappService.updateBusinessProfile(tenantId, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("profile/photo")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadPhoto(
+    @UserTenant() tenantId: string,
+    @UploadedFile() file: any,
+  ) {
+    if (!file) throw new BadRequestException("No file uploaded");
+    return this.whatsappService.uploadProfilePhoto(tenantId, file.buffer, file.mimetype);
+  }
+
+  // ─── Flow Canvas ──────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get("flows/:id/canvas")
+  async getFlowCanvas(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+  ) {
+    return this.whatsappService.getFlowCanvas(tenantId, flowId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put("flows/:id/canvas")
+  async updateFlowCanvas(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+    @Body() body: { name: string; flowData: any },
+  ) {
+    return this.whatsappService.saveFlowCanvas(tenantId, flowId, body);
   }
 }

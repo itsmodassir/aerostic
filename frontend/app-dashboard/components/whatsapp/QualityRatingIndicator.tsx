@@ -63,32 +63,32 @@ export default function QualityRatingIndicator({ rating, className = '' }: Quali
     const Icon = config.icon;
 
     return (
-        <div className={clsx("bg-white rounded-2xl border border-gray-200/60 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400", className)}>
-            <div className="flex items-center gap-4 mb-6">
-                <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm", config.bgColor)}>
-                    <Icon className={clsx("w-5 h-5", config.textColor)} />
+        <div className={clsx("bg-white rounded-[32px] border border-gray-200/60 p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400 h-full flex flex-col", className)}>
+            <div className="flex items-center gap-4 mb-8">
+                <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border", config.borderColor, config.bgColor)}>
+                    <Icon className={clsx("w-6 h-6", config.textColor)} />
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900">System Health</h3>
-                    <div className={clsx("text-xs font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1.5", config.textColor)}>
+                    <h3 className="text-lg font-black text-gray-900 tracking-tight">System Health</h3>
+                    <div className={clsx("text-[10px] font-black uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1.5", config.textColor)}>
                         <span>{config.emoji}</span> {config.label}
                     </div>
                 </div>
             </div>
 
-            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+            <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8 flex-1">
                 {config.description}
             </p>
 
-            <div className="pt-6 border-t border-gray-100">
+            <div className="pt-8 border-t border-gray-50">
                 <a
                     href="https://developers.facebook.com/docs/whatsapp/messaging-limits"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex justify-between items-center w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors group"
+                    className="flex justify-between items-center w-full px-6 py-4 bg-gray-50/50 hover:bg-gray-50 border border-gray-100 rounded-2xl transition-all group active:scale-95"
                 >
-                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Health Protocols</span>
-                    <ChevronRight size={16} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+                    <span className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] group-hover:text-black transition-colors">Health Protocols</span>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-black transition-transform group-hover:translate-x-1" />
                 </a>
             </div>
         </div>

@@ -62,41 +62,41 @@ export default function MessagingLimitsCard({
     };
 
     return (
-        <div className={clsx("bg-white rounded-2xl border border-gray-200/60 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200", className)}>
-            <div className="flex items-center gap-4 mb-6">
-                <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shadow-sm", bgMap[config.colorClass])}>
-                    <TrendingUp className={clsx("w-5 h-5", textMap[config.colorClass])} />
+        <div className={clsx("bg-white rounded-[32px] border border-gray-200/60 p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 h-full flex flex-col", className)}>
+            <div className="flex items-center gap-4 mb-8">
+                <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border", bgMap[config.colorClass])}>
+                    <TrendingUp className={clsx("w-6 h-6", textMap[config.colorClass])} />
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-gray-900">Messaging Scale</h3>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-0.5">{config.tier} Verification Status</p>
+                    <h3 className="text-lg font-black text-gray-900 tracking-tight">Messaging Scale</h3>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{config.tier} Verification Status</p>
                 </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-8 flex-1">
                 <div>
-                    <div className="flex items-baseline justify-between mb-2.5 px-1">
-                        <span className="text-3xl font-bold text-gray-900">{config.label}</span>
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">/ 24h cycle</span>
+                    <div className="flex items-baseline justify-between mb-4 px-1">
+                        <span className="text-4xl font-black text-gray-900 tracking-tighter">{config.label}</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">/ 24h cycle</span>
                     </div>
 
                     {config.value !== Infinity && (
-                        <div className="space-y-4">
-                            <div className="w-full bg-gray-50 rounded-full h-4 p-1 border border-gray-100">
+                        <div className="space-y-6">
+                            <div className="w-full bg-gray-50 rounded-2xl h-6 p-1.5 border border-gray-100 shadow-inner">
                                 <div
                                     className={clsx(
-                                        "h-full rounded-full transition-all duration-1000 shadow-sm",
+                                        "h-full rounded-xl transition-all duration-1000 shadow-sm",
                                         isNearLimit ? 'bg-red-500 shadow-red-100' : progressMap[config.colorClass]
                                     )}
                                     style={{ width: `${Math.min(percentage, 100)}%` }}
                                 />
                             </div>
                             <div className="flex justify-between items-center px-1">
-                                <p className="text-xs font-bold text-gray-500">
-                                    <span className="text-gray-900 font-black">{messageCount.toLocaleString()}</span> consumed
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <span className="text-gray-900">{messageCount.toLocaleString()}</span> consumed today
                                 </p>
                                 {isNearLimit && (
-                                    <div className="animate-pulse flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 border border-red-100 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm shadow-red-50">
+                                    <div className="animate-pulse flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm">
                                         <Zap size={10} fill="currentColor" /> Near Limit
                                     </div>
                                 )}
@@ -105,16 +105,16 @@ export default function MessagingLimitsCard({
                     )}
                 </div>
 
-                <div className="pt-6 border-t border-gray-100">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 ml-1">Daily Entitlements</h4>
-                    <div className="space-y-2.5">
+                <div className="pt-8 border-t border-gray-50">
+                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 ml-1">Daily Entitlements</h4>
+                    <div className="space-y-3">
                         {[
                             { icon: Zap, text: 'Automatic tier progression after quality usage', activeColor: textMap[config.colorClass] },
                             { icon: Users, text: `${config.label} unique customer initiations daily`, activeColor: textMap[config.colorClass] }
                         ].map((item, idx) => (
-                            <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 transition-colors">
-                                <item.icon className={clsx("w-4 h-4 shrink-0 mt-0.5", item.activeColor)} />
-                                <p className="text-xs text-gray-600">{item.text}</p>
+                            <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:bg-gray-50 transition-colors group">
+                                <item.icon className={clsx("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", item.activeColor)} />
+                                <p className="text-xs text-gray-600 font-bold leading-tight">{item.text}</p>
                             </div>
                         ))}
                     </div>

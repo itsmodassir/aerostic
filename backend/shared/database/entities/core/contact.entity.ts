@@ -62,6 +62,12 @@ export class Contact {
   @JoinColumn({ name: "assigned_to" })
   assignedTo: User;
 
+  @Column({ name: "is_vip", default: false })
+  isVIP: boolean;
+
+  @Column({ type: "jsonb", nullable: true, default: [] })
+  groups: string[];
+
   @Column({ type: "jsonb", default: {} })
   attributes: Record<string, any>;
 

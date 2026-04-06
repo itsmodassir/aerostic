@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
   generateBuildId: async () => {
     // This ensures that all nodes in a cluster use the same build ID
     // and prevents ChunkLoadError during deployments

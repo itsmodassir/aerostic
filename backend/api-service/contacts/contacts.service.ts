@@ -97,14 +97,107 @@ export class ContactsService {
       query.andWhere("contact.status = :status", { status: config.status });
     }
 
+    if (config.isVIP !== undefined) {
+      query.andWhere("contact.isVIP = :isVIP", { isVIP: config.isVIP });
+    }
+
+    if (config.group) {
+        // Uses Postgres JSONB containment operator (@>)
+        query.andWhere("contact.groups @> :group", {
+          group: JSON.stringify([config.group]),
+        });
+    }
+
     if (config.tags && Array.isArray(config.tags) && config.tags.length > 0) {
-      // Assuming tags are stored as an array in contact.attributes.tags
-      // Uses Postgres JSONB containment operator (@>)
       query.andWhere("contact.attributes->'tags' @> :tags", {
         tags: JSON.stringify(config.tags),
       });
     }
 
     return query.getMany();
+  }
+
+  async importContacts(tenantId: string, csvContent: string): Promise<{ imported: number; updated: number; errors: string[] }> {
+    const lines = csvContent.split(/\r?\n/);
+    if (lines.length < 2) return { imported: 0, updated: 0, errors: ["Empty or invalid CSV"] };
+
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const phoneIdx = headers.indexOf("phone");
+    const nameIdx = headers.indexOf("name");
+    const emailIdx = headers.indexOf("email");
+    const groupsIdx = headers.indexOf("groups");
+
+    if (phoneIdx === -1) throw new ConflictException("CSV must have a 'phone' column");
+
+    let imported = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = line.split(",").map(v => v.trim());
+        const phone = values[phoneIdx];
+        if (!phone) {
+            errors.push(`Line ${i+1}: Missing phone number`);
+            continue;
+        }
+
+        try {
+            let contact = await this.contactsRepository.findOneBy({ tenantId, phoneNumber: phone });
+            const isNew = !contact;
+
+            if (isNew) {
+                contact = this.contactsRepository.create({
+                    tenantId,
+                    phoneNumber: phone,
+                    name: values[nameIdx] || "Imported Contact",
+                    email: emailIdx !== -1 ? values[emailIdx] : undefined,
+                    groups: groupsIdx !== -1 ? values[groupsIdx].split(";").filter(g => g) : [],
+                });
+                imported++;
+            } else {
+                if (nameIdx !== -1 && values[nameIdx]) contact!.name = values[nameIdx];
+                if (emailIdx !== -1 && values[emailIdx]) contact!.email = values[emailIdx];
+                if (groupsIdx !== -1) contact!.groups = values[groupsIdx].split(";").filter(g => g);
+                updated++;
+            }
+
+            await this.contactsRepository.save(contact!);
+        } catch (err: any) {
+            errors.push(`Line ${i+1}: ${err.message}`);
+        }
+    }
+
+    return { imported, updated, errors };
+  }
+
+  async exportContacts(tenantId: string): Promise<string> {
+    const contacts = await this.findAll(tenantId);
+    const headers = ["Name", "Phone", "Email", "Status", "VIP", "Groups", "Added At"];
+    const rows = contacts.map(c => [
+        `"${c.name}"`,
+        `"${c.phoneNumber}"`,
+        `"${c.email || ""}"`,
+        `"${c.status}"`,
+        c.isVIP ? "Yes" : "No",
+        `"${(c.groups || []).join(";")}"`,
+        `"${c.createdAt.toISOString()}"`
+    ].join(","));
+
+    return [headers.join(","), ...rows].join("\n");
+  }
+
+  async toggleVip(id: string, tenantId: string): Promise<Contact> {
+    const contact = await this.findOne(id, tenantId);
+    contact.isVIP = !contact.isVIP;
+    return this.contactsRepository.save(contact);
+  }
+
+  async updateGroups(id: string, tenantId: string, groups: string[]): Promise<Contact> {
+    const contact = await this.findOne(id, tenantId);
+    contact.groups = groups;
+    return this.contactsRepository.save(contact);
   }
 }

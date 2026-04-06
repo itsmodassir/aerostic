@@ -40,6 +40,8 @@ interface Conversation {
         phoneNumber: string;
         avatar?: string;
         tags?: string[];
+        isVIP?: boolean;
+        groups?: string[];
     };
     lastMessage?: string;
     lastMessageAt: string;
@@ -547,29 +549,89 @@ export default function InboxPage() {
                                     {selectedConversation.contact.name.charAt(0)}
                                 </div>
                                 <h4 className="text-2xl font-black text-slate-900 tracking-tight mb-1">{selectedConversation.contact.name}</h4>
-                                <p className="font-black text-slate-400 uppercase tracking-widest text-[10px] flex items-center gap-2"><Phone size={12} /> {selectedConversation.contact.phoneNumber}</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <p className="font-black text-slate-400 uppercase tracking-widest text-[10px] flex items-center gap-2"><Phone size={12} /> {selectedConversation.contact.phoneNumber}</p>
+                                    {selectedConversation.contact.isVIP && (
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-lg text-[9px] font-black text-amber-600 uppercase tracking-widest shadow-sm">
+                                            <Star size={10} className="fill-amber-500" /> VIP
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* CRM Attributes */}
+                            <div className="space-y-6">
+                                <h5 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] ml-2">Market Segmentation</h5>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedConversation.contact.groups?.length ? selectedConversation.contact.groups.map(g => (
+                                        <div key={g} className="px-4 py-2 bg-blue-50 border border-blue-100 rounded-2xl text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                                            {g}
+                                        </div>
+                                    )) : (
+                                        <p className="text-[10px] font-bold text-slate-300 italic ml-2">No groups assigned</p>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-transparent">
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">Stage</p>
-                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedConversation.status}</p>
+                                <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-transparent hover:border-slate-100 transition-all group">
+                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 group-hover:text-slate-400 transition-colors">Stage</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{selectedConversation.status}</p>
+                                    </div>
                                 </div>
-                                <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-transparent">
-                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">Priority</p>
+                                <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-transparent hover:border-slate-100 transition-all group">
+                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 group-hover:text-slate-400 transition-colors">Priority</p>
                                     <p className="text-sm font-black text-rose-600 uppercase tracking-tight">{selectedConversation.priority}</p>
                                 </div>
                             </div>
 
+                            {/* Meta Window Logic */}
+                            {aiStatus && (
+                                <div className="space-y-6">
+                                    <h5 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] ml-2">Meta Session Health</h5>
+                                    <div className={clsx(
+                                        "p-6 rounded-[32px] border-2 transition-all",
+                                        aiStatus.windowExpired ? "bg-rose-50 border-rose-100" : "bg-emerald-50 border-emerald-100"
+                                    )}>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={clsx(
+                                                    "p-2 rounded-xl text-white",
+                                                    aiStatus.windowExpired ? "bg-rose-500" : "bg-emerald-500"
+                                                )}>
+                                                    <Timer size={16} />
+                                                </div>
+                                                <span className={clsx("text-[10px] font-black uppercase tracking-widest", aiStatus.windowExpired ? "text-rose-700" : "text-emerald-700")}>
+                                                    {aiStatus.windowExpired ? 'Window Closed' : 'Session Window'}
+                                                </span>
+                                            </div>
+                                            {!aiStatus.windowExpired && (
+                                                <span className="text-[14px] font-black text-emerald-900 tabular-nums">
+                                                    {Math.floor(aiStatus.windowSecondsLeft! / 3600)}h {Math.floor((aiStatus.windowSecondsLeft! % 3600) / 60)}m
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className={clsx("text-[11px] font-medium leading-relaxed", aiStatus.windowExpired ? "text-rose-600" : "text-emerald-600")}>
+                                            {aiStatus.windowExpired 
+                                                ? "The 24h customer window has closed. You must send a template to initiate a new session." 
+                                                : "Free-form messaging is active. AI will auto-respond until window expiration or human intervention."
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-6">
                                 <h5 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] ml-2">Channel Context</h5>
-                                <div className="flex items-center gap-4 p-6 bg-emerald-50 rounded-[32px] border border-emerald-100/50">
-                                    <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                                <div className="flex items-center gap-4 p-6 bg-blue-50 rounded-[32px] border border-blue-100/50">
+                                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
                                          <MessageCircle size={24} fill="white" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-1">WhatsApp Cloud</p>
-                                        <p className="text-sm font-bold text-emerald-900 leading-none">Meta Verified Protocol</p>
+                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">WhatsApp Cloud</p>
+                                        <p className="text-sm font-bold text-blue-900 leading-none">High-Fidelity Protocol</p>
                                     </div>
                                 </div>
                             </div>

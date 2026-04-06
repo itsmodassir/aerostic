@@ -43,8 +43,8 @@ export interface ListSection {
 export interface CarouselCard {
   id: string;
   title: string;
-  subtitle?: string;
-  imageUrl?: string;
+  body?: string;
+  mediaUrl?: string;
   buttons: { id: string; text: string; url?: string }[];
 }
 

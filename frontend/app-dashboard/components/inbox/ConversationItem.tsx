@@ -26,6 +26,8 @@ interface Conversation {
         phoneNumber: string;
         avatar?: string;
         tags?: string[];
+        isVIP?: boolean;
+        groups?: string[];
     };
     lastMessage?: string;
     lastMessageAt: string;
@@ -136,7 +138,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isAct
                         {conversation.lastMessage || 'Sent an attachment'}
                     </p>
                     
-                    {hasUnread && (
+                        {hasUnread && (
                         <motion.span 
                             initial={{ scale: 0 }} 
                             animate={{ scale: 1 }}
@@ -146,6 +148,27 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isAct
                         </motion.span>
                     )}
                 </div>
+
+                {/* VIP & Groups Preview */}
+                {(conversation.contact.isVIP || (conversation.contact.groups && conversation.contact.groups.length > 0)) && (
+                    <div className="flex items-center gap-2 mt-1.5 overflow-hidden">
+                        {conversation.contact.isVIP && (
+                            <div className="flex items-center gap-1 text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-1.5 py-0.5 rounded-lg border border-amber-100">
+                                <Star size={10} className="fill-amber-500" /> VIP
+                            </div>
+                        )}
+                        {conversation.contact.groups?.slice(0, 1).map(g => (
+                            <div key={g} className="text-[9px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-1.5 py-0.5 rounded-lg border border-blue-100 truncate max-w-[100px]">
+                                {g}
+                            </div>
+                        ))}
+                        {(conversation.contact.groups?.length || 0) > 1 && (
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">
+                                +{conversation.contact.groups!.length - 1}
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Badges & Tags */}
                 <div className="flex items-center gap-2 mt-3 overflow-hidden">

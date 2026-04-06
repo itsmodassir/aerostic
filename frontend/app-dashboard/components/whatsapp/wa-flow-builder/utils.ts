@@ -130,8 +130,8 @@ export const defaultsByKind: Record<string, Partial<WaNodeData>> = {
       {
         id: uid(),
         title: "Card 1",
-        subtitle: "",
-        imageUrl: "",
+        body: "",
+        mediaUrl: "",
         buttons: [{ id: uid(), text: "Learn More" }],
       },
     ],

@@ -13,6 +13,7 @@ import api from '@/lib/api';
 import AccountDetailsCard from '@/components/whatsapp/AccountDetailsCard';
 import MessagingLimitsCard from '@/components/whatsapp/MessagingLimitsCard';
 import QualityRatingIndicator from '@/components/whatsapp/QualityRatingIndicator';
+import BusinessProfileModal from '@/components/whatsapp/BusinessProfileModal';
 
 export default function WhatsAppSettingsPage() {
     const searchParams = useSearchParams();
@@ -20,18 +21,19 @@ export default function WhatsAppSettingsPage() {
     const [syncing, setSyncing] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
     const [status, setStatus] = useState<any>(null);
+    const [profile, setProfile] = useState<any>(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
-            // Security check: ensure the message is from our own origin
             if (event.origin !== window.location.origin) return;
 
             if (event.data?.type === 'WA_CONNECTED') {
                 if (event.data.success) {
                     setNotice('WhatsApp connected successfully.');
-                    fetchStatus();
+                    fetchData();
                 } else if (event.data.error) {
                     setError(event.data.error);
                 }
@@ -52,18 +54,21 @@ export default function WhatsAppSettingsPage() {
             setError(urlError);
         }
         
-        // Always fetch initial connection status on load
-        fetchStatus();
+        fetchData();
     }, [searchParams]);
 
-    const fetchStatus = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/whatsapp/status');
-            setStatus(res.data);
+            const [statusRes, profileRes] = await Promise.all([
+                api.get('/whatsapp/status'),
+                api.get('/whatsapp/profile').catch(() => ({ data: null }))
+            ]);
+            setStatus(statusRes.data);
+            setProfile(profileRes.data);
             setError(null);
         } catch (err: any) {
-            console.error('Failed to fetch WhatsApp status', err);
+            console.error('Failed to fetch WhatsApp data', err);
             setError(err.response?.data?.message || 'Failed to load configuration');
         } finally {
             setLoading(false);
@@ -74,7 +79,8 @@ export default function WhatsAppSettingsPage() {
         setSyncing(true);
         try {
             await api.post('/whatsapp/sync-account');
-            await fetchStatus();
+            await fetchData();
+            setNotice('Meta data synchronized.');
         } catch (err) {
             console.error('Sync failed', err);
         } finally {
@@ -203,6 +209,7 @@ export default function WhatsAppSettingsPage() {
                                     businessId={status.businessId}
                                     verifiedName={status.verifiedName}
                                     displayPhoneNumber={status.displayPhoneNumber}
+                                    onEdit={() => setIsProfileModalOpen(true)}
                                 />
                                 <MessagingLimitsCard 
                                     messagingLimit={status.messagingLimit}
@@ -212,6 +219,13 @@ export default function WhatsAppSettingsPage() {
                                     rating={status.qualityRating}
                                 />
                              </div>
+
+                             <BusinessProfileModal 
+                                isOpen={isProfileModalOpen}
+                                onClose={() => setIsProfileModalOpen(false)}
+                                onSuccess={fetchData}
+                                initialData={profile}
+                             />
 
                              <div className="bg-red-50/50 rounded-[32px] border-2 border-red-50 p-8 flex items-center justify-between group">
                                 <div className="flex gap-4 items-center">

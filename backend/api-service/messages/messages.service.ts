@@ -294,8 +294,9 @@ export class MessagesService {
   }
 
   async getConversations(tenantId: string) {
+    // Return all conversations that aren't resolved or archived, or just all for now to be safe
     return this.conversationRepo.find({
-      where: { tenantId, status: "open" },
+      where: { tenantId },
       relations: ["contact"],
       order: { lastMessageAt: "DESC" },
     });

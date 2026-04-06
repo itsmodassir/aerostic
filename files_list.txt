@@ -1,0 +1,15 @@
+backend/shared/database/entities/core/contact.entity.ts
+backend/api-service/contacts/contacts.service.ts
+backend/api-service/contacts/contacts.controller.ts
+backend/api-service/messages/messages.service.ts
+backend/api-service/messages/messages.controller.ts
+backend/shared/whatsapp/whatsapp.service.ts
+backend/api-service/whatsapp/whatsapp.controller.ts
+frontend/app-dashboard/app/contacts/page.tsx
+frontend/app-dashboard/app/dashboard/[workspaceId]/(agent)/inbox/page.tsx
+frontend/app-dashboard/components/contacts/ContactTable.tsx
+frontend/app-dashboard/components/contacts/AddEditContactModal.tsx
+frontend/app-dashboard/components/contacts/ImportExportModals.tsx
+frontend/app-dashboard/components/inbox/ConversationItem.tsx
+frontend/app-dashboard/components/whatsapp/wa-flow-builder/utils.ts
+frontend/app-dashboard/next.config.ts

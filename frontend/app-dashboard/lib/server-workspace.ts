@@ -13,26 +13,40 @@ async function fetchWorkspaceSlug(accessToken: string, preferredSlug?: string | 
     process.env.NEXT_PUBLIC_INTERNAL_API_URL ||
     'http://localhost:3001';
 
-  const response = await fetch(`${apiUrl}/api/v1/auth/workspaces`, {
-    headers: {
-      Cookie: `access_token=${accessToken}`,
-    },
-    cache: 'no-store',
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-  if (!response.ok) {
-    return null;
-  }
+  try {
+    const response = await fetch(`${apiUrl}/api/v1/auth/workspaces`, {
+      headers: {
+        Cookie: `access_token=${accessToken}`,
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    });
 
-  const workspaces = await response.json();
-  const workspaceList = Array.isArray(workspaces) ? workspaces : [];
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const workspaces = await response.json();
+    const workspaceList = Array.isArray(workspaces) ? workspaces : [];
+    
+    if (workspaceList.length === 0) return null;
 
   const preferred = preferredSlug
     ? workspaceList.find((workspace: any) => workspace?.tenant?.slug === preferredSlug)
     : null;
 
-  const selected = preferred || workspaceList[0];
-  return selected?.tenant?.slug || selected?.slug || null;
+    const selected = preferred || workspaceList[0];
+    return selected?.tenant?.slug || selected?.slug || null;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('[WorkspaceResolver] fetchWorkspaceSlug failed', error);
+    return null;
+  }
 }
 
 export async function resolveActiveWorkspaceSlug(): Promise<string> {

@@ -507,6 +507,65 @@ function SalesConfig({ data, onChange }: { data: WaNodeData; onChange: (p: Parti
   );
 }
 
+function CarouselConfig({ data, onChange }: { data: WaNodeData; onChange: (p: Partial<WaNodeData>) => void }) {
+  const cards: CarouselCard[] = data.carouselCards || [];
+  const addCard = () => {
+    if (cards.length >= 10) return;
+    onChange({
+      carouselCards: [
+        ...cards,
+        { id: uid(), title: "", body: "", mediaUrl: "", buttons: [] },
+      ],
+    });
+  };
+  const removeCard = (id: string) => onChange({ carouselCards: cards.filter((c) => c.id !== id) });
+  const updateCard = (id: string, patch: Partial<CarouselCard>) =>
+    onChange({ carouselCards: cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
+
+  return (
+    <div className="space-y-4">
+      <Field label="Cards" hint="Maximum 10 cards (Meta limit).">
+        <div className="space-y-3">
+          {cards.map((card, i) => (
+            <div key={card.id} className="p-3 border border-slate-200 rounded-xl space-y-2.5 bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Card {i + 1}</span>
+                <button onClick={() => removeCard(card.id)} className="p-1 hover:bg-red-50 rounded-lg">
+                  <Trash2 size={12} className="text-red-400" />
+                </button>
+              </div>
+              <Input
+                value={card.mediaUrl}
+                onChange={(v) => updateCard(card.id, { mediaUrl: v })}
+                placeholder="Image URL"
+              />
+              <Input
+                value={card.title}
+                onChange={(v) => updateCard(card.id, { title: v })}
+                placeholder="Card Title"
+              />
+              <Textarea
+                value={card.body}
+                onChange={(v) => updateCard(card.id, { body: v })}
+                placeholder="Card Description"
+                rows={2}
+              />
+            </div>
+          ))}
+          {cards.length < 10 && (
+            <button
+              onClick={addCard}
+              className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:border-blue-400 hover:text-blue-500 transition-all font-sans"
+            >
+              <Plus size={14} className="inline mr-1" /> Add Card
+            </button>
+          )}
+        </div>
+      </Field>
+    </div>
+  );
+}
+
 // ─── NODE ICON MAP ─────────────────────────────────────────────────────────────
 
 const NODE_META: Record<string, { title: string; accent: string; icon: React.ElementType }> = {
@@ -600,6 +659,7 @@ export function ConfigPanel({ selected, onChange, onDelete }: ConfigPanelProps) 
         {kind === "wa_set_variable" && <SetVariableConfig data={selected.data} onChange={onChange} />}
         {kind === "wa_support" && <SupportConfig data={selected.data} onChange={onChange} />}
         {kind === "wa_sales" && <SalesConfig data={selected.data} onChange={onChange} />}
+        {kind === "wa_carousel" && <CarouselConfig data={selected.data} onChange={onChange} />}
         {kind === "wa_location" && (
           <Field label="Prompt Text">
             <Textarea value={selected.data.text} onChange={(v) => onChange({ text: v })} placeholder="Please share your location." rows={2} />
