@@ -14,14 +14,21 @@ echo "  📋 Admin: $ADMIN_DOMAIN"
 # 1. Install Certbot
 echo ""
 echo "📦 Installing Certbot..."
-sudo apt-get update
-sudo apt-get install -y certbot python3-certbot-nginx
+if command -v dnf &> /dev/null; then
+    sudo dnf install -y certbot
+elif command -v apt-get &> /dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y certbot python3-certbot-nginx
+else
+    echo "❌ No supported package manager found (dnf or apt-get). Please install certbot manually."
+    exit 1
+fi
 
 # 2. Stop Nginx to free port 80
 echo ""
 echo "🛑 Stopping Nginx container..."
-cd /home/ubuntu/aimstors
-sudo docker compose stop nginx
+cd /var/www/aimstors/infrastructure/docker
+sudo docker-compose stop nginx
 
 sleep 2
 
@@ -53,7 +60,8 @@ sudo chmod -R 755 /etc/letsencrypt
 # 5. Restart Nginx with new config
 echo ""
 echo "🔄 Restarting Nginx..."
-sudo docker compose up -d nginx
+cd /var/www/aimstors/infrastructure/docker
+sudo docker-compose up -d nginx
 
 sleep 3
 
