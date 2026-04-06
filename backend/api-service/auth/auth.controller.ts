@@ -12,6 +12,8 @@ import {
   Query,
   Patch,
   Logger,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import type { Response } from "express";
 import { AuthService } from "./auth.service";
