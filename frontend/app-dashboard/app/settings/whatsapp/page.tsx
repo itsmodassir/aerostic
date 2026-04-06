@@ -51,6 +51,9 @@ export default function WhatsAppSettingsPage() {
         } else if (urlError) {
             setError(urlError);
         }
+        
+        // Always fetch initial connection status on load
+        fetchStatus();
     }, [searchParams]);
 
     const fetchStatus = async () => {
