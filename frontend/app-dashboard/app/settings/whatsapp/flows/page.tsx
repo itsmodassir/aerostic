@@ -1,12 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { Loader2, Plus, RefreshCw, Trash2, Workflow } from 'lucide-react';
+import { Loader2, Plus, RefreshCw, Trash2, Workflow, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+
+const WaFlowBuilder = lazy(() => import('@/components/whatsapp/wa-flow-builder/WaFlowBuilder'));
 
 export default function WhatsAppFlowsPage() {
   const searchParams = useSearchParams();
@@ -15,6 +17,10 @@ export default function WhatsAppFlowsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Builder state
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderFlow, setBuilderFlow] = useState<{ id: string; name: string; data?: any } | null>(null);
 
   const loadFlows = async () => {
     setLoading(true);
@@ -62,12 +68,30 @@ export default function WhatsAppFlowsPage() {
         categories: ['OTHER'],
       });
       toast.success('Flow created successfully');
+      // Open builder immediately with the new flow
+      if (res.data?.id) {
+        setBuilderFlow({ id: res.data.id, name: flowName });
+        setBuilderOpen(true);
+      }
       await loadFlows();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to create flow');
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleOpenBuilder = async (flow: any) => {
+    // Try to load existing canvas data if it exists
+    let canvasData = undefined;
+    try {
+      const res = await api.get(`/whatsapp/flows/${flow.id}/canvas`);
+      canvasData = res.data;
+    } catch {
+      // No canvas data yet, builder will start fresh
+    }
+    setBuilderFlow({ id: flow.id, name: flow.name, data: canvasData });
+    setBuilderOpen(true);
   };
 
   const handleTogglePublish = async (flow: any) => {
@@ -115,108 +139,142 @@ export default function WhatsAppFlowsPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-            <Workflow className="h-5 w-5" />
+    <>
+      {/* Flow Builder Overlay */}
+      {builderOpen && builderFlow && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50">
+            <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
           </div>
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              WhatsApp Builder
-            </p>
-            <p className="max-w-2xl text-sm leading-6 text-slate-600">
-              Create, publish, and manage interactive customer journeys from one place.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" className="rounded-xl border-slate-200" onClick={() => void loadFlows()} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button className="rounded-xl shadow-sm" onClick={handleCreateFlow} disabled={!connected || creating}>
-            {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            New Flow
-          </Button>
-        </div>
-      </div>
+        }>
+          <WaFlowBuilder
+            flowId={builderFlow.id}
+            flowName={builderFlow.name}
+            initialData={builderFlow.data}
+            onClose={() => setBuilderOpen(false)}
+            onSaved={() => {
+              toast.success('Flow saved successfully!');
+              setBuilderOpen(false);
+              loadFlows();
+            }}
+          />
+        </Suspense>
+      )}
 
-      {!connected && !loading ? (
-        <Card className="rounded-2xl border-gray-100 shadow-sm">
-          <CardContent className="flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center">
-            <Workflow className="h-16 w-16 text-gray-200" />
-            <div className="space-y-2">
-              <p className="text-lg font-semibold text-gray-900">Connect WhatsApp before creating flows</p>
-              <p className="text-sm text-gray-500">The Meta Cloud account needs to be connected before the flow builder can load or publish assets.</p>
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <Workflow className="h-5 w-5" />
             </div>
-            <Button asChild className="rounded-xl">
-              <Link href="/settings/whatsapp">Open WhatsApp Settings</Link>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                WhatsApp Builder
+              </p>
+              <p className="max-w-2xl text-sm leading-6 text-slate-600">
+                Create, publish, and visually design interactive customer journeys.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" className="rounded-xl border-slate-200" onClick={() => void loadFlows()} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
+            <Button className="rounded-xl shadow-sm" onClick={handleCreateFlow} disabled={!connected || creating}>
+              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+              New Flow
+            </Button>
+          </div>
+        </div>
+
+        {!connected && !loading ? (
+          <Card className="rounded-2xl border-gray-100 shadow-sm">
+            <CardContent className="flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center">
+              <Workflow className="h-16 w-16 text-gray-200" />
+              <div className="space-y-2">
+                <p className="text-lg font-semibold text-gray-900">Connect WhatsApp before creating flows</p>
+                <p className="text-sm text-gray-500">The Meta Cloud account needs to be connected before the flow builder can load or publish assets.</p>
+              </div>
+              <Button asChild className="rounded-xl">
+                <Link href="/settings/whatsapp">Open WhatsApp Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card className="rounded-2xl border-gray-100 shadow-sm">
+          <CardContent className="p-6">
+            {loading ? <div className="h-48 flex items-center justify-center text-gray-400">Loading flows...</div>
+            : !connected ? null
+            : flows.length === 0 ? (
+              <div className="h-48 flex flex-col items-center justify-center gap-3 text-gray-400">
+                <Workflow className="h-16 w-16 text-gray-200" />
+                <p>No flows created yet.</p>
+                <Button variant="outline" className="rounded-xl" onClick={handleCreateFlow}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create first flow
+                </Button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {flows.map((f: any) => (
+                  <div key={f.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-semibold text-gray-900">{f.name}</h3>
+                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusTone(f.status)}`}>
+                          {f.status || 'Unknown'}
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-gray-400">{f.id}</p>
+                      <p className="text-xs text-gray-400">Updated {f.updated_at ? new Date(f.updated_at).toLocaleString() : 'recently'}</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {/* Edit / Open Builder */}
+                      <Button
+                        variant="default"
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                        onClick={() => void handleOpenBuilder(f)}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Builder
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => void handleTogglePublish(f)}
+                        disabled={busyId === `publish:${f.id}` || busyId === `unpublish:${f.id}`}
+                      >
+                        {(busyId === `publish:${f.id}` || busyId === `unpublish:${f.id}`) ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        {f.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        className="rounded-xl text-red-600 hover:text-red-700"
+                        onClick={() => void handleDeleteFlow(f)}
+                        disabled={busyId === `delete:${f.id}`}
+                      >
+                        {busyId === `delete:${f.id}` ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
+                        )}
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
-      ) : null}
-
-      <Card className="rounded-2xl border-gray-100 shadow-sm">
-        <CardContent className="p-6">
-          {loading ? <div className="h-48 flex items-center justify-center text-gray-400">Loading flows...</div>
-          : !connected ? null
-          : flows.length === 0 ? (
-            <div className="h-48 flex flex-col items-center justify-center gap-3 text-gray-400">
-              <Workflow className="h-16 w-16 text-gray-200" />
-              <p>No flows created yet.</p>
-              <Button variant="outline" className="rounded-xl" onClick={handleCreateFlow}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create first flow
-              </Button>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {flows.map((f: any) => (
-                <div key={f.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="font-semibold text-gray-900">{f.name}</h3>
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusTone(f.status)}`}>
-                        {f.status || 'Unknown'}
-                      </span>
-                    </div>
-                    <p className="text-xs font-mono text-gray-400">{f.id}</p>
-                    <p className="text-xs text-gray-400">Updated {f.updated_at ? new Date(f.updated_at).toLocaleString() : 'recently'}</p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      className="rounded-xl"
-                      onClick={() => void handleTogglePublish(f)}
-                      disabled={busyId === `publish:${f.id}` || busyId === `unpublish:${f.id}`}
-                    >
-                      {(busyId === `publish:${f.id}` || busyId === `unpublish:${f.id}`) ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      {f.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="rounded-xl text-red-600 hover:text-red-700"
-                      onClick={() => void handleDeleteFlow(f)}
-                      disabled={busyId === `delete:${f.id}`}
-                    >
-                      {busyId === `delete:${f.id}` ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="mr-2 h-4 w-4" />
-                      )}
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      </div>
+    </>
   );
 }
