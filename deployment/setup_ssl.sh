@@ -48,7 +48,7 @@ if sudo certbot certonly --standalone \
     echo "✅ Certificate obtained successfully!"
 else
     echo "❌ Failed to obtain certificate. Check DNS settings."
-    sudo docker compose start nginx
+    sudo docker-compose start nginx
     exit 1
 fi
 
