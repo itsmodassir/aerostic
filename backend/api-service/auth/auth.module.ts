@@ -24,8 +24,6 @@ import { ResellerConfig } from "@shared/database/entities/core/reseller-config.e
     forwardRef(() => UsersModule),
     TenantsModule,
     forwardRef(() => AuditModule),
-    CommonModule,
-    AuthorizationModule,
     TypeOrmModule.forFeature([
       TenantMembership,
       Role,

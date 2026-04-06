@@ -110,10 +110,6 @@ import { WaFormsModule } from "./wa-forms/wa-forms.module";
       useClass: TenantThrottlerGuard,
     },
     {
-      provide: APP_GUARD,
-      useClass: TenantThrottlerGuard,
-    },
-    {
       provide: APP_INTERCEPTOR,
       useClass: TenantIsolationInterceptor,
     },
