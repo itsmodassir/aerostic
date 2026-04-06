@@ -111,7 +111,7 @@ cd ../..
 # 5. Restart Infrastructure (Docker)
 echo "🐳 Starting Infrastructure Services..."
 cd infrastructure/docker
-docker-compose up -d --build --force-recreate nginx ml-service redis postgres kafka zookeeper
+docker-compose up -d --build --force-recreate nginx redis postgres pinchtab
 cd ../..
 
 echo "⏳ Waiting 10 seconds for initial database startup..."

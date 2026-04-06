@@ -4,10 +4,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { AuditLog } from "../../shared/database/entities/core/audit-log.entity";
 import { AuditAlertService } from "./audit-alert.service";
-import { AnomalyService } from "../analytics/anomaly.service";
 import { PiiMasker } from "@shared/utils/pii-masker.util";
-import { KafkaService } from "@shared/kafka.service";
-import { KafkaTopic, KafkaEvent } from "@shared/kafka-events.constants";
 import * as crypto from "crypto";
 
 export enum LogLevel {
@@ -37,8 +34,6 @@ export class AuditService implements OnModuleInit {
     @InjectRepository(AuditLog)
     private auditRepo: Repository<AuditLog>,
     private alertService: AuditAlertService,
-    private anomalyService: AnomalyService,
-    private kafkaService: KafkaService,
   ) { }
 
   async log(data: any): Promise<AuditLog> {
@@ -133,36 +128,8 @@ export class AuditService implements OnModuleInit {
         ),
       );
 
-    // Trigger Anomaly Detection evaluation
-    this.anomalyService
-      .evaluateAuditLog(saved)
-      .catch((err) =>
-        this.logger.error(
-          `Failed to evaluate anomaly for log ${saved.id}`,
-          err.stack,
-        ),
-      );
-
     // Update local state
     this.lastHash = saved.hash;
-
-    // Emit to Kafka for real-time stream processing
-    this.kafkaService.emit(
-      KafkaTopic.AUDIT_LOGS,
-      KafkaEvent.AUDIT_CREATED,
-      {
-        eventId: saved.id,
-        tenantId: saved.tenantId,
-        actorType: saved.actorType,
-        actorId: saved.actorId,
-        action: saved.action,
-        resourceType: saved.resourceType,
-        resourceId: saved.resourceId,
-        timestamp: saved.createdAt.getTime(),
-        metadata: saved.metadata,
-      },
-      saved.tenantId
-    );
 
     return saved;
   }
@@ -215,19 +182,11 @@ export class AuditService implements OnModuleInit {
   async runDailyIntegrityCheck() {
     this.logger.log("Starting daily audit log integrity verification...");
     const result = await this.verifyChain();
-
     if (!result.isValid) {
       this.logger.error(
         `CRITICAL SECURITY ALERT: Audit chain corruption detected at ID: ${result.corruptedId}`,
       );
-      // Force increase risk score for system boundary
-      const systemTenantId = process.env.SYSTEM_TENANT_ID || "cb06f16b-74af-4e98-852c-7e30f63b3c0a";
-      await this.anomalyService.flagPermissionViolation(
-        systemTenantId,
-        "system-integrity-check",
-        "system",
-        `audit_chain_corruption:${result.corruptedId}`,
-      );
+      // In production, we would alert security administrators or trigger a system lock
     } else {
       this.logger.log(
         "Daily audit integrity verification successful. Chain is valid.",

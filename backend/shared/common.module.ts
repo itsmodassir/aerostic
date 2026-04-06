@@ -3,7 +3,6 @@ import { ConfigModule } from "@nestjs/config";
 import { RedisService } from "./redis.service";
 import { EncryptionService } from "./encryption.service";
 import { MailService } from "./mail.service";
-import { KafkaService } from "./kafka.service";
 import { NotificationService } from "./notification.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
@@ -46,14 +45,12 @@ import { SystemConfig } from "@shared/database/entities/core/system-config.entit
     RedisService,
     EncryptionService,
     MailService,
-    KafkaService,
     NotificationService,
   ],
   exports: [
     RedisService,
     EncryptionService,
     MailService,
-    KafkaService,
     NotificationService,
     TypeOrmModule,
   ],

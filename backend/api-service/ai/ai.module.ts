@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { AiService } from "./ai.service";
 import { PinchtabService } from "./pinchtab.service";
 import { MessagesModule } from "../messages/messages.module";
@@ -10,13 +10,16 @@ import { AiController } from "./ai.controller";
 import { AuditModule } from "../audit/audit.module";
 import { KnowledgeBaseService } from "./knowledge-base.service";
 import { AdminModule } from "../admin/admin.module";
+import { Campaign } from "../campaigns/entities/campaign.entity";
+import { BillingModule } from "../billing/billing.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AiAgent, KnowledgeBase, KnowledgeChunk]),
-    MessagesModule,
+    TypeOrmModule.forFeature([AiAgent, KnowledgeBase, KnowledgeChunk, Campaign]),
+    forwardRef(() => MessagesModule),
     AuditModule,
     AdminModule,
+    forwardRef(() => BillingModule),
   ],
   controllers: [AiController],
   providers: [PinchtabService, KnowledgeBaseService, AiService],

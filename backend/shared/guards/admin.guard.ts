@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { JwtAuthGuard } from "../../api-service/auth/jwt-auth.guard";
 import { UsersService } from "../../api-service/users/users.service";
 import { AuditService } from "../../api-service/audit/audit.service";
@@ -11,10 +12,11 @@ import { AuditService } from "../../api-service/audit/audit.service";
 @Injectable()
 export class AdminGuard extends JwtAuthGuard {
   constructor(
+    reflector: Reflector,
     private usersService: UsersService,
     private auditService: AuditService,
   ) {
-    super();
+    super(reflector);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

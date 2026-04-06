@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MessagesService } from "./messages.service";
 import { MessagesController } from "./messages.controller";
@@ -29,7 +29,7 @@ import { WhatsappModule } from "../whatsapp/whatsapp.module";
     AuditModule,
     BillingModule,
     AdminModule,
-    WhatsappModule,
+    forwardRef(() => WhatsappModule),
   ],
   controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway],

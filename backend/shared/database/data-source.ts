@@ -7,7 +7,7 @@ config({ path: join(__dirname, "../../.env") });
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env.DATABASE_URL,
-  synchronize: false,
+  synchronize: true,
   logging: true,
   entities: [
     join(__dirname, "/entities/**/*.entity{.ts,.js}"),

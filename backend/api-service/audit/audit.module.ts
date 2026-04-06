@@ -7,12 +7,14 @@ import { AuditInterceptor } from "./audit.interceptor";
 import { AuditController } from "./audit.controller";
 import { AuditAlertService } from "./audit-alert.service";
 import { AnalyticsModule } from "../analytics/analytics.module";
+import { UsersModule } from "../users/users.module";
 
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([AuditLog]),
     forwardRef(() => AnalyticsModule),
+    forwardRef(() => UsersModule),
   ],
   controllers: [AuditController],
   providers: [AuditService, AuditInterceptor, AuditAlertService],

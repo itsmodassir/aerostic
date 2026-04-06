@@ -1,6 +1,6 @@
-# Aimstors Solution: Master Architecture Blueprint (v2.6.0)
+# Aerostic: Master Architecture Blueprint (v2.7.0)
 
-Aimstors Solution is a high-performance, multi-tenant WhatsApp Automation platform featuring a modern micro-monolith architecture. It is designed to scale to 5,000,000+ users with strict security and multi-tenant isolation.
+Aerostic is a high-performance, multi-tenant WhatsApp Automation platform featuring a modern micro-monolith architecture. It is designed to scale with strict security and multi-tenant isolation.
 
 ## 🏗️ Core Architecture Components
 
@@ -12,20 +12,17 @@ The security layer is the project's foundation, ensuring total data isolation an
 - **Impersonation Traceability**: Super Admins can impersonate tenants; sessions are marked with `isImpersonation` and `impersonatedBy` flags for auditing.
 - **Structured API Keys**: Enterprise-grade `ask_live_...` keys with SHA-256 hashing, per-key rate limiting (Redis), and IP whitelisting.
 - **SOC2 Audit Logging**: Forensic-ready, hash-chained logs with automated alerting for sensitive configuration changes and security events.
-- **Python ML Microservice**: Isolation Forest ML for multi-dimensional, self-defending SaaS security. Deployed as a dedicated FastAPI service for production-grade performance.
 
 ### 🌐 System Infrastructure
 - **API Service**: Handles core REST requests, reseller logic, and campaign management.
 - **Frontend Edge Routing**: Next.js `middleware.ts` enforces strict subdomain multitenancy (`app.*`, `admin.*`, `api.*`) at the edge layer.
-- **ML Service**: Dedicated Python engine for real-time anomaly inference and feature engineering.
 - **Webhook Service**: High-throughput service specifically for Meta Graph API webhooks and automated wallet refunds for failed messages.
 - **Worker Clusters**: Regional BullMQ workers handling bulk campaigns, AI processing, and usage metrics per-tenant.
-- **Event Bus (Kafka)**: The backbone for sub-second security telemetry and platform-wide correlation.
 
 ## 🔄 Business Logic Flows
 
 ### 1. The Billing Cycle (Ledger-Based & Real-Time)
-Instead of mutable balance fields, Aimstors Solution uses an immutable `UsageEvent` ledger.
+Aerostic uses an immutable `UsageEvent` ledger.
 - **Events**: `outgoing_message`, `ai_agent_call`, `document_storage`.
 - **Worker**: `usage-worker` processes events and updates `TenantDailyMetrics`.
 - **Validation**: API checks historical ledger sums before allowing high-cost actions.
@@ -39,7 +36,7 @@ A recursive execution engine that processes visual workflows.
 
 ## 📈 Scaling Roadmap
 - **Phase 1 (Complete)**: Optimized single-DB with partitioning on `messages` and `usage_events`.
-- **Phase 2 (Active)**: Transitioned to Python ML Microservice and Kafka event bus for sub-second correlation.
+- **Phase 2 (Complete)**: Streamlined event processing using BullMQ.
 - **Phase 3**: Regional worker deployment for lower latency in Meta API calls.
 - **Phase 4**: Shared-nothing architecture for extreme tenant isolation at the infrastructure level.
 
@@ -51,4 +48,4 @@ A recursive execution engine that processes visual workflows.
 - **Strict CORS & CSP** policies for all subdomains.
 
 ---
-*Blueprint version 2.6.0 | Confidential & Proprietary*
+*Blueprint version 2.7.0 | Confidential & Proprietary*

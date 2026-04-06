@@ -6,13 +6,11 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { API_PERMISSION_KEY } from "../decorators/api-permission.decorator";
-import { AnomalyService } from "../../api-service/analytics/anomaly.service";
 
 @Injectable()
 export class ApiPermissionGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private anomalyService: AnomalyService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,16 +45,6 @@ export class ApiPermissionGuard implements CanActivate {
     );
 
     if (!hasPermission) {
-      // Log violation to anomaly system
-      if (tenantId && actorId) {
-        await this.anomalyService.flagPermissionViolation(
-          tenantId,
-          actorId,
-          actorType,
-          requiredPermissions.join(", "),
-        );
-      }
-
       throw new ForbiddenException("Insufficient API permissions");
     }
 

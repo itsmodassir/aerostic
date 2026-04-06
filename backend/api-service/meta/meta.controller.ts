@@ -11,6 +11,7 @@ export class MetaController {
     @Query("state") state: string,
     @Query("wabaId") wabaId?: string,
     @Query("phoneNumberId") phoneNumberId?: string,
+    @Query("redirectUri") redirectUri?: string,
   ) {
     const [tenantId, mode] = (state || "").split(":");
     if (!tenantId) {
@@ -21,7 +22,7 @@ export class MetaController {
       tenantId,
       wabaId,
       phoneNumberId,
-      undefined,
+      redirectUri,
       mode,
     );
     return { success: true, message: "WhatsApp Connected Successfully" };

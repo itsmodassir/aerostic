@@ -24,16 +24,14 @@ interface NavItem {
 const NAVIGATION: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Contacts', href: '/contacts', icon: Users2, permission: 'contacts:read' },
-    { name: 'Messages', href: '/message', icon: MessageSquare, permission: 'inbox:read' },
+    { name: 'Inbox', href: '/inbox', icon: MessageSquare, permission: 'inbox:read' },
     { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns:read' },
     { name: 'Templates', href: '/templates', icon: FileText, permission: 'campaigns:read' },
     { name: 'WhatsApp Flows', href: '/settings/whatsapp/flows', icon: Workflow, permission: 'campaigns:read' },
-    { name: 'Leads', href: '/leads', icon: Target },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Automation', href: '/automation', icon: Zap, permission: 'automation:create' },
     { name: 'Automations (AI)', href: '/automations', icon: Bot, permission: 'campaigns:read' },
-    { name: 'AI Agent', href: '/ai-agent', icon: Bot, permission: 'automation:create' },
-    { name: 'Scheduler', href: '/scheduler', icon: Calendar },
+    { name: 'AI Agent', href: '/ai-agents', icon: Bot, permission: 'automation:create' },
     {
         name: 'Settings',
         icon: Settings,
@@ -44,7 +42,7 @@ const NAVIGATION: NavItem[] = [
             { name: 'Trigger Flow', href: '/settings/whatsapp/trigger-flow' },
             { name: 'Email Flow', href: '/settings/email' },
             { name: 'AI Models', href: '/settings/ai' },
-            { name: 'Wallet', href: '/wallet' },
+            { name: 'Wallet', href: '/billing' },
             { name: 'Knowledge Base', href: '/knowledge-base', permission: 'automation:create' },
             { name: 'Referrals', href: '/referrals' },
         ]

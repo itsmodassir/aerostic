@@ -2,16 +2,11 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
-import { AnomalyWorkerModule } from "./anomaly-worker/anomaly.module";
 import { WhatsappWorkerModule } from "./whatsapp-worker/whatsapp-worker.module";
 import { METRICS_QUEUE } from "../shared/queue/queue-names";
 
 // Assuming entities are shared
 import { AuditLog } from "../shared/database/entities/core/audit-log.entity";
-import { AnomalyEvent } from "../shared/database/entities/analytics/anomaly-event.entity";
-import { TenantRiskScore } from "../shared/database/entities/analytics/tenant-risk-score.entity";
-import { TenantBehaviorProfile } from "../shared/database/entities/analytics/behavior-profile.entity";
-
 import { CommonModule } from "@shared/common.module";
 
 @Module({
@@ -46,7 +41,6 @@ import { CommonModule } from "@shared/common.module";
     }),
 
     // Feature Modules
-    AnomalyWorkerModule,
     WhatsappWorkerModule,
   ],
 })

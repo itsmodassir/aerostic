@@ -6,7 +6,6 @@ import { Message } from "@shared/database/entities/messaging/message.entity";
 import { WebhookEndpoint } from "@api/billing/entities/webhook-endpoint.entity";
 import { AdminConfigService } from "./admin-config.service";
 import { RedisService } from "@shared/redis.service";
-import { KafkaService } from "@shared/kafka.service";
 
 @Injectable()
 export class AdminHealthService {
@@ -19,7 +18,6 @@ export class AdminHealthService {
     private webhookEndpointRepo: Repository<WebhookEndpoint>,
     private adminConfigService: AdminConfigService,
     private redisService: RedisService,
-    private kafkaService: KafkaService,
     private dataSource: DataSource,
   ) {}
 
@@ -30,18 +28,6 @@ export class AdminHealthService {
         name: 'User Experience Node',
         status: 'operational',
         metrics: { sessions: 124, latency: '42ms' }
-      },
-      {
-        id: 'KAFKA',
-        name: 'Event Orchestration',
-        status: this.kafkaService.isConnected ? 'operational' : 'degraded',
-        metrics: { throughput: '850 msg/s', lag: '0.2s' }
-      },
-      {
-        id: 'ML',
-        name: 'Intelligence Inference',
-        status: 'operational',
-        metrics: { accuracy: '94.2%', inference: '12ms' }
       },
       {
         id: 'ADMIN',

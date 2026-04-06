@@ -14,8 +14,6 @@ import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
 import { AuditLog } from "@shared/database/entities/core/audit-log.entity";
 import { RazorpayEvent } from "./entities/razorpay-event.entity";
 import { MailService } from "@shared/mail.service";
-import { KafkaService } from "@shared/kafka.service";
-import { KafkaTopic, KafkaEvent } from "@shared/kafka-events.constants";
 import { UsersService } from "../users/users.service";
 import { User } from "@shared/database/entities/core/user.entity";
 import { Plan } from "@shared/database/entities/billing/plan.entity";
@@ -59,7 +57,6 @@ export class BillingService {
     private auditService: AuditService,
     private mailService: MailService,
     private usersService: UsersService,
-    private kafkaService: KafkaService,
     private walletService: WalletService,
   ) { }
 
@@ -698,23 +695,5 @@ export class BillingService {
 
     usage.value += amount;
     await this.usageMetricRepo.save(usage);
-
-    // 5. Emit to Kafka
-    this.kafkaService.emit(
-      KafkaTopic.USAGE_EVENTS,
-      KafkaEvent.API_CALL,
-      {
-        eventId: event.id,
-        tenantId: event.tenantId,
-        metric: event.metric,
-        amount: event.amount,
-        isOverage,
-        overageAmount,
-        referenceId: event.referenceId,
-        timestamp: event.createdAt?.getTime() || Date.now(),
-        metadata: event.metadata,
-      },
-      event.tenantId
-    );
   }
 }

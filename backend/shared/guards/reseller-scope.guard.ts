@@ -5,7 +5,6 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { SystemRole, JwtPayload } from "../types/roles";
-import { AnomalyService } from "../../api-service/analytics/anomaly.service";
 import { Reflector } from "@nestjs/core";
 import { PERMISSIONS_KEY } from "../decorators/permissions.decorator";
 import { ResellerService } from "../../api-service/reseller/reseller.service";
@@ -18,7 +17,6 @@ import { ResellerService } from "../../api-service/reseller/reseller.service";
 export class ResellerScopeGuard implements CanActivate {
   constructor(
     private resellerService: ResellerService,
-    private anomalyService: AnomalyService,
     private reflector: Reflector,
   ) {}
 
@@ -63,14 +61,6 @@ export class ResellerScopeGuard implements CanActivate {
     );
 
     if (!allowedTenantIds.includes(targetTenantId)) {
-      // SECURITY ANOMALY: Unauthorized cross-tenant management attempt
-      await this.anomalyService.flagPermissionViolation(
-        user.tenantId,
-        user.id,
-        "user",
-        `cross_tenant_access:${targetTenantId}`,
-      );
-
       throw new ForbiddenException(
         "Access denied: tenant does not belong to your reseller account",
       );
