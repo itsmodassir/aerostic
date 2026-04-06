@@ -7,6 +7,20 @@ REPO_URL="https://github.com/itsmodassir/aerostic.git"
 
 echo "🚀 Starting Aimstors Solution Production Deployment..."
 
+# 0. System Swap Check & Setup
+echo "💾 Checking and provisioning swap space to prevent build OOM errors..."
+if [ ! -f /swapfile ]; then
+    echo "Creating 2GB swap file..."
+    sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+    echo "✅ Swap configured."
+else
+    echo "✅ Swap file already exists."
+fi
+
 # 1. Update/Clone Code
 if [ ! -d "$APP_DIR" ]; then
     echo "📂 Directory missing. Cloning repository..."
