@@ -23,7 +23,6 @@ import { User } from "@shared/database/entities/core/user.entity";
       Subscription,
       User,
     ]),
-    TenantsModule,
   ],
   providers: [
     AuthzCacheService,
