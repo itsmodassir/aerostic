@@ -176,13 +176,16 @@ export class AuthController {
       );
 
       const isProduction = process.env.NODE_ENV === "production";
+      const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
+      const cookieDomain = isProduction ? `.${baseDomain}` : undefined;
 
-      this.logger.debug("Setting cookies...");
+      this.logger.debug(`Setting cookies for domain: ${cookieDomain}`);
+      
       res.cookie("access_token", access_token, {
         httpOnly: true,
         secure: isProduction,
-        sameSite: "lax",
-        domain: isProduction ? `.${process.env.BASE_DOMAIN || "aimstore.in"}` : undefined,
+        sameSite: isProduction ? "lax" : "lax",
+        domain: cookieDomain,
         path: "/",
         maxAge: 15 * 60 * 1000, // 15 minutes
       });
@@ -190,8 +193,8 @@ export class AuthController {
       res.cookie("refresh_token", refresh_token, {
         httpOnly: true,
         secure: isProduction,
-        sameSite: "lax",
-        domain: isProduction ? `.${process.env.BASE_DOMAIN || "aimstore.in"}` : undefined,
+        sameSite: isProduction ? "lax" : "lax",
+        domain: cookieDomain,
         path: "/",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
@@ -249,14 +252,13 @@ export class AuthController {
       await this.authService.refreshTokens(refreshToken, req);
 
     const isProduction = process.env.NODE_ENV === "production";
-    const domain = isProduction
-      ? `.${process.env.BASE_DOMAIN || "aimstore.in"}`
-      : undefined;
+    const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
+    const domain = isProduction ? `.${baseDomain}` : undefined;
 
     res.cookie("access_token", access_token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: "lax",
+      sameSite: isProduction ? "lax" : "lax",
       domain,
       path: "/",
       maxAge: 15 * 60 * 1000,
@@ -265,7 +267,7 @@ export class AuthController {
     res.cookie("refresh_token", newRefreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: "lax",
+      sameSite: isProduction ? "lax" : "lax",
       domain,
       path: "/",
       maxAge: 30 * 24 * 60 * 60 * 1000,
@@ -285,13 +287,15 @@ export class AuthController {
       await this.authService.logout(req.user.sessionId);
     }
     const isProduction = process.env.NODE_ENV === "production";
+    const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
+    const domain = isProduction ? `.${baseDomain}` : undefined;
 
     res.clearCookie("access_token", {
-      domain: isProduction ? ".aimstore.in" : undefined,
+      domain,
       path: "/",
     });
     res.clearCookie("refresh_token", {
-      domain: isProduction ? ".aimstore.in" : undefined,
+      domain,
       path: "/",
     });
 
