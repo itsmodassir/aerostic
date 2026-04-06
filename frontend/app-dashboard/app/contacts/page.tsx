@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import ContactTable from '../../components/contacts/ContactTable';
-import AddEditContactModal from '../../components/contacts/AddEditContactModal';
-import ImportExportModals from '../../components/contacts/ImportExportModals';
+import ContactTable from '../../components/crm/contacts/ContactTable';
+import AddEditContactModal from '../../components/crm/contacts/AddEditContactModal';
+import ImportExportModals from '../../components/crm/contacts/ImportExportModals';
 
 export default function ContactsPage() {
     const [isAddEditOpen, setIsAddEditOpen] = useState(false);
