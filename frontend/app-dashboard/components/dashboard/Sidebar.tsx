@@ -29,8 +29,7 @@ const NAVIGATION: NavItem[] = [
     { name: 'Templates', href: '/templates', icon: FileText, permission: 'campaigns:read' },
     { name: 'WhatsApp Flows', href: '/settings/whatsapp/flows', icon: Workflow, permission: 'campaigns:read' },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
-    { name: 'Automation', href: '/automation', icon: Zap, permission: 'automation:create' },
-    { name: 'Automations (AI)', href: '/automations', icon: Bot, permission: 'campaigns:read' },
+    { name: 'Automations', href: '/automations', icon: Zap, permission: 'campaigns:read' },
     { name: 'AI Agent', href: '/ai-agents', icon: Bot, permission: 'automation:create' },
     {
         name: 'Settings',
