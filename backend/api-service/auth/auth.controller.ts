@@ -110,7 +110,9 @@ class ResetPasswordDto {
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
   constructor(
+    @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     @InjectRepository(TenantMembership)
     private membershipRepo: Repository<TenantMembership>,
