@@ -6,19 +6,31 @@ import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { SentryExceptionFilter } from "@shared/filters/sentry-exception.filter";
 
 async function bootstrap() {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    integrations: [nodeProfilingIntegration()],
-    // Performance Monitoring
-    tracesSampleRate: 1.0, //  Capture 100% of the transactions
-    // Set sampling rate for profiling - this is relative to tracesSampleRate
-    profilesSampleRate: 1.0,
-    environment: process.env.NODE_ENV || "development",
-  });
+  console.log("🚀 [Bootstrap] Starting Aimstors API...");
+  
+  try {
+    if (process.env.SENTRY_DSN) {
+      console.log("🔍 [Bootstrap] Initializing Sentry...");
+      Sentry.init({
+        dsn: process.env.SENTRY_DSN,
+        integrations: [nodeProfilingIntegration()],
+        tracesSampleRate: 1.0,
+        profilesSampleRate: 1.0,
+        environment: process.env.NODE_ENV || "development",
+      });
+      console.log("✅ [Bootstrap] Sentry Initialized.");
+    } else {
+      console.log("⚠️ [Bootstrap] Sentry DSN missing, skipping...");
+    }
+  } catch (err) {
+    console.error("❌ [Bootstrap] Sentry Init Failed", err);
+  }
 
+  console.log("📦 [Bootstrap] Creating Nest Application...");
   const app = await NestFactory.create(AppModule, {
-    rawBody: true, // Essential for webhook signature verification
+    rawBody: true,
   });
+  console.log("✅ [Bootstrap] Nest Application Created.");
 
   // API Versioning
   app.setGlobalPrefix("api/v1");
