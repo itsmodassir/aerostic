@@ -46,8 +46,12 @@ export class TenantContextMiddleware implements NestMiddleware {
       if (cookieHeader) {
         const cookies: Record<string, string> = {};
         cookieHeader.split(';').forEach(c => {
-          const parts = c.split('=');
-          if (parts.length === 2) cookies[parts[0].trim()] = parts[1].trim();
+          const eqIdx = c.indexOf('=');
+          if (eqIdx > -1) {
+            const key = c.slice(0, eqIdx).trim();
+            const val = c.slice(eqIdx + 1).trim();
+            cookies[key] = val;
+          }
         });
 
         const token = cookies['access_token'];
