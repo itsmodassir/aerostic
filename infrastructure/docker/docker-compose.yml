@@ -26,7 +26,6 @@ services:
     network_mode: host
     volumes:
       - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../nginx/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       # Static Assets Mounts (DELETED landing mount - migrated to Next.js)
       # Stable parent mount to prevent stale inodes after builds
