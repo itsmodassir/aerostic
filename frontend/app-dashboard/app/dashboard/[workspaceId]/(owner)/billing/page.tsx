@@ -72,15 +72,15 @@ export default function BillingPage() {
         try {
             const [subRes, plansRes, invoicesRes, usageRes] = await Promise.all([
                 api.get('/billing/subscription').catch(() => ({ data: null })),
-                api.get('/billing/available-plans'),
-                api.get('/billing/invoices'),
-                api.get('/billing/usage')
+                api.get('/billing/available-plans').catch(() => ({ data: [] })),
+                api.get('/billing/invoices').catch(() => ({ data: [] })),
+                api.get('/billing/usage').catch(() => ({ data: null }))
             ]);
 
-            if (subRes.data) setSubscription(subRes.data);
-            if (plansRes.data) setPlans(plansRes.data);
-            if (invoicesRes.data) setInvoiceHistory(invoicesRes.data);
-            if (usageRes.data) setUsage(usageRes.data);
+            if (subRes?.data) setSubscription(subRes.data);
+            if (plansRes?.data) setPlans(plansRes.data);
+            if (invoicesRes?.data) setInvoiceHistory(invoicesRes.data);
+            if (usageRes?.data) setUsage(usageRes.data);
 
         } catch (error) {
             console.error('Failed to fetch billing data', error);
@@ -130,10 +130,6 @@ export default function BillingPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">Billing & Subscription</h1>
-                <p className="text-gray-500 mt-2">Manage your plan, billing details, and invoices</p>
-            </div>
 
             {/* Current Plan Overview */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-sm">

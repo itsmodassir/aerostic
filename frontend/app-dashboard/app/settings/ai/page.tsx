@@ -54,11 +54,7 @@ export default function AiSettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3"><Bot className="h-8 w-8 text-purple-500" />AI Models</h1>
-        <p className="text-gray-500 mt-1">Configure your AI provider API keys.</p>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-6">
       <Card className="rounded-2xl border-gray-100 shadow-sm">
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent className="space-y-4">

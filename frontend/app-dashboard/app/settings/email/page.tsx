@@ -113,14 +113,7 @@ export default function EmailSettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <Mail className="h-8 w-8 text-rose-500" />
-          Email Settings
-        </h1>
-        <p className="text-gray-500 mt-1">Add SMTP mailboxes and verify outbound email configuration.</p>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-6">
 
       {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div> : null}
       {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">{success}</div> : null}
