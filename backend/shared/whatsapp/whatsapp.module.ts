@@ -9,7 +9,7 @@ import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
 import { WhatsappService } from "./whatsapp.service";
 import { WebhooksService } from "./webhooks.service";
 import { AiModule } from "../../api-service/ai/ai.module";
-import { forwardRef } from "@nestjs/common";
+import { AutomationFlow } from "../database/entities/core/automation-flow.entity";
 
 @Module({
   imports: [
@@ -19,6 +19,7 @@ import { forwardRef } from "@nestjs/common";
       Conversation,
       Message,
       Campaign,
+      AutomationFlow,
     ]),
     forwardRef(() => AiModule),
     BullModule.registerQueue({
