@@ -85,6 +85,8 @@ if [ -f "../../.env" ]; then
     set +a
 fi
 export NEXT_JS_IGNORE_ESLINT=1
+export NEXT_PUBLIC_API_URL="https://api.aimstore.in/api/v1"
+export NEXT_PUBLIC_BASE_DOMAIN="aimstore.in"
 npm run build
 
 # Standalone requirements for App Dashboard
@@ -108,7 +110,8 @@ if [ -f "../../.env" ]; then
     set +a
 fi
 export NEXT_JS_IGNORE_ESLINT=1
-export NEXT_PUBLIC_BACKEND_URL="https://api.aimstore.in/api/v1"
+export NEXT_PUBLIC_API_URL="https://api.aimstore.in/api/v1"
+export NEXT_PUBLIC_BASE_DOMAIN="aimstore.in"
 npm run build
 
 # Standalone requirements for Admin Panel
@@ -139,22 +142,22 @@ cd ..
 
 # 7. Restart Services
 echo "🔄 Restarting Node Services..."
-pm2 delete aimstors-api || true
-pm2 delete aimstors-webhook || true
-pm2 delete aimstors-worker || true
-pm2 delete aimstors-frontend || true
-pm2 delete aimstors-admin || true
+sudo pm2 delete aimstors-api || true
+sudo pm2 delete aimstors-webhook || true
+sudo pm2 delete aimstors-worker || true
+sudo pm2 delete aimstors-frontend || true
+sudo pm2 delete aimstors-admin || true
 
 # Backend
-pm2 start backend/dist/api-service/main.js --name aimstors-api
-pm2 start backend/dist/webhook-service/main.js --name aimstors-webhook
-pm2 start backend/dist/worker-service/main.js --name aimstors-worker
+sudo pm2 start backend/dist/api-service/main.js --name aimstors-api
+sudo pm2 start backend/dist/webhook-service/main.js --name aimstors-webhook
+sudo pm2 start backend/dist/worker-service/main.js --name aimstors-worker
 
 # Frontends
-PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
-PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aimstors-admin
+sudo PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
+sudo PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aimstors-admin
 
-pm2 save
+sudo pm2 save
 
 echo "✅ Production Fix Deployment Complete!"
 pm2 status
