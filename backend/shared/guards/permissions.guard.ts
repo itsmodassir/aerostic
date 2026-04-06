@@ -35,11 +35,12 @@ export class PermissionsGuard implements CanActivate {
 
     // 1. Determine target tenant context
     const tenantId =
+      request.targetTenantId ||
+      request.headers["x-tenant-id"] ||
       request.params.tenantId ||
       request.params.id ||
       request.query.tenantId ||
-      request.body.tenantId ||
-      request.headers["x-tenant-id"];
+      request.body.tenantId;
 
     if (!tenantId || !user?.id) {
       throw new ForbiddenException("Access denied: Workspace context required");

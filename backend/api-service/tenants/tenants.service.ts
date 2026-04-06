@@ -53,9 +53,17 @@ export class TenantsService {
     const savedTenant = await this.tenantsRepository.save(tenant);
 
     // Create membership for the creator (Owner)
-    const ownerRole = await this.roleRepository.findOne({
+    let ownerRole = await this.roleRepository.findOne({
       where: { name: "owner" },
     });
+
+    if (!ownerRole) {
+      ownerRole = this.roleRepository.create({
+        name: "owner",
+        description: "Workspace owner",
+      });
+      ownerRole = await this.roleRepository.save(ownerRole);
+    }
 
     const membership = this.membershipRepository.create({
       userId,

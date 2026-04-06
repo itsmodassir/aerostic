@@ -4,7 +4,10 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { SystemRole, JwtPayload } from "../types/roles";
+import { TenantMembership } from "../database/entities/core/tenant-membership.entity";
 
 /**
  * Ensures that a user can only access resources belonging to their own tenant.
@@ -12,7 +15,12 @@ import { SystemRole, JwtPayload } from "../types/roles";
  */
 @Injectable()
 export class TenantGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  constructor(
+    @InjectRepository(TenantMembership)
+    private readonly membershipRepo: Repository<TenantMembership>,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user as JwtPayload;
 
@@ -31,12 +39,13 @@ export class TenantGuard implements CanActivate {
     }
 
     // Attempt to find tenantId in various locations
+    const tenantIdFromHeader = request.targetTenantId || request.headers["x-tenant-id"];
     const tenantIdFromRoute = request.params.tenantId || request.params.id;
     const tenantIdFromQuery = request.query.tenantId;
     const tenantIdFromBody = request.body.tenantId;
 
     const targetTenantId =
-      tenantIdFromRoute || tenantIdFromQuery || tenantIdFromBody;
+      tenantIdFromHeader || tenantIdFromRoute || tenantIdFromQuery || tenantIdFromBody;
 
     // Fail-Safe: If no tenant is explicitly targeted, we default to the user's
     // authorized tenant context to ensure RLS fallback is active.
@@ -46,7 +55,16 @@ export class TenantGuard implements CanActivate {
       throw new ForbiddenException("Access Denied: Missing tenant context.");
     }
 
-    if (user.tenantId !== resolvedTenantId) {
+    const membership = await this.membershipRepo.findOne({
+      where: {
+        userId: user.id,
+        tenantId: resolvedTenantId,
+        status: "active",
+      },
+      select: ["id", "tenantId", "userId", "status"],
+    });
+
+    if (!membership) {
       throw new ForbiddenException(
         "Access Denied: Tenant isolation violation.",
       );

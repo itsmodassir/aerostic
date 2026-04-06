@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 
 @Injectable()
 export class EncryptionService {
+  private readonly logger = new Logger(EncryptionService.name);
   private static instance: EncryptionService;
   private readonly algorithm = "aes-256-gcm";
   private readonly key: Buffer;
@@ -11,6 +12,7 @@ export class EncryptionService {
   constructor(private configService: ConfigService) {
     const secret = this.configService.get<string>("ENCRYPTION_KEY");
     if (!secret) {
+      this.logger.error("ENCRYPTION_KEY environment variable is required but missing! Checked system config and environment.");
       throw new Error("ENCRYPTION_KEY environment variable is required");
     }
     // Use scrypt to generate a 32-byte key from the secret

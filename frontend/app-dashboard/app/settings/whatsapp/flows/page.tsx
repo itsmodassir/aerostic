@@ -1,44 +1,216 @@
 'use client';
-import { Workflow, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, Plus, RefreshCw, Trash2, Workflow } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function WhatsAppFlowsPage() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const [flows, setFlows] = useState<any[]>([]);
+  const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const loadFlows = async () => {
+    setLoading(true);
+    try {
+      const statusRes = await api.get('/whatsapp/status');
+      const isConnected = !!statusRes.data?.connected;
+      setConnected(isConnected);
+
+      if (!isConnected) {
+        setFlows([]);
+        return;
+      }
+
+      const flowRes = await api.get('/whatsapp/flows');
+      setFlows(Array.isArray(flowRes.data) ? flowRes.data : []);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to load WhatsApp flows';
+      toast.error(message);
+      setFlows([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.get('/wa-forms').then(r => setFlows(r.data || [])).catch(() => toast.error('Failed to load flows')).finally(() => setLoading(false));
+    void loadFlows();
   }, []);
+
+  useEffect(() => {
+    const connectedFlag = searchParams.get('connected');
+    if (connectedFlag === '1') {
+      void loadFlows();
+    }
+  }, [searchParams]);
+
+  const handleCreateFlow = async () => {
+    const rawName = window.prompt('Enter a flow name');
+    const flowName = rawName?.trim();
+    if (!flowName) return;
+
+    setCreating(true);
+    try {
+      const res = await api.post('/whatsapp/flows', {
+        name: flowName,
+        categories: ['OTHER'],
+      });
+      toast.success('Flow created successfully');
+      await loadFlows();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to create flow');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleTogglePublish = async (flow: any) => {
+    const action = flow.status === 'PUBLISHED' ? 'unpublish' : 'publish';
+    setBusyId(`${action}:${flow.id}`);
+    try {
+      await api.post(`/whatsapp/flows/${flow.id}/${action}`);
+      toast.success(action === 'publish' ? 'Flow published' : 'Flow unpublished');
+      await loadFlows();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || `Failed to ${action} flow`);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDeleteFlow = async (flow: any) => {
+    if (!window.confirm(`Delete flow "${flow.name}"?`)) {
+      return;
+    }
+
+    setBusyId(`delete:${flow.id}`);
+    try {
+      await api.delete(`/whatsapp/flows/${flow.id}`);
+      toast.success('Flow deleted');
+      await loadFlows();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to delete flow');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const statusTone = (status?: string) => {
+    switch ((status || '').toUpperCase()) {
+      case 'PUBLISHED':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'DRAFT':
+        return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'DEPRECATED':
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+      default:
+        return 'bg-blue-50 text-blue-700 border-blue-100';
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3"><Workflow className="h-8 w-8 text-blue-500" />WhatsApp Flows</h1>
-          <p className="text-gray-500 mt-1">Build interactive message flows for your customers.</p>
+      <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+            <Workflow className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              WhatsApp Builder
+            </p>
+            <p className="max-w-2xl text-sm leading-6 text-slate-600">
+              Create, publish, and manage interactive customer journeys from one place.
+            </p>
+          </div>
         </div>
-        <Button className="rounded-xl" onClick={() => router.push('/settings/whatsapp/forms')}><Plus className="h-4 w-4 mr-2" />New Flow</Button>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" className="rounded-xl border-slate-200" onClick={() => void loadFlows()} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button className="rounded-xl shadow-sm" onClick={handleCreateFlow} disabled={!connected || creating}>
+            {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            New Flow
+          </Button>
+        </div>
       </div>
+
+      {!connected && !loading ? (
+        <Card className="rounded-2xl border-gray-100 shadow-sm">
+          <CardContent className="flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center">
+            <Workflow className="h-16 w-16 text-gray-200" />
+            <div className="space-y-2">
+              <p className="text-lg font-semibold text-gray-900">Connect WhatsApp before creating flows</p>
+              <p className="text-sm text-gray-500">The Meta Cloud account needs to be connected before the flow builder can load or publish assets.</p>
+            </div>
+            <Button asChild className="rounded-xl">
+              <Link href="/settings/whatsapp">Open WhatsApp Settings</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card className="rounded-2xl border-gray-100 shadow-sm">
         <CardContent className="p-6">
           {loading ? <div className="h-48 flex items-center justify-center text-gray-400">Loading flows...</div>
+          : !connected ? null
           : flows.length === 0 ? (
             <div className="h-48 flex flex-col items-center justify-center gap-3 text-gray-400">
               <Workflow className="h-16 w-16 text-gray-200" />
               <p>No flows created yet.</p>
+              <Button variant="outline" className="rounded-xl" onClick={handleCreateFlow}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create first flow
+              </Button>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {flows.map((f: any) => (
-                <div key={f.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all">
-                  <h3 className="font-semibold">{f.name}</h3>
-                  <p className="text-xs text-gray-400 mt-1">{f.status}</p>
+                <div key={f.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="font-semibold text-gray-900">{f.name}</h3>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusTone(f.status)}`}>
+                        {f.status || 'Unknown'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-gray-400">{f.id}</p>
+                    <p className="text-xs text-gray-400">Updated {f.updated_at ? new Date(f.updated_at).toLocaleString() : 'recently'}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => void handleTogglePublish(f)}
+                      disabled={busyId === `publish:${f.id}` || busyId === `unpublish:${f.id}`}
+                    >
+                      {(busyId === `publish:${f.id}` || busyId === `unpublish:${f.id}`) ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      {f.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl text-red-600 hover:text-red-700"
+                      onClick={() => void handleDeleteFlow(f)}
+                      disabled={busyId === `delete:${f.id}`}
+                    >
+                      {busyId === `delete:${f.id}` ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-4 w-4" />
+                      )}
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

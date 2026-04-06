@@ -5,19 +5,33 @@ import { BarChart2, TrendingUp, Users, MessageSquare, Target, Calendar } from 'l
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface AnalyticsOverview {
+  stats: {
+    totalSent: number;
+    totalReceived: number;
+    totalContacts: number;
+    totalCampaigns: number;
+    statusBreakdown: Record<string, number>;
+  };
+}
+
 export default function AnalyticsPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/analytics/summary').then(r => setStats(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api
+      .get('/analytics/overview')
+      .then((r) => setStats(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const cards = [
-    { label: 'Messages Sent', value: stats?.totalMessages || 0, icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'Delivered', value: stats?.delivered || 0, icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
-    { label: 'Contacts Reached', value: stats?.uniqueContacts || 0, icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { label: 'Campaigns Run', value: stats?.campaigns || 0, icon: Target, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Messages Sent', value: stats?.stats.totalSent || 0, icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Delivered', value: stats?.stats.statusBreakdown.delivered || 0, icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
+    { label: 'Contacts Reached', value: stats?.stats.totalContacts || 0, icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { label: 'Campaigns Run', value: stats?.stats.totalCampaigns || 0, icon: Target, color: 'text-orange-500', bg: 'bg-orange-50' },
   ];
 
   return (

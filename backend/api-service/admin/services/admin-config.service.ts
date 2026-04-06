@@ -262,6 +262,7 @@ const SAFE_ENV_WHITELIST = new Set([
 export class AdminConfigService implements OnModuleInit {
   private readonly CACHE_PREFIX = "system_config:";
   private readonly CACHE_TTL = 3600; // 1 hour
+  private readonly logger = new Logger(AdminConfigService.name);
 
   constructor(
     @InjectRepository(SystemConfig)
@@ -380,6 +381,13 @@ export class AdminConfigService implements OnModuleInit {
     return this.getConfigValue(key, tenantId);
   }
 
+  private looksLikeEncryptedPayload(value: unknown): value is string {
+    return (
+      typeof value === "string" &&
+      /^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(value.trim())
+    );
+  }
+
   async getConfigValue(key: string, tenantId?: string): Promise<string | null> {
     // Priority order: DB (tenant) > DB (global) > ENV (bootstrap seed) > hard default
     // DB is always the authoritative source — admin panel changes take immediate effect.
@@ -403,9 +411,17 @@ export class AdminConfigService implements OnModuleInit {
     const cachedValue = await this.getCache(cacheKey);
     if (cachedValue) {
       const def = DEFAULT_CONFIG[key];
-      return def?.isSecret
+      const resolvedValue = def?.isSecret
         ? this.encryptionService.decrypt(cachedValue)
         : cachedValue;
+
+      if (def?.isSecret && this.looksLikeEncryptedPayload(resolvedValue)) {
+        this.logger.warn(
+          `Ignoring undecipherable cached secret for config key "${key}". Falling back to DB/env resolution.`,
+        );
+      } else {
+        return resolvedValue;
+      }
     }
 
     // 2. Check Database (tenant override first, then global)
@@ -428,10 +444,21 @@ export class AdminConfigService implements OnModuleInit {
     });
 
     if (configValue !== null) {
-      const isSecret = DEFAULT_CONFIG[key]?.isSecret || false;
-      const cacheVal = isSecret ? this.encryptionService.encrypt(configValue) : configValue;
-      await this.setCache(cacheKey, cacheVal);
-      return configValue;
+      if (
+        DEFAULT_CONFIG[key]?.isSecret &&
+        this.looksLikeEncryptedPayload(configValue)
+      ) {
+        this.logger.warn(
+          `Ignoring undecipherable stored secret for config key "${key}". Falling back to environment/default seed.`,
+        );
+      } else {
+        const isSecret = DEFAULT_CONFIG[key]?.isSecret || false;
+        const cacheVal = isSecret
+          ? this.encryptionService.encrypt(configValue)
+          : configValue;
+        await this.setCache(cacheKey, cacheVal);
+        return configValue;
+      }
     }
 
     // 3. Fallback to ENV var (bootstrap seed — only used when no DB row exists yet)

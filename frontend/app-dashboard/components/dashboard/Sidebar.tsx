@@ -58,6 +58,11 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
     const { isSidebarCollapsed, toggleSidebarCollapse, isSidebarOpen, setIsSidebarOpen, membership } = useDashboard();
     
     const permissions = user?.permissions || membership?.permissions || [];
+    const activeDashboardHref = membership?.tenant?.slug
+        ? `/dashboard/${membership.tenant.slug}`
+        : membership?.tenantId
+            ? `/dashboard/${membership.tenantId}`
+            : '/dashboard';
     
     const visibleNavigation = useMemo(() => {
         return NAVIGATION.map(item => {
@@ -112,8 +117,8 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
             <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                 {visibleNavigation.map((item) => (
                     <NavRow 
-                        key={item.name} 
-                        item={item} 
+                        key={item.name}
+                        item={item.name === 'Dashboard' ? { ...item, href: activeDashboardHref } : item}
                         pathname={pathname} 
                         isCollapsed={isSidebarCollapsed} 
                         onCloseMobile={() => setIsSidebarOpen(false)} 

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Post,
   Query,
@@ -35,6 +36,24 @@ export class CampaignsController {
   @Authorize({ resource: "campaign", action: "read" })
   findAll(@UserTenant() tenantId: string) {
     return this.campaignsService.findAll(tenantId);
+  }
+
+  @Get("triggers")
+  @Authorize({ resource: "campaign", action: "read" })
+  findTriggers(@UserTenant() tenantId: string) {
+    return this.campaignsService.findTriggers(tenantId);
+  }
+
+  @Post("triggers")
+  @Authorize({ resource: "campaign", action: "create" })
+  createTrigger(@UserTenant() tenantId: string, @Body() body: any) {
+    return this.campaignsService.createTrigger(tenantId, body);
+  }
+
+  @Delete("triggers/:id")
+  @Authorize({ resource: "campaign", action: "delete" })
+  disableTrigger(@UserTenant() tenantId: string, @Param("id") id: string) {
+    return this.campaignsService.disableTrigger(tenantId, id);
   }
 
   /**

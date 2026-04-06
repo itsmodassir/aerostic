@@ -50,8 +50,9 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            const [userRes, msgRes, campaignRes, walletRes] = await Promise.allSettled([
+            const [userRes, membershipRes, msgRes, campaignRes, walletRes] = await Promise.allSettled([
                 api.get('/auth/me'),
+                api.get('/auth/membership'),
                 api.get('/messages/recent'),
                 api.get('/campaigns/recent'),
                 api.get('/billing/wallet-balance')
@@ -60,11 +61,26 @@ export default function DashboardPage() {
             if (userRes.status === 'fulfilled' && userRes.value.status === 200) {
                 const userData = userRes.value.data;
                 setUser(userData);
-                const member = userData.memberships?.find((m: any) => m.workspaceId === workspaceId);
+                const member = membershipRes.status === 'fulfilled' && membershipRes.value.status === 200
+                    ? membershipRes.value.data
+                    : {
+                        tenantId: userData.tenantId || null,
+                        tenant: userData.tenantId
+                            ? {
+                                id: userData.tenantId,
+                                slug: userData.tenantSlug,
+                                name: userData.tenantName,
+                                type: userData.tenantType,
+                            }
+                            : null,
+                        tenantType: userData.tenantType || null,
+                        permissions: userData.permissions || [],
+                    };
+
                 setMembership(member);
-                setUserPlan(normalizePlan(member?.planName || 'Starter'));
+                setUserPlan(normalizePlan(member?.tenant?.planName || member?.planName || 'Starter'));
                 try {
-                    if (member?.tenantType === 'reseller') {
+                    if (member?.tenantType === 'reseller' || member?.tenant?.type === 'reseller') {
                         const res = await api.get('/admin/reseller-stats');
                         if (res.status === 200) setStats(res.data);
                     } else {
@@ -162,7 +178,7 @@ export default function DashboardPage() {
                                     <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
                                 </button>
                                 <Link
-                                    href={`/dashboard/${workspaceId}/campaigns`}
+                                    href="/campaigns"
                                     className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 transition-all shadow-sm shadow-blue-200 shrink-0 uppercase tracking-wider"
                                 >
                                     <Plus size={12} strokeWidth={3} />

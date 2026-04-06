@@ -39,22 +39,8 @@ export default function AutomationsPage() {
   const fetchTriggers = async () => {
     try {
       setLoading(true);
-      // Note: We'll need a backend endpoint for this. Adding a mock for now or calling if ready.
-      // const res = await api.get('/campaigns/triggers');
-      // setTriggers(res.data);
-      
-      // Mock for UI demonstration
-      setTriggers([
-        {
-          id: '1',
-          name: 'Shopify Abandoned Cart',
-          apiKey: 'trg_8829_abc_123',
-          campaign: { name: 'Recovery Flow v2', id: 'c1' },
-          triggerType: 'webhook',
-          isActive: true,
-          createdAt: new Date().toISOString()
-        }
-      ]);
+      const res = await api.get('/campaigns/triggers');
+      setTriggers(res.data);
     } catch (err) {
       toast.error('Failed to load triggers');
     } finally {
@@ -63,8 +49,12 @@ export default function AutomationsPage() {
   };
 
   const fetchCampaigns = async () => {
-      const res = await api.get('/campaigns');
-      setCampaigns(res.data);
+      try {
+        const res = await api.get('/campaigns');
+        setCampaigns(res.data);
+      } catch {
+        toast.error('Failed to load campaigns');
+      }
   };
 
   useEffect(() => {
@@ -75,6 +65,21 @@ export default function AutomationsPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Webhook URL copied to clipboard!');
+  };
+
+  const buildTriggerUrl = (apiKey: string) => {
+    if (typeof window === 'undefined') return `/api/v1/campaigns/triggers/${apiKey}`;
+    return `${window.location.origin}/api/v1/campaigns/triggers/${apiKey}`;
+  };
+
+  const disableTrigger = async (id: string) => {
+    try {
+      await api.delete(`/campaigns/triggers/${id}`);
+      toast.success('Trigger disabled');
+      fetchTriggers();
+    } catch {
+      toast.error('Could not disable trigger');
+    }
   };
 
   return (
@@ -91,7 +96,7 @@ export default function AutomationsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {triggers.length === 0 ? (
+        {!loading && triggers.length === 0 ? (
            <Card className="border-dashed border-2 py-20 bg-gray-50/30">
                 <CardContent className="flex flex-col items-center justify-center">
                     <div className="p-4 bg-white rounded-2xl shadow-sm mb-4">
@@ -124,14 +129,14 @@ export default function AutomationsPage() {
                                     <div className="flex justify-between items-center mb-2">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Webhook Endpoint</p>
                                         <button 
-                                            onClick={() => copyToClipboard(`https://api.aerostic.io/campaigns/triggers/${trigger.apiKey}`)}
+                                            onClick={() => copyToClipboard(buildTriggerUrl(trigger.apiKey))}
                                             className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
                                         >
                                             <Copy className="h-3 w-3" /> Copy URL
                                         </button>
                                     </div>
                                     <code className="text-xs text-slate-600 block break-all font-mono">
-                                        https://api.aerostic.io/campaigns/triggers/{trigger.apiKey}
+                                        {buildTriggerUrl(trigger.apiKey)}
                                     </code>
                                 </div>
 
@@ -155,7 +160,11 @@ export default function AutomationsPage() {
                             <Button variant="outline" className="w-full bg-white rounded-xl text-xs font-bold gap-2">
                                 <Code className="h-4 w-4" /> View Usage
                             </Button>
-                            <Button variant="ghost" className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl text-xs font-bold gap-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => disableTrigger(trigger.id)}
+                                className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl text-xs font-bold gap-2"
+                            >
                                 <Trash2 className="h-4 w-4" /> Disable
                             </Button>
                         </div>

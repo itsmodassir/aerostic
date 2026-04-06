@@ -9,55 +9,103 @@ function CallbackContent() {
     const router = useRouter();
     const [status, setStatus] = useState('Verifying connection...');
 
+    const extractMessage = (err: any) => {
+        const details = err?.response?.data?.details;
+        const detailMessage =
+            typeof details === 'string'
+                ? details
+                : Array.isArray(details?.message)
+                    ? details.message.join(', ')
+                    : details?.message;
+
+        return (
+            err?.response?.data?.message ||
+            detailMessage ||
+            err?.message ||
+            'Failed to connect WhatsApp. Please try again from settings.'
+        );
+    };
+
     useEffect(() => {
-        const code = searchParams.get('code');
-        const state = searchParams.get('state'); // tenantId:mode
-        const wabaId = searchParams.get('wabaId');
-        const phoneNumberId = searchParams.get('phoneNumberId');
-        const tenantIdFromState = state?.split(':')[0] || '';
-        const persistTenantContext = (tenantId: string) => {
+        const syncTenantContext = async (tenantId: string) => {
             localStorage.setItem('x-tenant-id', tenantId);
             localStorage.setItem('selected_tenant_id', tenantId);
-            document.cookie = `selected_tenant=${tenantId}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+
+            try {
+                const workspacesRes = await api.get('/auth/workspaces');
+                const workspaces = Array.isArray(workspacesRes.data) ? workspacesRes.data : [];
+                const matchingWorkspace = workspaces.find((workspace: any) =>
+                    workspace?.tenantId === tenantId ||
+                    workspace?.id === tenantId ||
+                    workspace?.tenant?.id === tenantId
+                );
+                const workspaceSlug = matchingWorkspace?.tenant?.slug || matchingWorkspace?.slug;
+
+                if (workspaceSlug) {
+                    document.cookie = `selected_tenant=${encodeURIComponent(workspaceSlug)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+                }
+            } catch (error) {
+                console.warn('[MetaCallback] Failed to resolve workspace slug after callback', error);
+            }
         };
 
-        if (code && state) {
-            // Dynamically determine the redirect URI used in the initial request
+        const run = async () => {
+            const code = searchParams.get('code');
+            const state = searchParams.get('state'); // tenantId:mode
+            const wabaId = searchParams.get('wabaId');
+            const phoneNumberId = searchParams.get('phoneNumberId');
+            const tenantIdFromState = state?.split(':')[0] || '';
+
+            if (!code || !state) {
+                setStatus('Invalid callback parameters. Returning to WhatsApp settings...');
+                window.setTimeout(() => {
+                    router.replace('/settings/whatsapp?error=invalid_callback');
+                }, 1500);
+                return;
+            }
+
             const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://app.aimstore.in';
             const redirectUri = `${currentOrigin}/meta/callback`;
-            
-            // Pass the code and extracted FB assets to the backend
+
             let apiUrl = `/meta/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&redirectUri=${encodeURIComponent(redirectUri)}`;
             if (wabaId) apiUrl += `&wabaId=${encodeURIComponent(wabaId)}`;
             if (phoneNumberId) apiUrl += `&phoneNumberId=${encodeURIComponent(phoneNumberId)}`;
 
-            api.get(apiUrl)
-                .then(() => {
-                    setStatus('Success! WhatsApp Connected.');
-                    setTimeout(() => {
-                        if (tenantIdFromState) {
-                            persistTenantContext(tenantIdFromState);
-                        }
-                        router.push('/settings/whatsapp');
-                    }, 2000);
-                })
-                .catch((err) => {
-                    console.error('[MetaCallback] Exchange Failed:', err);
-                    setStatus('Failed to connect WhatsApp. Please try again from settings.');
-                    setTimeout(() => {
-                        if (tenantIdFromState) {
-                            persistTenantContext(tenantIdFromState);
-                        }
-                        router.push('/settings/whatsapp');
-                    }, 3000);
-                });
-        } else {
-            setStatus('Invalid parameters. Returning to dashboard...');
-            setTimeout(() => {
-                // /dashboard route resolves the first workspace dynamically.
-                router.push('/dashboard');
-            }, 2000);
-        }
+            try {
+                await api.get(apiUrl);
+                if (tenantIdFromState) {
+                    await syncTenantContext(tenantIdFromState);
+                }
+                
+                // Notify parent window and close popup
+                if (window.opener) {
+                    window.opener.postMessage({ type: 'WA_CONNECTED', success: true }, window.location.origin);
+                    setStatus('Success! Closing window...');
+                    setTimeout(() => window.close(), 1000);
+                } else {
+                    setStatus('Success! WhatsApp connected. Redirecting...');
+                    router.replace('/settings/whatsapp?connected=1');
+                }
+            } catch (err: any) {
+                console.error('[MetaCallback] Exchange Failed:', err);
+                const message = extractMessage(err);
+                setStatus(message);
+                
+                if (tenantIdFromState) {
+                    await syncTenantContext(tenantIdFromState);
+                }
+
+                // Notify parent window of error
+                if (window.opener) {
+                    window.opener.postMessage({ type: 'WA_CONNECTED', success: false, error: message }, window.location.origin);
+                    setTimeout(() => window.close(), 2000);
+                } else {
+                    router.replace(`/settings/whatsapp?error=${encodeURIComponent(message)}`);
+                }
+            }
+        };
+
+        void run();
     }, [searchParams, router]);
 
     return (

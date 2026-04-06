@@ -1,6 +1,27 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const DASHBOARD_CANONICAL_PATHS: Record<string, string> = {
+    'contacts': '/contacts',
+    'inbox': '/inbox',
+    'campaigns': '/campaigns',
+    'templates': '/templates',
+    'analytics': '/analytics',
+    'automation': '/automation',
+    'automations': '/automations',
+    'agents': '/ai-agents',
+    'billing': '/billing',
+    'knowledge': '/knowledge-base',
+    'settings': '/settings',
+    'settings/whatsapp': '/settings/whatsapp',
+    'settings/whatsapp/forms': '/settings/whatsapp/forms',
+    'settings/whatsapp/trigger-flow': '/settings/whatsapp/trigger-flow',
+    'settings/whatsapp/flows': '/settings/whatsapp/flows',
+    'settings/ai': '/settings/ai',
+    'settings/email': '/settings/email',
+    'referrals': '/referrals',
+};
+
 function toCanonicalAppPath(pathname: string): string | null {
     const match = pathname.match(/^\/dashboard\/[^/]+(?:\/(.*))?$/);
     if (!match) return null;
@@ -10,11 +31,10 @@ function toCanonicalAppPath(pathname: string): string | null {
 
     const normalized = rest.replace(/^\/+/, '');
 
-    if (normalized === 'inbox') return '/message';
-    if (normalized === 'agents') return '/ai-agent';
-    if (normalized === 'knowledge') return '/knowledge-base';
-    if (normalized === 'billing') return '/billing';
-    if (normalized === 'profile') return '/profile';
+    const canonicalPath = DASHBOARD_CANONICAL_PATHS[normalized];
+    if (canonicalPath) {
+        return canonicalPath;
+    }
 
     return `/${normalized}`;
 }
@@ -29,40 +49,41 @@ export function proxy(request: NextRequest) {
     const activeTenant = tenantCookie || 'default';
 
     const appPathAliases: Record<string, string> = {
-        '/contacts': `/dashboard/${activeTenant}/contacts`,
-        '/message': `/dashboard/${activeTenant}/inbox`,
-        '/messages': `/dashboard/${activeTenant}/inbox`,
-        '/campaigns': `/dashboard/${activeTenant}/campaigns`,
-        '/templates': `/dashboard/${activeTenant}/templates`,
+        '/contacts': '/contacts',
+        '/inbox': '/inbox',
+        '/message': '/inbox',
+        '/messages': '/inbox',
+        '/campaigns': '/campaigns',
+        '/templates': '/templates',
         '/wallet': `/dashboard/${activeTenant}/wallet`,
         '/leads': `/dashboard/${activeTenant}/leads`,
-        '/analytics': `/dashboard/${activeTenant}/analytics`,
-        '/automation': `/dashboard/${activeTenant}/automation`,
-        '/ai-agent': `/dashboard/${activeTenant}/agents`,
-        '/agents': `/dashboard/${activeTenant}/agents`,
+        '/analytics': '/analytics',
+        '/automation': '/automation',
+        '/automations': '/automations',
+        '/ai-agents': '/ai-agents',
+        '/ai-agent': '/ai-agents',
+        '/agents': '/ai-agents',
         '/scheduler': `/dashboard/${activeTenant}/scheduler`,
-        '/referrals': `/dashboard/${activeTenant}/referrals`,
-        '/knowledge-base': `/dashboard/${activeTenant}/knowledge`,
-        '/settings/whatsapp': `/dashboard/${activeTenant}/settings/whatsapp`,
-        '/settings/whatsapp/forms': `/dashboard/${activeTenant}/settings/whatsapp/forms`,
-        '/settings/whatsapp/trigger-flow': `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow`,
-        '/settings/whatsapp/flows': `/dashboard/${activeTenant}/settings/whatsapp/flows`,
-        '/trigger-flow': `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow`,
-        '/settings/ai': `/dashboard/${activeTenant}/settings/ai`,
-        '/settings/email': `/dashboard/${activeTenant}/settings/email`,
-        '/settings': `/dashboard/${activeTenant}/settings/whatsapp`,
-        '/billing': `/dashboard/${activeTenant}/billing`,
+        '/referrals': '/referrals',
+        '/knowledge-base': '/knowledge-base',
+        '/settings/whatsapp': '/settings/whatsapp',
+        '/settings/whatsapp/forms': '/settings/whatsapp/forms',
+        '/settings/whatsapp/trigger-flow': '/settings/whatsapp/trigger-flow',
+        '/settings/whatsapp/flows': '/settings/whatsapp/flows',
+        '/trigger-flow': '/settings/whatsapp/trigger-flow',
+        '/settings/ai': '/settings/ai',
+        '/settings/email': '/settings/email',
+        '/settings': '/settings',
+        '/billing': '/billing',
         '/profile': `/dashboard/${activeTenant}/profile`,
         '/reseller/clients': `/dashboard/${activeTenant}/reseller/clients`,
         '/reseller/branding': `/dashboard/${activeTenant}/reseller/branding`,
     };
     const appAliasPrefixes: Array<[string, string]> = [
-        ['/automation/', `/dashboard/${activeTenant}/automation/`],
-        ['/ai-agent/', `/dashboard/${activeTenant}/agents/`],
-        ['/campaigns/', `/dashboard/${activeTenant}/campaigns/`],
-        ['/settings/whatsapp/trigger-flow/', `/dashboard/${activeTenant}/settings/whatsapp/trigger-flow/`],
-        ['/settings/whatsapp/flows/', `/dashboard/${activeTenant}/settings/whatsapp/flows/`],
-        ['/settings/whatsapp/forms/', `/dashboard/${activeTenant}/settings/whatsapp/forms/`],
+        ['/campaigns/', '/campaigns/'],
+        ['/settings/whatsapp/trigger-flow/', '/settings/whatsapp/trigger-flow/'],
+        ['/settings/whatsapp/flows/', '/settings/whatsapp/flows/'],
+        ['/settings/whatsapp/forms/', '/settings/whatsapp/forms/'],
     ];
 
     // 0. API Subdomain
@@ -95,13 +116,20 @@ export function proxy(request: NextRequest) {
 
         const exactAlias = appPathAliases[pathname];
         if (exactAlias) {
+            if (exactAlias === pathname) {
+                return NextResponse.next();
+            }
             return NextResponse.rewrite(new URL(`${exactAlias}${search}`, request.url));
         }
 
         for (const [sourcePrefix, targetPrefix] of appAliasPrefixes) {
             if (pathname.startsWith(sourcePrefix)) {
                 const suffix = pathname.slice(sourcePrefix.length);
-                return NextResponse.rewrite(new URL(`${targetPrefix}${suffix}${search}`, request.url));
+                const targetPath = `${targetPrefix}${suffix}`;
+                if (targetPath === pathname) {
+                    return NextResponse.next();
+                }
+                return NextResponse.rewrite(new URL(`${targetPath}${search}`, request.url));
             }
         }
 

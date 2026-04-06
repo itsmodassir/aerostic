@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import { ModuleRef } from "@nestjs/core";
 import * as qs from "querystring";
 import axios from "axios";
 import { ConfigService } from "@nestjs/config";
@@ -9,6 +10,7 @@ import { Queue } from "bullmq";
 import { WhatsappAccount } from "./entities/whatsapp-account.entity";
 import { RedisService } from "../redis.service";
 import { EncryptionService } from "../encryption.service";
+import { AdminConfigService } from "@api/admin/services/admin-config.service";
 
 @Injectable()
 export class WhatsappService {
@@ -26,6 +28,7 @@ export class WhatsappService {
 
   constructor(
     private configService: ConfigService,
+    private moduleRef: ModuleRef,
     @InjectRepository(WhatsappAccount)
     private whatsappAccountRepo: Repository<WhatsappAccount>,
     @InjectQueue("whatsapp-messages")
@@ -33,6 +36,14 @@ export class WhatsappService {
     private redisService: RedisService,
     private encryptionService: EncryptionService,
   ) {}
+
+  private get adminConfigService(): AdminConfigService | null {
+    try {
+      return this.moduleRef.get(AdminConfigService, { strict: false });
+    } catch {
+      return null;
+    }
+  }
 
   private reconnectRequiredMessage() {
     return "WhatsApp session expired or invalid. Please reconnect your WhatsApp account in Settings > WhatsApp.";
@@ -91,15 +102,35 @@ export class WhatsappService {
     }
   }
 
+  private async getMetaConfigValue(
+    configKey: string,
+    envKey: string,
+    fallback = "",
+  ): Promise<string> {
+    const adminValue = await this.adminConfigService
+      ?.getConfigValue(configKey)
+      .catch(() => null);
+
+    return (
+      (typeof adminValue === "string" ? adminValue.trim() : "") ||
+      (this.configService.get<string>(envKey) || "").trim() ||
+      fallback
+    );
+  }
+
   async getApiVersion(): Promise<string> {
-    return this.configService.get("META_API_VERSION") || "v25.0";
+    return this.getMetaConfigValue("meta.api_version", "META_API_VERSION", "v25.0");
   }
 
   async getPublicConfig() {
     return {
-      appId: this.configService.get("META_APP_ID"),
-      configId: this.configService.get("META_CONFIG_ID"),
-      redirectUri: this.configService.get("META_REDIRECT_URI"),
+      appId: await this.getMetaConfigValue("meta.app_id", "META_APP_ID"),
+      configId: await this.getMetaConfigValue("meta.config_id", "META_CONFIG_ID"),
+      redirectUri: await this.getMetaConfigValue(
+        "meta.redirect_uri",
+        "META_REDIRECT_URI",
+        "https://app.aimstore.in/meta/callback",
+      ),
     };
   }
 
@@ -107,13 +138,19 @@ export class WhatsappService {
     tenantId: string,
     mode: "coexistence" | "cloud" = "coexistence",
   ) {
-    const appId = this.configService.get("META_APP_ID");
-    const configId = this.configService.get("META_CONFIG_ID");
-    const redirectUri = this.configService.get("META_REDIRECT_URI");
+    const appId = await this.getMetaConfigValue("meta.app_id", "META_APP_ID");
+    const configId = await this.getMetaConfigValue("meta.config_id", "META_CONFIG_ID");
+    const redirectUri = await this.getMetaConfigValue(
+      "meta.redirect_uri",
+      "META_REDIRECT_URI",
+      "https://app.aimstore.in/meta/callback",
+    );
     const apiVersion = await this.getApiVersion();
 
-    if (!appId || !redirectUri) {
-      throw new BadRequestException("Meta configuration (App ID or Redirect URI) missing.");
+    if (!appId || !configId || !redirectUri) {
+      throw new BadRequestException(
+        "Meta configuration is incomplete. Configure App ID, Config ID, and Redirect URI.",
+      );
     }
 
     const state = `${tenantId}:${mode}`;

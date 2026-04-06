@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Inject, forwardRef, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { randomBytes } from "crypto";
 import { Campaign } from "./entities/campaign.entity";
 import { CampaignTrigger } from "./entities/campaign-trigger.entity";
 import { Contact } from "../contacts/entities/contact.entity";
@@ -47,6 +48,69 @@ export class CampaignsService {
       status: "draft",
     });
     return this.campaignRepo.save(campaign);
+  }
+
+  async findTriggers(tenantId: string) {
+    return this.triggerRepo.find({
+      where: { tenantId },
+      relations: ["campaign"],
+      order: { createdAt: "DESC" },
+    });
+  }
+
+  async createTrigger(
+    tenantId: string,
+    data: {
+      name?: string;
+      campaignId?: string;
+      triggerType?: string;
+      mappingConfig?: Record<string, string>;
+    },
+  ) {
+    if (!data.name?.trim()) {
+      throw new BadRequestException("Trigger name is required");
+    }
+
+    if (!data.campaignId) {
+      throw new BadRequestException("Campaign is required");
+    }
+
+    const campaign = await this.campaignRepo.findOneBy({
+      id: data.campaignId,
+      tenantId,
+    });
+
+    if (!campaign) {
+      throw new NotFoundException("Campaign not found");
+    }
+
+    const trigger = this.triggerRepo.create({
+      tenantId,
+      campaignId: campaign.id,
+      name: data.name.trim(),
+      triggerType: data.triggerType || "webhook",
+      apiKey: `trg_${randomBytes(16).toString("hex")}`,
+      mappingConfig: data.mappingConfig || {},
+      isActive: true,
+    });
+
+    return this.triggerRepo.save(trigger);
+  }
+
+  async disableTrigger(tenantId: string, triggerId: string) {
+    const trigger = await this.triggerRepo.findOneBy({
+      id: triggerId,
+      tenantId,
+    });
+
+    if (!trigger) {
+      throw new NotFoundException("Trigger not found");
+    }
+
+    trigger.isActive = false;
+    await this.triggerRepo.save(trigger);
+
+    return { success: true };
   }
 
   async triggerSingle(apiKey: string, payload: { phone: string, name?: string, variables?: any }) {

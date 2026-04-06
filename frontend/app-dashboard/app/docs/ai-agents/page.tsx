@@ -285,7 +285,7 @@ console.log('Agent created:', agent.id);`;
                         <Link href="/docs/webhooks" className="text-blue-600 hover:underline flex items-center gap-1">
                             Webhooks <ArrowRight className="w-4 h-4" />
                         </Link>
-                        <Link href="/ai-agent" className="text-blue-600 hover:underline flex items-center gap-1">
+                        <Link href="/ai-agents" className="text-blue-600 hover:underline flex items-center gap-1">
                             Create Agent <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>

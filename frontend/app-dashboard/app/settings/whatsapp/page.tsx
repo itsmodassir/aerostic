@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { 
     Smartphone, Globe, ArrowLeft, RefreshCw, 
     AlertCircle, CheckCircle, ShieldCheck, 
@@ -14,15 +15,43 @@ import MessagingLimitsCard from '@/components/whatsapp/MessagingLimitsCard';
 import QualityRatingIndicator from '@/components/whatsapp/QualityRatingIndicator';
 
 export default function WhatsAppSettingsPage() {
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
     const [status, setStatus] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchStatus();
+        const handleMessage = (event: MessageEvent) => {
+            // Security check: ensure the message is from our own origin
+            if (event.origin !== window.location.origin) return;
+
+            if (event.data?.type === 'WA_CONNECTED') {
+                if (event.data.success) {
+                    setNotice('WhatsApp connected successfully.');
+                    fetchStatus();
+                } else if (event.data.error) {
+                    setError(event.data.error);
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
     }, []);
+
+    useEffect(() => {
+        const connected = searchParams.get('connected');
+        const urlError = searchParams.get('error');
+
+        if (connected === '1') {
+            setNotice('WhatsApp connected successfully.');
+        } else if (urlError) {
+            setError(urlError);
+        }
+    }, [searchParams]);
 
     const fetchStatus = async () => {
         setLoading(true);
@@ -211,6 +240,16 @@ export default function WhatsAppSettingsPage() {
                         <AlertCircle size={24} strokeWidth={3} />
                         <p className="text-[10px] font-black uppercase tracking-[0.3em]">{error}</p>
                         <button onClick={() => setError(null)} className="ml-4 hover:opacity-50 transition-opacity">✕</button>
+                    </div>
+                </div>
+            )}
+
+            {notice && (
+                 <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom duration-500">
+                    <div className="bg-emerald-600 text-white px-8 py-5 rounded-[24px] shadow-2xl flex items-center gap-4 border-2 border-emerald-500">
+                        <CheckCircle size={24} strokeWidth={3} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em]">{notice}</p>
+                        <button onClick={() => setNotice(null)} className="ml-4 hover:opacity-50 transition-opacity">✕</button>
                     </div>
                 </div>
             )}

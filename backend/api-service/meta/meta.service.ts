@@ -31,6 +31,37 @@ export class MetaService {
     private webhooksService: WebhooksService,
   ) { }
 
+  private looksLikeEncryptedPayload(value: unknown): value is string {
+    return (
+      typeof value === "string" &&
+      /^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(value.trim())
+    );
+  }
+
+  private async getResolvedMetaConfig(
+    configKey: string,
+    envKey: string,
+    fallback = "",
+  ): Promise<string> {
+    const adminValue = await this.adminConfigService.getConfigValue(configKey);
+    const normalizedAdminValue =
+      typeof adminValue === "string" ? adminValue.trim() : "";
+    if (
+      normalizedAdminValue &&
+      !this.looksLikeEncryptedPayload(normalizedAdminValue)
+    ) {
+      return normalizedAdminValue;
+    }
+
+    if (this.looksLikeEncryptedPayload(normalizedAdminValue)) {
+      this.logger.warn(
+        `Ignoring invalid encrypted value for ${configKey}. Falling back to ${envKey}.`,
+      );
+    }
+
+    return (this.configService.get<string>(envKey) || fallback).trim();
+  }
+
   private async getApiVersion(): Promise<string> {
     return (
       (await this.adminConfigService.getConfigValue("meta.api_version")) ||
@@ -122,18 +153,17 @@ export class MetaService {
     providedRedirectUri?: string,
     signupMode?: string,
   ) {
-    const appId =
-      (await this.adminConfigService.getConfigValue("meta.app_id")) ||
-      this.configService.get("META_APP_ID") ||
-      "";
-    const appSecret =
-      (await this.adminConfigService.getConfigValue("meta.app_secret")) ||
-      this.configService.get("META_APP_SECRET") ||
-      "";
+    const appId = await this.getResolvedMetaConfig("meta.app_id", "META_APP_ID");
+    const appSecret = await this.getResolvedMetaConfig(
+      "meta.app_secret",
+      "META_APP_SECRET",
+    );
     const redirectUri =
       providedRedirectUri ||
-      (await this.adminConfigService.getConfigValue("meta.redirect_uri")) ||
-      this.configService.get("META_REDIRECT_URI") ||
+      (await this.getResolvedMetaConfig(
+        "meta.redirect_uri",
+        "META_REDIRECT_URI",
+      )) ||
       "https://app.aimstore.in/meta/callback";
     const apiVersion = await this.getApiVersion();
 
@@ -153,20 +183,25 @@ export class MetaService {
     try {
       // 1. Exchange auth code for short-lived access token
       this.logger.log(`Exchanging code for token. AppID: ${appId}, Redirect: ${redirectUri}`);
-      const tokenRes = await axios.get(
-        `https://graph.facebook.com/${apiVersion}/oauth/access_token`,
-        {
+      const tokenRes = await axios
+        .get(`https://graph.facebook.com/${apiVersion}/oauth/access_token`, {
           params: {
             client_id: appId,
             client_secret: appSecret,
             redirect_uri: redirectUri,
             code,
           },
-        },
-      ).catch(err => {
-        this.logger.error(`OAuth code exchange failed: ${JSON.stringify(err.response?.data || err.message)}`);
-        throw new Error(`Meta OAuth Exchange Failed: ${err.response?.data?.error?.message || err.message}`);
-      });
+        })
+        .catch((err) => {
+          const metaMessage =
+            err.response?.data?.error?.message || err.message;
+          this.logger.error(
+            `OAuth code exchange failed: ${JSON.stringify(err.response?.data || err.message)}`,
+          );
+          throw new BadRequestException(
+            `Meta OAuth exchange failed: ${metaMessage}`,
+          );
+        });
 
       const shortToken = tokenRes.data.access_token;
       this.logger.log(`Short-lived token received successfully.`);
@@ -277,26 +312,79 @@ export class MetaService {
         }
       }
 
+      if (!wabaId && providedPhoneNumberId) {
+        try {
+          const phoneLookupRes = await axios.get(
+            `https://graph.facebook.com/${apiVersion}/${providedPhoneNumberId}`,
+            {
+              params: {
+                fields:
+                  "id,display_phone_number,verified_name,whatsapp_business_account",
+                access_token: accessToken,
+              },
+            },
+          );
+          const resolvedWabaId =
+            phoneLookupRes.data?.whatsapp_business_account?.id || null;
+          if (resolvedWabaId) {
+            wabaId = resolvedWabaId;
+            this.logger.debug(
+              `Resolved WABA ${wabaId} from provided phone number ${providedPhoneNumberId}.`,
+            );
+          }
+        } catch (phoneLookupErr: any) {
+          this.logger.warn(
+            `Phone-number-based WABA resolution failed: ${phoneLookupErr.response?.data?.error?.message || phoneLookupErr.message}`,
+          );
+        }
+      }
+
       if (!wabaId) {
         this.logger.error(
           `Meta Response (businesses): ${JSON.stringify(businesses)}`,
         );
         throw new BadRequestException(
-          "No WhatsApp Business Account (WABA) found. Please ensure you have a WABA associated with your Facebook account.",
+          "No WhatsApp Business Account (WABA) found. Please ensure the onboarding user has a connected WABA and WhatsApp permissions.",
         );
       }
 
       // 4. Fetch Phone Number
-      const phoneRes = await axios.get(
-        `https://graph.facebook.com/${apiVersion}/${wabaId}/phone_numbers`,
-        {
-          params: { access_token: accessToken },
-        },
-      );
+      let numberData: any = null;
+      let phoneNumberId = providedPhoneNumberId || null;
+      let displayPhoneNumber = "";
 
-      const numberData = phoneRes.data.data?.[0];
-      const phoneNumberId = providedPhoneNumberId || numberData?.id;
-      const displayPhoneNumber = numberData?.display_phone_number;
+      if (phoneNumberId) {
+        try {
+          const singlePhoneRes = await axios.get(
+            `https://graph.facebook.com/${apiVersion}/${phoneNumberId}`,
+            {
+              params: {
+                fields: "id,display_phone_number,verified_name",
+                access_token: accessToken,
+              },
+            },
+          );
+          numberData = singlePhoneRes.data;
+          displayPhoneNumber = singlePhoneRes.data?.display_phone_number || "";
+        } catch (singlePhoneErr: any) {
+          this.logger.warn(
+            `Direct phone lookup failed for ${phoneNumberId}: ${singlePhoneErr.response?.data?.error?.message || singlePhoneErr.message}`,
+          );
+        }
+      }
+
+      if (!numberData) {
+        const phoneRes = await axios.get(
+          `https://graph.facebook.com/${apiVersion}/${wabaId}/phone_numbers`,
+          {
+            params: { access_token: accessToken },
+          },
+        );
+
+        numberData = phoneRes.data.data?.[0];
+        phoneNumberId = phoneNumberId || numberData?.id;
+        displayPhoneNumber = numberData?.display_phone_number || "";
+      }
 
       if (!phoneNumberId) {
         throw new BadRequestException(
@@ -305,8 +393,8 @@ export class MetaService {
       }
 
       // 5. Save Mapping (Upsert)
-      const existing = await this.whatsappAccountRepo.findOneBy({
-        phoneNumberId,
+      const existing = await this.whatsappAccountRepo.findOne({
+        where: [{ phoneNumberId }, { tenantId }],
       });
 
       const encryptedToken = this.encryptionService.encrypt(accessToken);
@@ -316,10 +404,19 @@ export class MetaService {
           ? signupMode
           : "coexistence";
 
+      const resolvedBusinessId =
+        waba?.business?.id ||
+        businesses.find((business: any) => business?.id === waba?.business?.id)?.id ||
+        businesses[0]?.id ||
+        null;
+
       if (existing) {
         existing.tenantId = tenantId;
+        existing.businessId = resolvedBusinessId || existing.businessId;
         existing.wabaId = wabaId;
+        existing.phoneNumberId = phoneNumberId;
         existing.displayPhoneNumber = displayPhoneNumber;
+        existing.verifiedName = numberData?.verified_name || existing.verifiedName;
         existing.accessToken = encryptedToken;
         existing.tokenExpiresAt = expiresAt;
         existing.mode = resolvedMode;
@@ -328,9 +425,11 @@ export class MetaService {
       } else {
         await this.whatsappAccountRepo.save({
           tenantId,
+          businessId: resolvedBusinessId || undefined,
           wabaId,
           phoneNumberId,
-          displayPhoneNumber,
+          displayPhoneNumber: displayPhoneNumber || undefined,
+          verifiedName: numberData?.verified_name || undefined,
           accessToken: encryptedToken,
           tokenExpiresAt: expiresAt,
           mode: resolvedMode,
@@ -383,8 +482,18 @@ export class MetaService {
 
       return { success: true };
     } catch (e: any) {
-      this.logger.error("Meta OAuth Handshake Failed:", e.response?.data || e.message);
-      throw e;
+      const errorPayload = e.response?.data || e.message;
+      this.logger.error(
+        `Meta OAuth Handshake Failed for tenant ${tenantId}: ${JSON.stringify(errorPayload)}`,
+      );
+      if (e instanceof BadRequestException) {
+        throw e;
+      }
+      throw new BadRequestException(
+        typeof e?.message === "string"
+          ? e.message
+          : "Meta callback failed while connecting WhatsApp.",
+      );
     }
   }
 

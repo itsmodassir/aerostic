@@ -219,7 +219,7 @@ export class AuthController {
 
       this.logger.debug("Fetching membership...");
       const membership = await this.membershipRepo.findOne({
-        where: { userId: user.id },
+        where: { userId: user.id, status: "active" },
         relations: ["tenant"],
         order: { createdAt: "ASC" },
       });
@@ -528,7 +528,7 @@ export class AuthController {
       const relations = ["tenant", "tenant.reseller", "tenant.reseller.resellerConfig", "tenant.resellerConfig"];
       
       const membershipBase = await this.membershipRepo.findOne({
-        where: whereClause as any,
+        where: { ...(whereClause as any), status: "active" },
         select: ["roleId", "id", "userId", "tenantId"],
       });
 
@@ -541,7 +541,7 @@ export class AuthController {
       this.logger.debug(`[TRACE-MB] Joining relations: ${JSON.stringify(relations)}`);
 
       const membership = await this.membershipRepo.findOne({
-        where: whereClause as any,
+        where: { ...(whereClause as any), status: "active" },
         relations,
         order: { createdAt: "ASC" },
       });
@@ -584,7 +584,7 @@ export class AuthController {
   async getWorkspaces(@NestRequest() req: any) {
     const userId = req.user.id;
     return this.membershipRepo.find({
-      where: { userId },
+      where: { userId, status: "active" },
       relations: ["tenant"],
       order: { createdAt: "ASC" },
     });
@@ -604,7 +604,7 @@ export class AuthController {
         : { userId: req.user.id };
 
     const membership = await this.membershipRepo.findOne({
-      where: whereClause as any,
+      where: { ...(whereClause as any), status: "active" },
       relations: [
         "tenant",
         "roleEntity",

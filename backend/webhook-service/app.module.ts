@@ -12,6 +12,7 @@ import { AuditModule } from "@api/audit/audit.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [".env", "../.env", "../../.env", "/var/www/aimstors/backend/.env"],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

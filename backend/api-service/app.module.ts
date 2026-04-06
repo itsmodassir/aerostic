@@ -42,6 +42,7 @@ import { WaFormsModule } from "./wa-forms/wa-forms.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [".env", "../.env", "../../.env", "/var/www/aimstors/backend/.env"],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

@@ -244,13 +244,13 @@ export default function OverviewTab({
             <div>
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Quick Actions</p>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    <QuickAction icon={Send} label="Campaigns" href={`${base}/campaigns`} color="blue" />
-                    <QuickAction icon={Users2} label="Contacts" href={`${base}/contacts`} color="emerald" />
-                    <QuickAction icon={Bot} label="AI Agent" href={`${base}/agents`} color="purple" disabled={planFeatures.aiAgents <= 0} />
-                    <QuickAction icon={Zap} label="Automate" href={`${base}/automation`} color="amber" />
+                    <QuickAction icon={Send} label="Campaigns" href="/campaigns" color="blue" />
+                    <QuickAction icon={Users2} label="Contacts" href="/contacts" color="emerald" />
+                    <QuickAction icon={Bot} label="AI Agent" href="/ai-agents" color="purple" disabled={planFeatures.aiAgents <= 0} />
+                    <QuickAction icon={Zap} label="Automate" href="/automation" color="amber" />
                     <QuickAction icon={CreditCard} label="Wallet" href={`${base}/wallet`} color="indigo" />
-                    <QuickAction icon={FileText} label="Templates" href={`${base}/templates`} color="pink" />
-                    <QuickAction icon={Workflow} label="Flows" href={`${base}/settings/whatsapp/flows`} color="teal" />
+                    <QuickAction icon={FileText} label="Templates" href="/templates" color="pink" />
+                    <QuickAction icon={Workflow} label="Flows" href="/settings/whatsapp/flows" color="teal" />
                 </div>
             </div>
 
@@ -264,7 +264,7 @@ export default function OverviewTab({
                             <h3 className="text-xs font-black text-gray-900">Recent Messages</h3>
                             <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Live feed</p>
                         </div>
-                        <Link href={`${base}/inbox`} className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                        <Link href="/inbox" className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
                             <ChevronRight size={14} />
                         </Link>
                     </div>
@@ -289,7 +289,7 @@ export default function OverviewTab({
                             <h3 className="text-xs font-black text-gray-900">Campaigns</h3>
                             <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Recent broadcasts</p>
                         </div>
-                        <Link href={`${base}/campaigns`} className="flex items-center gap-1 text-[10px] font-black text-blue-600 hover:underline">
+                        <Link href="/campaigns" className="flex items-center gap-1 text-[10px] font-black text-blue-600 hover:underline">
                             <Plus size={12} /> New
                         </Link>
                     </div>
@@ -298,7 +298,7 @@ export default function OverviewTab({
                             <div className="flex flex-col items-center py-8 text-center">
                                 <Send size={24} className="text-gray-200 mb-2" />
                                 <p className="text-[10px] text-gray-300 font-semibold uppercase tracking-widest">No campaigns yet</p>
-                                <Link href={`${base}/campaigns`} className="mt-3 text-[10px] font-black text-blue-600 hover:underline">Create one →</Link>
+                                <Link href="/campaigns" className="mt-3 text-[10px] font-black text-blue-600 hover:underline">Create one →</Link>
                             </div>
                         ) : (
                             recentCampaigns.slice(0, 5).map((c: any, i: number) => (
@@ -358,7 +358,7 @@ export default function OverviewTab({
                                 <h4 className="text-xs font-black">AI Agents</h4>
                                 <p className="text-[9px] text-white/40 font-semibold uppercase tracking-wide">Autonomous stacks</p>
                             </div>
-                            <Link href={`${base}/agents`} className="p-1 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-all">
+                            <Link href="/ai-agents" className="p-1 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white rounded-lg transition-all">
                                 <Plus size={13} />
                             </Link>
                         </div>

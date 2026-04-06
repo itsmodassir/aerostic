@@ -14,13 +14,29 @@ export default function NewWorkspacePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         try {
             const res = await api.post('/tenants', { name });
-            const newWorkspaceId = res.data.id;
+            const newWorkspaceId = res.data?.id;
+            const newWorkspaceSlug = res.data?.slug;
+
             if (newWorkspaceId) {
                 localStorage.setItem('x-tenant-id', newWorkspaceId);
+                localStorage.setItem('selected_tenant_id', newWorkspaceId);
             }
-            router.push('/dashboard');
+
+            if (newWorkspaceSlug) {
+                document.cookie = `selected_tenant=${encodeURIComponent(newWorkspaceSlug)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+            }
+
+            const targetWorkspace = newWorkspaceSlug || newWorkspaceId;
+            if (targetWorkspace) {
+                router.replace(`/dashboard/${targetWorkspace}`);
+                router.refresh();
+                return;
+            }
+
+            router.replace('/dashboard');
         } catch (err: any) {
             console.error(err);
             setError(err.response?.data?.message || 'Failed to create workspace');

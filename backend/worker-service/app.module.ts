@@ -13,6 +13,7 @@ import { CommonModule } from "@shared/common.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [".env", "../.env", "../../.env", "/var/www/aimstors/backend/.env"],
     }),
     CommonModule,
     TypeOrmModule.forRootAsync({
