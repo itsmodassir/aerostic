@@ -262,7 +262,7 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
     scheduledAt: '',
     segmentationConfig: { tags: [] as string[] },
     isABTest: false,
-    variants: [{ templateName: '', templateLanguage: 'en_US', weight: 1 }],
+    variants: [{ templateName: '', templateLanguage: 'en_US', weight: 1, variables: {} as Record<string, string> }],
   });
 
   const [aiTime, setAiTime] = useState<{day: number, hour: number, message: string} | null>(null);
@@ -361,7 +361,7 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
                     {formData.isABTest && formData.variants.length < 4 && (
                         <Button 
                             variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-blue-600 hover:bg-blue-50"
-                            onClick={() => setFormData({...formData, variants: [...formData.variants, { templateName: '', templateLanguage: 'en_US', weight: 1 }]})}
+                            onClick={() => setFormData({...formData, variants: [...formData.variants, { templateName: '', templateLanguage: 'en_US', weight: 1, variables: {} }]})}
                         >
                             <Plus className="h-3 w-3 mr-1" /> Add Variation
                         </Button>
@@ -406,8 +406,47 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
                                     <option value="en_US">English (US)</option>
                                     <option value="hi_IN">Hindi</option>
                                     <option value="es_ES">Spanish</option>
+                                    <option value="pt_BR">Portuguese (BR)</option>
                                 </select>
                             </div>
+
+                            {/* Variable Inputs */}
+                            {(() => {
+                                const t = templates.find(temp => temp.name === v.templateName);
+                                if (!t) return null;
+                                const body = t.components?.find((c: any) => c.type === 'BODY')?.text || '';
+                                const variables = body.match(/{{(\d+)}}/g) || [];
+                                if (variables.length === 0) return null;
+
+                                return (
+                                    <div className="mt-4 space-y-3 pt-4 border-t border-slate-50">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Template Variables</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {variables.map((varTag: string) => {
+                                                const varNum = varTag.match(/\d+/)![0];
+                                                return (
+                                                    <div key={varNum} className="space-y-1">
+                                                        <label className="text-[10px] font-bold text-slate-500 ml-1">Variable {varTag}</label>
+                                                        <Input 
+                                                            placeholder={`Value for ${varTag}`}
+                                                            value={v.variables?.[varNum] || ''}
+                                                            onChange={(e) => {
+                                                                const newVariants = [...formData.variants];
+                                                                newVariants[i].variables = { 
+                                                                    ...(newVariants[i].variables || {}), 
+                                                                    [varNum]: e.target.value 
+                                                                };
+                                                                setFormData({...formData, variants: newVariants});
+                                                            }}
+                                                            className="h-9 rounded-lg text-xs"
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     ))}
                 </div>

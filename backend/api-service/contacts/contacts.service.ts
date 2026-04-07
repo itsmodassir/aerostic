@@ -117,31 +117,39 @@ export class ContactsService {
     return query.getMany();
   }
 
-  async importContacts(tenantId: string, csvContent: string): Promise<{ imported: number; updated: number; errors: string[] }> {
-    const lines = csvContent.split(/\r?\n/);
-    if (lines.length < 2) return { imported: 0, updated: 0, errors: ["Empty or invalid CSV"] };
+  async importContacts(tenantId: string, fileBuffer: Buffer, fileName: string): Promise<{ imported: number; updated: number; errors: string[] }> {
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data: any[] = XLSX.utils.sheet_to_json(sheet);
 
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-    const phoneIdx = headers.indexOf("phone");
-    const nameIdx = headers.indexOf("name");
-    const emailIdx = headers.indexOf("email");
-    const groupsIdx = headers.indexOf("groups");
+    if (!data || data.length === 0) return { imported: 0, updated: 0, errors: ["Empty or invalid file"] };
 
-    if (phoneIdx === -1) throw new ConflictException("CSV must have a 'phone' column");
+    const firstRow = data[0];
+    const keys = Object.keys(firstRow);
+    const phoneKey = keys.find(k => k.toLowerCase() === "phone");
+    const nameKey = keys.find(k => k.toLowerCase() === "name");
+    const emailKey = keys.find(k => k.toLowerCase() === "email");
+    const groupsKey = keys.find(k => k.toLowerCase() === "groups");
+
+    if (!phoneKey) throw new ConflictException("File must have a 'phone' column");
 
     let imported = 0;
     let updated = 0;
     const errors: string[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const values = line.split(",").map(v => v.trim());
-        const phone = values[phoneIdx];
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        let phone = String(row[phoneKey] || "").replace(/\s+/g, "");
         if (!phone) {
-            errors.push(`Line ${i+1}: Missing phone number`);
+            errors.push(`Row ${i+2}: Missing phone number`);
             continue;
+        }
+
+        // Normalize phone number (ensure + exists)
+        if (!phone.startsWith("+")) {
+            phone = "+" + phone;
         }
 
         try {
@@ -152,21 +160,21 @@ export class ContactsService {
                 contact = this.contactsRepository.create({
                     tenantId,
                     phoneNumber: phone,
-                    name: values[nameIdx] || "Imported Contact",
-                    email: emailIdx !== -1 ? values[emailIdx] : undefined,
-                    groups: groupsIdx !== -1 ? values[groupsIdx].split(";").filter(g => g) : [],
+                    name: (nameKey && row[nameKey]) ? String(row[nameKey]) : "Imported Contact",
+                    email: (emailKey && row[emailKey]) ? String(row[emailKey]) : undefined,
+                    groups: (groupsKey && row[groupsKey]) ? String(row[groupsKey]).split(";").filter(g => g) : [],
                 });
                 imported++;
             } else {
-                if (nameIdx !== -1 && values[nameIdx]) contact!.name = values[nameIdx];
-                if (emailIdx !== -1 && values[emailIdx]) contact!.email = values[emailIdx];
-                if (groupsIdx !== -1) contact!.groups = values[groupsIdx].split(";").filter(g => g);
+                if (nameKey && row[nameKey]) contact!.name = String(row[nameKey]);
+                if (emailKey && row[emailKey]) contact!.email = String(row[emailKey]);
+                if (groupsKey && row[groupsKey]) contact!.groups = String(row[groupsKey]).split(";").filter(g => g);
                 updated++;
             }
 
             await this.contactsRepository.save(contact!);
         } catch (err: any) {
-            errors.push(`Line ${i+1}: ${err.message}`);
+            errors.push(`Row ${i+2} (${phone}): ${err.message}`);
         }
     }
 

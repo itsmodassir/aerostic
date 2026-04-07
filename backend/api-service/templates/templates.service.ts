@@ -137,7 +137,6 @@ export class TemplatesService {
 
         if (variableCount > 0) {
           // generate example array dynamically
-          // Use realistic examples to avoid "Invalid Format"
           const exampleValues = Array(variableCount)
             .fill(0)
             .map((_, i) => (i === 0 ? "123456" : `example${i + 1}`));
@@ -151,6 +150,25 @@ export class TemplatesService {
           };
         }
       }
+
+      if (component.type === "BUTTONS") {
+        return {
+          type: "BUTTONS",
+          buttons: component.buttons.map((btn: any) => {
+            if (btn.type === "FLOW") {
+              return {
+                type: "FLOW",
+                text: btn.text,
+                flow_id: btn.flow_id,
+                flow_action: btn.flow_action || "navigate",
+                navigate_screen: btn.navigate_screen || "WELCOME_SCREEN",
+              };
+            }
+            return btn;
+          }),
+        };
+      }
+
       return component;
     });
   }

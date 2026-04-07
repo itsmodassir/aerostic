@@ -140,7 +140,7 @@ export default function ImportExportModals({ type, onClose, onSuccess }: ImportE
                             <form onSubmit={handleImport} className="space-y-8">
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                        <FileText size={14} /> CSV Data Component
+                                        <FileText size={14} /> Spreadsheet Data Component
                                     </label>
                                     <div 
                                         className={clsx(
@@ -152,7 +152,7 @@ export default function ImportExportModals({ type, onClose, onSuccess }: ImportE
                                             type="file" 
                                             onChange={handleFileChange} 
                                             className="absolute inset-0 opacity-0 cursor-pointer"
-                                            accept=".csv"
+                                            accept=".csv, .xlsx, .xls"
                                         />
                                         <div className={clsx(
                                             "w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110",
@@ -162,7 +162,7 @@ export default function ImportExportModals({ type, onClose, onSuccess }: ImportE
                                         </div>
                                         <div className="text-center">
                                             <p className="text-sm font-black text-gray-900 tracking-tight">
-                                                {file ? file.name : "Drop CSV file here"}
+                                                {file ? file.name : "Drop CSV or Excel file here"}
                                             </p>
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
                                                 {file ? `${(file.size / 1024).toFixed(1)} KB` : "Max file size: 10MB"}
@@ -174,7 +174,7 @@ export default function ImportExportModals({ type, onClose, onSuccess }: ImportE
                                 <div className="p-6 bg-blue-50 border border-blue-100 rounded-[32px] space-y-3">
                                     <div className="flex items-center gap-3 text-blue-700">
                                         <AlertCircle size={18} />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">CSV Requirements</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Import Requirements</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex items-center gap-2 text-blue-600">

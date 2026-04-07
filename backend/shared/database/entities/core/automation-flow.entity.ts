@@ -55,6 +55,12 @@ export class AutomationFlow {
   lastExecutedAt: Date;
 
   @Column({ nullable: true })
+  remoteId: string; // Meta Flow ID
+
+  @Column({ type: "jsonb", nullable: true })
+  categories: string[];
+
+  @Column({ nullable: true })
   tenantId: string;
 
   @ManyToOne(() => User)

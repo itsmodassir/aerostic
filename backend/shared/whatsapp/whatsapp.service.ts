@@ -17,7 +17,6 @@ import { AdminConfigService } from "@api/admin/services/admin-config.service";
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
   private readonly allowedFlowCategories = new Set([
-    "OTHER",
     "SIGN_UP",
     "SIGN_IN",
     "APPOINTMENT_BOOKING",
@@ -25,6 +24,7 @@ export class WhatsappService {
     "CONTACT_US",
     "CUSTOMER_SUPPORT",
     "SURVEY",
+    "OTHER",
   ]);
 
   constructor(
@@ -316,60 +316,60 @@ export class WhatsappService {
     return response.data.data || [];
   }
 
-  async createFlow(tenantId: string, name: string, categories: string[]) {
+  async createFlow(tenantId: string, name: string, categories: string[], initialCanvas?: any) {
     const creds = await this.getCredentials(tenantId);
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
     const normalizedName = this.normalizeFlowName(name);
     const normalizedCategories = this.normalizeFlowCategories(categories);
 
+    // Atomic Creation: Prepare flow_json directly
+    const flowJson = initialCanvas ? this.generateMetaFlowJson(initialCanvas) : {
+      version: "3.1",
+      screens: [{
+        id: "WELCOME_SCREEN",
+        title: "Welcome",
+        terminal: true,
+        layout: {
+          type: "SingleColumnLayout",
+          children: [
+            { type: "TextHeading", text: "Welcome" },
+            { type: "Footer", label: "Complete", "on-click-action": { name: "complete", payload: { status: "done" } } },
+          ],
+        },
+      }],
+    };
+
     const result = await this.callMetaApi(
       `https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?access_token=${creds.accessToken}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: normalizedName, categories: normalizedCategories }),
+        body: JSON.stringify({ 
+            name: normalizedName, 
+            categories: normalizedCategories,
+            flow_json: JSON.stringify(flowJson)
+        }),
       },
     );
 
     if (!result.ok) {
-      const metaMessage = result.data?.error?.message || "Failed to create flow";
-      const code = Number(result.data?.error?.code || 0);
-
-      if (code === 100 || /invalid parameter/i.test(metaMessage)) {
-        throw new BadRequestException(
-          `Meta rejected the flow payload. Check flow name and categories. Sent categories: ${normalizedCategories.join(", ")}`,
-        );
-      }
-
-      throw new BadRequestException(metaMessage);
+      throw new BadRequestException(result.data?.error?.message || "Failed to create flow");
     }
 
-    const data = result.data;
+    // Save to local record
+    const newFlow = this.automationFlowRepo.create({
+      tenantId,
+      name: normalizedName,
+      remoteId: result.data.id,
+      categories: normalizedCategories,
+      trigger: 'whatsapp_flow',
+      status: AutomationStatus.ACTIVE,
+      triggerConfig: { canvas: initialCanvas || { nodes: [], edges: [] } }
+    });
+    await this.automationFlowRepo.save(newFlow);
 
-    // Automatically upload a default "Hello World" asset
-    try {
-      await this.uploadFlowAsset(tenantId, data.id, "flow.json", {
-        version: "7.3",
-        screens: [{
-          id: "WELCOME_SCREEN",
-          title: "Welcome",
-          terminal: true,
-          layout: {
-            type: "SingleColumnLayout",
-            children: [
-              { type: "TextHeading", text: normalizedName || "Welcome" },
-              { type: "TextBody", text: "Cloud Preview" },
-              { type: "Footer", label: "Complete", "on-click-action": { name: "complete", payload: { status: "done" } } },
-            ],
-          },
-        }],
-      });
-    } catch (err) {
-      this.logger.error("Default flow asset upload failed", err);
-    }
-
-    return data;
+    return result.data;
   }
 
   private normalizeFlowName(name?: string): string {
@@ -394,19 +394,28 @@ export class WhatsappService {
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
 
-    // Axios + Multi-part Form Data
+    // Use Buffer for Node.js compatibility with Meta API
+    const fileBuffer = Buffer.from(JSON.stringify(json));
     const formData = new FormData();
-    const blob = new Blob([JSON.stringify(json)], { type: "application/json" });
+    const blob = new Blob([fileBuffer], { type: "application/json" });
+    
     formData.append("file", blob, filename);
     formData.append("name", filename);
     formData.append("asset_type", "FLOW_JSON");
 
-    const response = await axios.post(
-      `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${creds.accessToken}`,
-      formData,
-      { timeout: 15000 } // Extended timeout for larger asset uploads
-    );
-    return response.data;
+    const url = `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${creds.accessToken}`;
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      this.logger.error(`Meta Asset Upload Failed for flow ${flowId}:`, JSON.stringify(data));
+      throw new BadRequestException(data.error?.message || "Asset upload failed");
+    }
+
+    return data;
   }
 
   async uploadMedia(tenantId: string, file: Buffer, filename: string, mimetype: string) {
@@ -415,23 +424,28 @@ export class WhatsappService {
     const apiVersion = await this.getApiVersion();
 
     const formData = new FormData();
-    // Use Uint8Array for broader compatibility in Node.js environments
     const blob = new Blob([new Uint8Array(file)], { type: mimetype });
     formData.append("file", blob, filename);
     formData.append("messaging_product", "whatsapp");
     
-    // Meta expects 'image', 'video', 'audio', 'document'
     let metaType = mimetype.split('/')[0];
     if (metaType === 'application' || !['image', 'video', 'audio'].includes(metaType)) {
       metaType = 'document';
     }
     formData.append("type", metaType);
 
-    const response = await axios.post(
+    const response = await fetch(
       `https://graph.facebook.com/${apiVersion}/${creds.phoneNumberId}/media?access_token=${creds.accessToken}`,
-      formData
+      {
+        method: "POST",
+        body: formData,
+      }
     );
-    return response.data;
+    const data = await response.json();
+    if (!response.ok) {
+        throw new BadRequestException(data.error?.message || "Media upload failed");
+    }
+    return data;
   }
 
   async deleteFlow(tenantId: string, flowId: string) {
@@ -508,7 +522,6 @@ export class WhatsappService {
 
     const syncUrl = `https://graph.facebook.com/${apiVersion}/${creds.phoneNumberId}/smb_app_data`;
     
-    // Fire and forget or handle errors
     await fetch(syncUrl, {
       method: "POST",
       headers: { Authorization: `Bearer ${creds.accessToken}`, "Content-Type": "application/json" },
@@ -582,12 +595,18 @@ export class WhatsappService {
     formData.append("messaging_product", "whatsapp");
     formData.append("type", "image");
 
-    const mediaRes = await axios.post(
+    const mediaRes = await fetch(
       `https://graph.facebook.com/${apiVersion}/${creds.phoneNumberId}/media?access_token=${creds.accessToken}`,
-      formData
+      {
+        method: "POST",
+        body: formData,
+      }
     );
 
-    const mediaId = mediaRes.data.id;
+    const mediaData = await mediaRes.json();
+    if (!mediaRes.ok) throw new BadRequestException(mediaData.error?.message || "Media upload failed");
+    
+    const mediaId = mediaData.id;
     
     const updateUrl = `https://graph.facebook.com/${apiVersion}/${creds.phoneNumberId}/whatsapp_business_profile?access_token=${creds.accessToken}`;
     const updateRes = await fetch(updateUrl, {
@@ -610,8 +629,14 @@ export class WhatsappService {
   // ─── Flow Canvas Persistence ───────────────────────────────────────────────
 
   async saveFlowCanvas(tenantId: string, flowId: string, payload: { name: string; flowData: any }) {
-    const flow = await this.automationFlowRepo.findOne({ where: { id: flowId, tenantId } });
-    if (!flow) throw new BadRequestException("Flow not found");
+    let flow = await this.automationFlowRepo.findOne({ where: { remoteId: flowId, tenantId } });
+    
+    if (!flow) {
+      // Fallback: search by ID if it's our internal UUID
+      flow = await this.automationFlowRepo.findOne({ where: { id: flowId, tenantId } });
+    }
+
+    if (!flow) throw new BadRequestException("Flow record not found");
 
     flow.name = payload.name;
     flow.triggerConfig = { ...flow.triggerConfig, canvas: payload.flowData };
@@ -629,7 +654,12 @@ export class WhatsappService {
   }
 
   async getFlowCanvas(tenantId: string, flowId: string) {
-    const flow = await this.automationFlowRepo.findOne({ where: { id: flowId, tenantId } });
+    const flow = await this.automationFlowRepo.findOne({ 
+      where: [
+        { remoteId: flowId, tenantId },
+        { id: flowId, tenantId }
+      ]
+    });
     if (!flow) throw new BadRequestException("Flow not found");
     return flow.triggerConfig?.canvas || { nodes: [], edges: [] };
   }
@@ -638,20 +668,89 @@ export class WhatsappService {
     const nodes = canvas?.nodes || [];
     const edges = canvas?.edges || [];
     
-    // Basic transformation logic for Meta Flow JSON (stub, can be expanded)
-    return {
-      version: "7.3",
-      screens: nodes.map((node: any) => ({
+    if (nodes.length === 0) {
+      return {
+        version: "3.1",
+        screens: [{
+          id: "WELCOME_SCREEN",
+          title: "Welcome",
+          terminal: true,
+          layout: {
+            type: "SingleColumnLayout",
+            children: [{ type: "TextHeading", text: "Welcome" }]
+          }
+        }]
+      };
+    }
+
+    const screens = nodes.map((node: any) => {
+      const data = node.data || {};
+      const children: any[] = [];
+
+      // Map components based on node type
+      if (node.type === 'wa_text') {
+        children.push({ type: "TextBody", text: data.text || "Hello" });
+      } else if (node.type === 'wa_question') {
+        children.push({ type: "TextBody", text: data.questionText || "Please answer:" });
+        children.push({
+          type: "TextInput",
+          label: "Your Response",
+          name: data.questionSaveAs || "response",
+          required: true
+        });
+      } else if (node.type === 'wa_mcq') {
+        children.push({ type: "TextBody", text: data.mcqBody || "Select an option:" });
+        children.push({
+          type: "RadioButtons",
+          label: "Options",
+          name: "mcq_selection",
+          options: (data.mcqOptions || []).map((o: any) => ({
+            id: o.id,
+            title: o.title
+          }))
+        });
+      }
+
+      // Handle next screen navigation based on edges
+      const outboundEdges = edges.filter((e: any) => e.source === node.id);
+      const isTerminal = outboundEdges.length === 0 || node.type === 'wa_end';
+
+      const footer: any = {
+        type: "Footer",
+        label: isTerminal ? "Complete" : "Next"
+      };
+
+      if (isTerminal) {
+        footer["on-click-action"] = {
+          name: "complete",
+          payload: { status: "success" }
+        };
+      } else {
+        // Multi-choice handling usually goes into specific button actions, 
+        // but for a simple linear flow we take the first edge.
+        const nextNodeId = outboundEdges[0].target;
+        footer["on-click-action"] = {
+          name: "navigate",
+          next_screen: nextNodeId
+        };
+      }
+
+      children.push(footer);
+
+      return {
         id: node.id,
-        title: node.data?.label || "Screen",
-        terminal: node.type === 'wa_end',
+        title: (data.label || "Screen").slice(0, 20),
+        terminal: isTerminal,
         layout: {
           type: "SingleColumnLayout",
-          children: [
-            { type: "TextHeading", text: node.data?.label || "Header" }
-          ]
+          children
         }
-      }))
+      };
+    });
+
+    return {
+      version: "3.1",
+      screens
     };
   }
 }

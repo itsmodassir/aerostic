@@ -422,8 +422,9 @@ export class MessagesService {
     // Compute 24h window
     let windowExpiresAt: Date | null = null;
     let windowExpired = false;
-    if (conversation.firstInboundAt) {
-      windowExpiresAt = new Date(conversation.firstInboundAt.getTime() + 24 * 60 * 60 * 1000);
+    const baseInbound = conversation.lastInboundAt || conversation.firstInboundAt;
+    if (baseInbound) {
+      windowExpiresAt = new Date(baseInbound.getTime() + 24 * 60 * 60 * 1000);
       windowExpired = windowExpiresAt <= now;
     }
 

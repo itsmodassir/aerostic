@@ -7,6 +7,8 @@ import { useParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContactRow from '@/components/crm/ContactRow';
+import AddEditContactModal from '@/components/crm/contacts/AddEditContactModal';
+import ImportExportModals from '@/components/crm/contacts/ImportExportModals';
 
 interface Contact {
     id: string;
@@ -20,8 +22,9 @@ export default function ContactsPage() {
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newContact, setNewContact] = useState({ name: '', phoneNumber: '', email: '' });
+    const [newContact, setNewContact] = useState({ name: '', phoneNumber: '+91', email: '' });
     const [tenantId, setTenantId] = useState<string>('');
+    const [activeImportExport, setActiveImportExport] = useState<'import' | 'export' | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState<'all' | 'with_email' | 'recent'>('all');
@@ -85,7 +88,7 @@ export default function ContactsPage() {
             if (!payload.email) delete (payload as any).email;
             await api.post('/contacts', payload);
             setShowAddModal(false);
-            setNewContact({ name: '', phoneNumber: '', email: '' });
+            setNewContact({ name: '', phoneNumber: '+91', email: '' });
             fetchContacts(tenantId);
         } catch (error: any) {
             alert('Failed to add contact. Ensure values are valid.');
@@ -116,15 +119,7 @@ export default function ContactsPage() {
     };
 
     const handleImport = () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.csv';
-        input.onchange = async (e: any) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            alert(`Ready to import ${file.name}. (Backend CSV import endpoint pending)`);
-        };
-        input.click();
+        setActiveImportExport('import');
     };
 
     return (
@@ -336,168 +331,20 @@ export default function ContactsPage() {
                 </div>
             </div>
 
-            {/* Add Contact Modal */}
-            <AnimatePresence>
-                {showAddModal && (
-                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-                            onClick={() => setShowAddModal(false)} 
-                        />
-                        <motion.div 
-                            initial={{ y: 100, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 100, opacity: 0 }}
-                            className="relative w-full max-w-lg bg-white sm:rounded-[40px] rounded-t-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-                        >
-                            <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Add Contact</h2>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Growth phase initiated</p>
-                                </div>
-                                <button onClick={() => setShowAddModal(false)} className="p-3 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><X size={20} strokeWidth={3} /></button>
-                            </div>
-                            
-                            <form onSubmit={handleAddContact} className="p-10 space-y-8 overflow-y-auto">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Full Name</label>
-                                        <input
-                                            required
-                                            placeholder="e.g. Alexander Pierce"
-                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
-                                            value={newContact.name}
-                                            onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Phone Number</label>
-                                        <div className="relative">
-                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black">+</div>
-                                            <input
-                                                required
-                                                placeholder="15551234567"
-                                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl pl-12 pr-6 py-4 outline-none transition-all font-bold text-slate-900"
-                                                value={newContact.phoneNumber}
-                                                onChange={(e) => setNewContact({ ...newContact, phoneNumber: e.target.value.replace(/\D/g, '') })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Email Address</label>
-                                        <input
-                                            type="email"
-                                            placeholder="email@example.com"
-                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
-                                            value={newContact.email}
-                                            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div className="pt-4 flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAddModal(false)}
-                                        className="flex-1 px-8 py-5 border-2 border-slate-100 text-slate-400 font-black rounded-3xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-[2] px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-3xl hover:shadow-xl hover:shadow-blue-200 transition-all shadow-lg shadow-blue-100 uppercase tracking-widest text-xs"
-                                    >
-                                        Confirm
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Add/Edit Contact Modal */}
+            <AddEditContactModal 
+                isOpen={showAddModal || showEditModal}
+                contact={selectedContact}
+                onClose={() => { setShowAddModal(false); setShowEditModal(false); setSelectedContact(null); }}
+                onSuccess={() => fetchContacts(tenantId)}
+            />
 
-            {/* Edit Contact Modal */}
-            <AnimatePresence>
-                {showEditModal && selectedContact && (
-                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-                            onClick={() => setShowEditModal(false)} 
-                        />
-                        <motion.div 
-                            initial={{ y: 100, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 100, opacity: 0 }}
-                            className="relative w-full max-w-lg bg-white sm:rounded-[40px] rounded-t-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-                        >
-                            <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Profile</h2>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Refining identity</p>
-                                </div>
-                                <button onClick={() => setShowEditModal(false)} className="p-3 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><X size={20} strokeWidth={3} /></button>
-                            </div>
-                            
-                            <form onSubmit={handleEditContact} className="p-10 space-y-8 overflow-y-auto">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Full Name</label>
-                                        <input
-                                            required
-                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
-                                            value={selectedContact?.name || ''}
-                                            onChange={(e) => setSelectedContact(prev => prev ? { ...prev, name: e.target.value } : null)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Phone Number</label>
-                                        <div className="relative">
-                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black">+</div>
-                                            <input
-                                                required
-                                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl pl-12 pr-6 py-4 outline-none transition-all font-bold text-slate-900"
-                                                value={selectedContact?.phoneNumber || ''}
-                                                onChange={(e) => setSelectedContact(prev => prev ? { ...prev, phoneNumber: e.target.value.replace(/\D/g, '') } : null)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-500 ml-1 uppercase tracking-widest">Email Address</label>
-                                        <input
-                                            type="email"
-                                            className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-slate-900"
-                                            value={selectedContact?.email || ''}
-                                            onChange={(e) => setSelectedContact(prev => prev ? { ...prev, email: e.target.value } : null)}
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div className="pt-4 flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEditModal(false)}
-                                        className="flex-1 px-8 py-5 border-2 border-slate-100 text-slate-400 font-black rounded-3xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
-                                    >
-                                        Discard
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-[2] px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black rounded-3xl hover:shadow-xl hover:shadow-blue-200 transition-all shadow-lg shadow-blue-100 uppercase tracking-widest text-xs"
-                                    >
-                                        Update Details
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Import/Export Modals */}
+            <ImportExportModals 
+                type={activeImportExport}
+                onClose={() => setActiveImportExport(null)}
+                onSuccess={() => fetchContacts(tenantId)}
+            />
         </div>
     );
 }

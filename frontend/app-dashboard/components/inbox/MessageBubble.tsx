@@ -96,7 +96,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                                 {message.content?.caption || message.content?.document?.filename || message.content?.filename || 'Document File'}
                             </p>
                             <p className={clsx("text-[9px] font-black uppercase tracking-widest mt-0.5", isOut ? "text-white/40" : "text-slate-400")}>
-                                {Math.random() > 0.5 ? '2.4 MB' : '1.2 MB'} • PDF Document
+                                {parseInt(message.id.slice(-2), 16) % 3 + 1} MB • PDF Document
                             </p>
                         </div>
                         <Download size={18} className={isOut ? "text-white/40" : "text-slate-300"} />
@@ -113,9 +113,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                         </button>
                         <div className="flex-1 flex flex-col gap-1.5">
                             <div className="flex items-end gap-0.5 h-6">
-                                {[...Array(20)].map((_, i) => (
-                                    <div key={i} className={clsx("w-1 rounded-full", isOut ? "bg-white/20" : "bg-slate-200")} style={{ height: `${Math.random() * 100}%` }} />
-                                ))}
+                                {[...Array(20)].map((_, i) => {
+                                    const h = (parseInt(message.id.slice(-2), 16) + (i * 13)) % 100;
+                                    return (
+                                        <div key={i} className={clsx("w-1 rounded-full", isOut ? "bg-white/20" : "bg-slate-200")} style={{ height: `${h}%` }} />
+                                    );
+                                })}
                             </div>
                             <div className="flex justify-between text-[8px] font-black uppercase tracking-widest opacity-40">
                                 <span>0:00</span>

@@ -77,6 +77,10 @@ export class Conversation {
   @Column({ name: "first_inbound_at", type: "timestamp", nullable: true })
   firstInboundAt: Date | null;
 
+  /** Timestamp of LAST INBOUND message — for Meta 24h rolling window tracking */
+  @Column({ name: "last_inbound_at", type: "timestamp", nullable: true })
+  lastInboundAt: Date | null;
+
   @Column({ type: "jsonb", nullable: true })
   metadata: any;
 

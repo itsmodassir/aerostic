@@ -52,6 +52,8 @@ interface Conversation {
     isStarred?: boolean;
     isBot?: boolean;
     channel: 'whatsapp' | 'instagram' | 'email';
+    lastInboundAt?: string;
+    firstInboundAt?: string;
 }
 
 interface Message {
@@ -161,22 +163,41 @@ export default function InboxPage() {
     useEffect(() => {
         if (!socket) return;
         const handleNewMessage = (payload: any) => {
-            if (payload.conversationId === selectedConversation?.id) {
-                setMessages(prev => [...prev, {
-                    id: payload.id || `msg-${Date.now()}`,
-                    direction: payload.direction,
-                    type: payload.type,
-                    content: payload.content,
-                    status: 'received',
-                    createdAt: payload.timestamp || new Date().toISOString(),
-                }]);
+            // Check if message should be added to current view
+            const isCurrentConversation = payload.conversationId === selectedConversation?.id;
+            
+            if (isCurrentConversation) {
+                setMessages(prev => {
+                    // Avoid duplicate messages if already sent optimistically
+                    if (prev.some(m => m.id === payload.id || (m.metaMessageId && m.metaMessageId === payload.metaId))) {
+                        return prev;
+                    }
+                    return [...prev, {
+                        id: payload.id || `msg-${Date.now()}`,
+                        direction: payload.direction,
+                        type: payload.type,
+                        content: payload.content,
+                        status: 'received',
+                        createdAt: payload.timestamp || new Date().toISOString(),
+                    }];
+                });
+                
+                // Refresh AI status to update 24h window
+                void fetchConversationStatus(payload.conversationId);
             }
-            // Update conversation list last message
+
+            // Update conversation list last message and session window
             setConversations(prev => prev.map(c => 
                 c.id === payload.conversationId 
-                ? { ...c, lastMessage: payload.content?.body || payload.type, lastMessageAt: new Date().toISOString(), unreadCount: selectedConversation?.id === payload.conversationId ? c.unreadCount : c.unreadCount + 1 } 
+                ? { 
+                    ...c, 
+                    lastMessage: payload.content?.body || payload.type, 
+                    lastMessageAt: new Date().toISOString(), 
+                    lastInboundAt: payload.direction === 'in' ? new Date().toISOString() : c.lastInboundAt,
+                    unreadCount: isCurrentConversation ? c.unreadCount : (c.unreadCount || 0) + 1 
+                } 
                 : c
-            ));
+            ).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()));
         };
         socket.on('newMessage', handleNewMessage);
         return () => { socket.off('newMessage', handleNewMessage); };
@@ -195,6 +216,16 @@ export default function InboxPage() {
         fetchConvs();
     }, [tenantId, currentUser?.id]);
 
+    const fetchConversationStatus = useCallback(async (convId: string) => {
+        if (!tenantId) return;
+        try {
+            const statusRes = await api.get(`/messages/conversations/${convId}/status`, { headers: { 'x-tenant-id': tenantId } });
+            setAiStatus(statusRes.data);
+        } catch (e) {
+            console.error('Failed to fetch conversation status', e);
+        }
+    }, [tenantId]);
+
     useEffect(() => {
         if (!selectedConversation || !tenantId || !currentUser) return;
         const fetchMsgs = async () => {
@@ -203,12 +234,11 @@ export default function InboxPage() {
                 setMessages(res.data);
                 setCachedMessages(tenantId, currentUser.id, selectedConversation.id, res.data);
                 // Fetch AI status
-                const statusRes = await api.get(`/messages/conversations/${selectedConversation.id}/status`, { headers: { 'x-tenant-id': tenantId } });
-                setAiStatus(statusRes.data);
+                void fetchConversationStatus(selectedConversation.id);
             } catch (e) {}
         };
         fetchMsgs();
-    }, [selectedConversation?.id, tenantId, currentUser?.id]);
+    }, [selectedConversation?.id, tenantId, currentUser?.id, fetchConversationStatus]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -394,7 +424,21 @@ export default function InboxPage() {
                                     <div className="flex items-center gap-3 mt-1">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Phone size={10} /> {selectedConversation.contact.phoneNumber}</span>
                                         <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live Now</span>
+                                        {aiStatus?.windowExpired === false ? (
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-lg animate-pulse">
+                                                <Timer size={10} className="stroke-[3]" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest tabular-nums">
+                                                    {Math.floor(aiStatus.windowSecondsLeft! / 3600)}h {Math.floor((aiStatus.windowSecondsLeft! % 3600) / 60)}m left
+                                                </span>
+                                            </div>
+                                        ) : aiStatus?.windowExpired === true ? (
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-lg">
+                                                <AlertCircle size={10} className="stroke-[3]" />
+                                                <span className="text-[9px] font-black uppercase tracking-widest">Window Closed</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live Now</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

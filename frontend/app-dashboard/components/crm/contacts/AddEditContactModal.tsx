@@ -16,9 +16,19 @@ interface AddEditContactModalProps {
 
 const CONTACT_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'WON', 'LOST'];
 
+const COUNTRY_CODES = [
+    { code: '+91', country: 'India (IN)' },
+    { code: '+1', country: 'USA/Canada (US/CA)' },
+    { code: '+44', country: 'UK (GB)' },
+    { code: '+971', country: 'UAE (AE)' },
+    { code: '+61', country: 'Australia (AU)' },
+    { code: '+65', country: 'Singapore (SG)' },
+];
+
 export default function AddEditContactModal({ isOpen, contact, onClose, onSuccess }: AddEditContactModalProps) {
     const [formData, setFormData] = useState({
         name: '',
+        countryCode: '+91',
         phoneNumber: '',
         email: '',
         status: 'NEW',
@@ -31,9 +41,17 @@ export default function AddEditContactModal({ isOpen, contact, onClose, onSucces
 
     useEffect(() => {
         if (contact) {
+            // Find if phone number starts with a known country code
+            const foundCode = COUNTRY_CODES.find(c => contact.phoneNumber?.startsWith(c.code));
+            const code = foundCode ? foundCode.code : '+91';
+            const number = foundCode 
+                ? contact.phoneNumber.slice(code.length) 
+                : (contact.phoneNumber?.startsWith('+') ? contact.phoneNumber : contact.phoneNumber);
+
             setFormData({
                 name: contact.name || '',
-                phoneNumber: contact.phoneNumber || '',
+                countryCode: code,
+                phoneNumber: number || '',
                 email: contact.email || '',
                 status: contact.status || 'NEW',
                 isVIP: contact.isVIP || false,
@@ -42,6 +60,7 @@ export default function AddEditContactModal({ isOpen, contact, onClose, onSucces
         } else {
             setFormData({
                 name: '',
+                countryCode: '+91',
                 phoneNumber: '',
                 email: '',
                 status: 'NEW',
@@ -71,10 +90,23 @@ export default function AddEditContactModal({ isOpen, contact, onClose, onSucces
         setError(null);
 
         try {
+            const fullPhone = formData.phoneNumber.startsWith('+') 
+                ? formData.phoneNumber 
+                : `${formData.countryCode}${formData.phoneNumber.replace(/\D/g, '')}`;
+
+            const payload = { 
+                ...formData,
+                phoneNumber: fullPhone
+            };
+            
+            if (!payload.email || payload.email.trim() === '') {
+                delete (payload as any).email;
+            }
+
             if (contact) {
-                await api.patch(`/contacts/${contact.id}`, formData);
+                await api.patch(`/contacts/${contact.id}`, payload);
             } else {
-                await api.post('/contacts', formData);
+                await api.post('/contacts', payload);
             }
             onSuccess();
             onClose();
@@ -136,7 +168,7 @@ export default function AddEditContactModal({ isOpen, contact, onClose, onSucces
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Name */}
-                        <div className="space-y-3">
+                        <div className="space-y-3 md:col-span-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                                 <User size={14} /> Full Descriptor
                             </label>
@@ -150,24 +182,36 @@ export default function AddEditContactModal({ isOpen, contact, onClose, onSucces
                         </div>
 
                         {/* Phone */}
-                        <div className="space-y-3">
+                        <div className="space-y-3 md:col-span-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                                 <Phone size={14} /> WhatsApp Link
                             </label>
-                            <input 
-                                value={formData.phoneNumber}
-                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                placeholder="+91 9876543210"
-                                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-sm font-bold tracking-tight"
-                                required
-                                disabled={!!contact}
-                            />
+                            <div className="flex gap-2">
+                                <select 
+                                    value={formData.countryCode}
+                                    onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
+                                    className="w-32 p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-sm font-bold tracking-tight appearance-none"
+                                    disabled={!!contact}
+                                >
+                                    {COUNTRY_CODES.map(c => (
+                                        <option key={c.code} value={c.code}>{c.code} {c.country}</option>
+                                    ))}
+                                </select>
+                                <input 
+                                    value={formData.phoneNumber}
+                                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                    placeholder="9876543210"
+                                    className="flex-1 p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all outline-none text-sm font-bold tracking-tight"
+                                    required
+                                    disabled={!!contact}
+                                />
+                            </div>
                         </div>
 
                         {/* Email */}
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                                <Mail size={14} /> Communication Hub
+                                <Mail size={14} /> Email Address (Optional)
                             </label>
                             <input 
                                 type="email"

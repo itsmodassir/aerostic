@@ -28,8 +28,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     useEffect(() => {
         if (!user) {
             if (socket) {
-                socket.disconnect();
+                const s = socket;
                 setSocket(null);
+                setIsConnected(false);
+                s.disconnect();
             }
             return;
         }
@@ -69,7 +71,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             console.error('[Socket] Connection Error:', error);
         });
 
-        setSocket(socketInstance);
+        // To avoid synchronous setState warning, we use a microtask or just let the effect settle.
+        // Actually, the best way is to only set state once our setup is ready.
+        const s = socketInstance;
+        setSocket(s);
 
         return () => {
             socketInstance.disconnect();

@@ -68,7 +68,7 @@ export class Campaign {
   isABTest: boolean;
 
   @Column({ type: "jsonb", nullable: true })
-  variants: { templateName: string, templateLanguage: string, weight: number }[]; 
+  variants: { templateName: string, templateLanguage: string, weight: number, variables: Record<string, string> }[]; 
   // Array of up to 4 templates for A/B/C/D testing
 
   @Column({ name: "split_strategy", default: "EQUAL" })

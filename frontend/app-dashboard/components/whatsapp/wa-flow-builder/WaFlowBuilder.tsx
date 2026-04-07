@@ -25,6 +25,7 @@ import { ConfigPanel } from "./ConfigPanel";
 import {
   Save, Loader2, X, Workflow, ChevronLeft, Upload, Download, Send
 } from "lucide-react";
+import api from "@/lib/api";
 
 // ─── Custom animated edge ─────────────────────────────────────────────────────
 
@@ -135,19 +136,10 @@ export default function WaFlowBuilder({
         name: flowName,
         flowData: transformFlowToPayload(nodes, edges),
       };
-      const res = await fetch(`/api/v1/whatsapp/flows/${flowId}/canvas`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Save failed");
-      }
+      const res = await api.put(`/whatsapp/flows/${flowId}/canvas`, payload);
       onSaved?.();
     } catch (err: any) {
-      setSaveError(err.message || "Could not save flow.");
+      setSaveError(err.response?.data?.message || err.message || "Could not save flow.");
     } finally {
       setIsSaving(false);
     }
@@ -165,18 +157,12 @@ export default function WaFlowBuilder({
       await handleSave();
       
       // 2. Then Publish
-      const res = await fetch(`/api/v1/whatsapp/flows/${flowId}/publish`, {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Meta Rejection: Please verify flow structure.");
+      const res = await api.post(`/whatsapp/flows/${flowId}/publish`);
       
       setPublishStatus("success");
       onSaved?.();
     } catch (err: any) {
-      setSaveError(err.message);
+      setSaveError(err.response?.data?.message || err.message || "Meta Rejection: Please verify flow structure.");
       setPublishStatus("error");
     } finally {
       setIsPublishing(false);

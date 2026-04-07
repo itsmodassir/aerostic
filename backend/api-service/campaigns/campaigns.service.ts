@@ -41,10 +41,13 @@ export class CampaignsService {
     const campaign = this.campaignRepo.create({
       tenantId,
       name: data.name,
-      templateName: data.templateName,
-      templateLanguage: data.templateLanguage,
+      templateName: data.templateName || (data.variants?.[0]?.templateName),
+      templateLanguage: data.templateLanguage || (data.variants?.[0]?.templateLanguage),
       recipientType: data.recipientType || "ALL",
       recipients: data.recipients || [],
+      isABTest: data.isABTest || false,
+      variants: data.variants || [],
+      segmentationConfig: data.segmentationConfig || {},
       status: "draft",
     });
     return this.campaignRepo.save(campaign);
@@ -235,11 +238,12 @@ export class CampaignsService {
 
     await this.campaignRepo.save(campaign);
 
-    const variants = (campaign.variants && campaign.variants.length > 0) 
+    const variants: { templateName: string, templateLanguage: string, weight: number, variables?: Record<string, string> }[] = 
+        (campaign.variants && campaign.variants.length > 0) 
         ? campaign.variants 
-        : [{ templateName: campaign.templateName, templateLanguage: campaign.templateLanguage, weight: 1 }];
+        : [{ templateName: campaign.templateName, templateLanguage: campaign.templateLanguage, weight: 1, variables: {} }];
 
-    const totalWeight = variants.reduce((sum, v) => sum + (v.weight || 1), 0);
+    const totalWeight = variants.reduce((sum: number, v) => sum + (v.weight || 1), 0);
     let cumulativeContacts = 0;
 
     for (let vIndex = 0; vIndex < variants.length; vIndex++) {
@@ -249,21 +253,38 @@ export class CampaignsService {
       cumulativeContacts += variantCount;
 
       for (const contact of variantContacts) {
+        // Resolve positional variables for the template
+        const parameters = [];
+        const customVars = variant.variables || {};
+        
+        // WhatsApp templates use positional variables {{1}}, {{2}}, etc.
+        // We look for keys "1", "2" etc. in the customVars and resolve placeholders.
+        Object.keys(customVars).sort((a, b) => parseInt(a) - parseInt(b)).forEach(key => {
+            let val = customVars[key] || "";
+            // Replace placeholders: {{contact.name}}, {{contact.phone}}
+            val = val.replace(/{{contact\.name}}/g, contact.name || "");
+            val = val.replace(/{{contact\.phone}}/g, contact.phoneNumber || "");
+            
+            parameters.push({ type: "text", text: val });
+        });
+
+        // Add a default parameter if none exist (most templates have at least one like name)
+        if (parameters.length === 0) {
+            parameters.push({ type: "text", text: contact.name || "Customer" });
+        }
+
         await this.campaignQueue.add("send-message", {
           tenantId,
           campaignId,
           to: contact.phoneNumber,
-          templateName: variant.templateName,
+          type: "template", // CRITICAL: Added missing type
           payload: {
             name: variant.templateName,
             language: { code: variant.templateLanguage || "en_US" },
             components: [
               {
                 type: "body",
-                parameters: [
-                  { type: "text", text: contact.name || "Valued Customer" },
-                  // Dynamic variables from contact attributes can be added here
-                ],
+                parameters: parameters,
               },
             ],
           },

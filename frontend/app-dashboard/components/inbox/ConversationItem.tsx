@@ -128,6 +128,30 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isAct
                         {formatTime(conversation.lastMessageAt)}
                     </span>
                 </div>
+
+                {/* 24h Window Indicator */}
+                {(() => {
+                    const lastInbound = (conversation as any).lastInboundAt || (conversation as any).firstInboundAt;
+                    if (!lastInbound) return null;
+                    const expiresAt = new Date(new Date(lastInbound).getTime() + 24 * 60 * 60 * 1000);
+                    const now = new Date();
+                    const diff = expiresAt.getTime() - now.getTime();
+                    const isExpired = diff <= 0;
+
+                    if (isExpired) return null;
+
+                    const hours = Math.floor(diff / 3600000);
+                    const minutes = Math.floor((diff % 3600000) / 60000);
+
+                    return (
+                        <div className="flex items-center gap-1 mb-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-lg w-fit border border-emerald-100">
+                            <Clock size={8} className="stroke-[3]" />
+                            <span className="text-[8px] font-black uppercase tracking-widest tabular-nums font-mono">
+                                {hours}h {minutes}m window
+                            </span>
+                        </div>
+                    );
+                })()}
                 
                 <div className="flex justify-between items-center gap-2">
                     <p className={clsx(

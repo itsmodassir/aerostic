@@ -9,7 +9,13 @@ import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
 import { WhatsappService } from "./whatsapp.service";
 import { WebhooksService } from "./webhooks.service";
 import { AiModule } from "../../api-service/ai/ai.module";
-import { AutomationFlow } from "../database/entities/core/automation-flow.entity";
+import {
+  AutomationFlow,
+  AutomationNode,
+  AutomationEdge,
+  AutomationExecution,
+  AutomationExecutionLog,
+} from "../database/entities/core/automation-flow.entity";
 
 @Module({
   imports: [
@@ -20,6 +26,10 @@ import { AutomationFlow } from "../database/entities/core/automation-flow.entity
       Message,
       Campaign,
       AutomationFlow,
+      AutomationNode,
+      AutomationEdge,
+      AutomationExecution,
+      AutomationExecutionLog,
     ]),
     forwardRef(() => AiModule),
     BullModule.registerQueue({

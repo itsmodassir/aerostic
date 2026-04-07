@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Loader2, Plus, RefreshCw, Trash2, Workflow, Pencil } from 'lucide-react';
+import { Loader2, Plus, RefreshCw, Trash2, Workflow, Pencil, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSearchParams } from 'next/navigation';
@@ -17,6 +17,8 @@ export default function WhatsAppFlowsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newFlow, setNewFlow] = useState({ name: '', category: 'OTHER' });
 
   // Builder state
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -57,20 +59,20 @@ export default function WhatsAppFlowsPage() {
   }, [searchParams]);
 
   const handleCreateFlow = async () => {
-    const rawName = window.prompt('Enter a flow name');
-    const flowName = rawName?.trim();
-    if (!flowName) return;
+    if (!newFlow.name.trim()) return;
 
     setCreating(true);
     try {
       const res = await api.post('/whatsapp/flows', {
-        name: flowName,
-        categories: ['OTHER'],
+        name: newFlow.name,
+        categories: [newFlow.category],
       });
       toast.success('Flow created successfully');
-      // Open builder immediately with the new flow
+      setShowCreateModal(false);
+      setNewFlow({ name: '', category: 'OTHER' });
+      
       if (res.data?.id) {
-        setBuilderFlow({ id: res.data.id, name: flowName });
+        setBuilderFlow({ id: res.data.id, name: newFlow.name });
         setBuilderOpen(true);
       }
       await loadFlows();
@@ -181,7 +183,7 @@ export default function WhatsAppFlowsPage() {
               <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button className="rounded-xl shadow-sm" onClick={handleCreateFlow} disabled={!connected || creating}>
+            <Button className="rounded-xl shadow-sm" onClick={() => setShowCreateModal(true)} disabled={!connected || creating}>
               {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
               New Flow
             </Button>
@@ -211,7 +213,7 @@ export default function WhatsAppFlowsPage() {
               <div className="h-48 flex flex-col items-center justify-center gap-3 text-gray-400">
                 <Workflow className="h-16 w-16 text-gray-200" />
                 <p>No flows created yet.</p>
-                <Button variant="outline" className="rounded-xl" onClick={handleCreateFlow}>
+                <Button variant="outline" className="rounded-xl" onClick={() => setShowCreateModal(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create first flow
                 </Button>
@@ -275,6 +277,68 @@ export default function WhatsAppFlowsPage() {
           </CardContent>
         </Card>
       </div>
+      {/* Create Flow Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl scale-in-center">
+            <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center">
+                        <Plus size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none">New WhatsApp Flow</h2>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1.5">Meta Asset Creation</p>
+                    </div>
+                </div>
+                <button onClick={() => setShowCreateModal(false)} className="p-3 hover:bg-gray-100 rounded-2xl transition-colors border border-gray-200 text-gray-400">
+                    <X className="rotate-45" size={20} />
+                </button>
+            </div>
+            
+            <CardContent className="p-8 space-y-6">
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Flow Identity</label>
+                        <input 
+                            placeholder="e.g. customer_onboarding_v1"
+                            className="w-full h-14 px-6 rounded-2xl border-2 border-slate-100 focus:border-blue-500 focus:outline-none font-bold text-slate-800 transition-all"
+                            value={newFlow.name}
+                            onChange={(e) => setNewFlow({...newFlow, name: e.target.value})}
+                        />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Category (Required by Meta)</label>
+                        <select 
+                            className="w-full h-14 px-6 rounded-2xl border-2 border-slate-100 focus:border-blue-500 bg-white font-bold text-slate-800 outline-none appearance-none cursor-pointer"
+                            value={newFlow.category}
+                            onChange={(e) => setNewFlow({...newFlow, category: e.target.value})}
+                        >
+                            <option value="OTHER">Other / General</option>
+                            <option value="APPOINTMENT_BOOKING">Appointment Booking</option>
+                            <option value="CUSTOMER_SUPPORT">Customer Support</option>
+                            <option value="CONTACT_US">Contact Us</option>
+                            <option value="LEAD_GENERATION">Lead Generation</option>
+                            <option value="SURVEY">Customer Survey</option>
+                            <option value="SIGN_UP">User Sign Up</option>
+                            <option value="SIGN_IN">User Sign In</option>
+                        </select>
+                    </div>
+                </div>
+
+                <Button 
+                    className="w-full h-16 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-blue-100 disabled:opacity-50"
+                    disabled={!newFlow.name.trim() || creating}
+                    onClick={handleCreateFlow}
+                >
+                    {creating ? <Loader2 className="animate-spin mr-3" size={20} /> : <Plus className="mr-3" size={20} />}
+                    Initialize Meta Flow Asset
+                </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

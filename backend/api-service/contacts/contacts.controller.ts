@@ -57,8 +57,7 @@ export class ContactsController {
     @UserTenant() tenantId: string,
     @UploadedFile() file: any,
   ) {
-    const content = file.buffer.toString("utf-8");
-    return this.contactsService.importContacts(tenantId, content);
+    return this.contactsService.importContacts(tenantId, file.buffer, file.originalname);
   }
 
   @Get(":id")

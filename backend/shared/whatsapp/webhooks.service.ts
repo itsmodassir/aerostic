@@ -14,6 +14,7 @@ import { Message } from "../database/entities/messaging/message.entity";
 import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
 import { AiService } from "../../api-service/ai/ai.service";
 import { forwardRef, Inject } from "@nestjs/common";
+import { MessagesGateway } from "../../api-service/messages/messages.gateway";
 
 @Injectable()
 export class WebhooksService {
@@ -35,6 +36,7 @@ export class WebhooksService {
     private webhookQueue: Queue,
     @Inject(forwardRef(() => AiService))
     private aiService: AiService,
+    private messagesGateway: MessagesGateway,
   ) {}
 
   verifyWebhook(mode: string, token: string, challenge: string): string {
@@ -175,8 +177,15 @@ export class WebhooksService {
         status: "open",
         lastMessageAt: new Date(),
         firstInboundAt: new Date(),
+        lastInboundAt: new Date(),
         aiMode: "ai",
+        unreadCount: 1,
       });
+      await this.conversationRepo.save(conversation);
+    } else {
+      conversation.lastMessageAt = new Date();
+      conversation.lastInboundAt = new Date();
+      conversation.unreadCount = (conversation.unreadCount || 0) + 1;
       await this.conversationRepo.save(conversation);
     }
 
@@ -228,7 +237,18 @@ export class WebhooksService {
 
     await this.messageRepo.save(message);
 
-    // TODO: Emit to socket via Gateway (requires sharing Gateway logic or using an event emitter)
+    // 🔥 Real-time emit to Inbox
+    this.messagesGateway.emitNewMessage(account.tenantId, {
+      id: message.id,
+      conversationId: conversation.id,
+      contactId: contact.id,
+      direction: "in",
+      type: message.type,
+      content: message.content,
+      timestamp: message.createdAt || new Date(),
+      status: "received"
+    });
+
     await this.dispatchWorkflowTrigger(account, contact, conversation, msg);
   }
 

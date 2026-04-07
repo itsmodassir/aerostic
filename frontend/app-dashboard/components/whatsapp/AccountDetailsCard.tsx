@@ -11,6 +11,46 @@ interface AccountDetailsCardProps {
     onEdit?: () => void;
 }
 
+interface InfoRowProps {
+    label: string;
+    value: string;
+    icon: any;
+    field: string;
+    copyToClipboard: (text: string, field: string) => void;
+    copiedField: string | null;
+}
+
+const InfoRow = ({ label, value, icon: Icon, field, copyToClipboard, copiedField }: InfoRowProps) => {
+    if (!value) return null;
+
+    return (
+        <div className="flex items-center justify-between py-5 border-b-2 border-gray-50 last:border-0 group">
+            <div className="flex items-center gap-4 min-w-0">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-50 transition-colors border border-gray-100">
+                    <Icon className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-0.5">{label}</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{value}</p>
+                </div>
+            </div>
+            <button
+                onClick={() => copyToClipboard(value, field)}
+                className={clsx(
+                    "p-3 rounded-xl transition-all active:scale-95 shrink-0",
+                    copiedField === field ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                )}
+            >
+                {copiedField === field ? (
+                    <CheckCircle className="w-5 h-5 shadow-sm" />
+                ) : (
+                    <Copy className="w-5 h-5 px-0.5" />
+                )}
+            </button>
+        </div>
+    );
+};
+
 export default function AccountDetailsCard({
     businessId,
     wabaId,
@@ -28,36 +68,7 @@ export default function AccountDetailsCard({
         setTimeout(() => setCopiedField(null), 2000);
     };
 
-    const InfoRow = ({ label, value, icon: Icon, field }: any) => {
-        if (!value) return null;
 
-        return (
-            <div className="flex items-center justify-between py-5 border-b-2 border-gray-50 last:border-0 group">
-                <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-50 transition-colors border border-gray-100">
-                        <Icon className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 transition-colors" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-0.5">{label}</p>
-                        <p className="text-sm font-bold text-gray-900 truncate">{value}</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => copyToClipboard(value, field)}
-                    className={clsx(
-                        "p-3 rounded-xl transition-all active:scale-95 shrink-0",
-                        copiedField === field ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
-                    )}
-                >
-                    {copiedField === field ? (
-                        <CheckCircle className="w-5 h-5 shadow-sm" />
-                    ) : (
-                        <Copy className="w-5 h-5 px-0.5" />
-                    )}
-                </button>
-            </div>
-        );
-    };
 
     return (
         <div className="bg-white rounded-[32px] border border-gray-200/60 p-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col h-full">
@@ -88,6 +99,8 @@ export default function AccountDetailsCard({
                         value={verifiedName}
                         icon={Building2}
                         field="verifiedName"
+                        copyToClipboard={copyToClipboard}
+                        copiedField={copiedField}
                     />
                 )}
 
@@ -97,6 +110,8 @@ export default function AccountDetailsCard({
                         value={displayPhoneNumber}
                         icon={Phone}
                         field="displayPhone"
+                        copyToClipboard={copyToClipboard}
+                        copiedField={copiedField}
                     />
                 )}
 
@@ -106,6 +121,8 @@ export default function AccountDetailsCard({
                         value={businessId}
                         icon={Building2}
                         field="businessId"
+                        copyToClipboard={copyToClipboard}
+                        copiedField={copiedField}
                     />
                 )}
 
@@ -114,6 +131,8 @@ export default function AccountDetailsCard({
                     value={wabaId}
                     icon={Key}
                     field="wabaId"
+                    copyToClipboard={copyToClipboard}
+                    copiedField={copiedField}
                 />
 
                 <InfoRow
@@ -121,6 +140,8 @@ export default function AccountDetailsCard({
                     value={phoneNumberId}
                     icon={Key}
                     field="phoneNumberId"
+                    copyToClipboard={copyToClipboard}
+                    copiedField={copiedField}
                 />
             </div>
         </div>
