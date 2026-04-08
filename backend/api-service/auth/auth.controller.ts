@@ -111,6 +111,24 @@ class ResetPasswordDto {
 @Controller("auth")
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
+
+  private getCookieDomain(req: any): string | undefined {
+    if (process.env.NODE_ENV !== "production") {
+      return undefined;
+    }
+
+    const configuredDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
+    if (configuredDomain) {
+      return configuredDomain.startsWith(".")
+        ? configuredDomain
+        : `.${configuredDomain}`;
+    }
+
+    // Default to host-only cookies so each deployed domain can authenticate
+    // independently without being tied to a single shared base domain.
+    return undefined;
+  }
+
   constructor(
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
@@ -176,8 +194,7 @@ export class AuthController {
       );
 
       const isProduction = process.env.NODE_ENV === "production";
-      const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
-      const cookieDomain = isProduction ? `.${baseDomain}` : undefined;
+      const cookieDomain = this.getCookieDomain(req);
 
       this.logger.debug(`Setting cookies for domain: ${cookieDomain}`);
       
@@ -252,8 +269,7 @@ export class AuthController {
       await this.authService.refreshTokens(refreshToken, req);
 
     const isProduction = process.env.NODE_ENV === "production";
-    const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
-    const domain = isProduction ? `.${baseDomain}` : undefined;
+    const domain = this.getCookieDomain(req);
 
     res.cookie("access_token", access_token, {
       httpOnly: true,
@@ -286,9 +302,7 @@ export class AuthController {
       // Revoke the specific device session
       await this.authService.logout(req.user.sessionId);
     }
-    const isProduction = process.env.NODE_ENV === "production";
-    const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
-    const domain = isProduction ? `.${baseDomain}` : undefined;
+    const domain = this.getCookieDomain(req);
 
     res.clearCookie("access_token", {
       domain,

@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 
 import { SocketProvider } from '@/context/SocketContext';
 import { DashboardProvider, useDashboard } from '@/components/dashboard/DashboardContext';
 import Sidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
+import {
+    ensureWorkspaceContext,
+    getCachedMembership,
+    loadMembership,
+    loadSubscription,
+} from '@/lib/dashboard-bootstrap';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -25,29 +30,73 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     const { user, loading, logout, isAdmin } = useAuth();
     const { setMembership, membership, isSidebarCollapsed } = useDashboard();
     const router = useRouter();
+    const pathname = usePathname();
+    const [workspaceReady, setWorkspaceReady] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const syncWorkspaceContext = async () => {
+            const match = pathname.match(/^\/dashboard\/([^/]+)/);
+            const workspaceSlug = match?.[1];
+
+            if (!workspaceSlug || !user) {
+                if (!cancelled) setWorkspaceReady(true);
+                return;
+            }
+
+            try {
+                await ensureWorkspaceContext(workspaceSlug);
+            } catch (error) {
+                console.warn('[DashboardLayout] Failed to sync workspace context', error);
+            } finally {
+                if (!cancelled) setWorkspaceReady(true);
+            }
+        };
+
+        setWorkspaceReady(false);
+        void syncWorkspaceContext();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [pathname, user]);
 
     // 1. Initial Data Fetch (Isolated & Cached)
     useEffect(() => {
-        if (!user) return;
+        if (!user || !workspaceReady) return;
+
+        const cachedMembership = getCachedMembership();
+        if (cachedMembership) {
+            setMembership(cachedMembership);
+        }
 
         const fetchData = async () => {
             try {
-                const memResponse = await api.get('/auth/membership');
-                if (memResponse.status === 200) {
-                    setMembership(memResponse.data);
+                const membershipPromise = loadMembership().catch(() => null);
+                const subscriptionPromise = isAdmin ? Promise.resolve(null) : loadSubscription().catch((error: any) => error);
+
+                const [resolvedMembership, resolvedSubscription] = await Promise.all([
+                    membershipPromise,
+                    subscriptionPromise,
+                ]);
+
+                if (resolvedMembership) {
+                    setMembership(resolvedMembership);
                 }
 
                 if (!isAdmin) {
-                    try {
-                        const subResponse = await api.get('/billing/subscription');
-                        const validStatuses = ['trial', 'active'];
-                        if (!subResponse.data || !validStatuses.includes(subResponse.data.status)) {
+                    if (resolvedSubscription instanceof Error) {
+                        const status = (resolvedSubscription as any)?.response?.status;
+                        if (status === 401 || status === 404) {
                             router.push('/onboarding');
                         }
-                    } catch (subErr: any) {
-                        if (subErr.response?.status === 401 || subErr.response?.status === 404) {
-                            router.push('/onboarding');
-                        }
+                        return;
+                    }
+
+                    const validStatuses = ['trial', 'active'];
+                    if (!resolvedSubscription || !validStatuses.includes(resolvedSubscription.status)) {
+                        router.push('/onboarding');
                     }
                 }
             } catch (error) {
@@ -56,7 +105,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         };
 
         fetchData();
-    }, [user, isAdmin, router, setMembership]);
+    }, [user, isAdmin, router, setMembership, workspaceReady]);
 
     // 2. Memoized Branding Styles
     const brandingStyles = useMemo(() => {
@@ -68,7 +117,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties;
     }, [membership]);
 
-    if (loading) {
+    if (loading || !workspaceReady) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

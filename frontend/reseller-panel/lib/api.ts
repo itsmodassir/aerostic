@@ -1,4 +1,9 @@
 import axios from 'axios';
+import {
+    isUuid,
+    resolveTenantIdFromWorkspaceSlug,
+    setActiveWorkspaceContext,
+} from './workspace-context';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/v1', // Relative path for Nginx proxying
@@ -8,13 +13,11 @@ const api = axios.create({
     withCredentials: true, // Enable cookie-based auth
 });
 
-const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function isUuid(value?: string | null): value is string {
-    return !!value && UUID_V4_REGEX.test(value);
-}
-
-
+const clearAuthStorage = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+};
 
 // Request interceptor to automatically add the tenant ID and Auth Token
 api.interceptors.request.use(async (config) => {
@@ -34,12 +37,24 @@ api.interceptors.request.use(async (config) => {
         if (!isGlobalEndpoint) {
             let tenantId: string | null = null;
 
-            // Only trust URL segment when it's an actual UUID.
             if (isUuid(candidateWorkspace)) {
                 tenantId = candidateWorkspace;
+                setActiveWorkspaceContext({ id: candidateWorkspace, slug: candidateWorkspace });
+            } else if (candidateWorkspace) {
+                tenantId = resolveTenantIdFromWorkspaceSlug(candidateWorkspace);
+                if (tenantId) {
+                    setActiveWorkspaceContext({ id: tenantId, slug: candidateWorkspace });
+                }
             }
 
-            // Fall back to cached UUID for clean URLs.
+            if (!tenantId) {
+                const selectedTenantSlug = localStorage.getItem('selected_tenant_slug');
+                const selectedTenantId = localStorage.getItem('selected_tenant_id');
+                if (selectedTenantSlug === candidateWorkspace && isUuid(selectedTenantId)) {
+                    tenantId = selectedTenantId;
+                }
+            }
+
             if (!tenantId) {
                 const savedTenantId = localStorage.getItem('x-tenant-id');
                 if (isUuid(savedTenantId)) {
@@ -55,8 +70,6 @@ api.interceptors.request.use(async (config) => {
 
             if (tenantId) {
                 config.headers['x-tenant-id'] = tenantId;
-                localStorage.setItem('x-tenant-id', tenantId);
-                localStorage.setItem('selected_tenant_id', tenantId);
             }
         }
 
@@ -130,12 +143,15 @@ api.interceptors.response.use(
                 isRefreshing = false;
                 processQueue(refreshError);
                 
-                // If refresh fails, redirect to login
-                if (typeof window !== 'undefined') {
+                const refreshStatus = (refreshError as any)?.response?.status;
+                if (
+                    typeof window !== 'undefined' &&
+                    (refreshStatus === 401 || refreshStatus === 403)
+                ) {
                     const isLoginPage = window.location.pathname.includes('/login');
                     if (!isLoginPage) {
-                        localStorage.clear();
-                        window.location.href = '/login';
+                        clearAuthStorage();
+                        window.location.replace('/login');
                     }
                 }
                 return Promise.reject(refreshError);

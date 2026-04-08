@@ -5,6 +5,10 @@ import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { Shield, Lock, Eye, EyeOff, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react';
 
+function isAdminRole(role?: string | null) {
+    return role === 'super_admin' || role === 'platform_admin' || role === 'admin';
+}
+
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -22,15 +26,14 @@ export default function AdminLoginPage() {
 
             const user = res.data.user;
             // Check if user is admin or super_admin
-            if (user.role !== 'admin' && user.role !== 'super_admin') {
+            if (!isAdminRole(user?.role)) {
                 setError('Access denied. This area is for administrators only.');
                 setLoading(false);
                 return;
             }
 
             localStorage.setItem('user', JSON.stringify(user));
-            // Redirect to admin dashboard
-            router.push('/admin');
+            router.replace('/');
         } catch (err: any) {
             console.error('Admin Login error:', err);
             if (err.message === 'API endpoint unavailable') {

@@ -18,7 +18,7 @@ export default function WhatsAppFlowsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newFlow, setNewFlow] = useState({ name: '', category: 'OTHER' });
+  const [newFlow, setNewFlow] = useState({ name: '', category: 'OTHER', endpointEnabled: false, endpointUri: '' });
 
   // Builder state
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -66,10 +66,11 @@ export default function WhatsAppFlowsPage() {
       const res = await api.post('/whatsapp/flows', {
         name: newFlow.name,
         categories: [newFlow.category],
+        endpointUri: newFlow.endpointEnabled ? newFlow.endpointUri : undefined
       });
       toast.success('Flow created successfully');
       setShowCreateModal(false);
-      setNewFlow({ name: '', category: 'OTHER' });
+      setNewFlow({ name: '', category: 'OTHER', endpointEnabled: false, endpointUri: '' });
       
       if (res.data?.id) {
         setBuilderFlow({ id: res.data.id, name: newFlow.name });
@@ -84,15 +85,16 @@ export default function WhatsAppFlowsPage() {
   };
 
   const handleOpenBuilder = async (flow: any) => {
+    const flowIdentifier = flow.localId || flow.id;
     // Try to load existing canvas data if it exists
     let canvasData = undefined;
     try {
-      const res = await api.get(`/whatsapp/flows/${flow.id}/canvas`);
+      const res = await api.get(`/whatsapp/flows/${flowIdentifier}/canvas`);
       canvasData = res.data;
     } catch {
       // No canvas data yet, builder will start fresh
     }
-    setBuilderFlow({ id: flow.id, name: flow.name, data: canvasData });
+    setBuilderFlow({ id: flowIdentifier, name: flow.name, data: canvasData });
     setBuilderOpen(true);
   };
 
@@ -221,15 +223,22 @@ export default function WhatsAppFlowsPage() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {flows.map((f: any) => (
-                  <div key={f.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all space-y-4">
+                  <div key={f.localId || f.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-semibold text-gray-900">{f.name}</h3>
+                        <div className="space-y-1">
+                          <h3 className="font-semibold text-gray-900">{f.name}</h3>
+                          <div className="flex items-center gap-2">
+                             <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-tight">
+                               {f.categories?.[0] || 'GENERAL'}
+                             </span>
+                          </div>
+                        </div>
                         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${statusTone(f.status)}`}>
                           {f.status || 'Unknown'}
                         </span>
                       </div>
-                      <p className="text-xs font-mono text-gray-400">{f.id}</p>
+                      <p className="text-xs font-mono text-gray-400">Meta ID: {f.metaFlowId || f.remoteId || f.id}</p>
                       <p className="text-xs text-gray-400">Updated {f.updated_at ? new Date(f.updated_at).toLocaleString() : 'recently'}</p>
                     </div>
 
@@ -324,6 +333,34 @@ export default function WhatsAppFlowsPage() {
                             <option value="SIGN_UP">User Sign Up</option>
                             <option value="SIGN_IN">User Sign In</option>
                         </select>
+                    </div>
+
+                    <div className="p-6 rounded-2xl border-2 border-slate-100 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <label className="text-xs font-black text-gray-900 uppercase tracking-tight">Flow Endpoint</label>
+                                <p className="text-[10px] text-gray-400 font-medium lowercase">Use for dynamic data (POST requests)</p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setNewFlow({...newFlow, endpointEnabled: !newFlow.endpointEnabled})}
+                                className={`w-12 h-6 rounded-full relative transition-all ${newFlow.endpointEnabled ? 'bg-blue-600' : 'bg-slate-200'}`}
+                            >
+                                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${newFlow.endpointEnabled ? 'right-1' : 'left-1'}`} />
+                            </button>
+                        </div>
+                        
+                        {newFlow.endpointEnabled && (
+                            <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-1">Endpoint URL (HTTPS)</label>
+                                <input 
+                                    placeholder="https://your-api.com/meta-flow"
+                                    className="w-full h-12 px-4 rounded-xl border-2 border-blue-50 focus:border-blue-500 focus:outline-none font-bold text-slate-700 text-xs"
+                                    value={newFlow.endpointUri}
+                                    onChange={(e) => setNewFlow({...newFlow, endpointUri: e.target.value})}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

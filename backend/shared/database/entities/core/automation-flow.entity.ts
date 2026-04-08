@@ -16,6 +16,9 @@ export enum AutomationStatus {
   ACTIVE = "active",
   INACTIVE = "inactive",
   PAUSED = "paused",
+  PUBLISHED = "PUBLISHED",
+  DRAFT = "DRAFT",
+  DEPRECATED = "DEPRECATED",
 }
 
 export enum ExecutionStatus {
@@ -54,11 +57,17 @@ export class AutomationFlow {
   @Column({ nullable: true })
   lastExecutedAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ name: "remote_id", nullable: true })
   remoteId: string; // Meta Flow ID
 
   @Column({ type: "jsonb", nullable: true })
   categories: string[];
+
+  @Column({ name: "endpoint_uri", nullable: true })
+  endpointUri: string;
+
+  @Column({ name: "is_endpoint_enabled", default: false })
+  isEndpointEnabled: boolean;
 
   @Column({ nullable: true })
   tenantId: string;

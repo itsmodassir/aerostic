@@ -16,6 +16,7 @@ import { AdminConfigService } from "@api/admin/services/admin-config.service";
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
+  private readonly flowJsonVersion = "7.3";
   private readonly allowedFlowCategories = new Set([
     "SIGN_UP",
     "SIGN_IN",
@@ -223,7 +224,8 @@ export class WhatsappService {
         if (!probe.ok) {
           if (this.isMetaTokenError(probe.data)) {
             await this.markSessionInvalid(tenantId);
-            return { connected: false, ...account };
+            const { accessToken: _accessToken, ...safeAccount } = account as any;
+            return { connected: false, ...safeAccount };
           }
         }
       } catch (error) {
@@ -231,7 +233,8 @@ export class WhatsappService {
       }
     }
 
-    return { connected: account.status === "connected", ...account };
+    const { accessToken: _accessToken, ...safeAccount } = account as any;
+    return { connected: account.status === "connected", ...safeAccount };
   }
 
   async getAccountDetails(tenantId: string) {
@@ -313,10 +316,48 @@ export class WhatsappService {
 
     const response = await this.callMetaApi(`https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?fields=id,name,status,updated_at&access_token=${creds.accessToken}`);
     if (!response.ok) throw new BadRequestException(response.data.error?.message || "Failed to fetch flows");
-    return response.data.data || [];
+    const remoteFlows = Array.isArray(response.data.data) ? response.data.data : [];
+    const remoteIds = remoteFlows.map((flow: any) => String(flow.id)).filter(Boolean);
+    const localFlows = remoteIds.length > 0
+      ? await this.automationFlowRepo.find({
+          where: remoteIds.map((remoteId: string) => ({ tenantId, remoteId })),
+        })
+      : [];
+
+    const localByRemoteId = new Map(localFlows.map((flow) => [String(flow.remoteId), flow]));
+    const flowsToCreate = remoteFlows
+      .filter((remoteFlow: any) => !localByRemoteId.has(String(remoteFlow.id)))
+      .map((remoteFlow: any) =>
+        this.automationFlowRepo.create({
+          tenantId,
+          name: remoteFlow.name || `flow_${remoteFlow.id}`,
+          remoteId: String(remoteFlow.id),
+          categories: ["OTHER"],
+          trigger: "whatsapp_flow",
+          status: this.toAutomationStatus(remoteFlow.status),
+          triggerConfig: { canvas: { nodes: [], edges: [] } },
+        }),
+      );
+
+    if (flowsToCreate.length > 0) {
+      const created = await this.automationFlowRepo.save(flowsToCreate);
+      created.forEach((flow: AutomationFlow) => localByRemoteId.set(String(flow.remoteId), flow));
+    }
+
+    return remoteFlows.map((remoteFlow: any) => {
+      const localFlow = localByRemoteId.get(String(remoteFlow.id));
+      return {
+        ...remoteFlow,
+        id: localFlow?.id || String(remoteFlow.id),
+        localId: localFlow?.id || null,
+        metaFlowId: String(remoteFlow.id),
+        remoteId: String(remoteFlow.id),
+        status: remoteFlow.status || localFlow?.status || AutomationStatus.DRAFT,
+      };
+    });
   }
 
-  async createFlow(tenantId: string, name: string, categories: string[], initialCanvas?: any) {
+  async createFlow(tenantId: string, name: string, categories: string[], initialCanvas?: any, endpointUri?: string) {
     const creds = await this.getCredentials(tenantId);
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
@@ -325,7 +366,7 @@ export class WhatsappService {
 
     // Atomic Creation: Prepare flow_json directly
     const flowJson = initialCanvas ? this.generateMetaFlowJson(initialCanvas) : {
-      version: "3.1",
+      version: this.flowJsonVersion,
       screens: [{
         id: "WELCOME_SCREEN",
         title: "Welcome",
@@ -340,16 +381,26 @@ export class WhatsappService {
       }],
     };
 
+    const payload: any = { 
+        name: normalizedName, 
+        categories: normalizedCategories,
+        flow_json: JSON.stringify(flowJson)
+    };
+
+    if (endpointUri) {
+        payload.endpoint_uri = endpointUri;
+        const appId = await this.getMetaConfigValue("meta.app_id", "META_APP_ID");
+        if (appId) {
+          payload.application_id = appId;
+        }
+    }
+
     const result = await this.callMetaApi(
       `https://graph.facebook.com/${apiVersion}/${creds.wabaId}/flows?access_token=${creds.accessToken}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            name: normalizedName, 
-            categories: normalizedCategories,
-            flow_json: JSON.stringify(flowJson)
-        }),
+        body: JSON.stringify(payload),
       },
     );
 
@@ -364,12 +415,20 @@ export class WhatsappService {
       remoteId: result.data.id,
       categories: normalizedCategories,
       trigger: 'whatsapp_flow',
-      status: AutomationStatus.ACTIVE,
+      status: AutomationStatus.DRAFT,
+      endpointUri: endpointUri,
+      isEndpointEnabled: !!endpointUri,
       triggerConfig: { canvas: initialCanvas || { nodes: [], edges: [] } }
     });
     await this.automationFlowRepo.save(newFlow);
 
-    return result.data;
+    return {
+      ...result.data,
+      id: newFlow.id,
+      localId: newFlow.id,
+      metaFlowId: result.data.id,
+      remoteId: result.data.id,
+    };
   }
 
   private normalizeFlowName(name?: string): string {
@@ -393,6 +452,7 @@ export class WhatsappService {
     const creds = await this.getCredentials(tenantId);
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
+    const metaFlowId = await this.resolveMetaFlowId(tenantId, flowId);
 
     // Use Buffer for Node.js compatibility with Meta API
     const fileBuffer = Buffer.from(JSON.stringify(json));
@@ -403,7 +463,7 @@ export class WhatsappService {
     formData.append("name", filename);
     formData.append("asset_type", "FLOW_JSON");
 
-    const url = `https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${creds.accessToken}`;
+    const url = `https://graph.facebook.com/${apiVersion}/${metaFlowId}/assets?access_token=${creds.accessToken}`;
     const response = await fetch(url, {
       method: "POST",
       body: formData,
@@ -453,8 +513,28 @@ export class WhatsappService {
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
 
-    const response = await this.callMetaApi(`https://graph.facebook.com/${apiVersion}/${flowId}?access_token=${creds.accessToken}`, { method: "DELETE" });
-    if (!response.ok) throw new BadRequestException(response.data.error?.message || "Delete failed");
+    // Resolve ID (Meta Flow ID vs Internal UUID)
+    const flow = await this.findFlowRecord(tenantId, flowId);
+    const metaFlowId = flow?.remoteId || flowId;
+
+    // 1. Delete from Meta
+    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${metaFlowId}?access_token=${creds.accessToken}`, { method: "DELETE" });
+    const data = await response.json();
+    
+    if (!response.ok) {
+        // If meta says not found, we still want to clean up locally
+        if (response.status !== 404) {
+             throw new BadRequestException(data.error?.message || "Delete from Meta failed");
+        }
+    }
+
+    // 2. Delete from Local DB
+    if (flow) {
+      await this.automationFlowRepo.delete({ id: flow.id, tenantId });
+    } else {
+      await this.automationFlowRepo.delete({ remoteId: metaFlowId, tenantId });
+    }
+    
     return { success: true };
   }
 
@@ -463,13 +543,33 @@ export class WhatsappService {
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
 
-    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${flowId}/publish?access_token=${creds.accessToken}`, { method: "POST" });
+    const flow = await this.findOrCreateFlowRecord(tenantId, flowId);
+    const metaFlowId = flow.remoteId || await this.resolveMetaFlowId(tenantId, flowId);
+
+    if (flow.triggerConfig?.canvas) {
+      const flowJson = this.generateMetaFlowJson(flow.triggerConfig.canvas);
+      await this.uploadFlowAsset(tenantId, flow.id, "flow.json", flowJson);
+    }
+
+    this.logger.log(`Publishing Meta Flow ${metaFlowId} (Internal ID: ${flowId})`);
+
+    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${metaFlowId}/publish?access_token=${creds.accessToken}`, { method: "POST" });
     const data = await response.json();
     
     if (!response.ok) {
-      this.logger.error(`Meta Flow Publish Failed for ${flowId}:`, JSON.stringify(data));
-      throw new BadRequestException(data.error?.message || "Publish failed. Check flow structure and IDs.");
+      this.logger.error(`Meta Flow Publish Failed for ${metaFlowId}:`, JSON.stringify(data));
+      const publishMessage =
+        data.error?.error_user_msg ||
+        data.error?.message ||
+        "Publish failed. Check flow structure and Meta status.";
+      throw new BadRequestException(publishMessage);
     }
+
+    // Update status locally
+    await this.automationFlowRepo.update(
+      { id: flow.id, tenantId },
+      { status: AutomationStatus.PUBLISHED },
+    );
     
     return { success: true };
   }
@@ -478,8 +578,9 @@ export class WhatsappService {
     const creds = await this.getCredentials(tenantId);
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
+    const metaFlowId = await this.resolveMetaFlowId(tenantId, flowId);
 
-    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${flowId}/deprecate?access_token=${creds.accessToken}`, { method: "POST" });
+    const response = await fetch(`https://graph.facebook.com/${apiVersion}/${metaFlowId}/deprecate?access_token=${creds.accessToken}`, { method: "POST" });
     const data = await response.json();
 
     if (!response.ok) {
@@ -495,8 +596,9 @@ export class WhatsappService {
     const creds = await this.getCredentials(tenantId);
     if (!creds) throw new BadRequestException("Account not connected");
     const apiVersion = await this.getApiVersion();
+    const metaFlowId = await this.resolveMetaFlowId(tenantId, flowId);
 
-    const res = await fetch(`https://graph.facebook.com/${apiVersion}/${flowId}/assets?access_token=${creds.accessToken}`);
+    const res = await fetch(`https://graph.facebook.com/${apiVersion}/${metaFlowId}/assets?access_token=${creds.accessToken}`);
     const data = await res.json();
     if (!res.ok || !data.data?.[0]) throw new BadRequestException("No assets found");
 
@@ -629,37 +731,26 @@ export class WhatsappService {
   // ─── Flow Canvas Persistence ───────────────────────────────────────────────
 
   async saveFlowCanvas(tenantId: string, flowId: string, payload: { name: string; flowData: any }) {
-    let flow = await this.automationFlowRepo.findOne({ where: { remoteId: flowId, tenantId } });
-    
-    if (!flow) {
-      // Fallback: search by ID if it's our internal UUID
-      flow = await this.automationFlowRepo.findOne({ where: { id: flowId, tenantId } });
-    }
-
-    if (!flow) throw new BadRequestException("Flow record not found");
+    const flow = await this.findOrCreateFlowRecord(tenantId, flowId);
 
     flow.name = payload.name;
     flow.triggerConfig = { ...flow.triggerConfig, canvas: payload.flowData };
+    flow.status = AutomationStatus.DRAFT;
     
     // Also update Meta flow.json via logic
     try {
        const flowJson = this.generateMetaFlowJson(payload.flowData);
-       await this.uploadFlowAsset(tenantId, flowId, "flow.json", flowJson);
+       await this.uploadFlowAsset(tenantId, flow.id, "flow.json", flowJson);
     } catch (err) {
        this.logger.error("Failed to auto-upload flow.json asset on save", err);
     }
 
     await this.automationFlowRepo.save(flow);
-    return { success: true };
+    return { success: true, id: flow.id, metaFlowId: flow.remoteId };
   }
 
   async getFlowCanvas(tenantId: string, flowId: string) {
-    const flow = await this.automationFlowRepo.findOne({ 
-      where: [
-        { remoteId: flowId, tenantId },
-        { id: flowId, tenantId }
-      ]
-    });
+    const flow = await this.findFlowRecord(tenantId, flowId);
     if (!flow) throw new BadRequestException("Flow not found");
     return flow.triggerConfig?.canvas || { nodes: [], edges: [] };
   }
@@ -667,90 +758,251 @@ export class WhatsappService {
   private generateMetaFlowJson(canvas: any) {
     const nodes = canvas?.nodes || [];
     const edges = canvas?.edges || [];
-    
-    if (nodes.length === 0) {
+
+    const supportedNodeTypes = new Set(["wa_text", "wa_question", "wa_mcq", "wa_link"]);
+    const contentNodes = nodes.filter(
+      (node: any) => node?.type && node.type !== "wa_start" && node.type !== "wa_end",
+    );
+
+    if (contentNodes.length === 0) {
       return {
-        version: "3.1",
+        version: this.flowJsonVersion,
         screens: [{
           id: "WELCOME_SCREEN",
           title: "Welcome",
           terminal: true,
           layout: {
             type: "SingleColumnLayout",
-            children: [{ type: "TextHeading", text: "Welcome" }]
+            children: [
+              { type: "TextHeading", text: "Welcome" },
+              {
+                type: "Footer",
+                label: "Complete",
+                "on-click-action": {
+                  name: "complete",
+                  payload: { status: "done" },
+                },
+              },
+            ],
           }
         }]
       };
     }
 
-    const screens = nodes.map((node: any) => {
+    const unsupported = contentNodes.filter((node: any) => !supportedNodeTypes.has(node.type));
+    if (unsupported.length > 0) {
+      const labels = unsupported
+        .map((node: any) => String(node?.data?.label || node?.type || "Unknown"))
+        .slice(0, 5)
+        .join(", ");
+      throw new BadRequestException(
+        `This flow uses builder nodes that cannot be published to Meta yet: ${labels}. Supported Meta nodes right now: Text Message, Question, Multiple Choice.`,
+      );
+    }
+
+    const screenIdByNodeId = new Map<string, string>();
+    contentNodes.forEach((node: any, index: number) => {
+      const screenId =
+        contentNodes.length === 1
+          ? "WELCOME_SCREEN"
+          : this.toMetaFlowScreenId(node.id, index);
+      screenIdByNodeId.set(node.id, screenId);
+    });
+
+    const routingModel: Record<string, string[]> = {};
+
+    const screens = contentNodes.map((node: any, index: number) => {
       const data = node.data || {};
-      const children: any[] = [];
+      const screenChildren: any[] = [];
+      const formChildren: any[] = [];
+      const screenId = screenIdByNodeId.get(node.id) || this.toMetaFlowScreenId(node.id, index);
+      const questionLabel = String(data.questionLabel || data.label || "Your Response").slice(0, 35);
 
       // Map components based on node type
-      if (node.type === 'wa_text') {
-        children.push({ type: "TextBody", text: data.text || "Hello" });
-      } else if (node.type === 'wa_question') {
-        children.push({ type: "TextBody", text: data.questionText || "Please answer:" });
-        children.push({
+      if (node.type === "wa_text") {
+        screenChildren.push({ type: "TextBody", text: data.text || "Hello" });
+      } else if (node.type === "wa_link") {
+        const linkTitle = data.linkTitle || "Visit Link";
+        const linkUrl = data.linkUrl || "https://";
+        screenChildren.push({ type: "TextBody", text: `🔗 *${linkTitle}*\n${linkUrl}` });
+      } else if (node.type === "wa_question") {
+        screenChildren.push({ type: "TextBody", text: data.questionText || "Please answer:" });
+        formChildren.push({
           type: "TextInput",
-          label: "Your Response",
-          name: data.questionSaveAs || "response",
-          required: true
+          label: questionLabel,
+          name: this.toMetaFlowFieldName(data.questionSaveAs || "response"),
+          required: true,
         });
-      } else if (node.type === 'wa_mcq') {
-        children.push({ type: "TextBody", text: data.mcqBody || "Select an option:" });
-        children.push({
-          type: "RadioButtons",
-          label: "Options",
-          name: "mcq_selection",
-          options: (data.mcqOptions || []).map((o: any) => ({
-            id: o.id,
-            title: o.title
+      } else if (node.type === "wa_mcq") {
+        const options = (data.mcqOptions || [])
+          .map((o: any, optionIndex: number) => ({
+            id: this.toMetaFlowOptionId(o?.id || o?.title || `option_${optionIndex + 1}`),
+            title: String(o?.title || `Option ${optionIndex + 1}`).slice(0, 200),
           }))
+          .filter((option: any) => option.title);
+
+        screenChildren.push({ type: "TextBody", text: data.mcqBody || "Select an option:" });
+        formChildren.push({
+          type: "RadioButtonsGroup",
+          label: String(data.mcqLabel || "Options").slice(0, 35),
+          name: this.toMetaFlowFieldName(`mcq_${node.id}`),
+          "data-source": options,
+          required: true,
         });
       }
 
-      // Handle next screen navigation based on edges
+      if (screenChildren.length === 0 && formChildren.length === 0) {
+        screenChildren.push({
+          type: "TextBody",
+          text: String(data.text || data.label || "Continue"),
+        });
+      }
+
+      // Meta screens can only route to other publishable content screens.
       const outboundEdges = edges.filter((e: any) => e.source === node.id);
-      const isTerminal = outboundEdges.length === 0 || node.type === 'wa_end';
+      const nextTargets = outboundEdges
+        .map((edge: any) => edge.target)
+        .map((targetId: string) => screenIdByNodeId.get(targetId))
+        .filter((targetId: string | undefined): targetId is string => Boolean(targetId));
+      const isTerminal = nextTargets.length === 0;
+      if (nextTargets.length > 0) {
+        routingModel[screenId] = nextTargets;
+      }
 
       const footer: any = {
         type: "Footer",
-        label: isTerminal ? "Complete" : "Next"
+        label: isTerminal ? "Complete" : "Next",
       };
 
       if (isTerminal) {
         footer["on-click-action"] = {
           name: "complete",
-          payload: { status: "success" }
+          payload: { status: "done" },
         };
       } else {
-        // Multi-choice handling usually goes into specific button actions, 
-        // but for a simple linear flow we take the first edge.
-        const nextNodeId = outboundEdges[0].target;
         footer["on-click-action"] = {
           name: "navigate",
-          next_screen: nextNodeId
+          next: {
+            type: "screen",
+            name: nextTargets[0],
+          },
         };
       }
 
-      children.push(footer);
+      if (formChildren.length > 0) {
+        formChildren.push(footer);
+        screenChildren.push({
+          type: "Form",
+          name: this.toMetaFlowFieldName(`form_${node.id}`),
+          children: formChildren,
+        });
+      } else {
+        screenChildren.push(footer);
+      }
 
       return {
-        id: node.id,
+        id: screenId,
         title: (data.label || "Screen").slice(0, 20),
         terminal: isTerminal,
         layout: {
           type: "SingleColumnLayout",
-          children
-        }
+          children: screenChildren,
+        },
       };
     });
 
-    return {
-      version: "3.1",
+    const flowJson: Record<string, any> = {
+      version: this.flowJsonVersion,
       screens
     };
+
+    if (Object.keys(routingModel).length > 0) {
+      flowJson.routing_model = routingModel;
+    }
+
+    return flowJson;
+  }
+
+  private toMetaFlowScreenId(rawId: string, index: number): string {
+    const normalized = String(rawId || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    const candidate = normalized ? `SCREEN_${normalized}` : `SCREEN_${index + 1}`;
+    return candidate.slice(0, 80);
+  }
+
+  private toMetaFlowFieldName(rawName: string): string {
+    const normalized = String(rawName || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    return (normalized || "response").slice(0, 40);
+  }
+
+  private toMetaFlowOptionId(rawId: string): string {
+    const normalized = String(rawId || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    return (normalized || "OPTION").slice(0, 80);
+  }
+
+  private async resolveMetaFlowId(tenantId: string, flowId: string) {
+    if (!this.isUuidLike(flowId)) {
+      return flowId;
+    }
+
+    const flow = await this.automationFlowRepo.findOne({ where: { id: flowId, tenantId } });
+    if (!flow?.remoteId) {
+      throw new BadRequestException("Flow not yet initialized on Meta. Save it first.");
+    }
+
+    return flow.remoteId;
+  }
+
+  private isUuidLike(value?: string | null): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
+  }
+
+  private toAutomationStatus(status?: string | null): AutomationStatus {
+    const normalized = String(status || "").toUpperCase();
+    if (normalized === "PUBLISHED") return AutomationStatus.PUBLISHED;
+    if (normalized === "DEPRECATED") return AutomationStatus.DEPRECATED;
+    return AutomationStatus.DRAFT;
+  }
+
+  private async findFlowRecord(tenantId: string, flowId: string) {
+    if (this.isUuidLike(flowId)) {
+      return this.automationFlowRepo.findOne({ where: { id: flowId, tenantId } });
+    }
+
+    return this.automationFlowRepo.findOne({ where: { remoteId: flowId, tenantId } });
+  }
+
+  private async findOrCreateFlowRecord(tenantId: string, flowId: string) {
+    const existing = await this.findFlowRecord(tenantId, flowId);
+    if (existing) {
+      return existing;
+    }
+
+    if (this.isUuidLike(flowId)) {
+      throw new BadRequestException("Flow record not found");
+    }
+
+    const created = this.automationFlowRepo.create({
+      tenantId,
+      name: `flow_${flowId}`,
+      remoteId: flowId,
+      categories: ["OTHER"],
+      trigger: "whatsapp_flow",
+      status: AutomationStatus.DRAFT,
+      triggerConfig: { canvas: { nodes: [], edges: [] } },
+    });
+
+    return this.automationFlowRepo.save(created);
   }
 }

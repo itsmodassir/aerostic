@@ -39,6 +39,7 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, onRetry }) => {
     const isOut = message.direction === 'out';
     const isFailed = message.status === 'failed';
+    const failureLabel = message.error?.trim() || 'Send failed';
     
     const formatMessageTime = (dateStr: string) => {
         return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -212,7 +213,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                         <div className="flex items-center gap-2 animate-in slide-in-from-right-2">
                              <div className="flex items-center gap-1 text-[9px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
                                  <AlertCircle size={10} /> 
-                                 Delivery Blocked
+                                 {failureLabel}
                              </div>
                              <button 
                                 onClick={() => onRetry?.(message)}

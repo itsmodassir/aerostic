@@ -9,6 +9,7 @@ import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
 import { WhatsappService } from "./whatsapp.service";
 import { WebhooksService } from "./webhooks.service";
 import { AiModule } from "../../api-service/ai/ai.module";
+import { MessagesModule } from "../../api-service/messages/messages.module";
 import {
   AutomationFlow,
   AutomationNode,
@@ -32,6 +33,7 @@ import {
       AutomationExecutionLog,
     ]),
     forwardRef(() => AiModule),
+    forwardRef(() => MessagesModule),
     BullModule.registerQueue({
       name: "whatsapp-messages",
     }),

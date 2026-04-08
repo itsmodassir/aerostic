@@ -92,17 +92,21 @@ export class AiService {
       const creditCost = this.getModelCost(preferredModel);
 
       // 0. Credit Check & Deduction
-      await this.walletService.processTransaction(
-        tenantId,
-        WalletAccountType.AI_CREDITS,
-        creditCost,
-        TransactionType.DEBIT,
-        {
-          referenceType: "AI_MESSAGE",
-          referenceId: from,
-          description: `AI Response (${preferredModel}) to ${from}`,
-        },
-      );
+      try {
+        await this.walletService.processTransaction(
+          tenantId,
+          WalletAccountType.AI_CREDITS,
+          creditCost,
+          TransactionType.DEBIT,
+          {
+            referenceType: "AI_MESSAGE",
+            referenceId: from,
+            description: `AI Response (${preferredModel}) to ${from}`,
+          },
+        );
+      } catch (walletError) {
+        this.logger.warn(`AI credit debit skipped for tenant ${tenantId}; continuing reply generation.`, walletError);
+      }
 
       const systemPrompt =
         options?.systemPrompt ||
@@ -274,17 +278,21 @@ export class AiService {
       const creditCost = this.getModelCost(preferredModel);
 
       // 0. Credit Check & Deduction (Agent Execution)
-      await this.walletService.processTransaction(
-        tenantId,
-        WalletAccountType.AI_CREDITS,
-        creditCost,
-        TransactionType.DEBIT,
-        {
-          referenceType: "AI_AGENT_START",
-          referenceId: tenantId,
-          description: `Agent Execution (${preferredModel}): ${messageBody.substring(0, 50)}...`,
-        },
-      );
+      try {
+        await this.walletService.processTransaction(
+          tenantId,
+          WalletAccountType.AI_CREDITS,
+          creditCost,
+          TransactionType.DEBIT,
+          {
+            referenceType: "AI_AGENT_START",
+            referenceId: tenantId,
+            description: `Agent Execution (${preferredModel}): ${messageBody.substring(0, 50)}...`,
+          },
+        );
+      } catch (walletError) {
+        this.logger.warn(`AI agent credit debit skipped for tenant ${tenantId}; continuing execution.`, walletError);
+      }
 
       if (openai) {
         let turns = 0;

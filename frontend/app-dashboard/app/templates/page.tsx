@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import ProfessionalBuilder from './components/ProfessionalBuilder';
 
 interface Template {
   id: string; name: string; language: string;
@@ -130,149 +131,15 @@ export default function TemplatesPage() {
         </CardContent>
       </Card>
 
-      {/* New Template Modal */}
+      {/* New Template Builder (Professional) */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <CardHeader className="px-8 pt-8 border-b border-gray-50 pb-6">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-2xl font-bold">Create Template</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setShowCreateModal(false)} className="rounded-full"><Plus className="rotate-45" /></Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Template Name</label>
-                  <Input 
-                    placeholder="e.g. summer_sale_announce" 
-                    value={newTemplate.name}
-                    onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
-                    className="h-12 rounded-xl"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Category</label>
-                    <select 
-                      className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white font-medium text-sm outline-none"
-                      value={newTemplate.category}
-                      onChange={(e) => setNewTemplate({...newTemplate, category: e.target.value})}
-                    >
-                      <option value="MARKETING">Marketing</option>
-                      <option value="UTILITY">Utility</option>
-                      <option value="AUTHENTICATION">Authentication</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Language</label>
-                    <select 
-                      className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white font-medium text-sm outline-none"
-                      value={newTemplate.language}
-                      onChange={(e) => setNewTemplate({...newTemplate, language: e.target.value})}
-                    >
-                      <option value="en_US">English (US)</option>
-                      <option value="hi_IN">Hindi</option>
-                      <option value="pt_BR">Portuguese (BR)</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Message Body</label>
-                  <textarea 
-                    placeholder="Hello {{1}}, welcome to our store!"
-                    className="w-full h-32 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm resize-none"
-                    value={newTemplate.components[0].text}
-                    onChange={(e) => {
-                      const comps = [...newTemplate.components];
-                      comps[0].text = e.target.value;
-                      setNewTemplate({...newTemplate, components: comps});
-                    }}
-                  />
-                  <p className="text-[10px] text-gray-400 font-medium">Use {"{{1}}"}, {"{{2}}"} etc. for dynamic variables.</p>
-                </div>
-
-                <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className={`h-4 w-4 ${useFlow ? 'text-amber-500' : 'text-gray-400'}`} />
-                    <span className="text-sm font-semibold text-gray-700">Add Flow Button</span>
-                  </div>
-                  <button 
-                    onClick={() => setUseFlow(!useFlow)}
-                    className={`w-10 h-5 rounded-full transition-all relative ${useFlow ? 'bg-amber-500' : 'bg-gray-200'}`}
-                  >
-                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${useFlow ? 'right-1' : 'left-1'}`} />
-                  </button>
-                </div>
-
-                {useFlow && (
-                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Select Flow</label>
-                      <select 
-                        className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-white font-medium text-sm outline-none"
-                        value={selectedFlowId}
-                        onChange={(e) => setSelectedFlowId(e.target.value)}
-                      >
-                        <option value="">Choose a flow...</option>
-                        {flows.map(f => (
-                          <option key={f.id} value={f.id}>{f.name} ({f.status})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Button Text</label>
-                      <Input 
-                        placeholder="e.g. Open Survey" 
-                        value={buttonText}
-                        onChange={(e) => setButtonText(e.target.value.slice(0, 25))}
-                        className="h-11 rounded-xl"
-                      />
-                      <p className="text-[10px] text-gray-400">Max 25 characters.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <Button 
-                className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-100"
-                disabled={!newTemplate.name || !newTemplate.components[0].text || creating}
-                onClick={async () => {
-                  try {
-                    setCreating(true);
-                    
-                    const templateData = { ...newTemplate };
-                    if (useFlow && selectedFlowId) {
-                      templateData.components.push({
-                        type: 'BUTTONS',
-                        buttons: [
-                          {
-                            type: 'FLOW',
-                            text: buttonText,
-                            flow_id: selectedFlowId,
-                            flow_action: 'navigate',
-                            navigate_screen: 'WELCOME_SCREEN'
-                          }
-                        ]
-                      });
-                    }
-
-                    await api.post('/templates', templateData);
-                    toast.success('Template submitted for approval');
-                    setShowCreateModal(false);
-                    fetch();
-                  } catch (err: any) {
-                    toast.error(err.response?.data?.message || 'Failed to create template');
-                  } finally {
-                    setCreating(false);
-                  }
-                }}
-              >
-                {creating ? <RefreshCw className="animate-spin mr-2" /> : <Plus className="mr-2" />}
-                Submit to Meta
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <ProfessionalBuilder 
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            fetch();
+            setShowCreateModal(false);
+          }}
+        />
       )}
     </div>
   );

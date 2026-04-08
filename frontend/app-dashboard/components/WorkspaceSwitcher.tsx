@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { ChevronDown, Plus, Check, Building2, LogOut, Crown } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { persistWorkspaceMemberships, setActiveWorkspaceContext } from '@/lib/workspace-context';
+import { loadWorkspaces } from '@/lib/dashboard-bootstrap';
 
 interface Workspace {
     id: string;
@@ -29,17 +31,15 @@ export const WorkspaceSwitcher = memo(function WorkspaceSwitcher({ isCollapsed }
     useEffect(() => {
         const fetchWorkspaces = async () => {
             try {
-                const response = await fetch('/api/v1/auth/workspaces', { credentials: 'include' });
-                if (response.ok) {
-                    const data = await response.json();
-                    const flatWorkspaces = (Array.isArray(data) ? data : []).map((w: any) => ({
-                        id: w.tenant?.id || w.id,
-                        name: w.tenant?.name || w.name,
-                        slug: w.tenant?.slug || w.slug,
-                        role: w.role
-                    }));
-                    setWorkspaces(flatWorkspaces);
-                }
+                const data = await loadWorkspaces();
+                persistWorkspaceMemberships(data);
+                const flatWorkspaces = (Array.isArray(data) ? data : []).map((w: any) => ({
+                    id: w.tenant?.id || w.id,
+                    name: w.tenant?.name || w.name,
+                    slug: w.tenant?.slug || w.slug,
+                    role: w.role
+                }));
+                setWorkspaces(flatWorkspaces);
             } catch (error) {
                 console.error('Failed to fetch workspaces:', error);
             } finally {
@@ -54,9 +54,7 @@ export const WorkspaceSwitcher = memo(function WorkspaceSwitcher({ isCollapsed }
     , [workspaces, currentWorkspaceId]);
 
     const switchWorkspace = (workspace: Workspace) => {
-        localStorage.setItem('x-tenant-id', workspace.id);
-        localStorage.setItem('selected_tenant_id', workspace.id);
-        document.cookie = `selected_tenant=${workspace.slug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+        setActiveWorkspaceContext({ id: workspace.id, slug: workspace.slug });
         router.push(`/dashboard/${workspace.slug}`);
         setOpen(false);
     };

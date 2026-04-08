@@ -123,6 +123,9 @@ cp -r .next/static .next/standalone/frontend/admin-panel/.next/
 mkdir -p static_runtime
 cp -r .next/static/. static_runtime/
 sudo chmod -R 755 static_runtime/
+mkdir -p .next/standalone/.next
+rm -rf .next/standalone/.next/static
+cp -r .next/static .next/standalone/.next/static
 cd ../..
 
 # 5. Restart Infrastructure (Docker)
@@ -147,15 +150,26 @@ sudo pm2 delete aimstors-webhook || true
 sudo pm2 delete aimstors-worker || true
 sudo pm2 delete aimstors-frontend || true
 sudo pm2 delete aimstors-admin || true
+sudo pm2 delete aimstors-dashboard || true
+sudo pm2 delete aimstors-reseller || true
 
-# Backend
-sudo pm2 start backend/dist/api-service/main.js --name aimstors-api
-sudo pm2 start backend/dist/webhook-service/main.js --name aimstors-webhook
-sudo pm2 start backend/dist/worker-service/main.js --name aimstors-worker
+# Build standalone assets for reseller panel
+echo "🎛️ Building Reseller Panel..."
+cd frontend/reseller-panel
+npm install
+npm run build
+mkdir -p .next/standalone/frontend/reseller-panel
+[ -d "public" ] && cp -r public .next/standalone/frontend/reseller-panel/ || echo "No public folder for reseller-panel"
+mkdir -p static_runtime
+cp -r .next/static/. static_runtime/
+sudo chmod -R 755 static_runtime/
+mkdir -p .next/standalone/.next
+rm -rf .next/standalone/.next/static
+cp -r .next/static .next/standalone/.next/static
+cd ../..
 
-# Frontends
-sudo PORT=3000 pm2 start frontend/app-dashboard/.next/standalone/server.js --name aimstors-frontend
-sudo PORT=3002 pm2 start frontend/admin-panel/.next/standalone/server.js --name aimstors-admin
+# Process manager
+sudo pm2 startOrReload ecosystem.config.js --update-env
 
 sudo pm2 save
 

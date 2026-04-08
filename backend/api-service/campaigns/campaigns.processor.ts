@@ -30,9 +30,24 @@ export class CampaignProcessor extends WorkerHost {
       // Update stats (Naive approach: DB write per message.
       // Better: Redis increment then bulk update, but keeping simple for MVP)
       await this.campaignRepo.increment({ id: campaignId }, "sentCount", 1);
+      await this.refreshCampaignStatus(campaignId);
     } catch (e) {
       console.error(`Failed to send campaign msg to ${to}`, e);
       await this.campaignRepo.increment({ id: campaignId }, "failedCount", 1);
+      await this.refreshCampaignStatus(campaignId);
     }
+  }
+
+  private async refreshCampaignStatus(campaignId: string) {
+    const campaign = await this.campaignRepo.findOneBy({ id: campaignId });
+    if (!campaign || !campaign.totalContacts) return;
+
+    const processedCount = (campaign.sentCount || 0) + (campaign.failedCount || 0);
+    if (processedCount < campaign.totalContacts) {
+      return;
+    }
+
+    campaign.status = campaign.sentCount > 0 ? "completed" : "failed";
+    await this.campaignRepo.save(campaign);
   }
 }

@@ -11,7 +11,7 @@ import {
 } from "typeorm";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { User } from "@shared/database/entities/core/user.entity";
-import { WhatsappAccount } from "../../../whatsapp/entities/whatsapp-account.entity";
+import { WhatsappAccount } from "@shared/whatsapp/entities/whatsapp-account.entity";
 import { FlowNode } from "./flow-node.entity";
 import { FlowEdge } from "./flow-edge.entity";
 import { FlowExecution } from "./flow-execution.entity";

@@ -130,16 +130,36 @@ export class TemplatesService {
 
   private normalizeComponents(components: any[]) {
     return components.map((component) => {
+      if (component.type === "HEADER") {
+        if (component.format === "TEXT") {
+          const matches = component.text.match(/\{\{\d+\}\}/g) || [];
+          if (matches.length > 0) {
+            return {
+              type: "HEADER",
+              format: "TEXT",
+              text: component.text,
+              example: { header_text: ["Sample"] },
+            };
+          }
+          return { type: "HEADER", format: "TEXT", text: component.text };
+        } else {
+          // Media Header: IMAGE, VIDEO, DOCUMENT
+          return {
+            type: "HEADER",
+            format: component.format,
+            example: { header_handle: ["45678"] }, // Dummy handle for review
+          };
+        }
+      }
+
       if (component.type === "BODY") {
-        // detect variables {{1}}, {{2}}, etc.
         const matches = component.text.match(/\{\{\d+\}\}/g) || [];
         const variableCount = matches.length;
 
         if (variableCount > 0) {
-          // generate example array dynamically
           const exampleValues = Array(variableCount)
             .fill(0)
-            .map((_, i) => (i === 0 ? "123456" : `example${i + 1}`));
+            .map((_, i) => (i === 0 ? "John" : "Sample"));
 
           return {
             type: "BODY",
@@ -151,20 +171,30 @@ export class TemplatesService {
         }
       }
 
+      if (component.type === "FOOTER") {
+        return { type: "FOOTER", text: component.text };
+      }
+
       if (component.type === "BUTTONS") {
         return {
           type: "BUTTONS",
           buttons: component.buttons.map((btn: any) => {
-            if (btn.type === "FLOW") {
-              return {
-                type: "FLOW",
-                text: btn.text,
-                flow_id: btn.flow_id,
-                flow_action: btn.flow_action || "navigate",
-                navigate_screen: btn.navigate_screen || "WELCOME_SCREEN",
-              };
+            const baseBtn: any = { type: btn.type, text: btn.text };
+            if (btn.type === "PHONE_NUMBER") {
+              baseBtn.phone_number = btn.phone_number;
+            } else if (btn.type === "URL") {
+              baseBtn.url = btn.url;
+              if (btn.url.includes("{{1}}")) {
+                baseBtn.example = ["https://example.com/user"];
+              }
+            } else if (btn.type === "FLOW") {
+              baseBtn.flow_id = btn.flow_id;
+              baseBtn.flow_action = btn.flow_action || "navigate";
+              baseBtn.navigate_screen = btn.navigate_screen || "WELCOME_SCREEN";
+            } else if (btn.type === "COPY_CODE") {
+               baseBtn.example = btn.example || "123456";
             }
-            return btn;
+            return baseBtn;
           }),
         };
       }

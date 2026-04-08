@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bot, BrainCircuit, CheckCircle2, Loader2, Plus, Save } from 'lucide-react';
+import { Bot, BrainCircuit, CheckCircle2, Loader2, Pencil, Plus, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,18 @@ export default function AiAgentsPage() {
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [createName, setCreateName] = useState('');
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
+  const [editingAgentName, setEditingAgentName] = useState('');
+  const [editingAgentDescription, setEditingAgentDescription] = useState('');
+  const [savingAgentId, setSavingAgentId] = useState<string | null>(null);
+  const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       const [agentsRes, configRes] = await Promise.all([
         api.get('/agents'),
@@ -42,6 +49,7 @@ export default function AiAgentsPage() {
   const saveCoreAgent = async () => {
     setSaving(true);
     setError('');
+    setSuccess('');
     try {
       await api.post('/ai/agent', {
         systemPrompt: agentConfig?.systemPrompt || '',
@@ -50,6 +58,7 @@ export default function AiAgentsPage() {
         personalizationEnabled: agentConfig?.personalizationEnabled ?? false,
         webSearchEnabled: agentConfig?.webSearchEnabled ?? false,
       });
+      setSuccess('AI assistant settings saved.');
       await load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save AI agent configuration');
@@ -62,6 +71,7 @@ export default function AiAgentsPage() {
     if (!createName.trim()) return;
     setCreating(true);
     setError('');
+    setSuccess('');
     try {
       await api.post('/agents', {
         name: createName.trim(),
@@ -69,11 +79,61 @@ export default function AiAgentsPage() {
         isActive: true,
       });
       setCreateName('');
+      setSuccess('Custom agent created.');
       await load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create AI agent');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const startEditAgent = (agent: any) => {
+    setEditingAgentId(agent.id);
+    setEditingAgentName(agent.name || '');
+    setEditingAgentDescription(agent.description || '');
+    setError('');
+    setSuccess('');
+  };
+
+  const saveAgent = async () => {
+    if (!editingAgentId || !editingAgentName.trim()) return;
+    setSavingAgentId(editingAgentId);
+    setError('');
+    setSuccess('');
+    try {
+      await api.patch(`/agents/${editingAgentId}`, {
+        name: editingAgentName.trim(),
+        description: editingAgentDescription.trim() || null,
+      });
+      setSuccess('Custom agent updated.');
+      setEditingAgentId(null);
+      setEditingAgentName('');
+      setEditingAgentDescription('');
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update AI agent');
+    } finally {
+      setSavingAgentId(null);
+    }
+  };
+
+  const deleteAgent = async (agent: any) => {
+    if (!window.confirm(`Delete custom agent "${agent.name}"?`)) return;
+    setDeletingAgentId(agent.id);
+    setError('');
+    setSuccess('');
+    try {
+      await api.delete(`/agents/${agent.id}`);
+      setSuccess('Custom agent deleted.');
+      if (editingAgentId === agent.id) {
+        setEditingAgentId(null);
+      }
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete AI agent');
+    } finally {
+      setDeletingAgentId(null);
     }
   };
 
@@ -95,6 +155,9 @@ export default function AiAgentsPage() {
 
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      ) : null}
+      {success ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">{success}</div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
@@ -192,13 +255,54 @@ export default function AiAgentsPage() {
                 {agents.map((agent) => (
                   <div key={agent.id} className="rounded-2xl border border-gray-100 p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-gray-900">{agent.name || 'Unnamed Agent'}</p>
-                        <p className="text-xs text-gray-500 mt-1">{agent.description || 'No description'}</p>
+                      <div className="flex-1 min-w-0">
+                        {editingAgentId === agent.id ? (
+                          <div className="space-y-3">
+                            <Input
+                              value={editingAgentName}
+                              onChange={(e) => setEditingAgentName(e.target.value)}
+                              placeholder="Agent name"
+                            />
+                            <Textarea
+                              value={editingAgentDescription}
+                              onChange={(e) => setEditingAgentDescription(e.target.value)}
+                              placeholder="Description"
+                              className="min-h-[100px]"
+                            />
+                            <div className="flex gap-2">
+                              <Button onClick={saveAgent} disabled={savingAgentId === agent.id || !editingAgentName.trim()} className="rounded-xl">
+                                {savingAgentId === agent.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                                Save
+                              </Button>
+                              <Button variant="outline" className="rounded-xl" onClick={() => setEditingAgentId(null)}>
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-semibold text-gray-900">{agent.name || 'Unnamed Agent'}</p>
+                            <p className="text-xs text-gray-500 mt-1">{agent.description || 'No description'}</p>
+                          </>
+                        )}
                       </div>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${agent.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {agent.isActive ? 'Active' : 'Inactive'}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${agent.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {agent.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        <Button variant="outline" size="sm" className="rounded-xl" onClick={() => startEditAgent(agent)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl text-red-600 hover:text-red-700"
+                          disabled={deletingAgentId === agent.id}
+                          onClick={() => void deleteAgent(agent)}
+                        >
+                          {deletingAgentId === agent.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

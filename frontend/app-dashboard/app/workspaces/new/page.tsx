@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, ArrowRight, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
+import { setActiveWorkspaceContext } from '@/lib/workspace-context';
 
 export default function NewWorkspacePage() {
     const [name, setName] = useState('');
@@ -19,15 +20,7 @@ export default function NewWorkspacePage() {
             const res = await api.post('/tenants', { name });
             const newWorkspaceId = res.data?.id;
             const newWorkspaceSlug = res.data?.slug;
-
-            if (newWorkspaceId) {
-                localStorage.setItem('x-tenant-id', newWorkspaceId);
-                localStorage.setItem('selected_tenant_id', newWorkspaceId);
-            }
-
-            if (newWorkspaceSlug) {
-                document.cookie = `selected_tenant=${encodeURIComponent(newWorkspaceSlug)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
-            }
+            setActiveWorkspaceContext({ id: newWorkspaceId, slug: newWorkspaceSlug });
 
             const targetWorkspace = newWorkspaceSlug || newWorkspaceId;
             if (targetWorkspace) {

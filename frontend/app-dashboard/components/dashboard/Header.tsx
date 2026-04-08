@@ -53,9 +53,6 @@ const Header = memo(function Header({ user, isAdmin, logout }: { user: any, isAd
                     >
                         <Menu className="w-6 h-6" />
                     </button>
-                    <h2 className="text-base md:text-lg font-bold text-gray-900 capitalize truncate max-w-[200px] sm:max-w-none">
-                        {pathname.split('/').filter(Boolean).at(-1)?.replace(/-/g, ' ') || 'Overview'}
-                    </h2>
                 </div>
             </div>
 

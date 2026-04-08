@@ -1,18 +1,20 @@
-import api from './api';
+import { loadWorkspaces } from './dashboard-bootstrap';
+import { setActiveWorkspaceContext } from './workspace-context';
 
 export async function resolveActiveWorkspaceSlug(): Promise<string> {
   const savedSlug = localStorage.getItem('selected_tenant_slug');
   if (savedSlug) return savedSlug;
 
   try {
-    const res = await api.get('/auth/workspaces');
-    const workspaces = res.data;
+    const workspaces = await loadWorkspaces();
     const workspaceList = Array.isArray(workspaces) ? workspaces : [];
     
     if (workspaceList.length > 0) {
-      const slug = workspaceList[0].tenant?.slug || workspaceList[0].slug;
+      const firstWorkspace = workspaceList[0];
+      const slug = firstWorkspace.tenant?.slug || firstWorkspace.slug;
+      const tenantId = firstWorkspace.tenant?.id || firstWorkspace.tenantId || firstWorkspace.id;
       if (slug) {
-        localStorage.setItem('selected_tenant_slug', slug);
+        setActiveWorkspaceContext({ id: tenantId, slug });
         return slug;
       }
     }

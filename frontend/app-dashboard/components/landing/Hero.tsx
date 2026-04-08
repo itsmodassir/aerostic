@@ -7,7 +7,7 @@ import { clsx } from 'clsx';
 
 export default function Hero() {
     return (
-        <section className="relative pt-32 pb-24 md:pt-64 md:pb-48 overflow-hidden bg-white">
+        <section className="relative pt-24 pb-16 md:pt-48 md:pb-32 overflow-hidden bg-white">
             {/* Neural Background Matrix */}
             <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-emerald-50 rounded-full blur-[120px] opacity-40 -translate-y-1/2 translate-x-1/4 animate-pulse" />
             <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-blue-50 rounded-full blur-[120px] opacity-30 translate-y-1/2 -translate-x-1/4" />
@@ -22,7 +22,7 @@ export default function Hero() {
                         className="inline-flex items-center gap-3 bg-white border-2 border-emerald-100 px-6 py-2 rounded-full mb-12 shadow-xl shadow-emerald-100/20"
                     >
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-[.4em]">Official Meta Nexus Node V4.0</span>
+                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-[.4em]">Official Meta Cloud API Platform</span>
                     </motion.div>
 
                     {/* High-Velocity Headline */}
@@ -45,7 +45,7 @@ export default function Hero() {
                         transition={{ duration: 1.2, delay: 0.3 }}
                         className="text-lg md:text-2xl font-bold text-gray-400 max-w-3xl mx-auto leading-relaxed uppercase tracking-tighter mb-16"
                     >
-                        Orchestrate global sales and support with the official <span className="text-black">Meta Cloud Protocol</span>. 
+                        Orchestrate sales and support with the official <span className="text-black">Meta Cloud API</span>. 
                         Zero bot-bans, 100% compliance, and hyper-automated engagement.
                     </motion.p>
 
@@ -60,7 +60,7 @@ export default function Hero() {
                             href="https://app.aimstore.in/register"
                             className="w-full sm:w-auto px-12 py-6 bg-black text-white rounded-[24px] text-[10px] font-black uppercase tracking-[.3em] hover:bg-emerald-600 transition-all shadow-2xl flex items-center justify-center gap-4 group"
                         >
-                            <span>Initialize Protocol</span>
+                            <span>Start Free Trial</span>
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <Link
@@ -68,7 +68,7 @@ export default function Hero() {
                             className="w-full sm:w-auto px-12 py-6 bg-white border-2 border-gray-100 rounded-[24px] text-[10px] font-black uppercase tracking-[.3em] text-gray-900 hover:border-black transition-all flex items-center justify-center gap-4 group"
                         >
                             <Play className="w-4 h-4 text-emerald-500 fill-emerald-500" />
-                            <span>Neural Sandbox</span>
+                            <span>Talk To Sales</span>
                         </Link>
                     </motion.div>
 
@@ -81,8 +81,8 @@ export default function Hero() {
                     >
                         {[
                             { label: "Zero Setup Cost", icon: Zap },
-                            { label: "14-Day Free Evaluation", icon: Sparkles },
-                            { label: "Nexus Node Security", icon: Shield }
+                            { label: "14-Day Free Trial", icon: Sparkles },
+                            { label: "Enterprise-Grade Security", icon: Shield }
                         ].map((node) => (
                             <div key={node.label} className="flex items-center gap-3">
                                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">

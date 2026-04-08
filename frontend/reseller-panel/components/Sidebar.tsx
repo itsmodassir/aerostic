@@ -50,11 +50,13 @@ export default function ResellerSidebar() {
                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 ml-4 italic">Main_Console</h3>
                      <div className="space-y-2">
                         {navigation.map((item) => {
-                            const isActive = pathname === item.href || (item.href !== '/reseller' && pathname.startsWith(item.href));
+                            const href = item.href ?? '';
+                            const isRootRoute = href === '/';
+                            const isActive = pathname === href || (!isRootRoute && pathname.startsWith(href));
                             return (
                                 <Link
                                     key={item.name}
-                                    href={item.href || '#'}
+                                    href={href || '#'}
                                     className={clsx(
                                         "group flex items-center gap-4 px-6 py-4 rounded-[22px] transition-all duration-300 relative overflow-hidden",
                                         isActive ? "bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20" : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"

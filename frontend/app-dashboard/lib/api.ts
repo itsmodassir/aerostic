@@ -1,20 +1,42 @@
 import axios from 'axios';
+import {
+    isUuid,
+    resolveTenantIdFromWorkspaceSlug,
+    setActiveWorkspaceContext,
+} from './workspace-context';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/v1', // Relative path for Nginx proxying
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
     },
     withCredentials: true, // Enable cookie-based auth
 });
 
-const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const AUTH_STORAGE_KEYS = ['token', 'user'];
+const AUTH_REDIRECT_KEY = 'auth_redirect_at';
 
-function isUuid(value?: string | null): value is string {
-    return !!value && UUID_V4_REGEX.test(value);
-}
+const clearAuthStorage = () => {
+    if (typeof window === 'undefined') return;
+    AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+};
 
+const redirectToLogin = () => {
+    if (typeof window === 'undefined') return;
 
+    const now = Date.now();
+    const lastRedirect = Number(sessionStorage.getItem(AUTH_REDIRECT_KEY) || '0');
+    if (lastRedirect && now - lastRedirect < 3000) {
+        return;
+    }
+
+    sessionStorage.setItem(AUTH_REDIRECT_KEY, String(now));
+    const basePath = window.location.hostname.startsWith('admin.') ? '/admin/login' : '/login';
+    const next = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const target = next && next !== '/' ? `${basePath}?next=${encodeURIComponent(next)}` : basePath;
+    window.location.replace(target);
+};
 
 // Request interceptor to automatically add the tenant ID and Auth Token
 api.interceptors.request.use(async (config) => {
@@ -34,12 +56,24 @@ api.interceptors.request.use(async (config) => {
         if (!isGlobalEndpoint) {
             let tenantId: string | null = null;
 
-            // Only trust URL segment when it's an actual UUID.
             if (isUuid(candidateWorkspace)) {
                 tenantId = candidateWorkspace;
+                setActiveWorkspaceContext({ id: candidateWorkspace, slug: candidateWorkspace });
+            } else if (candidateWorkspace) {
+                tenantId = resolveTenantIdFromWorkspaceSlug(candidateWorkspace);
+                if (tenantId) {
+                    setActiveWorkspaceContext({ id: tenantId, slug: candidateWorkspace });
+                }
             }
 
-            // Fall back to cached UUID for clean URLs.
+            if (!tenantId) {
+                const selectedTenantSlug = localStorage.getItem('selected_tenant_slug');
+                const selectedTenantId = localStorage.getItem('selected_tenant_id');
+                if (selectedTenantSlug === candidateWorkspace && isUuid(selectedTenantId)) {
+                    tenantId = selectedTenantId;
+                }
+            }
+
             if (!tenantId) {
                 const savedTenantId = localStorage.getItem('x-tenant-id');
                 if (isUuid(savedTenantId)) {
@@ -55,8 +89,6 @@ api.interceptors.request.use(async (config) => {
 
             if (tenantId) {
                 config.headers['x-tenant-id'] = tenantId;
-                localStorage.setItem('x-tenant-id', tenantId);
-                localStorage.setItem('selected_tenant_id', tenantId);
             }
         }
 
@@ -130,12 +162,15 @@ api.interceptors.response.use(
                 isRefreshing = false;
                 processQueue(refreshError);
                 
-                // If refresh fails, redirect to login
-                if (typeof window !== 'undefined') {
+                const refreshStatus = (refreshError as any)?.response?.status;
+                if (typeof window !== 'undefined' && (refreshStatus === 401 || refreshStatus === 403)) {
                     const isLoginPage = window.location.pathname.includes('/login');
+                    const isAuthProbe = originalRequest?.url?.startsWith('/auth/me');
                     if (!isLoginPage) {
-                        localStorage.clear();
-                        window.location.href = '/login';
+                        clearAuthStorage();
+                        if (!isAuthProbe) {
+                            redirectToLogin();
+                        }
                     }
                 }
                 return Promise.reject(refreshError);

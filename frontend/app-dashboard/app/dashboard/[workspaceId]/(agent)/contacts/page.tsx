@@ -55,7 +55,9 @@ export default function ContactsPage() {
             try {
                 const res = await api.get('/auth/workspaces');
                 const memberships = res.data;
-                const activeMembership = memberships.find((m: any) => m.tenant?.slug === workspaceSlug);
+                const activeMembership = memberships.find((m: any) =>
+                    m.tenant?.slug === workspaceSlug || m.tenant?.id === workspaceSlug
+                );
                 if (activeMembership && activeMembership.tenant?.id) {
                     const tid = activeMembership.tenant.id;
                     setTenantId(tid);
@@ -99,7 +101,7 @@ export default function ContactsPage() {
         e.preventDefault();
         if (!selectedContact) return;
         try {
-            await api.put(`/contacts/${selectedContact.id}`, { ...selectedContact, tenantId });
+            await api.patch(`/contacts/${selectedContact.id}`, { ...selectedContact, tenantId });
             setShowEditModal(false);
             setSelectedContact(null);
             fetchContacts(tenantId);
@@ -170,13 +172,14 @@ export default function ContactsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         key={stat.label} 
-                        className="bg-white/80 backdrop-blur-md p-6 rounded-[32px] border border-slate-100 shadow-sm group hover:shadow-xl transition-all duration-300"
+                        className="bg-white/80 backdrop-blur-md p-8 rounded-[32px] border border-slate-100 shadow-sm group hover:shadow-2xl hover:shadow-blue-200/20 transition-all duration-500 relative overflow-hidden"
                     >
-                        <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
-                            <stat.icon size={20} strokeWidth={2.5} />
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+                        <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:rotate-6 shadow-sm", stat.bg, stat.color)}>
+                            <stat.icon size={24} strokeWidth={2.5} />
                         </div>
-                        <div className="text-3xl font-black text-slate-800 tracking-tight">{stat.value}</div>
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</div>
+                        <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">{stat.label}</div>
                     </motion.div>
                 ))}
             </div>
@@ -188,7 +191,7 @@ export default function ContactsPage() {
                     <input
                         type="text"
                         placeholder="Search by name, phone, or email..."
-                        className="w-full pl-14 pr-6 py-4 bg-white/70 backdrop-blur-md border-2 border-slate-100 rounded-[28px] focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 outline-none font-bold text-slate-700 transition-all shadow-sm"
+                        className="w-full pl-14 pr-6 py-4 bg-white/70 backdrop-blur-md border-2 border-slate-100 rounded-[24px] focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 outline-none font-bold text-slate-700 transition-all shadow-sm"
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
@@ -196,7 +199,7 @@ export default function ContactsPage() {
                     <button 
                         onClick={() => setShowFilters(!showFilters)} 
                         className={clsx(
-                            "h-[60px] px-8 rounded-[28px] border-2 transition-all flex items-center justify-center gap-3 font-black text-sm shrink-0", 
+                            "h-[60px] px-8 rounded-[24px] border-2 transition-all flex items-center justify-center gap-3 font-black text-sm shrink-0", 
                             showFilters ? "bg-slate-900 text-white border-slate-900" : "bg-slate-50 text-slate-500 border-transparent hover:border-slate-200"
                         )}
                     >
@@ -236,7 +239,7 @@ export default function ContactsPage() {
             {/* Main Content Area */}
             <div className="space-y-4">
                 {/* Desktop Table View */}
-                <div className="hidden sm:block bg-white/80 backdrop-blur-md border border-slate-100 rounded-[40px] overflow-hidden shadow-xl shadow-slate-200/50">
+                <div className="hidden sm:block bg-white/80 backdrop-blur-md border border-slate-100 rounded-[32px] overflow-hidden shadow-xl shadow-slate-200/50">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left min-w-[900px]">
                             <thead>
@@ -261,7 +264,7 @@ export default function ContactsPage() {
                                     <tr>
                                         <td colSpan={4} className="py-32 text-center">
                                             <div className="flex flex-col items-center gap-4 opacity-20">
-                                                <div className="p-8 bg-slate-100 rounded-[40px]">
+                                                <div className="p-8 bg-slate-100 rounded-[32px]">
                                                     <Users2 size={64} />
                                                 </div>
                                                 <p className="font-black text-xl text-slate-900">Audience is empty</p>

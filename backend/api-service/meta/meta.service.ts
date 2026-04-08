@@ -3,8 +3,7 @@ import axios from "axios";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { MetaToken } from "./entities/meta-token.entity";
-import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
+import { WhatsappAccount } from "@shared/whatsapp/entities/whatsapp-account.entity";
 import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { RedisService } from "@shared/redis.service";
 import { EncryptionService } from "@shared/encryption.service";
@@ -17,8 +16,6 @@ export class MetaService {
   private readonly logger = new Logger(MetaService.name);
   constructor(
     private configService: ConfigService,
-    @InjectRepository(MetaToken)
-    private metaTokenRepo: Repository<MetaToken>,
     @InjectRepository(WhatsappAccount)
     private whatsappAccountRepo: Repository<WhatsappAccount>,
     @InjectRepository(SystemConfig)
@@ -410,6 +407,8 @@ export class MetaService {
         businesses[0]?.id ||
         null;
 
+      let savedAccount: WhatsappAccount | null = null;
+
       if (existing) {
         existing.tenantId = tenantId;
         existing.businessId = resolvedBusinessId || existing.businessId;
@@ -421,9 +420,9 @@ export class MetaService {
         existing.tokenExpiresAt = expiresAt;
         existing.mode = resolvedMode;
         existing.status = "connected";
-        await this.whatsappAccountRepo.save(existing);
+        savedAccount = await this.whatsappAccountRepo.save(existing);
       } else {
-        await this.whatsappAccountRepo.save({
+        savedAccount = await this.whatsappAccountRepo.save({
           tenantId,
           businessId: resolvedBusinessId || undefined,
           wabaId,
@@ -446,6 +445,10 @@ export class MetaService {
             params: { access_token: accessToken },
           },
         );
+        if (savedAccount) {
+          savedAccount.webhookVerified = true;
+          await this.whatsappAccountRepo.save(savedAccount);
+        }
         this.logger.log(`Successfully subscribed app to WABA: ${wabaId}`);
       } catch (subErr: any) {
         this.logger.error(

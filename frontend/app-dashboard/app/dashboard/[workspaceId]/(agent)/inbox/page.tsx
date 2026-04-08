@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/context/SocketContext';
+import { useToast } from '@/hooks/use-toast';
 import {
     Send, Search, User, Filter, MoreVertical, Phone, Video,
     Check, CheckCheck, Clock, AlertCircle, Smile, Paperclip,
@@ -65,12 +66,68 @@ interface Message {
     createdAt: string;
     sender?: TeamMember;
     metaMessageId?: string;
+    error?: string;
 }
+
+const buildTenantHeaders = (tenantId: string) => ({
+    headers: { 'x-tenant-id': tenantId },
+});
+
+const getMessagePreview = (payload: any, type?: string) => {
+    return (
+        payload?.body ||
+        payload?.text?.body ||
+        payload?.interactive?.button_reply?.title ||
+        payload?.interactive?.list_reply?.title ||
+        payload?.caption ||
+        (type ? `[${type}]` : 'New message')
+    );
+};
+
+const getTemplateParameters = (text: string | undefined, selectedConversation: Conversation | null) => {
+    const matches = text?.match(/{{(\d+)}}/g) || [];
+    if (matches.length === 0) return [];
+
+    return matches.map((_, index) => ({
+        type: 'text',
+        text:
+            index === 0
+                ? selectedConversation?.contact?.name || 'Customer'
+                : index === 1
+                    ? selectedConversation?.contact?.phoneNumber || ''
+                    : 'Value',
+    }));
+};
+
+const getTemplateDisplayName = (name: string | undefined) => {
+    if (!name) return 'Untitled template';
+
+    return name
+        .replace(/[_-]+/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+        .trim();
+};
+
+const getTemplatePreviewText = (template: any) => {
+    const body = template?.components?.find((component: any) => component.type === 'BODY')?.text;
+    return body || 'Ready-to-send approved WhatsApp template.';
+};
+
+const getTemplateCategory = (template: any) => {
+    return (template?.category || 'marketing').toString().toLowerCase();
+};
+
+const getTemplateRate = (template: any, rates: Record<string, number>) => {
+    const category = getTemplateCategory(template);
+    return rates?.[category] ?? rates?.default ?? 0;
+};
 
 export default function InboxPage() {
     const params = useParams();
     const { user } = useAuth();
     const { socket, joinTenant, leaveTenant, isConnected } = useSocket();
+    const { toast } = useToast();
     
     // --- State ---
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -95,6 +152,7 @@ export default function InboxPage() {
     const [walletBalance, setWalletBalance] = useState<number>(0);
     const [templates, setTemplates] = useState<any[]>([]);
     const [templateRates, setTemplateRates] = useState<any>({ marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 });
+    const [sendingTemplateId, setSendingTemplateId] = useState<string | null>(null);
     const [aiStatus, setAiStatus] = useState<{
         aiMode: 'ai' | 'human' | 'paused';
         pauseSecondsLeft: number;
@@ -105,6 +163,8 @@ export default function InboxPage() {
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const templatePanelRef = useRef<HTMLDivElement>(null);
+    const templateToggleRef = useRef<HTMLButtonElement>(null);
 
     // --- Initial Load ---
     useEffect(() => {
@@ -125,15 +185,15 @@ export default function InboxPage() {
                         id: user.id || '1',
                         name: user.name || 'Agent',
                         email: user.email || '',
-                        role: user.role === 'super_admin' ? 'admin' : 'agent',
+                        role: user.role === 'super_admin' || user.role === 'platform_admin' ? 'admin' : 'agent',
                         status: 'online',
                     });
 
                     // Background fetch supplemental data
                     const [teamRes, walletRes, templatesRes] = await Promise.all([
-                        api.get(`/users?tenantId=${tid}`, { headers: { 'x-tenant-id': tid } }).catch(() => ({ data: [] })),
-                        api.get(`/billing/wallet/balance?tenantId=${tid}`, { headers: { 'x-tenant-id': tid } }).catch(() => ({ data: { balance: 0 } })),
-                        api.get(`/templates?tenantId=${tid}`, { headers: { 'x-tenant-id': tid } }).catch(() => ({ data: [] }))
+                        api.get(`/users?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: [] })),
+                        api.get(`/billing/wallet/balance?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: { balance: 0 } })),
+                        api.get(`/templates?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: [] }))
                     ]);
 
                     setTeamMembers(teamRes.data.map((u: any) => ({
@@ -169,7 +229,7 @@ export default function InboxPage() {
             if (isCurrentConversation) {
                 setMessages(prev => {
                     // Avoid duplicate messages if already sent optimistically
-                    if (prev.some(m => m.id === payload.id || (m.metaMessageId && m.metaMessageId === payload.metaId))) {
+                    if (prev.some(m => m.id === payload.id || (payload.metaId && m.metaMessageId === payload.metaId))) {
                         return prev;
                     }
                     return [...prev, {
@@ -177,7 +237,7 @@ export default function InboxPage() {
                         direction: payload.direction,
                         type: payload.type,
                         content: payload.content,
-                        status: 'received',
+                        status: payload.status || 'received',
                         createdAt: payload.timestamp || new Date().toISOString(),
                     }];
                 });
@@ -187,20 +247,40 @@ export default function InboxPage() {
             }
 
             // Update conversation list last message and session window
-            setConversations(prev => prev.map(c => 
-                c.id === payload.conversationId 
-                ? { 
-                    ...c, 
-                    lastMessage: payload.content?.body || payload.type, 
-                    lastMessageAt: new Date().toISOString(), 
+            setConversations(prev => prev.map(c =>
+                c.id === payload.conversationId
+                ? {
+                    ...c,
+                    lastMessage: getMessagePreview(payload.content, payload.type),
+                    lastMessageAt: new Date().toISOString(),
                     lastInboundAt: payload.direction === 'in' ? new Date().toISOString() : c.lastInboundAt,
-                    unreadCount: isCurrentConversation ? c.unreadCount : (c.unreadCount || 0) + 1 
-                } 
+                    unreadCount: payload.direction === 'in' && !isCurrentConversation ? (c.unreadCount || 0) + 1 : c.unreadCount,
+                }
                 : c
             ).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()));
         };
+
+        const handleMessageStatus = (payload: any) => {
+            setMessages(prev => prev.map((message) => {
+                const matchesById = payload.messageId && message.id === payload.messageId;
+                const matchesByMetaId = payload.metaMessageId && message.metaMessageId === payload.metaMessageId;
+                if (!matchesById && !matchesByMetaId) {
+                    return message;
+                }
+                return {
+                    ...message,
+                    status: payload.status || message.status,
+                    error: payload.status === 'failed' ? message.error : undefined,
+                };
+            }));
+        };
+
         socket.on('newMessage', handleNewMessage);
-        return () => { socket.off('newMessage', handleNewMessage); };
+        socket.on('messageStatus', handleMessageStatus);
+        return () => {
+            socket.off('newMessage', handleNewMessage);
+            socket.off('messageStatus', handleMessageStatus);
+        };
     }, [socket, selectedConversation?.id]);
 
     // --- Data Fetching ---
@@ -208,10 +288,15 @@ export default function InboxPage() {
         if (!tenantId || !currentUser) return;
         const fetchConvs = async () => {
             try {
-                const res = await api.get('/messages/conversations', { headers: { 'x-tenant-id': tenantId } });
+                const res = await api.get('/messages/conversations', buildTenantHeaders(tenantId));
                 setConversations(res.data);
                 setCachedConversations(tenantId, currentUser.id, res.data);
-            } catch (e) {}
+            } catch (e) {
+                const cached = await getCachedConversations(tenantId, currentUser.id);
+                if (cached) {
+                    setConversations(cached);
+                }
+            }
         };
         fetchConvs();
     }, [tenantId, currentUser?.id]);
@@ -219,7 +304,7 @@ export default function InboxPage() {
     const fetchConversationStatus = useCallback(async (convId: string) => {
         if (!tenantId) return;
         try {
-            const statusRes = await api.get(`/messages/conversations/${convId}/status`, { headers: { 'x-tenant-id': tenantId } });
+            const statusRes = await api.get(`/messages/conversations/${convId}/status`, buildTenantHeaders(tenantId));
             setAiStatus(statusRes.data);
         } catch (e) {
             console.error('Failed to fetch conversation status', e);
@@ -230,15 +315,40 @@ export default function InboxPage() {
         if (!selectedConversation || !tenantId || !currentUser) return;
         const fetchMsgs = async () => {
             try {
-                const res = await api.get(`/messages/conversations/${selectedConversation.id}`, { headers: { 'x-tenant-id': tenantId } });
+                const res = await api.get(`/messages/conversations/${selectedConversation.id}`, buildTenantHeaders(tenantId));
                 setMessages(res.data);
                 setCachedMessages(tenantId, currentUser.id, selectedConversation.id, res.data);
                 // Fetch AI status
                 void fetchConversationStatus(selectedConversation.id);
-            } catch (e) {}
+            } catch (e) {
+                const cached = await getCachedMessages(tenantId, currentUser.id, selectedConversation.id);
+                if (cached) {
+                    setMessages(cached);
+                }
+            }
         };
         fetchMsgs();
     }, [selectedConversation?.id, tenantId, currentUser?.id, fetchConversationStatus]);
+
+    useEffect(() => {
+        setShowTemplates(false);
+    }, [selectedConversation?.id]);
+
+    useEffect(() => {
+        if (!showTemplates) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (templatePanelRef.current?.contains(target)) return;
+            if (templateToggleRef.current?.contains(target)) return;
+            setShowTemplates(false);
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+        };
+    }, [showTemplates]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -250,6 +360,7 @@ export default function InboxPage() {
         const tempId = `temp-${Date.now()}`;
         const body = inputText;
         setInputText('');
+        setShowTemplates(false);
         
         const optimisticMsg: Message = {
             id: tempId, direction: 'out', type: 'text', content: { body },
@@ -262,10 +373,16 @@ export default function InboxPage() {
                 to: selectedConversation.contact.phoneNumber,
                 type: 'text',
                 payload: { text: body }
-            });
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: res.data.messageId, metaMessageId: res.data.metaId, status: 'delivered' } : m));
-        } catch (e) {
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
+            }, buildTenantHeaders(tenantId));
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: res.data.messageId, metaMessageId: res.data.metaId, status: 'sent', error: undefined } : m));
+            setConversations(prev => prev.map(c =>
+                c.id === selectedConversation.id
+                    ? { ...c, lastMessage: body, lastMessageAt: new Date().toISOString() }
+                    : c
+            ));
+        } catch (e: any) {
+            const errorMessage = e?.response?.data?.message || 'Send failed';
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed', error: errorMessage } : m));
         }
     };
 
@@ -283,20 +400,26 @@ export default function InboxPage() {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const uploadRes = await api.post('/messages/upload', formData); // Axios handles multipart automatically
+            const uploadRes = await api.post('/messages/upload', formData, buildTenantHeaders(tenantId)); // Axios handles multipart automatically
             
             const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'document';
             const sendRes = await api.post('/messages/send', {
                 to: selectedConversation.contact.phoneNumber,
                 type,
                 payload: { id: uploadRes.data.id, caption: file.name }
-            });
+            }, buildTenantHeaders(tenantId));
 
             setMessages(prev => prev.map(m => m.id === tempId ? {
-                ...m, id: sendRes.data.messageId, type, content: { url: URL.createObjectURL(file), filename: file.name }, status: 'delivered'
+                ...m, id: sendRes.data.messageId, metaMessageId: sendRes.data.metaId, type, content: { url: URL.createObjectURL(file), filename: file.name }, status: 'sent', error: undefined
             } : m));
-        } catch (e) {
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
+            setConversations(prev => prev.map(c =>
+                c.id === selectedConversation.id
+                    ? { ...c, lastMessage: file.name, lastMessageAt: new Date().toISOString() }
+                    : c
+            ));
+        } catch (e: any) {
+            const errorMessage = e?.response?.data?.message || 'Upload or send failed';
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed', error: errorMessage } : m));
         }
     };
 
@@ -304,10 +427,113 @@ export default function InboxPage() {
         if (!selectedConversation) return;
         setAiModeLoading(true);
         try {
-            await api.post(`/messages/conversations/${selectedConversation.id}/ai-mode`, { mode });
-            const res = await api.get(`/messages/conversations/${selectedConversation.id}/status`);
+            await api.post(`/messages/conversations/${selectedConversation.id}/ai-mode`, { mode }, buildTenantHeaders(tenantId));
+            const res = await api.get(`/messages/conversations/${selectedConversation.id}/status`, buildTenantHeaders(tenantId));
             setAiStatus(res.data);
         } catch (e) {} finally { setAiModeLoading(false); }
+    };
+
+    const handleSendTemplate = async (template: any) => {
+        if (!selectedConversation) return;
+
+        const requiredBalance = getTemplateRate(template, templateRates);
+        if (walletBalance < requiredBalance) {
+            toast({
+                title: 'Insufficient wallet balance',
+                description: `Add at least ₹${requiredBalance.toFixed(2)} to send this ${getTemplateCategory(template)} template.`,
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const bodyComponent = template.components?.find((component: any) => component.type === 'BODY');
+        const headerComponent = template.components?.find((component: any) => component.type === 'HEADER');
+        const tempId = `templ-${Date.now()}`;
+        const previewText = bodyComponent?.text || getTemplateDisplayName(template.name);
+        
+        // Optimistic UI update
+        const optimisticMsg: Message = {
+            id: tempId,
+            direction: 'out',
+            type: 'template',
+            content: { body: previewText },
+            status: 'sent',
+            createdAt: new Date().toISOString(),
+            sender: currentUser || undefined
+        };
+        setMessages(prev => [...prev, optimisticMsg]);
+
+        try {
+            setSendingTemplateId(template.id);
+            const components: any[] = [];
+
+            const headerParameters = headerComponent?.format === 'TEXT'
+                ? getTemplateParameters(headerComponent.text, selectedConversation)
+                : [];
+            if (headerParameters.length > 0) {
+                components.push({
+                    type: 'header',
+                    parameters: headerParameters,
+                });
+            }
+
+            const bodyParameters = getTemplateParameters(bodyComponent?.text, selectedConversation);
+            if (bodyParameters.length > 0) {
+                components.push({
+                    type: 'body',
+                    parameters: bodyParameters,
+                });
+            }
+
+            const res = await api.post('/messages/send', {
+                to: selectedConversation.contact.phoneNumber,
+                type: 'template',
+                payload: {
+                    name: template.name,
+                    language: { code: template.language || 'en_US' },
+                    ...(components.length > 0 ? { components } : {}),
+                },
+            }, buildTenantHeaders(tenantId));
+
+            // Update optimistic message with real ID
+            setMessages(prev => prev.map(m => m.id === tempId ? { 
+                ...m, 
+                id: res.data.messageId, 
+                metaMessageId: res.data.metaId,
+                status: 'sent',
+                error: undefined 
+            } : m));
+
+            setConversations(prev => prev.map(c =>
+                c.id === selectedConversation.id
+                    ? {
+                        ...c,
+                        lastMessage: previewText,
+                        lastMessageAt: new Date().toISOString(),
+                    }
+                    : c
+            ));
+
+            setShowTemplates(false);
+            toast({
+                title: 'Template sent',
+                description: `${getTemplateDisplayName(template.name)} was sent in this chat.`,
+            });
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Failed to send template';
+            console.error('Failed to send template from inbox', error);
+            
+            // Revert or mark as failed
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed', error: message } : m));
+            
+            toast({
+                title: 'Template send failed',
+                description: message,
+                variant: 'destructive',
+            });
+        } finally {
+            setSendingTemplateId(null);
+        }
     };
 
     // --- Filter Logic ---
@@ -322,7 +548,7 @@ export default function InboxPage() {
 
     if (loading) {
         return (
-            <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-50 rounded-[40px]">
+            <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-50 rounded-[32px]">
                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Synchronizing Secure Streams...</p>
             </div>
@@ -330,7 +556,7 @@ export default function InboxPage() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] bg-white sm:rounded-[48px] rounded-[32px] overflow-hidden shadow-2xl border-2 border-slate-50 relative">
+        <div className="flex h-[calc(100vh-8rem)] bg-white sm:rounded-[32px] rounded-[24px] overflow-hidden shadow-2xl border-2 border-slate-50 relative">
             <AnimatePresence mode="wait">
             {/* Sidebar - Conversation List */}
             <div className={clsx(
@@ -425,19 +651,22 @@ export default function InboxPage() {
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Phone size={10} /> {selectedConversation.contact.phoneNumber}</span>
                                         <div className="w-1 h-1 bg-slate-200 rounded-full" />
                                         {aiStatus?.windowExpired === false ? (
-                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-lg animate-pulse">
-                                                <Timer size={10} className="stroke-[3]" />
-                                                <span className="text-[9px] font-black uppercase tracking-widest tabular-nums">
-                                                    {Math.floor(aiStatus.windowSecondsLeft! / 3600)}h {Math.floor((aiStatus.windowSecondsLeft! % 3600) / 60)}m left
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-xl animate-pulse border border-emerald-100/50">
+                                                <Timer size={12} className="stroke-[3]" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest tabular-nums">
+                                                    {Math.floor(aiStatus.windowSecondsLeft! / 3600)}h {Math.floor((aiStatus.windowSecondsLeft! % 3600) / 60)}m Secure
                                                 </span>
                                             </div>
                                         ) : aiStatus?.windowExpired === true ? (
-                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-lg">
-                                                <AlertCircle size={10} className="stroke-[3]" />
-                                                <span className="text-[9px] font-black uppercase tracking-widest">Window Closed</span>
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-xl border border-rose-100/50">
+                                                <AlertCircle size={12} className="stroke-[3]" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Window Exhausted</span>
                                             </div>
                                         ) : (
-                                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live Now</span>
+                                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+                                                Live Channel
+                                            </span>
                                         )}
                                     </div>
                                 </div>
@@ -485,6 +714,7 @@ export default function InboxPage() {
                             <AnimatePresence>
                                 {showTemplates && (
                                     <motion.div 
+                                        ref={templatePanelRef}
                                         initial={{ y: 20, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         exit={{ y: 20, opacity: 0 }}
@@ -495,20 +725,80 @@ export default function InboxPage() {
                                                 <div className="p-2 bg-blue-600 rounded-xl"><Gem size={20} /></div>
                                                 High-Impact Templates
                                             </h4>
-                                            <div className="px-4 py-1.5 bg-white/10 rounded-full border border-white/5 text-[10px] font-black text-white/60 uppercase tracking-widest">
-                                                Vault: ₹{walletBalance.toFixed(2)}
+                                            <div className="flex items-center gap-3">
+                                                <p className="hidden md:block text-xs text-slate-400">
+                                                    Send approved templates with live pricing and clearer labels.
+                                                </p>
+                                                <div className="px-4 py-1.5 bg-white/10 rounded-full border border-white/5 text-[10px] font-black text-white/60 uppercase tracking-widest">
+                                                    Vault: ₹{walletBalance.toFixed(2)}
+                                                </div>
                                             </div>
                                         </div>
+                                        {templates.length === 0 ? (
+                                            <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center text-slate-400">
+                                                No approved templates are ready for quick send yet.
+                                            </div>
+                                        ) : null}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {templates.map(t => (
-                                                <button key={t.id} className="text-left p-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-3xl transition-all group">
-                                                    <p className="text-white font-black text-sm uppercase tracking-tight mb-2">{t.name}</p>
-                                                    <p className="text-[11px] text-white/40 font-medium line-clamp-2 leading-relaxed mb-4">{t.components?.find((c: any) => c.type === 'BODY')?.text}</p>
-                                                    <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-widest">
-                                                        <Sparkles size={12} className="fill-blue-400" /> Dispatch Signature
-                                                    </div>
-                                                </button>
-                                            ))}
+                                            {templates.map(t => {
+                                                const displayName = getTemplateDisplayName(t.name);
+                                                const previewText = getTemplatePreviewText(t);
+                                                const category = getTemplateCategory(t);
+                                                const rate = getTemplateRate(t, templateRates);
+                                                const canSend = walletBalance >= rate;
+                                                const isSending = sendingTemplateId === t.id;
+
+                                                return (
+                                                    <button
+                                                        key={t.id}
+                                                        onClick={() => void handleSendTemplate(t)}
+                                                        disabled={!canSend || isSending}
+                                                        className={clsx(
+                                                            "text-left p-5 rounded-[28px] transition-all border shadow-lg",
+                                                            canSend
+                                                                ? "bg-slate-800/95 hover:bg-slate-800 border-white/10 hover:border-blue-400/30 hover:-translate-y-0.5"
+                                                                : "bg-slate-800/70 border-white/5 opacity-75 cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3 mb-4">
+                                                            <div className="min-w-0">
+                                                                <p className="text-white text-base font-semibold leading-snug break-words">
+                                                                    {displayName}
+                                                                </p>
+                                                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                                    <span className="rounded-full bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                                                        {category}
+                                                                    </span>
+                                                                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                                                                        {t.language || 'en_US'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="rounded-2xl bg-white/8 px-3 py-2 text-right shrink-0">
+                                                                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Cost</p>
+                                                                <p className="text-sm font-semibold text-white">₹{rate.toFixed(2)}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <p className="mb-5 line-clamp-3 text-sm leading-6 text-slate-300/90">
+                                                            {previewText}
+                                                        </p>
+
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <div className="flex items-center gap-2 text-sm font-semibold text-blue-300">
+                                                                <Sparkles size={14} className="shrink-0" />
+                                                                {isSending ? 'Sending template...' : 'Send in chat'}
+                                                            </div>
+                                                            <span className={clsx(
+                                                                "text-xs",
+                                                                canSend ? "text-slate-400" : "text-amber-300"
+                                                            )}>
+                                                                {canSend ? 'Ready' : 'Low wallet balance'}
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </motion.div>
                                 )}
@@ -517,6 +807,7 @@ export default function InboxPage() {
                             <div className="flex items-center gap-5">
                                 <div className="flex gap-2.5">
                                     <button 
+                                        ref={templateToggleRef}
                                         onClick={() => setShowTemplates(!showTemplates)}
                                         className={clsx(
                                             "w-14 h-14 rounded-2xl flex items-center justify-center transition-all border-2",

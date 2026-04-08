@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Campaign } from "./entities/campaign.entity";
-import { Message } from "../messages/entities/message.entity";
+import { Message } from "@shared/database/entities/messaging/message.entity";
 
 @Injectable()
 export class CampaignAnalyticsService {

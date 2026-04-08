@@ -127,7 +127,7 @@ export default function WaFlowBuilder({
 
   // ─── Save ─────────────────────────────────────────────────────────────────────
 
-  const handleSave = async () => {
+  const handleSave = async (options?: { closeAfterSave?: boolean }) => {
     if (!flowId) return;
     setIsSaving(true);
     setSaveError(null);
@@ -136,10 +136,13 @@ export default function WaFlowBuilder({
         name: flowName,
         flowData: transformFlowToPayload(nodes, edges),
       };
-      const res = await api.put(`/whatsapp/flows/${flowId}/canvas`, payload);
-      onSaved?.();
+      await api.put(`/whatsapp/flows/${flowId}/canvas`, payload);
+      if (options?.closeAfterSave !== false) {
+        onSaved?.();
+      }
     } catch (err: any) {
       setSaveError(err.response?.data?.message || err.message || "Could not save flow.");
+      throw err;
     } finally {
       setIsSaving(false);
     }
@@ -154,10 +157,10 @@ export default function WaFlowBuilder({
     setSaveError(null);
     try {
       // 1. First Save
-      await handleSave();
+      await handleSave({ closeAfterSave: false });
       
       // 2. Then Publish
-      const res = await api.post(`/whatsapp/flows/${flowId}/publish`);
+      await api.post(`/whatsapp/flows/${flowId}/publish`);
       
       setPublishStatus("success");
       onSaved?.();
@@ -262,7 +265,9 @@ export default function WaFlowBuilder({
           </div>
 
           <button
-            onClick={handleSave}
+            onClick={() => {
+              void handleSave();
+            }}
             disabled={isSaving || isPublishing}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors disabled:opacity-60"
           >

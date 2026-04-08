@@ -116,7 +116,7 @@ export default function CampaignsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Active Sende" value={stats.active} icon={<RefreshCw className="text-blue-500" />} />
+        <StatCard title="Active Sends" value={stats.active} icon={<RefreshCw className="text-blue-500" />} />
         <StatCard title="Scheduled" value={stats.scheduled} icon={<Calendar className="text-purple-500" />} />
         <StatCard title="Completed" value={stats.completed} icon={<CheckCircle2 className="text-green-500" />} />
         <StatCard title="Failed" value={stats.failed} icon={<XCircle className="text-red-500" />} />
@@ -193,7 +193,58 @@ export default function CampaignsPage() {
                       <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
                       Results
                     </Button>
-                    <Button variant="ghost" size="icon" className="rounded-xl"><MoreVertical className="h-4 w-4" /></Button>
+                    <div className="relative group">
+                      <Button variant="ghost" size="icon" className="rounded-xl"><MoreVertical className="h-4 w-4" /></Button>
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 py-2 w-48 hidden group-hover:block animate-in fade-in zoom-in-95 duration-200">
+                        {campaign.status === 'draft' && (
+                          <button 
+                            onClick={async () => {
+                              try {
+                                await api.post(`/campaigns/${campaign.id}/send`);
+                                toast.success('Campaign started!');
+                                fetchCampaigns();
+                              } catch (err: any) {
+                                toast.error(err?.response?.data?.message || 'Failed to start campaign');
+                              }
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                          >
+                            <Zap className="h-3.5 w-3.5" /> Start Campaign
+                          </button>
+                        )}
+                        {(campaign.status === 'failed' || campaign.status === 'completed') && (
+                          <button 
+                            onClick={async () => {
+                              try {
+                                await api.post(`/campaigns/${campaign.id}/retry`);
+                                toast.success('Retry started!');
+                                fetchCampaigns();
+                              } catch (err: any) {
+                                toast.error(err?.response?.data?.message || 'Failed to retry campaign');
+                              }
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" /> Retry Broadcast
+                          </button>
+                        )}
+                        <button 
+                          onClick={async () => {
+                            if (!confirm('Are you sure you want to delete this campaign?')) return;
+                            try {
+                              await api.delete(`/campaigns/${campaign.id}`);
+                              toast.success('Campaign deleted');
+                              fetchCampaigns();
+                            } catch (err: any) {
+                              toast.error(err?.response?.data?.message || 'Failed to delete campaign');
+                            }
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete Record
+                        </button>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -267,6 +318,10 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
 
   const [aiTime, setAiTime] = useState<{day: number, hour: number, message: string} | null>(null);
 
+  const hasValidVariants = formData.variants.length > 0 && formData.variants.every(
+    (variant) => variant.templateName && variant.templateLanguage
+  );
+
   const fetchOptimalTime = async () => {
     try {
       const res = await api.get(`/campaigns/optimal-time`);
@@ -294,11 +349,15 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
 
   const handleSubmit = async () => {
     try {
+      if (!hasValidVariants) {
+        toast.error('Select at least one valid template before creating the campaign');
+        return;
+      }
       await api.post('/campaigns', formData);
       toast.success('Campaign created successfully');
       onSuccess();
-    } catch (err) {
-      toast.error('Failed to create campaign');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to create campaign');
     }
   };
 
@@ -427,19 +486,41 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
                                                 return (
                                                     <div key={varNum} className="space-y-1">
                                                         <label className="text-[10px] font-bold text-slate-500 ml-1">Variable {varTag}</label>
-                                                        <Input 
-                                                            placeholder={`Value for ${varTag}`}
-                                                            value={v.variables?.[varNum] || ''}
-                                                            onChange={(e) => {
-                                                                const newVariants = [...formData.variants];
-                                                                newVariants[i].variables = { 
-                                                                    ...(newVariants[i].variables || {}), 
-                                                                    [varNum]: e.target.value 
-                                                                };
-                                                                setFormData({...formData, variants: newVariants});
-                                                            }}
-                                                            className="h-9 rounded-lg text-xs"
-                                                        />
+                                                        <div className="flex flex-col gap-2">
+                                                            <select 
+                                                                className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[10px] bg-slate-50 outline-none"
+                                                                value={v.variables?.[varNum]?.startsWith('{{') ? v.variables?.[varNum] : 'custom'}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value === 'custom' ? '' : e.target.value;
+                                                                    const newVariants = [...formData.variants];
+                                                                    newVariants[i].variables = { 
+                                                                        ...(newVariants[i].variables || {}), 
+                                                                        [varNum]: val 
+                                                                    };
+                                                                    setFormData({...formData, variants: newVariants});
+                                                                }}
+                                                            >
+                                                                <option value="custom">Custom Value...</option>
+                                                                <option value="{{contact.name}}">Contact Name</option>
+                                                                <option value="{{contact.phoneNumber}}">Phone Number</option>
+                                                                <option value="{{contact.city}}">City</option>
+                                                            </select>
+                                                            {(!v.variables?.[varNum]?.startsWith('{{') || v.variables?.[varNum] === undefined) && (
+                                                                <Input 
+                                                                    placeholder={`Static value for ${varTag}`}
+                                                                    value={v.variables?.[varNum] || ''}
+                                                                    onChange={(e) => {
+                                                                        const newVariants = [...formData.variants];
+                                                                        newVariants[i].variables = { 
+                                                                            ...(newVariants[i].variables || {}), 
+                                                                            [varNum]: e.target.value 
+                                                                        };
+                                                                        setFormData({...formData, variants: newVariants});
+                                                                    }}
+                                                                    className="h-8 rounded-lg text-[10px]"
+                                                                />
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -522,9 +603,21 @@ function CreateCampaignWizard({ onClose, onSuccess }: { onClose: () => void, onS
             <ChevronLeft className="mr-2 h-4 w-4" /> {step === 1 ? 'Cancel' : 'Back'}
           </Button>
           {step < 4 ? (
-            <Button onClick={next} disabled={step === 1 && !formData.name} className="bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-xl">Continue <ChevronRight className="ml-2 h-4 w-4" /></Button>
+            <Button
+              onClick={next}
+              disabled={(step === 1 && !formData.name) || (step === 2 && !hasValidVariants)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-xl"
+            >
+              Continue <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
           ) : (
-            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-xl">Launch <BarChart3 className="ml-2 h-4 w-4" /></Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!hasValidVariants}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-xl"
+            >
+              Create Campaign <CheckCircle2 className="ml-2 h-4 w-4" />
+            </Button>
           )}
         </div>
       </Card>

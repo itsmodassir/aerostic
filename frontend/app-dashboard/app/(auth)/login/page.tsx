@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { setActiveWorkspaceContext } from '@/lib/workspace-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     MessageSquare, ArrowRight, Mail, Lock, Eye, EyeOff,
     Sparkles, Shield, Zap, CheckCircle, Star
 } from 'lucide-react';
-
-const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -25,13 +24,6 @@ export default function LoginPage() {
     const [branding, setBranding] = useState<any>(null);
 
     useEffect(() => {
-        // Only clear data if we are not in the middle of a redirection or already authenticated
-        // Aggressively clearing on every mount can cause race conditions during fast redirects.
-        const hasActiveSession = document.cookie.includes('access_token');
-        if (!hasActiveSession) {
-            localStorage.clear();
-        }
-
         // Fetch branding
         const host = window.location.host;
         fetch(`/api/v1/auth/branding?host=${host}`)
@@ -56,13 +48,7 @@ export default function LoginPage() {
             // Redirect to workspace-specific dashboard
             const workspaceId = res.data.workspaceId;
             const workspaceSlug = res.data.workspaceSlug;
-            if (workspaceId && UUID_V4_REGEX.test(workspaceId)) {
-                localStorage.setItem('x-tenant-id', workspaceId);
-                localStorage.setItem('selected_tenant_id', workspaceId);
-            }
-            if (workspaceSlug) {
-                document.cookie = `selected_tenant=${workspaceSlug}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
-            }
+            setActiveWorkspaceContext({ id: workspaceId, slug: workspaceSlug });
             if (workspaceId) {
                 router.push('/dashboard');
             } else {

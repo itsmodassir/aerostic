@@ -17,6 +17,15 @@ files=(
     "frontend/app-dashboard/components/inbox/ConversationItem.tsx"
     "frontend/app-dashboard/components/whatsapp/wa-flow-builder/utils.ts"
     "frontend/app-dashboard/next.config.ts"
+    "frontend/reseller-panel/lib/api.ts"
+    "frontend/reseller-panel/lib/workspace-context.ts"
+    "frontend/reseller-panel/hooks/useAuth.ts"
+    "frontend/reseller-panel/app/login/page.tsx"
+    "frontend/admin-panel/lib/api.ts"
+    "frontend/admin-panel/hooks/useAuth.ts"
+    "frontend/admin-panel/app/login/page.tsx"
+    "restart_frontend.sh"
+    "ecosystem.config.js"
 )
 
 for file in "${files[@]}"; do
@@ -36,6 +45,11 @@ ssh -i $key $host "
 
     cd /var/www/aimstors/frontend/app-dashboard
     npm run build
-    sudo pm2 start npm --name aimstors-dashboard -- start -- -p 3000
+    cd /var/www/aimstors/frontend/admin-panel
+    npm run build
+    cd /var/www/aimstors/frontend/reseller-panel
+    npm run build
+    cd /var/www/aimstors
+    sudo pm2 start ecosystem.config.js --update-env
     sudo pm2 save
 "

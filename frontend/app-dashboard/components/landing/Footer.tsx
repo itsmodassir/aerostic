@@ -99,11 +99,11 @@ export default function Footer() {
                             </li>
                             <li className="flex items-center space-x-3 text-gray-500 font-medium">
                                 <Phone className="w-4 h-4 text-emerald-500" />
-                                <a href="tel:+1234567890" className="hover:text-emerald-600">+1 (234) 567-890</a>
+                                <a href="tel:+919876543210" className="hover:text-emerald-600">+91 98765 43210</a>
                             </li>
                             <li className="flex items-start space-x-3 text-gray-500 font-medium">
                                 <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
-                                <span>San Francisco, CA 94105</span>
+                                <span>Sector 62, Noida, Uttar Pradesh 201301</span>
                             </li>
                         </ul>
                     </div>
@@ -124,7 +124,7 @@ export default function Footer() {
                         </p>
                         <div className="flex items-center space-x-1 text-[10px] font-black text-emerald-500/50 uppercase tracking-tighter">
                             <ShieldCheck className="w-3 h-3" />
-                            <span>Verified Meta Business Partner</span>
+                            <span>Built On Official Meta APIs</span>
                         </div>
                     </div>
                 </div>

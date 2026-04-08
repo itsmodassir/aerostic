@@ -15,12 +15,17 @@ import DeveloperTab from '@/components/dashboard/DeveloperTab';
 import TeamTab from '@/components/dashboard/TeamTab';
 import SettingsTab from '@/components/dashboard/SettingsTab';
 import PartnerDashboardView from '@/components/dashboard/PartnerDashboardView';
+import { useDashboard } from '@/components/dashboard/DashboardContext';
 import { resolveWorkspaceId } from '@/components/dashboard/DashboardComponents';
+import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/api';
+import { loadMembership } from '@/lib/dashboard-bootstrap';
 
 export default function DashboardPage() {
     const params = useParams();
     const workspaceId = resolveWorkspaceId(params?.workspaceId as string | string[] | undefined);
+    const { user: authUser } = useAuth();
+    const { membership: cachedMembership, setMembership: setDashboardMembership } = useDashboard();
     
     // UI State
     const [activeTab, setActiveTab] = useState<'overview' | 'developer' | 'team' | 'settings'>('overview');
@@ -37,8 +42,9 @@ export default function DashboardPage() {
     const [walletBalance, setWalletBalance] = useState(0);
 
     useEffect(() => {
+        if (!authUser) return;
         fetchDashboardData();
-    }, [workspaceId]);
+    }, [workspaceId, authUser?.id, cachedMembership?.tenantId]);
 
     const normalizePlan = (planName: string) => {
         const name = planName?.toLowerCase() || '';
@@ -50,50 +56,40 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            const [userRes, membershipRes, msgRes, campaignRes, walletRes] = await Promise.allSettled([
-                api.get('/auth/me'),
-                api.get('/auth/membership'),
-                api.get('/messages/recent'),
-                api.get('/campaigns/recent'),
-                api.get('/billing/wallet-balance')
-            ]);
-
-            if (userRes.status === 'fulfilled' && userRes.value.status === 200) {
-                const userData = userRes.value.data;
-                setUser(userData);
-                const member = membershipRes.status === 'fulfilled' && membershipRes.value.status === 200
-                    ? membershipRes.value.data
-                    : {
-                        tenantId: userData.tenantId || null,
-                        tenant: userData.tenantId
-                            ? {
-                                id: userData.tenantId,
-                                slug: userData.tenantSlug,
-                                name: userData.tenantName,
-                                type: userData.tenantType,
-                            }
-                            : null,
-                        tenantType: userData.tenantType || null,
-                        permissions: userData.permissions || [],
-                    };
-
-                setMembership(member);
-                setUserPlan(normalizePlan(member?.tenant?.planName || member?.planName || 'Starter'));
-                try {
-                    if (member?.tenantType === 'reseller' || member?.tenant?.type === 'reseller') {
-                        const res = await api.get('/admin/reseller-stats');
-                        if (res.status === 200) setStats(res.data);
-                    } else {
-                        const res = await api.get('/analytics/overview');
-                        if (res.status === 200) setStats(res.data);
-                    }
-                } catch { /* non-fatal */ }
+            if (!authUser) {
+                setLoading(false);
+                return;
             }
 
+            // 1. Resolve membership (from cache or bootstrap)
+            const resolvedMembership = cachedMembership || (await loadMembership().catch(() => null));
+            
+            if (resolvedMembership) {
+                setMembership(resolvedMembership);
+                setDashboardMembership(resolvedMembership);
+                setUserPlan(normalizePlan(resolvedMembership?.tenant?.planName || resolvedMembership?.tenant?.type === 'reseller' ? 'Enterprise' : 'Starter'));
+            }
+
+            // 2. Parallelize all independent dashboard metrics
+            const isReseller = resolvedMembership?.tenantType === 'reseller' || resolvedMembership?.tenant?.type === 'reseller';
+            
+            const [msgRes, campaignRes, walletRes, statsRes] = await Promise.allSettled([
+                api.get('/messages/recent'),
+                api.get('/campaigns/recent'),
+                api.get('/billing/wallet-balance'),
+                isReseller ? api.get('/admin/reseller-stats') : api.get('/analytics/overview')
+            ]);
+
+            setUser(authUser);
+
+            // Update states from results
             if (msgRes.status === 'fulfilled' && msgRes.value.status === 200) setRecentMsgs(msgRes.value.data);
             if (campaignRes.status === 'fulfilled' && campaignRes.value.status === 200) setRecentCampaigns(campaignRes.value.data);
             if (walletRes.status === 'fulfilled' && walletRes.value.status === 200) {
                 setWalletBalance(walletRes.value.data?.balance || 0);
+            }
+            if (statsRes.status === 'fulfilled' && statsRes.value.status === 200) {
+                setStats(statsRes.value.data);
             }
         } catch (error) {
             console.error('Dashboard Error:', error);

@@ -1,48 +1,36 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const DASHBOARD_CANONICAL_PATHS: Record<string, string> = {
-    'contacts': '/contacts',
-    'inbox': '/inbox',
-    'campaigns': '/campaigns',
-    'templates': '/templates',
-    'analytics': '/analytics',
-    'automation': '/automation',
-    'automations': '/automations',
-    'agents': '/ai-agents',
-    'billing': '/billing',
-    'knowledge': '/knowledge-base',
-    'settings': '/settings',
-    'settings/whatsapp': '/settings/whatsapp',
-    'settings/whatsapp/forms': '/settings/whatsapp/forms',
-    'settings/whatsapp/trigger-flow': '/settings/whatsapp/trigger-flow',
-    'settings/whatsapp/flows': '/settings/whatsapp/flows',
-    'settings/ai': '/settings/ai',
-    'settings/email': '/settings/email',
-    'referrals': '/referrals',
-};
+function resolveBaseDomain(hostname: string, configuredBaseDomain?: string | null) {
+    const host = hostname.split(':')[0].toLowerCase();
+    const configured = configuredBaseDomain?.trim().toLowerCase();
 
-function toCanonicalAppPath(pathname: string): string | null {
-    const match = pathname.match(/^\/dashboard\/[^/]+(?:\/(.*))?$/);
-    if (!match) return null;
-
-    const rest = match[1];
-    if (!rest) return null;
-
-    const normalized = rest.replace(/^\/+/, '');
-
-    const canonicalPath = DASHBOARD_CANONICAL_PATHS[normalized];
-    if (canonicalPath) {
-        return canonicalPath;
+    if (configured && (host === configured || host.endsWith(`.${configured}`))) {
+        return configured;
     }
 
-    return `/${normalized}`;
+    const parts = host.split('.');
+    if (parts.length >= 2) {
+        return parts.slice(-2).join('.');
+    }
+
+    return configured || 'aimstore.in';
 }
 
 export function proxy(request: NextRequest) {
-    const hostname = request.headers.get('host') || '';
+    const hostname = (request.headers.get('host') || '').split(':')[0].toLowerCase();
     const { pathname, search } = request.nextUrl;
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'aimstore.in';
+    const baseDomain = resolveBaseDomain(hostname, process.env.NEXT_PUBLIC_BASE_DOMAIN);
+    const configuredAppHost = process.env.NEXT_PUBLIC_APP_HOST?.trim().toLowerCase();
+    const configuredAdminHost = process.env.NEXT_PUBLIC_ADMIN_HOST?.trim().toLowerCase();
+    const appHost =
+        configuredAppHost && configuredAppHost.endsWith(baseDomain)
+            ? configuredAppHost
+            : `app.${baseDomain}`;
+    const adminHost =
+        configuredAdminHost && configuredAdminHost.endsWith(baseDomain)
+            ? configuredAdminHost
+            : `admin.${baseDomain}`;
     
     // Resolve preferred tenant from cookies, fallback to 'default'
     const tenantCookie = request.cookies.get('selected_tenant')?.value;
@@ -103,12 +91,7 @@ export function proxy(request: NextRequest) {
 
     // 2. App Subdomain (Main Dashboard / Landing for logged in users)
     console.log(`[Proxy] Request: ${hostname}${pathname} | Base: ${baseDomain}`);
-    if (hostname.startsWith('app.')) {
-        const canonicalPath = toCanonicalAppPath(pathname);
-        if (canonicalPath && canonicalPath !== pathname) {
-            return NextResponse.redirect(new URL(`${canonicalPath}${search}`, request.url));
-        }
-
+    if (hostname === appHost || hostname.startsWith('app.')) {
         // If visiting root on app subdomain, resolve workspace via /dashboard route.
         if (pathname === '/') {
             return NextResponse.redirect(new URL('/dashboard', request.url));
@@ -141,7 +124,7 @@ export function proxy(request: NextRequest) {
         // Redirect explicit admin logic to admin subdomain
         if (pathname.startsWith('/admin')) {
             const strippedPath = pathname.replace('/admin', '') || '/';
-            return NextResponse.redirect(new URL(`https://admin.${baseDomain}${strippedPath}${search}`, request.url));
+            return NextResponse.redirect(new URL(`https://${adminHost}${strippedPath}${search}`, request.url));
         }
         // Redirect user app logic to app subdomain
         if (
@@ -151,7 +134,7 @@ export function proxy(request: NextRequest) {
             pathname in appPathAliases ||
             appAliasPrefixes.some(([prefix]) => pathname.startsWith(prefix))
         ) {
-            return NextResponse.redirect(new URL(`https://app.${baseDomain}${pathname}${search}`, request.url));
+            return NextResponse.redirect(new URL(`https://${appHost}${pathname}${search}`, request.url));
         }
         return NextResponse.next();
     }
@@ -166,7 +149,11 @@ export function proxy(request: NextRequest) {
     }
 
     const tenantSubdomain = hostname.replace(`.${baseDomain}`, '').split(':')[0]; // Remove port if present
+    const appSubdomain = appHost.endsWith(`.${baseDomain}`) ? appHost.replace(`.${baseDomain}`, '') : null;
+    const adminSubdomain = adminHost.endsWith(`.${baseDomain}`) ? adminHost.replace(`.${baseDomain}`, '') : null;
     const reservedSubdomains = ['www', 'app', 'admin', 'api', 'frontend', 'webhook', 'worker'];
+    if (appSubdomain) reservedSubdomains.push(appSubdomain);
+    if (adminSubdomain) reservedSubdomains.push(adminSubdomain);
 
     if (tenantSubdomain && !reservedSubdomains.includes(tenantSubdomain) && !isLocal) {
         // Exclude authentication and system paths from wildcard rewrite

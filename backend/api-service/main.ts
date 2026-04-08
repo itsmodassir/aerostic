@@ -36,6 +36,7 @@ async function bootstrap() {
   app.setGlobalPrefix("api/v1");
 
   // CORS Configuration
+  const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
   const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
   const allowedOrigins = allowedOriginsEnv
     ? allowedOriginsEnv.split(",")
@@ -43,10 +44,25 @@ async function bootstrap() {
         "https://aimstore.in",
         "https://app.aimstore.in",
         "https://admin.aimstore.in",
+        "https://reseller.aimstore.in",
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
+        "http://localhost:3004",
       ];
+
+  const isTrustedSubdomain = (origin?: string) => {
+    if (!origin) return true;
+
+    try {
+      const parsed = new URL(origin);
+      const hostname = parsed.hostname.toLowerCase();
+      const normalizedBaseDomain = baseDomain.toLowerCase();
+      return hostname === normalizedBaseDomain || hostname.endsWith(`.${normalizedBaseDomain}`);
+    } catch {
+      return false;
+    }
+  };
 
   app.enableCors({
     origin: (
@@ -57,7 +73,8 @@ async function bootstrap() {
       if (
         !origin ||
         allowedOrigins.includes("*") ||
-        allowedOrigins.includes(origin)
+        allowedOrigins.includes(origin) ||
+        isTrustedSubdomain(origin)
       ) {
         callback(null, true);
       } else {

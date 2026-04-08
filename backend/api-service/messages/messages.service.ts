@@ -4,15 +4,15 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  HttpException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
+import { WhatsappAccount } from "@shared/whatsapp/entities/whatsapp-account.entity";
 import { Message } from "@shared/database/entities/messaging/message.entity";
 import { Contact } from "@shared/database/entities/core/contact.entity";
 import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
 import { Template } from "../templates/entities/template.entity";
-import { MetaToken } from "../meta/entities/meta-token.entity"; // Need to decrypt
 import { SendMessageDto } from "./dto/send-message.dto";
 import axios from "axios";
 import { MessagesGateway } from "./messages.gateway";
@@ -34,8 +34,6 @@ export class MessagesService {
     private whatsappAccountRepo: Repository<WhatsappAccount>,
     @InjectRepository(Message)
     private messageRepo: Repository<Message>,
-    @InjectRepository(MetaToken)
-    private metaTokenRepo: Repository<MetaToken>,
     @InjectRepository(Contact)
     private contactRepo: Repository<Contact>,
     @InjectRepository(Conversation)
@@ -52,6 +50,18 @@ export class MessagesService {
 
   private readonly accountCache = new Map<string, { account: WhatsappAccount; timestamp: number }>();
   private readonly CACHE_TTL = 300000; // 5 minutes
+
+  private extractMessagePreview(message: Message | null | undefined): string {
+    if (!message) return "";
+    return (
+      message.body ||
+      message.content?.body ||
+      message.content?.text?.body ||
+      message.content?.interactive?.button_reply?.title ||
+      message.content?.interactive?.list_reply?.title ||
+      `[${message.type}]`
+    );
+  }
 
   async send(dto: SendMessageDto) {
     // 1. Resolve Tenant's WhatsApp Account (with caching)
@@ -105,15 +115,17 @@ export class MessagesService {
       conversation.lastMessageAt = new Date();
 
       // ─── Human Handover Auto-Pause ─────────────────────────────────────
-      // When a human agent sends a reply from the dashboard, pause AI for
-      // the configured number of minutes to allow the human to handle it.
-      if (dto.agentId && (conversation.aiMode !== 'human')) {
-        const pauseMinsStr = await this.adminConfigService.getConfigValue('platform.ai_pause_minutes');
-        const pauseMins = parseInt(pauseMinsStr || '30', 10);
-        const pauseUntil = new Date(Date.now() + pauseMins * 60 * 1000);
-        conversation.aiMode = 'paused';
-        conversation.aiPausedUntil = pauseUntil;
-        this.logger.log(`Human agent ${dto.agentId} replied — AI paused for ${pauseMins}m on conv ${conversation.id}`);
+      if (dto.agentId) {
+        conversation.unreadCount = 0; // Reset unread when agent replies
+        
+        if (conversation.aiMode !== 'human') {
+          const pauseMinsStr = await this.adminConfigService.getConfigValue('platform.ai_pause_minutes');
+          const pauseMins = parseInt(pauseMinsStr || '30', 10);
+          const pauseUntil = new Date(Date.now() + pauseMins * 60 * 1000);
+          conversation.aiMode = 'paused';
+          conversation.aiPausedUntil = pauseUntil;
+          this.logger.log(`Human agent ${dto.agentId} replied — AI paused for ${pauseMins}m on conv ${conversation.id}`);
+        }
       }
 
       await this.conversationRepo.save(conversation);
@@ -195,7 +207,20 @@ export class MessagesService {
           }
         );
       } catch (error) {
-        throw new BadRequestException("Insufficient wallet balance for template message");
+        if (error instanceof HttpException) {
+          const message = error.message || "Unable to prepare template message";
+          throw new BadRequestException(
+            message === "Insufficient balance"
+              ? "Insufficient wallet balance for template message"
+              : message,
+          );
+        }
+
+        this.logger.error(
+          `Template billing preparation failed for tenant ${dto.tenantId}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+        throw new BadRequestException("Unable to prepare template message");
       }
     }
 
@@ -227,45 +252,58 @@ export class MessagesService {
       });
       await this.messageRepo.save(message);
 
-      // 🔥 REAL-TIME EVENT: Emit to all connected clients in this tenant's room
-      this.messagesGateway.emitNewMessage(dto.tenantId || "", {
-        conversationId: conversation.id,
-        contactId: contact.id,
-        phone: dto.to,
-        direction: "out",
-        type: dto.type,
-        content: dto.type === "text" ? { body: dto.payload.text } : dto.payload,
-        timestamp: new Date(),
-        agentId: dto.agentId, // Include agentId to help frontend distinguish human vs bot
-      });
+      try {
+        this.messagesGateway.emitNewMessage(dto.tenantId || "", {
+          id: message.id,
+          metaId,
+          conversationId: conversation.id,
+          contactId: contact.id,
+          phone: dto.to,
+          direction: "out",
+          type: dto.type,
+          content: dto.type === "text" ? { body: dto.payload.text } : dto.payload,
+          timestamp: message.createdAt || new Date(),
+          status: message.status,
+          agentId: dto.agentId,
+        });
+      } catch (gatewayError: any) {
+        this.logger.warn(`Failed to emit real-time outbound message event: ${gatewayError?.message || gatewayError}`);
+      }
 
-      // 7. Track Usage
+      const postSendTasks: Promise<unknown>[] = [];
       if (dto.tenantId) {
-        await this.billingService.incrementUsage(
-          dto.tenantId,
-          "messages_sent",
-          1,
+        postSendTasks.push(
+          this.billingService.incrementUsage(dto.tenantId, "messages_sent", 1),
         );
       }
 
-      // Audit message sending
-      await this.auditService.logAction(
-        "SYSTEM",
-        "Message Service",
-        "SEND_WHATSAPP_MESSAGE",
-        `Destination: ${dto.to}`,
-        dto.tenantId,
-        {
-          messageId: message.id,
-          metaId,
-          type: dto.type,
-          conversationId: conversation.id,
-        },
-        undefined,
-        LogLevel.SUCCESS,
-        LogCategory.WHATSAPP,
-        "MessagesService",
+      postSendTasks.push(
+        this.auditService.logAction(
+          "SYSTEM",
+          "Message Service",
+          "SEND_WHATSAPP_MESSAGE",
+          `Destination: ${dto.to}`,
+          dto.tenantId,
+          {
+            messageId: message.id,
+            metaId,
+            type: dto.type,
+            conversationId: conversation.id,
+          },
+          undefined,
+          LogLevel.SUCCESS,
+          LogCategory.WHATSAPP,
+          "MessagesService",
+        ),
       );
+
+      const postSendResults = await Promise.allSettled(postSendTasks);
+      postSendResults.forEach((result, index) => {
+        if (result.status === "rejected") {
+          const label = index === 0 && dto.tenantId ? "usage tracking" : "audit log";
+          this.logger.warn(`WhatsApp message sent but ${label} failed: ${result.reason?.message || result.reason}`);
+        }
+      });
 
       return { sent: true, metaId, messageId: message.id };
     } catch (error) {
@@ -287,18 +325,67 @@ export class MessagesService {
           console.error("Critical: Failed to rollback template charge", rollbackError);
         }
       }
-
-      console.error("Meta API Error:", error.response?.data || error.message);
-      throw new InternalServerErrorException("Failed to send WhatsApp message");
+      const metaMessage =
+        error?.response?.data?.error?.error_user_msg ||
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to send WhatsApp message";
+      this.logger.error(`Meta API Error: ${JSON.stringify(error?.response?.data || metaMessage)}`);
+      throw new InternalServerErrorException(metaMessage);
     }
   }
 
   async getConversations(tenantId: string) {
-    // Return all conversations that aren't resolved or archived, or just all for now to be safe
-    return this.conversationRepo.find({
+    const conversations = await this.conversationRepo.find({
       where: { tenantId },
-      relations: ["contact"],
+      relations: ["contact", "assignedAgent"],
       order: { lastMessageAt: "DESC" },
+    });
+
+    const latestMessages = await this.messageRepo
+      .createQueryBuilder("message")
+      .distinctOn(["message.conversationId"])
+      .where("message.tenantId = :tenantId", { tenantId })
+      .orderBy("message.conversationId", "ASC")
+      .addOrderBy("message.createdAt", "DESC")
+      .getMany();
+
+    const latestMessageByConversation = new Map(
+      latestMessages
+        .filter((message) => !!message.conversationId)
+        .map((message) => [message.conversationId, message]),
+    );
+
+    return conversations.map((conversation) => {
+      const latestMessage = latestMessageByConversation.get(conversation.id);
+      return {
+        ...conversation,
+        contact: {
+          ...conversation.contact,
+          name:
+            conversation.contact?.name ||
+            conversation.contactName ||
+            conversation.phoneNumber ||
+            "Unknown Contact",
+          phoneNumber:
+            conversation.contact?.phoneNumber || conversation.phoneNumber || "",
+        },
+        assignedTo: conversation.assignedAgent
+          ? {
+              id: conversation.assignedAgent.id,
+              name: conversation.assignedAgent.name,
+              email: conversation.assignedAgent.email,
+              avatar: conversation.assignedAgent.avatar,
+              role: conversation.assignedAgent.role === "super_admin" ? "admin" : "agent",
+              status: "online",
+            }
+          : undefined,
+        channel: "whatsapp",
+        priority: "medium",
+        isBot: conversation.aiMode === "ai",
+        lastMessage: this.extractMessagePreview(latestMessage),
+      };
     });
   }
 
@@ -321,10 +408,17 @@ export class MessagesService {
   }
 
   async getMessages(tenantId: string, conversationId: string) {
-    return this.messageRepo.find({
+    const messages = await this.messageRepo.find({
       where: { tenantId, conversationId },
       order: { createdAt: "ASC" },
     });
+
+    return messages.map((message) => ({
+      ...message,
+      content:
+        message.content ||
+        (message.body ? { body: message.body } : null),
+    }));
   }
 
   async getConversation(conversationId: string): Promise<Conversation | null> {

@@ -1,12 +1,5 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({
-    subsets: ['latin'],
-    weight: ['400', '500', '600', '700', '800'],
-    display: 'swap',
-});
 
 export const viewport: { themeColor: string; width: string; initialScale: number } = {
     themeColor: '#3B82F6',
@@ -72,7 +65,7 @@ export default function RootLayout({
                     }}
                 />
             </head>
-            <body className={`${inter.className} font-sans antialiased`}>
+            <body className="font-sans antialiased">
                 {children}
             </body>
         </html>

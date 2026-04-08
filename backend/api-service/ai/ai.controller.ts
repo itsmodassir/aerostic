@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   UseGuards,
   UseInterceptors,
@@ -16,6 +18,7 @@ import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { Param } from "@nestjs/common";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
 import { KnowledgeBaseService } from "./knowledge-base.service";
+import { AdminConfigService } from "../admin/services/admin-config.service";
 
 @Controller("ai")
 @UseGuards(JwtAuthGuard)
@@ -24,6 +27,7 @@ export class AiController {
     @InjectRepository(AiAgent)
     private aiAgentRepo: Repository<AiAgent>,
     private kbService: KnowledgeBaseService,
+    private adminConfigService: AdminConfigService,
   ) { }
 
   @Get("agent")
@@ -50,7 +54,13 @@ export class AiController {
   ) {
     let agent = await this.aiAgentRepo.findOneBy({ tenantId });
     if (!agent) {
-      agent = this.aiAgentRepo.create({ tenantId });
+      agent = this.aiAgentRepo.create({
+        tenantId,
+        name: "Core AI Assistant",
+        systemPrompt:
+          body.systemPrompt ||
+          "You are a helpful and friendly customer support agent for Aimstors Solution. Answer concisely.",
+      });
     }
 
     if (body.systemPrompt !== undefined) agent.systemPrompt = body.systemPrompt;
@@ -90,6 +100,26 @@ export class AiController {
     return { status: "processed" };
   }
 
+  @Get("provider-status")
+  async getProviderStatus() {
+    const geminiKey = await this.adminConfigService.getConfigValue("ai.gemini_api_key");
+    const openAiKey = await this.adminConfigService.getConfigValue("ai.openai_api_key");
+    const platformAiEnabled =
+      (await this.adminConfigService.getConfigValue("platform.ai_enabled")) || "true";
+
+    return {
+      platformAiEnabled: String(platformAiEnabled).toLowerCase() === "true",
+      hasGeminiKey: Boolean(geminiKey),
+      hasOpenAiKey: Boolean(openAiKey),
+      preferredProvider: geminiKey ? "gemini" : openAiKey ? "openai" : null,
+      availableModels: geminiKey
+        ? ["gemini-flash-lite-latest", "gemini-1.5-flash", "gemini-1.5-pro"]
+        : openAiKey
+          ? ["gpt-4o-mini", "gpt-4o"]
+          : [],
+    };
+  }
+
   // --- Knowledge Base Management ---
 
   @Get("knowledge-bases")
@@ -109,17 +139,43 @@ export class AiController {
     );
   }
 
+  @Patch("knowledge-bases/:id")
+  async updateKnowledgeBase(
+    @UserTenant() tenantId: string,
+    @Param("id") id: string,
+    @Body() body: { name?: string; description?: string | null },
+  ) {
+    return this.kbService.updateKnowledgeBase(tenantId, id, body);
+  }
+
+  @Delete("knowledge-bases/:id")
+  async deleteKnowledgeBase(
+    @UserTenant() tenantId: string,
+    @Param("id") id: string,
+  ) {
+    return this.kbService.deleteKnowledgeBase(tenantId, id);
+  }
+
   @Post("knowledge-bases/ingest")
   async ingestKnowledge(
     @UserTenant() tenantId: string,
     @Body() body: { knowledgeBaseId: string; content: string; metadata?: any },
   ) {
-    // Basic verification that KB belongs to tenant would be good in a real app
+    await this.kbService.assertOwnership(tenantId, body.knowledgeBaseId);
     return this.kbService.ingestText(
       body.knowledgeBaseId,
       body.content,
       body.metadata,
     );
+  }
+
+  @Post("knowledge-bases/ingest-url")
+  async ingestKnowledgeUrl(
+    @UserTenant() tenantId: string,
+    @Body() body: { knowledgeBaseId: string; url: string; metadata?: any },
+  ) {
+    await this.kbService.assertOwnership(tenantId, body.knowledgeBaseId);
+    return this.kbService.ingestUrl(body.knowledgeBaseId, body.url, body.metadata);
   }
 
   @Post("knowledge-bases/upload")
@@ -136,18 +192,8 @@ export class AiController {
       throw new BadRequestException("File is required");
     }
 
-    if (file.mimetype === "application/pdf") {
-      return this.kbService.ingestPdf(knowledgeBaseId, file.buffer, {
-        filename: file.originalname,
-        uploadedAt: new Date().toISOString(),
-      });
-    } else if (file.mimetype === "text/plain" || file.mimetype === "text/csv") {
-      const text = file.buffer.toString("utf8");
-      return this.kbService.ingestText(knowledgeBaseId, text, {
-        filename: file.originalname,
-        uploadedAt: new Date().toISOString(),
-      });
-    }
+    await this.kbService.assertOwnership(tenantId, knowledgeBaseId);
+    return this.kbService.ingestDocument(knowledgeBaseId, file);
   }
 
   @Post("setup-expert-guide")
@@ -157,11 +203,19 @@ export class AiController {
     let kb = existingKbs.find(k => k.name === "Aimstors Solution Master Guide");
 
     if (!kb) {
-      kb = await this.kbService.createKnowledgeBase(
+      const createdKb = await this.kbService.createKnowledgeBase(
         tenantId,
         "Aimstors Solution Master Guide",
         "Official documentation about the Aimstors SaaS platform, including architecture, billing, and automation features.",
       );
+      kb = {
+        id: createdKb.id,
+        name: createdKb.name,
+        description: createdKb.description,
+        createdAt: createdKb.createdAt,
+        updatedAt: createdKb.updatedAt,
+        chunkCount: 0,
+      };
     }
 
     // 2. Construct Master Guide Content

@@ -6,8 +6,9 @@ import {
   IsEnum,
   IsNumber,
   IsUUID,
+  IsBoolean,
 } from "class-validator";
-import { ContactStatus } from "../entities/contact.entity";
+import { ContactStatus } from "@shared/database/entities/core/contact.entity";
 
 export class CreateContactDto {
   @IsOptional()
@@ -37,4 +38,16 @@ export class CreateContactDto {
   @IsNotEmpty()
   @IsString()
   name: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isVIP?: boolean;
+
+  @IsOptional()
+  @IsString({ each: true })
+  groups?: string[];
 }

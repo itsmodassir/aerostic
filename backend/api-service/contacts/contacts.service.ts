@@ -128,12 +128,14 @@ export class ContactsService {
 
     const firstRow = data[0];
     const keys = Object.keys(firstRow);
-    const phoneKey = keys.find(k => k.toLowerCase() === "phone");
-    const nameKey = keys.find(k => k.toLowerCase() === "name");
+    const phoneKey = keys.find(k => k.toLowerCase() === "phone" || k.toLowerCase() === "mobile");
+    const nameKey = keys.find(k => k.toLowerCase() === "name" || k.toLowerCase() === "full name");
     const emailKey = keys.find(k => k.toLowerCase() === "email");
-    const groupsKey = keys.find(k => k.toLowerCase() === "groups");
+    const groupsKey = keys.find(k => k.toLowerCase() === "groups" || k.toLowerCase() === "tags");
+    const countryCodeKey = keys.find(k => k.toLowerCase() === "countrycode" || k.toLowerCase() === "country_code" || k.toLowerCase() === "code");
+    const isVipKey = keys.find(k => k.toLowerCase() === "isvip" || k.toLowerCase() === "vip");
 
-    if (!phoneKey) throw new ConflictException("File must have a 'phone' column");
+    if (!phoneKey) throw new ConflictException("File must have a 'phone' or 'mobile' column");
 
     let imported = 0;
     let updated = 0;
@@ -141,14 +143,17 @@ export class ContactsService {
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
-        let phone = String(row[phoneKey] || "").replace(/\s+/g, "");
+        let phone = String(row[phoneKey] || "").replace(/[^0-9+]/g, "");
         if (!phone) {
             errors.push(`Row ${i+2}: Missing phone number`);
             continue;
         }
 
-        // Normalize phone number (ensure + exists)
-        if (!phone.startsWith("+")) {
+        // Normalize phone number
+        if (!phone.startsWith("+") && phone.length <= 10) {
+            const code = (countryCodeKey && row[countryCodeKey]) ? String(row[countryCodeKey]).replace("+", "") : "91";
+            phone = "+" + code + phone;
+        } else if (!phone.startsWith("+")) {
             phone = "+" + phone;
         }
 
@@ -162,13 +167,17 @@ export class ContactsService {
                     phoneNumber: phone,
                     name: (nameKey && row[nameKey]) ? String(row[nameKey]) : "Imported Contact",
                     email: (emailKey && row[emailKey]) ? String(row[emailKey]) : undefined,
-                    groups: (groupsKey && row[groupsKey]) ? String(row[groupsKey]).split(";").filter(g => g) : [],
+                    groups: (groupsKey && row[groupsKey]) ? String(row[groupsKey]).split(/[;,]/).map(g => g.trim()).filter(g => g) : [],
+                    countryCode: (countryCodeKey && row[countryCodeKey]) ? String(row[countryCodeKey]).replace("+", "") : undefined,
+                    isVIP: (isVipKey && row[isVipKey]) ? (String(row[isVipKey]).toLowerCase() === "yes" || String(row[isVipKey]) === "1" || row[isVipKey] === true) : false,
                 });
                 imported++;
             } else {
                 if (nameKey && row[nameKey]) contact!.name = String(row[nameKey]);
                 if (emailKey && row[emailKey]) contact!.email = String(row[emailKey]);
-                if (groupsKey && row[groupsKey]) contact!.groups = String(row[groupsKey]).split(";").filter(g => g);
+                if (groupsKey && row[groupsKey]) contact!.groups = String(row[groupsKey]).split(/[;,]/).map(g => g.trim()).filter(g => g);
+                if (countryCodeKey && row[countryCodeKey]) contact!.countryCode = String(row[countryCodeKey]).replace("+", "");
+                if (isVipKey && row[isVipKey]) contact!.isVIP = (String(row[isVipKey]).toLowerCase() === "yes" || String(row[isVipKey]) === "1" || row[isVipKey] === true);
                 updated++;
             }
 

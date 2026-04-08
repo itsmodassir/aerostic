@@ -11,6 +11,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { toast } from 'sonner';
+import { setActiveWorkspaceContext } from '@/lib/workspace-context';
+
+function isAllowedResellerRole(role?: string | null) {
+    return role === 'super_admin' || role === 'platform_admin' || role === 'reseller_admin' || role === 'admin';
+}
 
 export default function PartnerLogin() {
     const [email, setEmail] = useState('');
@@ -23,7 +28,7 @@ export default function PartnerLogin() {
     useEffect(() => {
         // Fetch branding for the current host (Distributor Identity)
         const host = window.location.host;
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || ''}/api/v1/auth/branding?host=${host}`)
+        fetch(`/api/v1/auth/branding?host=${host}`, { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data) setBranding(data);
@@ -42,21 +47,20 @@ export default function PartnerLogin() {
                 localStorage.setItem('user', JSON.stringify(res.data.user));
                 
                 // Enforce Reseller Role Only
-                if (res.data.user.role !== 'reseller' && res.data.user.role !== 'admin') {
+                if (!isAllowedResellerRole(res.data.user.role)) {
                     toast.error('Access Denied: Partner Credentials Required', { id: toastId });
                     setLoading(false);
                     return;
                 }
             }
 
-            const workspaceId = res.data.workspaceId;
-            if (workspaceId) {
-                localStorage.setItem('x-tenant-id', workspaceId);
-                localStorage.setItem('selected_tenant_id', workspaceId);
-            }
+            setActiveWorkspaceContext({
+                id: res.data.workspaceId,
+                slug: res.data.workspaceSlug,
+            });
 
             toast.success('Authorized: Welcome to Partner Hub', { id: toastId });
-            router.push('/');
+            router.replace('/');
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Authentication Protocol Failed', { id: toastId });
         } finally {

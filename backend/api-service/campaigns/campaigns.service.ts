@@ -4,7 +4,7 @@ import { Repository } from "typeorm";
 import { randomBytes } from "crypto";
 import { Campaign } from "./entities/campaign.entity";
 import { CampaignTrigger } from "./entities/campaign-trigger.entity";
-import { Contact } from "../contacts/entities/contact.entity";
+import { Contact } from "@shared/database/entities/core/contact.entity";
 import { ContactsService } from "../contacts/contacts.service";
 import { MessagesService } from "../messages/messages.service";
 import { AuditService, LogLevel, LogCategory } from "../audit/audit.service";
@@ -38,18 +38,59 @@ export class CampaignsService {
   ) { }
 
   async create(tenantId: string, data: any) {
+    const variants =
+      Array.isArray(data.variants) && data.variants.length > 0
+        ? data.variants
+        : [];
+
+    const primaryTemplateName = data.templateName || variants[0]?.templateName;
+    const primaryTemplateLanguage =
+      data.templateLanguage || variants[0]?.templateLanguage;
+
+    if (!data.name?.trim()) {
+      throw new BadRequestException("Campaign name is required");
+    }
+
+    if (!primaryTemplateName) {
+      throw new BadRequestException("At least one template must be selected");
+    }
+
+    if (
+      variants.some(
+        (variant: any) => !variant?.templateName || !variant?.templateLanguage,
+      )
+    ) {
+      throw new BadRequestException(
+        "Every campaign variant must include a template and language",
+      );
+    }
+
+    const parsedScheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : undefined;
+    if (parsedScheduledAt && Number.isNaN(parsedScheduledAt.getTime())) {
+      throw new BadRequestException("Invalid scheduled time");
+    }
+
     const campaign = this.campaignRepo.create({
       tenantId,
-      name: data.name,
-      templateName: data.templateName || (data.variants?.[0]?.templateName),
-      templateLanguage: data.templateLanguage || (data.variants?.[0]?.templateLanguage),
+      name: data.name.trim(),
+      templateName: primaryTemplateName,
+      templateLanguage: primaryTemplateLanguage,
       recipientType: data.recipientType || "ALL",
       recipients: data.recipients || [],
       isABTest: data.isABTest || false,
-      variants: data.variants || [],
+      variants,
       segmentationConfig: data.segmentationConfig || {},
-      status: "draft",
+      scheduledAt: parsedScheduledAt,
+      isRecurring: !!data.isRecurring,
+      recurrenceRule: data.recurrenceRule || null,
+      status:
+        parsedScheduledAt && parsedScheduledAt.getTime() > Date.now() ? "scheduled" : "draft",
     });
+
+    if (campaign.isRecurring) {
+      await this.handleRecurrence(campaign);
+    }
+
     return this.campaignRepo.save(campaign);
   }
 
@@ -309,9 +350,13 @@ export class CampaignsService {
     return campaign;
   }
 
-  /**
-   * Calculates and sets the next run time for a recurring campaign.
-   */
+  async delete(tenantId: string, id: string) {
+    const campaign = await this.campaignRepo.findOneBy({ id, tenantId });
+    if (!campaign) throw new NotFoundException("Campaign not found");
+    await this.campaignRepo.remove(campaign);
+    return { success: true };
+  }
+
   private async handleRecurrence(campaign: Campaign) {
     if (!campaign.recurrenceRule) return;
 

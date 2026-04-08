@@ -62,6 +62,9 @@ export class Contact {
   @JoinColumn({ name: "assigned_to" })
   assignedTo: User;
 
+  @Column({ name: "country_code", nullable: true })
+  countryCode: string;
+
   @Column({ name: "is_vip", default: false })
   isVIP: boolean;
 

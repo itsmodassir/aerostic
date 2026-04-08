@@ -1,12 +1,5 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({
-    subsets: ['latin'],
-    weight: ['400', '500', '600', '700', '800'],
-    display: 'swap',
-});
 
 export const viewport: { themeColor: string; width: string; initialScale: number } = {
     themeColor: '#3B82F6',
@@ -15,6 +8,7 @@ export const viewport: { themeColor: string; width: string; initialScale: number
 };
 
 export const metadata: Metadata = {
+    metadataBase: new URL('https://aimstore.in'),
     title: 'Aimstors Solution - WhatsApp Marketing & Automation Platform',
     description: 'India\'s #1 WhatsApp Marketing Platform. Send bulk campaigns, deploy AI chatbots, automate customer support, and grow your business with Aimstors Solution.',
     keywords: 'whatsapp marketing, whatsapp api, whatsapp automation, bulk whatsapp, whatsapp crm, whatsapp chatbot, india',
@@ -99,7 +93,7 @@ export default function RootLayout({
                     }}
                 />
             </head>
-            <body className={`${inter.className} font-sans antialiased`}>
+            <body className="font-sans antialiased">
                 {children}
             </body>
         </html>

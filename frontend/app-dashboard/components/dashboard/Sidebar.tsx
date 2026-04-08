@@ -57,23 +57,35 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
     const { isSidebarCollapsed, toggleSidebarCollapse, isSidebarOpen, setIsSidebarOpen, membership } = useDashboard();
     
     const permissions = user?.permissions || membership?.permissions || [];
-    const activeDashboardHref = membership?.tenant?.slug
+    const workspacePrefix = membership?.tenant?.slug
         ? `/dashboard/${membership.tenant.slug}`
         : membership?.tenantId
             ? `/dashboard/${membership.tenantId}`
-            : '/dashboard';
-    
+            : '';
+
     const visibleNavigation = useMemo(() => {
-        return NAVIGATION.map(item => {
+        const items = NAVIGATION.map(item => {
+            // Apply workspace prefix to all internal links
+            const transformHref = (href?: string) => {
+                if (!href || href.startsWith('http')) return href;
+                if (!workspacePrefix) return href;
+                // Avoid double prefixing if already prefixed
+                if (href.startsWith(workspacePrefix)) return href;
+                return `${workspacePrefix}${href}`;
+            };
+
+            const newItem = { ...item, href: transformHref(item.href) };
             if (item.children) {
-                const visibleChildren = item.children.filter(child => {
+                newItem.children = item.children.map(child => ({
+                    ...child,
+                    href: transformHref(child.href) || '#'
+                })).filter(child => {
                     if (isAdmin) return true;
                     if (child.permission && !permissions.includes(child.permission)) return false;
                     return true;
                 });
-                return { ...item, children: visibleChildren };
             }
-            return item;
+            return newItem;
         }).filter(item => {
             if (item.children && item.children.length === 0) return false;
             if (isAdmin) return true;
@@ -81,7 +93,9 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
             if (item.permission && !permissions.includes(item.permission)) return false;
             return true;
         });
-    }, [isAdmin, permissions]);
+
+        return items;
+    }, [isAdmin, permissions, workspacePrefix]);
 
     return (
         <aside className={clsx(
@@ -117,7 +131,7 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
                 {visibleNavigation.map((item) => (
                     <NavRow 
                         key={item.name}
-                        item={item.name === 'Dashboard' ? { ...item, href: activeDashboardHref } : item}
+                        item={item}
                         pathname={pathname} 
                         isCollapsed={isSidebarCollapsed} 
                         onCloseMobile={() => setIsSidebarOpen(false)} 
@@ -131,8 +145,28 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
 const NavRow = memo(function NavRow({ item, pathname, isCollapsed, onCloseMobile }: any) {
     const [isOpen, setIsOpen] = React.useState(false);
     const hasChildren = item.children && item.children.length > 0;
+    
+    // Improved active detection for workspace-prefixed paths
+    const isActive = useMemo(() => {
+        if (!item.href && !hasChildren) return false;
+        
+        const checkActive = (href: string) => {
+            if (pathname === href) return true;
+            // Handle routes like /dashboard/[slug] accurately
+            if (href.endsWith('/dashboard') || href.match(/\/dashboard\/[^\/]+$/)) {
+                return pathname === href;
+            }
+            return pathname.startsWith(href);
+        };
+
+        if (item.href && checkActive(item.href)) return true;
+        if (hasChildren) {
+            return item.children.some((c: any) => checkActive(c.href));
+        }
+        return false;
+    }, [pathname, item.href, item.children, hasChildren]);
+
     const isChildActive = hasChildren && item.children.some((c: any) => pathname === c.href || (c.href !== '/dashboard' && pathname.startsWith(c.href)));
-    const isActive = (item.href && pathname === item.href) || (item.href && item.href !== '/dashboard' && pathname.startsWith(item.href)) || isChildActive;
 
     if (hasChildren) {
         const showExpand = isOpen || isChildActive;

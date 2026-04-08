@@ -3,28 +3,34 @@ import axios from "axios";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { MetaToken } from "./entities/meta-token.entity";
-import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
+import { WhatsappAccount } from "@shared/whatsapp/entities/whatsapp-account.entity";
 import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { RedisService } from "@shared/redis.service";
 import { EncryptionService } from "@shared/encryption.service";
 import { Template } from "@api/templates/entities/template.entity";
 import { AdminConfigService } from "@api/admin/services/admin-config.service";
 import { PiiMasker } from "@shared/utils/pii-masker.util";
+import { Message } from "@shared/database/entities/messaging/message.entity";
+import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
+import { Contact } from "@shared/database/entities/core/contact.entity";
 
 @Injectable()
 export class MetaService {
   private readonly logger = new Logger(MetaService.name);
   constructor(
     private configService: ConfigService,
-    @InjectRepository(MetaToken)
-    private metaTokenRepo: Repository<MetaToken>,
     @InjectRepository(WhatsappAccount)
     private whatsappAccountRepo: Repository<WhatsappAccount>,
     @InjectRepository(SystemConfig)
     private configRepo: Repository<SystemConfig>,
     @InjectRepository(Template)
     private templateRepo: Repository<Template>,
+    @InjectRepository(Message)
+    private messageRepo: Repository<Message>,
+    @InjectRepository(Conversation)
+    private conversationRepo: Repository<Conversation>,
+    @InjectRepository(Contact)
+    private contactRepo: Repository<Contact>,
     private adminConfigService: AdminConfigService,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
@@ -75,11 +81,112 @@ export class MetaService {
             await this.handleTemplateStatus(value);
           }
 
-          // Future: Handle Incoming Messages (value.messages)
+          // Handle Incoming Messages (value.messages)
+          if (change.field === "messages") {
+            await this.handleIncomingMessages(value);
+          }
         }
       }
     }
     return "EVENT_RECEIVED";
+  }
+
+  private async handleIncomingMessages(value: any) {
+    const metadata = value.metadata;
+    const phoneNumberId = metadata?.phone_number_id;
+    if (!phoneNumberId) return;
+
+    // 1. Resolve Account/Tenant
+    const account = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
+    if (!account) {
+      this.logger.warn(`Received message for unknown phoneNumberId: ${phoneNumberId}`);
+      return;
+    }
+    const tenantId = account.tenantId;
+
+    // 2. Process Contacts
+    const contacts = value.contacts || [];
+    const contactMap = new Map<string, string>(); // wa_id -> profile_name
+    for (const c of contacts) {
+      contactMap.set(c.wa_id, c.profile?.name);
+    }
+
+    // 3. Process Messages
+    const messages = value.messages || [];
+    for (const msg of messages) {
+      const from = msg.from; // Sender WaId
+      const profileName = contactMap.get(from) || from;
+
+      // a. Find or Create Contact
+      let contact = await this.contactRepo.findOneBy({ tenantId, phoneNumber: from });
+      if (!contact) {
+        contact = this.contactRepo.create({
+          tenantId,
+          phoneNumber: from,
+          name: profileName,
+        });
+        await this.contactRepo.save(contact);
+      }
+
+      // b. Find or Create Conversation
+      let conversation = await this.conversationRepo.findOne({
+        where: { tenantId, contactId: contact.id, status: "open" }
+      });
+      if (!conversation) {
+        conversation = this.conversationRepo.create({
+          tenantId,
+          contactId: contact.id,
+          phoneNumber: from,
+          phoneNumberId: phoneNumberId,
+          status: "open",
+          firstInboundAt: new Date(),
+        });
+      }
+      conversation.lastMessageAt = new Date();
+      conversation.lastInboundAt = new Date();
+      conversation.unreadCount = (conversation.unreadCount || 0) + 1;
+      await this.conversationRepo.save(conversation);
+
+      // c. Save Message
+      let bodyText = "";
+      if (msg.type === "text") bodyText = msg.text?.body;
+      else if (msg.type === "interactive") {
+          bodyText = msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || "[Interactive]";
+      } else {
+          bodyText = `[${msg.type}]`;
+      }
+
+      const message = this.messageRepo.create({
+        tenantId,
+        conversationId: conversation.id,
+        direction: "in",
+        type: msg.type,
+        body: bodyText,
+        content: msg,
+        metaMessageId: msg.id,
+        status: "received",
+      });
+      await this.messageRepo.save(message);
+
+      // d. Real-time Notification via Redis
+      await this.redisService.publish("chat_events", JSON.stringify({
+          event: "newMessage",
+          tenantId,
+          payload: {
+              conversationId: conversation.id,
+              contactId: contact.id,
+              phone: from,
+              direction: "in",
+              type: msg.type,
+              body: bodyText,
+              content: msg,
+              timestamp: new Date(),
+              contactName: contact.name,
+          }
+      }));
+
+      this.logger.log(`Processed incoming message ${msg.id} for tenant ${tenantId}`);
+    }
   }
 
   private async handleTemplateStatus(value: any) {

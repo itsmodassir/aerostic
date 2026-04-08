@@ -11,34 +11,47 @@ import {
 import { clsx } from 'clsx';
 
 // ─── Compact Stat Card ────────────────────────────────────────────────────────
+// ─── Compact Stat Card ────────────────────────────────────────────────────────
 function StatCard({ title, value, icon: Icon, trend, trendUp, color }: any) {
     const colorMap: Record<string, string> = {
-        blue: 'bg-blue-50 text-blue-600 border-blue-100',
-        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-        purple: 'bg-purple-50 text-purple-600 border-purple-100',
-        amber: 'bg-amber-50 text-amber-600 border-amber-100',
-        indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+        blue: 'bg-blue-50/50 text-blue-600 border-blue-100/50 shadow-blue-100/20',
+        emerald: 'bg-emerald-50/50 text-emerald-600 border-emerald-100/50 shadow-emerald-100/20',
+        purple: 'bg-purple-50/50 text-purple-600 border-purple-100/50 shadow-purple-100/20',
+        amber: 'bg-amber-50/50 text-amber-600 border-amber-100/50 shadow-amber-100/20',
+        indigo: 'bg-indigo-50/50 text-indigo-600 border-indigo-100/50 shadow-indigo-100/20',
     };
+    
     return (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:border-gray-200 transition-all group">
-            <div className="flex items-center justify-between mb-3">
-                <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center border", colorMap[color] || colorMap.blue)}>
-                    <Icon size={15} strokeWidth={2.5} />
+        <div className="bg-white rounded-[24px] border border-gray-100 p-5 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-full blur-3xl -mr-12 -mt-12 opacity-50 group-hover:bg-blue-50 transition-colors" />
+            
+            <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className={clsx(
+                    "w-10 h-10 rounded-xl flex items-center justify-center border-2 shadow-lg transition-transform group-hover:scale-110 duration-300", 
+                    colorMap[color] || colorMap.blue
+                )}>
+                    <Icon size={18} strokeWidth={2.5} />
                 </div>
                 {trend && (
-                    <span className={clsx(
-                        "text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full",
-                        trendUp === true ? "text-emerald-600 bg-emerald-50" :
-                        trendUp === false ? "text-red-500 bg-red-50" : "text-gray-500 bg-gray-50"
+                    <div className={clsx(
+                        "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm",
+                        trendUp === true ? "text-emerald-700 bg-emerald-50 border border-emerald-100" :
+                        trendUp === false ? "text-red-700 bg-red-50 border border-red-100" : 
+                        "text-gray-600 bg-gray-50 border border-gray-100"
                     )}>
+                        {trendUp === true && <ArrowUpRight size={10} strokeWidth={3} />}
+                        {trendUp === false && <ArrowDownLeft size={10} strokeWidth={3} />}
                         {trend}
-                    </span>
+                    </div>
                 )}
             </div>
-            <p className="text-2xl font-black text-gray-900 tracking-tighter leading-none mb-1">
-                {typeof value === 'number' ? value.toLocaleString() : value}
-            </p>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{title}</p>
+            
+            <div className="relative z-10">
+                <p className="text-3xl font-black text-gray-900 tracking-tighter leading-none mb-1.5 group-hover:text-blue-600 transition-colors">
+                    {typeof value === 'number' ? value.toLocaleString() : value}
+                </p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{title}</p>
+            </div>
         </div>
     );
 }
@@ -46,33 +59,39 @@ function StatCard({ title, value, icon: Icon, trend, trendUp, color }: any) {
 // ─── Usage Bar ────────────────────────────────────────────────────────────────
 function UsageBar({ label, used, limit, percent, color, icon: Icon, linkHref, linkLabel }: any) {
     const barColor: Record<string, string> = {
-        blue: 'bg-blue-500',
-        purple: 'bg-purple-500',
-        indigo: 'bg-indigo-500',
+        blue: 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]',
+        purple: 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]',
+        indigo: 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]',
     };
     return (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+        <div className="bg-white rounded-[24px] border border-gray-100 p-5 shadow-sm hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <Icon size={14} className={
-                        color === 'blue' ? 'text-blue-500' :
-                        color === 'purple' ? 'text-purple-500' : 'text-indigo-500'
-                    } strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-gray-700">{label}</span>
+                    <div className={clsx(
+                        "p-1.5 rounded-lg",
+                        color === 'blue' ? 'bg-blue-50 text-blue-500' :
+                        color === 'purple' ? 'bg-purple-50 text-purple-500' : 'bg-indigo-50 text-indigo-500'
+                    )}>
+                        <Icon size={14} strokeWidth={3} />
+                    </div>
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{label}</span>
                 </div>
-                <span className="text-[10px] font-black text-gray-400">{used.toLocaleString()} / {limit > 0 ? limit.toLocaleString() : '∞'}</span>
+                <span className="text-[10px] font-black text-gray-900 tracking-tight">
+                    {used.toLocaleString()} <span className="text-gray-300">/</span> {limit > 0 ? limit.toLocaleString() : '∞'}
+                </span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+            <div className="w-full bg-gray-100/50 rounded-full h-2 mb-3 overflow-hidden">
                 <div
-                    className={clsx("h-1.5 rounded-full transition-all", barColor[color] || barColor.blue)}
+                    className={clsx("h-2 rounded-full transition-all duration-700 ease-out", barColor[color] || barColor.blue)}
                     style={{ width: `${Math.max(2, percent)}%` }}
                 />
             </div>
             <div className="flex items-center justify-between">
-                <span className="text-[10px] text-gray-400">{Math.round(100 - percent)}% remaining</span>
+                <span className="text-[9px] font-bold text-gray-400">{Math.round(100 - percent)}% available</span>
                 {linkHref && (
-                    <Link href={linkHref} className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-wide">
-                        {linkLabel} →
+                    <Link href={linkHref} className="text-[10px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider flex items-center gap-1 group">
+                        {linkLabel} 
+                        <ArrowUpRight size={10} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </Link>
                 )}
             </div>
@@ -83,26 +102,31 @@ function UsageBar({ label, used, limit, percent, color, icon: Icon, linkHref, li
 // ─── Quick Action Button ──────────────────────────────────────────────────────
 function QuickAction({ icon: Icon, label, href, color, disabled }: any) {
     const colorMap: Record<string, string> = {
-        blue: 'bg-blue-600',
-        emerald: 'bg-emerald-500',
-        purple: 'bg-violet-600',
-        amber: 'bg-amber-500',
-        indigo: 'bg-indigo-600',
-        pink: 'bg-pink-600',
-        teal: 'bg-teal-500',
+        blue: 'bg-blue-600 shadow-blue-200',
+        emerald: 'bg-emerald-500 shadow-emerald-200',
+        purple: 'bg-violet-600 shadow-purple-200',
+        amber: 'bg-amber-500 shadow-amber-200',
+        indigo: 'bg-indigo-600 shadow-indigo-200',
+        pink: 'bg-pink-600 shadow-pink-200',
+        teal: 'bg-teal-500 shadow-teal-200',
     };
     return (
         <Link
             href={disabled ? '#' : href}
             className={clsx(
-                "group flex flex-col items-center gap-1.5 p-2 sm:p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-md transition-all text-center h-full",
+                "group flex flex-col items-center gap-2 p-3 bg-white rounded-[20px] border border-gray-100 hover:border-blue-200 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 text-center h-full",
                 disabled && "opacity-40 pointer-events-none grayscale"
             )}
         >
-            <div className={clsx("w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform", colorMap[color] || colorMap.blue)}>
-                <Icon size={14} sm={16} strokeWidth={2.5} />
+            <div className={clsx(
+                "w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all duration-500 group-hover:rotate-12", 
+                colorMap[color] || colorMap.blue
+            )}>
+                <Icon size={18} strokeWidth={2.5} />
             </div>
-            <span className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-tight sm:tracking-wide group-hover:text-gray-800 leading-tight truncate w-full">{label}</span>
+            <span className="text-[10px] font-black text-gray-400 group-hover:text-blue-600 uppercase tracking-wide transition-colors leading-tight truncate w-full">
+                {label}
+            </span>
         </Link>
     );
 }
@@ -110,32 +134,37 @@ function QuickAction({ icon: Icon, label, href, color, disabled }: any) {
 // ─── Message Row ──────────────────────────────────────────────────────────────
 function MessageRow({ msg }: { msg: any }) {
     const statusColor: Record<string, string> = {
-        read: 'text-blue-600 bg-blue-50',
-        delivered: 'text-emerald-600 bg-emerald-50',
-        sent: 'text-gray-500 bg-gray-50',
-        failed: 'text-red-500 bg-red-50',
+        read: 'text-blue-600 bg-blue-50 border-blue-100',
+        delivered: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+        sent: 'text-gray-500 bg-gray-50 border-gray-100',
+        failed: 'text-red-500 bg-red-50 border-red-100',
     };
     return (
-        <div className="flex items-center gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors group">
+        <div className="flex items-center gap-4 py-3 px-4 hover:bg-gray-50/80 rounded-2xl transition-all group cursor-pointer border border-transparent hover:border-gray-100">
             <div className={clsx(
-                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+                "w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-300",
                 msg.direction === 'in' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'
             )}>
-                {msg.direction === 'in' ? <ArrowDownLeft size={13} strokeWidth={2.5} /> : <ArrowUpRight size={13} strokeWidth={2.5} />}
+                {msg.direction === 'in' ? <ArrowDownLeft size={16} strokeWidth={3} /> : <ArrowUpRight size={16} strokeWidth={3} />}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-800 truncate">{msg.contactName || 'Unknown'}</p>
-                <p className="text-[10px] text-gray-400 truncate">
+                <p className="text-[13px] font-black text-gray-900 truncate tracking-tight">{msg.contactName || 'Unknown Contact'}</p>
+                <p className="text-[11px] text-gray-400 truncate font-medium">
                     {typeof msg.content?.body === 'string' 
-                        ? msg.content.body.slice(0, 40) 
+                        ? msg.content.body 
                         : msg.content?.text || '—'}
                 </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-                <span className={clsx("text-[9px] font-black uppercase px-2 py-0.5 rounded-full", statusColor[msg.status] || statusColor.sent)}>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <span className={clsx(
+                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm", 
+                    statusColor[msg.status] || statusColor.sent
+                )}>
                     {msg.status}
                 </span>
-                <span className="text-[9px] text-gray-300">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-[10px] font-bold text-gray-300 tabular-nums">
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
             </div>
         </div>
     );
@@ -144,21 +173,27 @@ function MessageRow({ msg }: { msg: any }) {
 // ─── Campaign Row ─────────────────────────────────────────────────────────────
 function CampaignRow({ campaign }: { campaign: any }) {
     const statusColor: Record<string, string> = {
-        sent: 'text-emerald-600 bg-emerald-50',
-        sending: 'text-blue-600 bg-blue-50',
-        draft: 'text-amber-600 bg-amber-50',
-        failed: 'text-red-500 bg-red-50',
+        sent: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+        sending: 'text-blue-600 bg-blue-50 border-blue-200',
+        draft: 'text-amber-600 bg-amber-50 border-amber-200',
+        failed: 'text-red-500 bg-red-50 border-red-200',
     };
     return (
-        <div className="flex items-center gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                <Send size={13} className="text-indigo-600" strokeWidth={2.5} />
+        <div className="flex items-center gap-4 py-3 px-4 hover:bg-gray-50/80 rounded-2xl transition-all border border-transparent hover:border-gray-100 group">
+            <div className="w-10 h-10 rounded-[14px] bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100 shadow-sm group-hover:rotate-6 transition-transform">
+                <Send size={16} className="text-indigo-600" strokeWidth={3} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-800 truncate">{campaign.name}</p>
-                <p className="text-[10px] text-gray-400">{campaign.totalContacts || 0} contacts</p>
+                <p className="text-[13px] font-black text-gray-900 truncate tracking-tight">{campaign.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                    <Users2 size={10} className="text-gray-300" />
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{campaign.totalContacts || 0} Recipients</p>
+                </div>
             </div>
-            <span className={clsx("text-[9px] font-black uppercase px-2 py-0.5 rounded-full shrink-0", statusColor[campaign.status] || statusColor.draft)}>
+            <span className={clsx(
+                "text-[9px] font-black uppercase px-2 py-1 rounded-lg border shadow-sm", 
+                statusColor[campaign.status] || statusColor.draft
+            )}>
                 {campaign.status}
             </span>
         </div>

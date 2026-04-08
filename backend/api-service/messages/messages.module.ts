@@ -5,8 +5,7 @@ import { MessagesController } from "./messages.controller";
 import { Message } from "@shared/database/entities/messaging/message.entity";
 import { Conversation } from "@shared/database/entities/messaging/conversation.entity";
 import { Contact } from "@shared/database/entities/core/contact.entity";
-import { WhatsappAccount } from "../whatsapp/entities/whatsapp-account.entity";
-import { MetaToken } from "../meta/entities/meta-token.entity";
+import { WhatsappAccount } from "@shared/whatsapp/entities/whatsapp-account.entity";
 import { User } from "@shared/database/entities/core/user.entity";
 import { Template } from "../templates/entities/template.entity";
 import { MessagesGateway } from "./messages.gateway";
@@ -21,7 +20,6 @@ import { WhatsappModule } from "../whatsapp/whatsapp.module";
       Message,
       Conversation,
       WhatsappAccount,
-      MetaToken,
       Contact,
       User,
       Template,

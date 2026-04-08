@@ -36,6 +36,7 @@ export class WebhooksService {
     private webhookQueue: Queue,
     @Inject(forwardRef(() => AiService))
     private aiService: AiService,
+    @Inject(forwardRef(() => MessagesGateway))
     private messagesGateway: MessagesGateway,
   ) {}
 
@@ -202,6 +203,9 @@ export class WebhooksService {
       status: "received",
     });
 
+    const messageBody = this.extractMessageBody(msg);
+    let handledByCampaignAi = false;
+
     // --- NEW: Campaign Conversion Attribution ---
     // If this is a reply to the last outbound message, or if we can track campaignId
     // For simplicity, let's look at the most recent outbound campaign message to this contact
@@ -222,8 +226,8 @@ export class WebhooksService {
         this.logger.log(`Campaign ${lastCampaignMsg.campaignId} conversion attributed to reply from ${from}`);
 
         // --- NEW: AI Auto-Reply for Campaigns ---
-        const messageBody = this.extractMessageBody(msg);
         if (messageBody) {
+            handledByCampaignAi = true;
             // Trigger AI response in background
             this.aiService.processCampaignReply(
                 account.tenantId,
@@ -250,9 +254,34 @@ export class WebhooksService {
     });
 
     await this.dispatchWorkflowTrigger(account, contact, conversation, msg);
+
+    if (!handledByCampaignAi && messageBody) {
+      this.triggerGeneralAiReply(account.tenantId, from, conversation, messageBody);
+    }
   }
 
   private async processMessageEcho(account: WhatsappAccount, echo: any) {
+    const existingMessage = echo?.id
+      ? await this.messageRepo.findOne({
+          where: { tenantId: account.tenantId, metaMessageId: echo.id },
+        })
+      : null;
+
+    if (existingMessage) {
+      existingMessage.status = "delivered";
+      existingMessage.content = existingMessage.content || echo[echo.type] || {};
+      await this.messageRepo.save(existingMessage);
+
+      this.messagesGateway.emitMessageStatus(account.tenantId, {
+        messageId: existingMessage.id,
+        metaMessageId: existingMessage.metaMessageId,
+        conversationId: existingMessage.conversationId,
+        status: existingMessage.status,
+        readAt: existingMessage.readAt || null,
+      });
+      return;
+    }
+
     const recipient = echo.to;
     let contact = await this.contactRepo.findOneBy({ tenantId: account.tenantId, phoneNumber: recipient });
     if (!contact) {
@@ -290,6 +319,18 @@ export class WebhooksService {
     });
 
     await this.messageRepo.save(message);
+
+    this.messagesGateway.emitNewMessage(account.tenantId, {
+      id: message.id,
+      metaId: message.metaMessageId,
+      conversationId: conversation.id,
+      contactId: contact.id,
+      direction: "out",
+      type: message.type,
+      content: message.content,
+      timestamp: message.createdAt || new Date(),
+      status: message.status,
+    });
   }
 
   private async handleStatusUpdates(statuses: any[]) {
@@ -302,6 +343,14 @@ export class WebhooksService {
             msg.readAt = new Date();
         }
         await this.messageRepo.save(msg);
+
+        this.messagesGateway.emitMessageStatus(msg.tenantId, {
+          messageId: msg.id,
+          metaMessageId: msg.metaMessageId,
+          conversationId: msg.conversationId,
+          status: msg.status,
+          readAt: msg.readAt || null,
+        });
 
         // --- NEW: Campaign Stats Tracking ---
         if (msg.campaignId) {
@@ -359,6 +408,51 @@ export class WebhooksService {
       }
     }
     return "";
+  }
+
+  private async resolveConversationAiMode(conversation: Conversation): Promise<"ai" | "human" | "paused"> {
+    const mode = (conversation.aiMode || "ai") as "ai" | "human" | "paused";
+    if (mode !== "paused" || !conversation.aiPausedUntil) {
+      return mode;
+    }
+
+    if (conversation.aiPausedUntil.getTime() <= Date.now()) {
+      conversation.aiMode = "ai";
+      conversation.aiPausedUntil = null;
+      await this.conversationRepo.save(conversation);
+      return "ai";
+    }
+
+    return "paused";
+  }
+
+  private async shouldTriggerGeneralAiReply(
+    tenantId: string,
+    conversation: Conversation,
+  ): Promise<boolean> {
+    const aiEnabled = this.configService.get<string>("PLATFORM_AI_ENABLED") || "true";
+    if (String(aiEnabled).toLowerCase() !== "true") {
+      return false;
+    }
+
+    const mode = await this.resolveConversationAiMode(conversation);
+    return mode === "ai";
+  }
+
+  private triggerGeneralAiReply(
+    tenantId: string,
+    from: string,
+    conversation: Conversation,
+    messageBody: string,
+  ) {
+    void this.shouldTriggerGeneralAiReply(tenantId, conversation)
+      .then((shouldReply) => {
+        if (!shouldReply) {
+          return;
+        }
+        return this.aiService.process(tenantId, from, messageBody);
+      })
+      .catch((err) => this.logger.error("AI auto-reply failed", err));
   }
 
   private async dispatchWorkflowTrigger(

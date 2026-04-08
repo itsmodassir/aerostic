@@ -63,8 +63,8 @@ export default function ContactPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Call us</p>
-                                            <a href="tel:+1234567890" className="text-xl font-bold text-gray-900 hover:text-emerald-600">
-                                                +1 (234) 567-890
+                                            <a href="tel:+919876543210" className="text-xl font-bold text-gray-900 hover:text-emerald-600">
+                                                +91 98765 43210
                                             </a>
                                         </div>
                                     </div>
@@ -76,7 +76,7 @@ export default function ContactPage() {
                                         <div>
                                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Visit us</p>
                                             <p className="text-xl font-bold text-gray-900">
-                                                San Francisco, CA 94105
+                                                Sector 62, Noida, Uttar Pradesh 201301
                                             </p>
                                         </div>
                                     </div>
@@ -86,15 +86,15 @@ export default function ContactPage() {
                             <div className="p-8 rounded-3xl bg-gray-900 text-white relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
                                 <h3 className="text-xl font-bold mb-4">Global Support Hours</h3>
-                                <p className="text-gray-400 mb-6">Our team is available across multiple time zones to ensure you get the help you need.</p>
+                                <p className="text-gray-400 mb-6">Our team is available across business hours to help with onboarding, support, and Meta-related setup.</p>
                                 <div className="space-y-4">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">Monday - Friday</span>
-                                        <span className="font-bold">9:00 AM - 6:00 PM EST</span>
+                                        <span className="font-bold">9:00 AM - 6:00 PM IST</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">Saturday</span>
-                                        <span className="font-bold">10:00 AM - 2:00 PM EST</span>
+                                        <span className="font-bold">10:00 AM - 2:00 PM IST</span>
                                     </div>
                                 </div>
                             </div>

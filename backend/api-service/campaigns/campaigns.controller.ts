@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { CampaignsService } from "./campaigns.service";
+import { CampaignAnalyticsService } from "./campaign-analytics.service";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { TenantGuard } from "@shared/guards/tenant.guard";
 import { Authorize } from "@shared/authorization/decorators/authorize.decorator";
@@ -19,7 +20,10 @@ import { Public } from "../auth/decorators/public.decorator";
 @Controller("campaigns")
 @UseGuards(JwtAuthGuard, TenantGuard, AuthorizationGuard) // AuthorizationGuard MUST be after JwtAuthGuard
 export class CampaignsController {
-  constructor(private readonly campaignsService: CampaignsService) {}
+  constructor(
+    private readonly campaignsService: CampaignsService,
+    private readonly analyticsService: CampaignAnalyticsService,
+  ) {}
 
   @Post()
   @Authorize({ resource: "campaign", action: "create" })
@@ -36,6 +40,12 @@ export class CampaignsController {
   @Authorize({ resource: "campaign", action: "read" })
   findAll(@UserTenant() tenantId: string) {
     return this.campaignsService.findAll(tenantId);
+  }
+
+  @Get("optimal-time")
+  @Authorize({ resource: "campaign", action: "read" })
+  getOptimalTime(@UserTenant() tenantId: string) {
+    return this.analyticsService.getOptimalSendTime(tenantId);
   }
 
   @Get("triggers")
@@ -72,5 +82,17 @@ export class CampaignsController {
   @Authorize({ resource: "campaign", action: "create" })
   send(@UserTenant() tenantId: string, @Param("id") id: string) {
     return this.campaignsService.dispatch(tenantId, id);
+  }
+
+  @Post(":id/retry")
+  @Authorize({ resource: "campaign", action: "create" })
+  retry(@UserTenant() tenantId: string, @Param("id") id: string) {
+    return this.campaignsService.dispatch(tenantId, id);
+  }
+
+  @Delete(":id")
+  @Authorize({ resource: "campaign", action: "delete" })
+  remove(@UserTenant() tenantId: string, @Param("id") id: string) {
+    return this.campaignsService.delete(tenantId, id);
   }
 }

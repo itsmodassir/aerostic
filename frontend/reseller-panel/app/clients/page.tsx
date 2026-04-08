@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     Users2, Plus, Search, Filter, MoreVertical,
@@ -18,17 +18,19 @@ import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 
 export default function ResellerClientsPage() {
-    const searchParams = useSearchParams();
     const router = useRouter();
     const [clients, setClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showOnboardModal, setShowOnboardModal] = useState(searchParams.get('action') === 'new');
-    const [showCreditModal, setShowCreditModal] = useState(searchParams.get('action') === 'credits');
+    const [showOnboardModal, setShowOnboardModal] = useState(false);
+    const [showCreditModal, setShowCreditModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState<any>(null);
     const [stats, setStats] = useState<any>(null);
 
     // Initial Data Fetch
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        setShowOnboardModal(params.get('action') === 'new');
+        setShowCreditModal(params.get('action') === 'credits');
         fetchData();
     }, []);
 

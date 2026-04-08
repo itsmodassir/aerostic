@@ -130,9 +130,9 @@ export class WhatsappController {
   @Post("flows")
   async createFlow(
     @UserTenant() tenantId: string,
-    @Body() body: { name: string; categories: string[] },
+    @Body() body: { name: string; categories: string[]; endpointUri?: string },
   ) {
-    return this.whatsappService.createFlow(tenantId, body.name, body.categories);
+    return this.whatsappService.createFlow(tenantId, body.name, body.categories, undefined, body.endpointUri);
   }
 
   @UseGuards(JwtAuthGuard)

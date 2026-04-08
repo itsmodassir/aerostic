@@ -8,28 +8,67 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'super_admin' | 'admin' | 'user';
+    role: 'super_admin' | 'platform_admin' | 'reseller_admin' | 'tenant_admin' | 'agent' | 'admin' | 'user';
     permissions?: string[];
 }
 
+function isResellerPanelUser(role?: string | null) {
+    return role === 'super_admin' || role === 'platform_admin' || role === 'reseller_admin' || role === 'admin';
+}
+
+const USER_CACHE_KEY = 'user';
+
+function readCachedUser(): User | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem(USER_CACHE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
 export function useAuth() {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(() => {
+        const cached = readCachedUser();
+        return cached && isResellerPanelUser(cached.role) ? cached : null;
+    });
+    const [loading, setLoading] = useState(() => {
+        const cached = readCachedUser();
+        return !(cached && isResellerPanelUser(cached.role));
+    });
     const router = useRouter();
 
     useEffect(() => {
+        const cachedUser = readCachedUser();
+        if (cachedUser && isResellerPanelUser(cachedUser.role)) {
+            setUser(cachedUser);
+        }
+
         const loadUser = async () => {
             try {
                 const res = await api.get('/auth/me');
-                console.log('[useAuth] Fetched user:', res.data);
-                setUser(res.data);
+                const userData = res.data;
+                if (!isResellerPanelUser(userData?.role)) {
+                    setUser(null);
+                    router.replace('/login');
+                    return;
+                }
+                setUser(userData);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
+                }
             } catch (err: any) {
                 console.error('[useAuth] Auth check failed:', err.message || err);
-                setUser(null);
-                if (window.location.hostname.startsWith('admin.')) {
-                    router.push('/admin/login');
-                } else {
-                    router.push('/login');
+                const status = err?.response?.status;
+                if (status === 401 || status === 403) {
+                    setUser(null);
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem(USER_CACHE_KEY);
+                    }
+                    if (!window.location.pathname.startsWith('/login')) {
+                        router.replace('/login');
+                    }
                 }
             } finally {
                 setLoading(false);
@@ -47,11 +86,10 @@ export function useAuth() {
         }
 
         setUser(null);
-        if (window.location.hostname.startsWith('admin.')) {
-            router.push('/admin/login');
-        } else {
-            router.push('/login');
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(USER_CACHE_KEY);
         }
+        router.replace('/login');
     };
 
     return {
@@ -59,7 +97,7 @@ export function useAuth() {
         loading,
         logout,
         isSuperAdmin: user?.role === 'super_admin',
-        isAdmin: user?.role === 'super_admin' || user?.role === 'admin',
+        isAdmin: user?.role === 'super_admin' || user?.role === 'platform_admin' || user?.role === 'reseller_admin' || user?.role === 'admin',
         isAuthenticated: !!user,
     };
 }

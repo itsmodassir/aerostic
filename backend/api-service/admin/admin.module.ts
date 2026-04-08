@@ -2,7 +2,7 @@ import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AdminService } from "./admin.service";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
-import { WhatsappAccount } from "../../webhook-service/whatsapp/entities/whatsapp-account.entity";
+import { WhatsappAccount } from "@shared/whatsapp/entities/whatsapp-account.entity";
 import { SystemConfig } from "@shared/database/entities/core/system-config.entity";
 import { Message } from "@shared/database/entities/messaging/message.entity";
 import { ApiKey } from "@shared/database/entities/core/api-key.entity";

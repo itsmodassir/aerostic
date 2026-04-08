@@ -56,7 +56,7 @@ export default function Features() {
     };
 
     return (
-        <section id="features" className="py-32 bg-gray-900 overflow-hidden relative">
+        <section id="features" className="py-24 bg-gray-900 overflow-hidden relative">
             {/* Background radial glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.05)_0%,_transparent_70%)]" />
 

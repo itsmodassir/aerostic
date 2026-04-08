@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { persistWorkspaceMemberships, setActiveWorkspaceContext } from '@/lib/workspace-context';
 
 function CallbackContent() {
     const searchParams = useSearchParams();
@@ -28,12 +29,12 @@ function CallbackContent() {
 
     useEffect(() => {
         const syncTenantContext = async (tenantId: string) => {
-            localStorage.setItem('x-tenant-id', tenantId);
-            localStorage.setItem('selected_tenant_id', tenantId);
+            setActiveWorkspaceContext({ id: tenantId });
 
             try {
                 const workspacesRes = await api.get('/auth/workspaces');
                 const workspaces = Array.isArray(workspacesRes.data) ? workspacesRes.data : [];
+                persistWorkspaceMemberships(workspaces);
                 const matchingWorkspace = workspaces.find((workspace: any) =>
                     workspace?.tenantId === tenantId ||
                     workspace?.id === tenantId ||
@@ -42,7 +43,7 @@ function CallbackContent() {
                 const workspaceSlug = matchingWorkspace?.tenant?.slug || matchingWorkspace?.slug;
 
                 if (workspaceSlug) {
-                    document.cookie = `selected_tenant=${encodeURIComponent(workspaceSlug)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+                    setActiveWorkspaceContext({ id: tenantId, slug: workspaceSlug });
                 }
             } catch (error) {
                 console.warn('[MetaCallback] Failed to resolve workspace slug after callback', error);
