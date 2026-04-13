@@ -97,13 +97,8 @@ export function launchWhatsAppSignup(
                 override_default_response_type: true,
                 redirect_uri: redirectUri,
                 extras: {
-                    feature_type: 'whatsapp_business_app_onboarding',
-                    session_info: {
-                        version: 'v3'
-                    },
-                    setup: {
-                        // Optional: can add more setup params here if needed
-                    },
+                    featureType: 'whatsapp_business_app_onboarding',
+                    sessionInfoVersion: '3',
                     state
                 }
             }

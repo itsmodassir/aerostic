@@ -3,13 +3,14 @@ import {
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  ConflictException,
   Inject,
   forwardRef,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, In } from "typeorm";
 import {
   Tenant,
   TenantType,
@@ -27,6 +28,9 @@ import {
   TenantMembership,
   TenantRole,
 } from "@shared/database/entities/core/tenant-membership.entity";
+import { AuthService } from "@api/auth/auth.service";
+
+type AdminManagedUserStatus = "active" | "paused" | "suspended" | "blocked";
 
 @Injectable()
 export class AdminTenantService {
@@ -42,6 +46,8 @@ export class AdminTenantService {
     private auditService: AuditService,
     @Inject(forwardRef(() => BillingService))
     private billingService: BillingService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
     private dataSource: DataSource,
   ) { }
 
@@ -72,6 +78,9 @@ export class AdminTenantService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.tenantRepo.createQueryBuilder("tenant");
+    queryBuilder
+      .leftJoinAndSelect("tenant.planRelation", "planRelation")
+      .leftJoinAndSelect("tenant.resellerConfig", "resellerConfig");
 
     if (type) {
       queryBuilder.andWhere("tenant.type = :type", { type });
@@ -85,7 +94,7 @@ export class AdminTenantService {
       queryBuilder.andWhere(
         "(tenant.name ILIKE :search OR tenant.slug ILIKE :search)",
         {
-          search: `% ${search}% `,
+          search: `%${search}%`,
         },
       );
     }
@@ -93,6 +102,21 @@ export class AdminTenantService {
     queryBuilder.orderBy("tenant.createdAt", "DESC").skip(skip).take(limit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
+    const tenantIds = data.map((tenant) => tenant.id);
+    const memberships = tenantIds.length
+      ? await this.membershipRepo.find({
+          where: { tenantId: In(tenantIds) },
+          relations: ["user"],
+          order: { createdAt: "ASC" },
+        })
+      : [];
+
+    const membershipsByTenant = new Map<string, TenantMembership[]>();
+    for (const membership of memberships) {
+      const bucket = membershipsByTenant.get(membership.tenantId) || [];
+      bucket.push(membership);
+      membershipsByTenant.set(membership.tenantId, bucket);
+    }
 
     return {
       data: data.map((t) => ({
@@ -102,6 +126,25 @@ export class AdminTenantService {
         type: t.type,
         status: t.status,
         plan: t.plan || "starter",
+        planRelation: t.planRelation || null,
+        resellerConfig: t.resellerConfig || null,
+        subscriptionStatus: t.subscriptionStatus,
+        monthlyMessageLimit: t.monthlyMessageLimit,
+        messagesSentThisMonth: t.messagesSentThisMonth,
+        aiCredits: t.aiCredits,
+        apiAccessEnabled: t.apiAccessEnabled,
+        usersCount: membershipsByTenant.get(t.id)?.length || 0,
+        owner: this.serializeMembershipUser(
+          (membershipsByTenant.get(t.id) || []).find(
+            (membership) => membership.role === TenantRole.OWNER,
+          ) || membershipsByTenant.get(t.id)?.[0],
+        ),
+        email:
+          this.serializeMembershipUser(
+            (membershipsByTenant.get(t.id) || []).find(
+              (membership) => membership.role === TenantRole.OWNER,
+            ) || membershipsByTenant.get(t.id)?.[0],
+          )?.email || null,
         createdAt: t.createdAt,
       })),
       total,
@@ -417,6 +460,290 @@ export class AdminTenantService {
     );
 
     return saved;
+  }
+
+  async updateTenantStatus(
+    tenantId: string,
+    status: AdminManagedUserStatus,
+    reason?: string,
+  ): Promise<Tenant> {
+    const tenant = await this.getTenantById(tenantId);
+    tenant.status = status;
+
+    const saved = await this.tenantRepo.save(tenant);
+
+    if (status !== "active") {
+      await this.authService.revokeAllSessionsForTenant(tenant.id);
+    }
+
+    await this.auditService.logAction(
+      "admin",
+      "Administrator",
+      "UPDATE_TENANT_STATUS",
+      `Tenant: ${tenant.name}`,
+      tenant.id,
+      { status, reason },
+    );
+
+    return saved;
+  }
+
+  async getTenantUsers(tenantId: string): Promise<any[]> {
+    await this.getTenantById(tenantId);
+    const memberships = await this.membershipRepo.find({
+      where: { tenantId },
+      relations: ["user"],
+      order: { createdAt: "ASC" },
+    });
+
+    return memberships.map((membership) => ({
+      id: membership.user.id,
+      tenantMembershipId: membership.id,
+      name: membership.user.name,
+      email: membership.user.email,
+      phone: membership.user.phone,
+      avatar: membership.user.avatar,
+      systemRole: membership.user.role,
+      tenantRole: membership.role,
+      membershipStatus: membership.status,
+      isActive: membership.user.isActive,
+      apiAccessEnabled: membership.user.apiAccessEnabled,
+      permissions: membership.user.permissions || [],
+      emailVerified: membership.user.emailVerified,
+      lastLoginAt: membership.user.lastLoginAt,
+      createdAt: membership.user.createdAt,
+    }));
+  }
+
+  async createTenantUser(
+    tenantId: string,
+    dto: {
+      name: string;
+      email: string;
+      role?: TenantRole;
+      status?: AdminManagedUserStatus;
+      permissions?: string[];
+      apiAccessEnabled?: boolean;
+      password?: string;
+    },
+  ) {
+    const tenant = await this.getTenantById(tenantId);
+
+    const existingMembership = await this.membershipRepo.findOne({
+      where: { tenantId, user: { email: dto.email } as any },
+      relations: ["user"],
+    });
+    if (existingMembership) {
+      throw new ConflictException("User already has access to this tenant");
+    }
+
+    let user = await this.userRepo.findOne({ where: { email: dto.email } });
+    const generatedPassword = dto.password || this.generateSecurePassword();
+    const normalizedStatus = this.normalizeUserStatus(dto.status);
+
+    if (!user) {
+      const salt = await bcrypt.genSalt();
+      user = this.userRepo.create({
+        email: dto.email,
+        name: dto.name,
+        passwordHash: await bcrypt.hash(generatedPassword, salt),
+        role: this.mapTenantRoleToUserRole(dto.role),
+        permissions: dto.permissions || [],
+        apiAccessEnabled: !!dto.apiAccessEnabled,
+        isActive: normalizedStatus !== "blocked",
+        emailVerified: false,
+        tokenVersion: 0,
+      });
+    } else {
+      user.name = dto.name || user.name;
+      user.role = this.mapTenantRoleToUserRole(dto.role, user.role);
+      user.permissions = dto.permissions || user.permissions || [];
+      if (dto.apiAccessEnabled !== undefined) {
+        user.apiAccessEnabled = !!dto.apiAccessEnabled;
+      }
+      if (normalizedStatus === "blocked") {
+        user.isActive = false;
+      }
+    }
+
+    const savedUser = await this.userRepo.save(user);
+
+    const membership = this.membershipRepo.create({
+      tenantId,
+      userId: savedUser.id,
+      role: dto.role || TenantRole.AGENT,
+      status: normalizedStatus,
+    });
+    await this.membershipRepo.save(membership);
+
+    if (normalizedStatus !== "active") {
+      await this.authService.revokeAllSessionsForUser(savedUser.id);
+    }
+
+    await this.auditService.logAction(
+      "admin",
+      "Administrator",
+      "CREATE_TENANT_USER",
+      `Created user ${savedUser.email} for tenant ${tenant.name}`,
+      tenantId,
+      {
+        userId: savedUser.id,
+        role: membership.role,
+        status: normalizedStatus,
+      },
+    );
+
+    return {
+      user: {
+        id: savedUser.id,
+        name: savedUser.name,
+        email: savedUser.email,
+        tenantRole: membership.role,
+        membershipStatus: membership.status,
+        permissions: savedUser.permissions || [],
+        apiAccessEnabled: savedUser.apiAccessEnabled,
+        isActive: savedUser.isActive,
+      },
+      generatedPassword: dto.password ? undefined : generatedPassword,
+    };
+  }
+
+  async updateTenantUser(
+    tenantId: string,
+    userId: string,
+    dto: {
+      name?: string;
+      role?: TenantRole;
+      status?: AdminManagedUserStatus;
+      permissions?: string[];
+      apiAccessEnabled?: boolean;
+      isActive?: boolean;
+    },
+  ) {
+    const membership = await this.membershipRepo.findOne({
+      where: { tenantId, userId },
+      relations: ["user", "tenant"],
+    });
+
+    if (!membership || !membership.user) {
+      throw new NotFoundException("Tenant user not found");
+    }
+
+    const normalizedStatus = dto.status
+      ? this.normalizeUserStatus(dto.status)
+      : undefined;
+
+    if (dto.name !== undefined) {
+      membership.user.name = dto.name;
+    }
+    if (dto.permissions !== undefined) {
+      membership.user.permissions = dto.permissions;
+    }
+    if (dto.apiAccessEnabled !== undefined) {
+      membership.user.apiAccessEnabled = !!dto.apiAccessEnabled;
+    }
+    if (dto.role) {
+      membership.role = dto.role;
+      membership.user.role = this.mapTenantRoleToUserRole(
+        dto.role,
+        membership.user.role,
+      );
+    }
+    if (normalizedStatus) {
+      membership.status = normalizedStatus;
+      membership.user.isActive = normalizedStatus === "blocked"
+        ? false
+        : dto.isActive ?? true;
+    } else if (dto.isActive !== undefined) {
+      membership.user.isActive = dto.isActive;
+    }
+
+    await this.userRepo.save(membership.user);
+    await this.membershipRepo.save(membership);
+
+    if (
+      normalizedStatus && normalizedStatus !== "active" ||
+      membership.user.isActive === false
+    ) {
+      await this.authService.revokeAllSessionsForUser(membership.user.id);
+    }
+
+    await this.auditService.logAction(
+      "admin",
+      "Administrator",
+      "UPDATE_TENANT_USER",
+      `Updated user ${membership.user.email} in tenant ${membership.tenant.name}`,
+      tenantId,
+      {
+        userId: membership.user.id,
+        role: membership.role,
+        status: membership.status,
+        isActive: membership.user.isActive,
+      },
+    );
+
+    return {
+      id: membership.user.id,
+      name: membership.user.name,
+      email: membership.user.email,
+      tenantRole: membership.role,
+      membershipStatus: membership.status,
+      permissions: membership.user.permissions || [],
+      apiAccessEnabled: membership.user.apiAccessEnabled,
+      isActive: membership.user.isActive,
+    };
+  }
+
+  async getTenantScopedUser(tenantId: string, userId: string) {
+    const membership = await this.membershipRepo.findOne({
+      where: { tenantId, userId },
+      relations: ["user"],
+    });
+    if (!membership?.user) {
+      throw new NotFoundException("Tenant user not found");
+    }
+    return membership.user;
+  }
+
+  private normalizeUserStatus(
+    status?: string,
+  ): AdminManagedUserStatus {
+    if (
+      status === "active" ||
+      status === "paused" ||
+      status === "suspended" ||
+      status === "blocked"
+    ) {
+      return status;
+    }
+    return "active";
+  }
+
+  private mapTenantRoleToUserRole(
+    role?: TenantRole,
+    fallback: UserRole = UserRole.USER,
+  ): UserRole {
+    if (role === TenantRole.OWNER || role === TenantRole.ADMIN) {
+      return UserRole.ADMIN;
+    }
+    if (role === TenantRole.AGENT || role === TenantRole.VIEWER) {
+      return UserRole.USER;
+    }
+    return fallback;
+  }
+
+  private serializeMembershipUser(membership?: TenantMembership | null) {
+    if (!membership?.user) {
+      return null;
+    }
+    return {
+      id: membership.user.id,
+      name: membership.user.name,
+      email: membership.user.email,
+      role: membership.role,
+      status: membership.status,
+      isActive: membership.user.isActive,
+    };
   }
 
   async updateReseller(id: string, dto: any): Promise<Tenant> {

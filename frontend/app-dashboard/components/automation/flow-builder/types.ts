@@ -16,7 +16,11 @@ export type NodeKind =
   | "video"
   | "doc"
   | "if_else"
-  | "browser_agent";
+  | "browser_agent"
+  | "whatsapp_flow"
+  | "list_message"
+  | "template"
+  | "ai_agent";
 
 export interface BuilderNodeData {
   label: string;
@@ -44,6 +48,16 @@ export interface BuilderNodeData {
   waitUnit?: "minutes" | "hours" | "days";
   taskPrompt?: string;
   buttons?: Array<{ id: string, text: string, type: 'reply' | 'url', url?: string }>;
+  
+  // New Interactive Properties
+  listSections?: Array<{ id: string, title: string, rows: Array<{ id: string, title: string, description?: string }> }>;
+  listButton?: string;
+  metaFlowId?: string;
+  flowCTA?: string;
+  flowInitialScreen?: string;
+  aiPrompt?: string;
+  aiModel?: string;
+
   [key: string]: any;
 }
 

@@ -3,11 +3,13 @@
 import React from 'react';
 import { clsx } from 'clsx';
 import { 
-    Check, CheckCheck, Clock, AlertCircle, Play, Pause, 
+    Check, CheckCheck, Clock, AlertCircle, Play,
     FileText, Image as ImageIcon, Download, Share2, 
-    RotateCcw, Info
+    RotateCcw, Sparkles, Workflow
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import OrderCard from './OrderCard';
+import { useDashboard } from '../dashboard/DashboardContext';
 
 interface TeamMember {
     id: string;
@@ -21,7 +23,7 @@ interface TeamMember {
 interface Message {
     id: string;
     direction: 'in' | 'out';
-    type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template';
+    type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template' | 'interactive' | 'order';
     content: any;
     status: 'sent' | 'delivered' | 'read' | 'failed' | 'received';
     createdAt: string;
@@ -36,7 +38,17 @@ interface MessageBubbleProps {
     onRetry?: (msg: Message) => void;
 }
 
+const getRenderableText = (value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object' && 'text' in (value as Record<string, unknown>)) {
+        const text = (value as Record<string, unknown>).text;
+        return typeof text === 'string' ? text : '';
+    }
+    return '';
+};
+
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, onRetry }) => {
+    const { membership } = useDashboard();
     const isOut = message.direction === 'out';
     const isFailed = message.status === 'failed';
     const failureLabel = message.error?.trim() || 'Send failed';
@@ -46,6 +58,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
     };
 
     const renderContent = () => {
+        const bodyText = getRenderableText(message.content?.body);
+        const textBody = getRenderableText(message.content?.text?.body);
+        const captionText = getRenderableText(message.content?.caption);
+        const interactiveBodyText =
+            getRenderableText(message.content?.interactive?.body?.text) ||
+            getRenderableText(message.content?.interactive?.body);
+
         switch (message.type) {
             case 'image':
                 return (
@@ -64,7 +83,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                                 <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors"><Share2 size={18} /></button>
                             </div>
                         </div>
-                        {message.content?.body && <p className="text-[13px] font-medium leading-relaxed px-1">{message.content.body}</p>}
+                        {bodyText && <p className="text-[13px] font-medium leading-relaxed px-1">{bodyText}</p>}
                     </div>
                 );
             case 'video':
@@ -77,7 +96,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                                 className="max-w-full aspect-video bg-black"
                             />
                         </div>
-                        {message.content?.body && <p className="text-[13px] font-medium leading-relaxed px-1">{message.content.body}</p>}
+                        {bodyText && <p className="text-[13px] font-medium leading-relaxed px-1">{bodyText}</p>}
                     </div>
                 );
             case 'document':
@@ -94,7 +113,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className={clsx("text-xs font-black truncate", isOut ? "text-white" : "text-slate-800")}>
-                                {message.content?.caption || message.content?.document?.filename || message.content?.filename || 'Document File'}
+                                {captionText || message.content?.document?.filename || message.content?.filename || 'Document File'}
                             </p>
                             <p className={clsx("text-[9px] font-black uppercase tracking-widest mt-0.5", isOut ? "text-white/40" : "text-slate-400")}>
                                 {parseInt(message.id.slice(-2), 16) % 3 + 1} MB • PDF Document
@@ -139,7 +158,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                             <span className={clsx("text-[10px] font-black uppercase tracking-[0.2em]", isOut ? "text-blue-100" : "text-blue-600")}>Official Template</span>
                         </div>
                         <p className={clsx("text-sm font-bold leading-relaxed", isOut ? "text-white" : "text-slate-800")}>
-                            {message.content?.body || message.content?.template?.name}
+                            {bodyText || message.content?.template?.name}
                         </p>
                         <div className="pt-2">
                              <button className={clsx(
@@ -151,11 +170,83 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isLastInGroup, o
                         </div>
                     </div>
                 );
+            case 'interactive':
+                if (message.content?.type === 'flow') {
+                    const flowParameters = message.content?.action?.parameters || {};
+                    return (
+                        <div className={clsx(
+                            "p-5 rounded-[24px] border space-y-4",
+                            isOut ? "bg-white/10 border-white/20" : "bg-indigo-50/70 border-indigo-100"
+                        )}>
+                            <div className="flex items-center gap-2">
+                                <div className={clsx(
+                                    "w-8 h-8 rounded-2xl flex items-center justify-center",
+                                    isOut ? "bg-white/15 text-white" : "bg-indigo-600 text-white"
+                                )}>
+                                    <Workflow size={15} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <p className={clsx("text-[10px] font-black uppercase tracking-[0.2em]", isOut ? "text-indigo-100" : "text-indigo-600")}>
+                                        WhatsApp Flow
+                                    </p>
+                                    <p className={clsx("text-xs font-semibold", isOut ? "text-white/80" : "text-slate-500")}>
+                                        {flowParameters.flow_cta || 'Open flow'}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className={clsx("text-sm font-bold leading-relaxed", isOut ? "text-white" : "text-slate-800")}>
+                                {bodyText || 'Please complete this flow to continue.'}
+                            </p>
+                            <div className={clsx(
+                                "rounded-2xl px-4 py-3 flex items-center justify-between gap-3",
+                                isOut ? "bg-black/10 border border-white/10" : "bg-white border border-indigo-100"
+                            )}>
+                                <div className="min-w-0">
+                                    <p className={clsx("text-[10px] font-black uppercase tracking-[0.2em]", isOut ? "text-white/60" : "text-slate-400")}>
+                                        Flow Delivery
+                                    </p>
+                                    <p className={clsx("text-xs font-semibold truncate", isOut ? "text-white" : "text-slate-700")}>
+                                        {flowParameters.flow_id || 'Meta published flow'}
+                                    </p>
+                                </div>
+                                <div className={clsx(
+                                    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]",
+                                    isOut ? "bg-white/15 text-white" : "bg-indigo-50 text-indigo-700"
+                                )}>
+                                    <Sparkles size={12} />
+                                    Launch
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className={clsx(
+                        "p-5 rounded-[24px] border space-y-3",
+                        isOut ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-200"
+                    )}>
+                        <p className={clsx("text-[10px] font-black uppercase tracking-[0.2em]", isOut ? "text-white/70" : "text-slate-500")}>
+                            Interactive Message
+                        </p>
+                        <p className={clsx("text-sm font-semibold leading-relaxed", isOut ? "text-white" : "text-slate-800")}>
+                            {bodyText || interactiveBodyText || 'Interactive WhatsApp content'}
+                        </p>
+                    </div>
+                );
+            case 'order':
+                return (
+                    <OrderCard 
+                        orderData={message.content?.order || message.content} 
+                        tenantId={membership?.tenantId || ''}
+                        isEcho={isOut}
+                    />
+                );
             default:
                 return (
                     <div className="relative">
                         <p className="text-[13.5px] font-bold leading-relaxed whitespace-pre-wrap select-text">
-                            {message.content?.body || message.content?.text?.body || (typeof message.content === 'string' ? message.content : '')}
+                            {bodyText || textBody || (typeof message.content === 'string' ? message.content : '')}
                         </p>
                     </div>
                 );

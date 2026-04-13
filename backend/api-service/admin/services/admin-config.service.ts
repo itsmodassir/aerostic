@@ -404,6 +404,11 @@ export class AdminConfigService implements OnModuleInit {
       "ai.gemini_api_key": "GEMINI_API_KEY",
       "ai.openai_api_key": "OPENAI_API_KEY",
       "platform.app_url": "APP_URL",
+      "email.smtp_host": "SMTP_HOST",
+      "email.smtp_port": "SMTP_PORT",
+      "email.smtp_secure": "SMTP_SECURE",
+      "email.smtp_user": "SMTP_USER",
+      "email.smtp_pass": "SMTP_PASS",
     };
 
     // 1. Check Cache (fastest)

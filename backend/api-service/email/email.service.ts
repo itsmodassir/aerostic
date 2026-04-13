@@ -15,8 +15,24 @@ export class EmailService {
   }
 
 
-  /** Build a transporter using system config (DB-driven SMTP settings) */
-  private async buildTransporter() {
+  /** Build a transporter using system config (DB-driven SMTP settings) or provided custom config */
+  private async buildTransporter(customConfig?: {
+    host: string;
+    port: number;
+    secure: boolean;
+    auth: { user: string; pass: string };
+  }) {
+    if (customConfig) {
+      return nodemailer.createTransport({
+        host: customConfig.host,
+        port: customConfig.port,
+        secure: customConfig.secure,
+        auth: customConfig.auth,
+        debug: true,
+        logger: true,
+      });
+    }
+
     const [host, portStr, secure, user, pass] = await Promise.all([
       this.adminConfigService.getValue("email.smtp_host"),
       this.adminConfigService.getValue("email.smtp_port"),
@@ -154,10 +170,10 @@ export class EmailService {
     return { success: true, messageId: info.messageId };
   }
 
-  /** Test SMTP connection using current system config */
-  async testConnection(): Promise<{ success: boolean; error?: string }> {
+  /** Test SMTP connection using current system config or provided custom config */
+  async testConnection(customConfig?: any): Promise<{ success: boolean; error?: string }> {
     try {
-      const transporter = await this.buildTransporter();
+      const transporter = await this.buildTransporter(customConfig);
       if (!transporter) return { success: false, error: "SMTP not configured" };
       await transporter.verify();
       return { success: true };

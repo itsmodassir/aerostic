@@ -12,7 +12,7 @@ import { SuperAdminGuard } from "../guards/super-admin.guard";
 export const RequireRole = (...roles: SystemRole[]) => {
   return applyDecorators(
     SetMetadata("requiredRoles", roles),
-    UseGuards(AdminGuard, RolesGuard),
+    UseGuards(JwtAuthGuard, RolesGuard),
   );
 };
 
@@ -22,7 +22,12 @@ export const RequireRole = (...roles: SystemRole[]) => {
 export const SuperAdminOnly = () => {
   return applyDecorators(UseGuards(SuperAdminGuard));
 };
-export const PlatformAdminOnly = () => RequireRole(SystemRole.PLATFORM_ADMIN);
+export const PlatformAdminOnly = () => {
+  return applyDecorators(
+    SetMetadata("requiredRoles", [SystemRole.PLATFORM_ADMIN]),
+    UseGuards(AdminGuard, RolesGuard),
+  );
+};
 export const ResellerAdminOnly = () => RequireRole(SystemRole.RESELLER_ADMIN);
 export const TenantAdminOnly = () => RequireRole(SystemRole.TENANT_ADMIN);
 export const AgentOnly = () => RequireRole(SystemRole.AGENT);

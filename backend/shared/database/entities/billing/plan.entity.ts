@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { Tenant } from "../core/tenant.entity";
 
 export enum PlanType {
   REGULAR = "regular",
@@ -27,6 +30,14 @@ export class Plan {
   @Index()
   slug: string;
 
+  @Column({ name: "tenant_id", nullable: true })
+  @Index()
+  tenantId: string;
+
+  @ManyToOne(() => Tenant, { nullable: true })
+  @JoinColumn({ name: "tenant_id" })
+  tenant: Tenant;
+
   @Column("decimal", { precision: 10, scale: 2, default: 0 })
   price: number;
 
@@ -40,10 +51,13 @@ export class Plan {
   limits: {
     monthly_messages: number;
     ai_credits: number;
-    max_agents: number;
-    max_phone_numbers?: number;
-    max_bots?: number;
-    monthly_broadcasts?: number;
+    max_agents: number; // mapped to team size
+    max_whatsapp_accounts: number;
+    monthly_broadcasts: number;
+    max_automations: number;
+    max_flows: number;
+    max_campaigns: number;
+    analytics_tier: "basic" | "medium" | "advanced";
   };
 
   @Column({ name: "max_sub_tenants", default: 0 })

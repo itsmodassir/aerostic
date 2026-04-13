@@ -69,15 +69,15 @@ export const WorkspaceSwitcher = memo(function WorkspaceSwitcher({ isCollapsed }
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    if (loading) return <div className="h-10 w-full bg-muted animate-pulse rounded-lg" />;
+    if (loading) return <div className="h-11 w-full animate-pulse rounded-2xl bg-muted" />;
 
     return (
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setOpen(!open)}
                 className={clsx(
-                    "flex items-center rounded-lg border bg-background hover:bg-muted font-medium text-sm transition-all shadow-sm w-full",
-                    isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2"
+                    "flex w-full items-center border bg-background text-sm font-medium shadow-sm transition-all hover:bg-muted",
+                    isCollapsed ? "justify-center rounded-xl p-2 sm:rounded-lg" : "gap-3 rounded-2xl px-3 py-2.5 sm:rounded-lg sm:py-2"
                 )}
             >
                 <div className="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs uppercase shrink-0">
@@ -94,7 +94,7 @@ export const WorkspaceSwitcher = memo(function WorkspaceSwitcher({ isCollapsed }
             </button>
 
             {open && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-background rounded-xl shadow-xl border border-border z-50 py-2 overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="absolute left-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-background py-2 shadow-xl animate-in fade-in zoom-in duration-200 sm:w-64 sm:rounded-xl">
                     <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Authorized Protocols
                     </div>

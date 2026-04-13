@@ -355,7 +355,7 @@ export class AdminService {
       name: t.name,
       email: (t as any).email || "",
       tenantName: t.name,
-      currentPlan: t.plan || "starter",
+      currentPlan: t.plan || "None",
       status: "active",
       createdAt: t.createdAt,
     }));
@@ -451,8 +451,8 @@ export class AdminService {
       plan: sub.plan
         ? (sub.plan as string).charAt(0).toUpperCase() +
         (sub.plan as string).slice(1)
-        : "Starter",
-      messages: "0", // We would need a more complex join to get message count per tenant here
+        : "Regular",
+      messages: "0", 
       revenue: `₹${sub.priceInr.toLocaleString()}`,
     }));
 
@@ -736,19 +736,19 @@ export class AdminService {
         : 0;
 
     // Plan Distribution
-    const distribution = {
+    const distribution: Record<string, { count: number; revenue: number }> = {
       enterprise: { count: 0, revenue: 0 },
       growth: { count: 0, revenue: 0 },
       starter: { count: 0, revenue: 0 },
     };
 
     activeSubscriptions.forEach((sub) => {
-      const plan = (sub.plan?.toLowerCase() ||
-        "starter") as keyof typeof distribution;
-      if (distribution[plan]) {
-        distribution[plan].count++;
-        distribution[plan].revenue += sub.priceInr;
+      const planName = sub.plan?.toLowerCase() || "basic";
+      if (!distribution[planName]) {
+        distribution[planName] = { count: 0, revenue: 0 };
       }
+      distribution[planName].count++;
+      distribution[planName].revenue += sub.priceInr || 0;
     });
 
     // Transactions (Top 10 latest)
@@ -761,7 +761,7 @@ export class AdminService {
     const recentTransactions = recentSubRaw.map((s) => ({
       id: `TXN-${s.id.slice(0, 4).toUpperCase()}`,
       tenant: s.tenant?.name || "Unknown",
-      plan: s.plan || "Starter",
+      plan: s.plan || "Regular",
       amount: `₹${s.priceInr.toLocaleString()}`,
       status: s.status,
       date: s.createdAt.toLocaleDateString("en-IN"),

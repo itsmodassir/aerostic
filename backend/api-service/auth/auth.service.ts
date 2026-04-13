@@ -53,14 +53,40 @@ export class AuthService {
       return null;
     }
 
+    if (!user.isActive) {
+      this.logger.warn(`Inactive account blocked login for: ${maskedEmail}`);
+      return null;
+    }
+
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
 
     if (isMatch) {
-      // Resolve the primary tenantId for the user
+      // Resolve the primary active tenant membership for the user
       const membership = await this.membershipRepository.findOne({
         where: { userId: user.id },
+        relations: ["tenant"],
         order: { createdAt: "ASC" },
       });
+
+      if (!membership) {
+        this.logger.warn(`No membership found for: ${maskedEmail}`);
+        return null;
+      }
+
+      const membershipStatus = (membership.status || "active").toLowerCase();
+      const tenantStatus = (membership.tenant?.status || "active").toLowerCase();
+      const blockedMembershipStatuses = new Set(["paused", "suspended", "blocked"]);
+      const blockedTenantStatuses = new Set(["paused", "suspended", "blocked", "disabled"]);
+
+      if (
+        blockedMembershipStatuses.has(membershipStatus) ||
+        blockedTenantStatuses.has(tenantStatus)
+      ) {
+        this.logger.warn(
+          `Blocked login for ${maskedEmail} due to membership=${membershipStatus} tenant=${tenantStatus}`,
+        );
+        return null;
+      }
 
       const plainUser = {
         id: user.id,

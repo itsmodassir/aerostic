@@ -10,6 +10,7 @@ import { AuditService } from "../audit/audit.service";
 import { LogLevel, LogCategory } from "@api/audit/audit.service";
 import { MessagesGateway } from "../messages/messages.gateway";
 import { GoogleService } from "../google/google.service";
+import { VariableResolverService } from "./variable-resolver.service";
 
 @Injectable()
 export class WorkflowsService {
@@ -26,6 +27,7 @@ export class WorkflowsService {
     private auditService: AuditService,
     private messagesGateway: MessagesGateway,
     private googleService: GoogleService,
+    private variableResolver: VariableResolverService,
   ) { }
 
   async create(tenantId: string, data: Partial<Workflow>) {
@@ -305,6 +307,9 @@ export class WorkflowsService {
           case "whatsapp_flow":
             await this.handleWhatsappFlowNode(workflow.tenantId, nextNode, context);
             break;
+          case "list_message":
+            await this.handleListMessage(workflow.tenantId, nextNode, context);
+            break;
           case "wa_form":
             await this.handleWhatsappFlowNode(workflow.tenantId, nextNode, context);
             break;
@@ -324,6 +329,9 @@ export class WorkflowsService {
               nextNode,
               context,
             );
+            break;
+          case "whatsapp_product":
+            await this.handleWhatsappProductNode(workflow.tenantId, nextNode, context);
             break;
         }
 
@@ -371,7 +379,10 @@ export class WorkflowsService {
     if (!destination) return;
 
     if (actionType === "send_whatsapp" || !actionType) {
-      const resolvedMessage = String(message || payload?.text || "Hello from Automation");
+      const resolvedMessage = this.variableResolver.resolve(
+        String(message || payload?.text || "Hello from Automation"),
+        context,
+      );
       const normalizedType = String(messageType || "text").toLowerCase();
 
       if (normalizedType === "image") {
@@ -420,6 +431,34 @@ export class WorkflowsService {
     }
   }
 
+  private async handleWhatsappProductNode(tenantId: string, node: any, context: any) {
+    const { mode, catalogId, productRetailerId, body, header, sections } = node.data;
+    const to = context.from;
+    if (!to) return;
+
+    const resolvedBody = this.variableResolver.resolve(body || "Check out our product!", context);
+
+    if (mode === "list") {
+      const resolvedHeader = this.variableResolver.resolve(header || "Our Catalog", context);
+      await this.messagesService.sendProductListMessage(
+        tenantId,
+        to,
+        catalogId,
+        resolvedHeader,
+        resolvedBody,
+        sections || []
+      );
+    } else {
+      await this.messagesService.sendProductMessage(
+        tenantId,
+        to,
+        catalogId,
+        productRetailerId,
+        resolvedBody
+      );
+    }
+  }
+
   private async evaluateCondition(
     node: any,
     context: any,
@@ -427,18 +466,10 @@ export class WorkflowsService {
   ): Promise<boolean> {
     const { condition, operator, value, keyword, field, input } = node.data;
     const normalizedCondition = condition || operator || "contains";
-    const normalizedField = field || input;
+    const normalizedField = field || input || "{{messageBody}}";
     const normalizedValue = value ?? keyword;
 
-    const resolveField = (source: any, path?: string) => {
-      if (!path) return source?.messageBody ?? "";
-      return path.split(".").reduce((acc, key) => {
-        if (acc === null || acc === undefined) return undefined;
-        return acc[key];
-      }, source);
-    };
-
-    const rawValue = resolveField(context, normalizedField);
+    const rawValue = this.variableResolver.resolve(normalizedField, context);
     const target = typeof rawValue === "string"
       ? rawValue.toLowerCase()
       : JSON.stringify(rawValue ?? "").toLowerCase();
@@ -679,6 +710,8 @@ export class WorkflowsService {
       bodyText,
       footerText,
       flowToken,
+      flowCTA,
+      flowInitialScreen,
     } = node.data;
 
     const resolvedFlowId = flowId || metaFlowId || formId;
@@ -688,7 +721,8 @@ export class WorkflowsService {
 
     const action = String(flowAction || "NAVIGATE");
     const actionPayload: Record<string, any> = {};
-    if (screenId) actionPayload.screen = screenId;
+    const resolvedScreenId = screenId || flowInitialScreen;
+    if (resolvedScreenId) actionPayload.screen = resolvedScreenId;
     if (payload) {
       try {
         actionPayload.data = typeof payload === "string" ? JSON.parse(payload) : payload;
@@ -711,10 +745,42 @@ export class WorkflowsService {
             flow_message_version: "3",
             flow_token: flowToken || `aimstors_${Date.now()}`,
             flow_id: String(resolvedFlowId),
-            flow_cta: String(ctaText || "Open Form"),
+            flow_cta: String(ctaText || flowCTA || "Open Form"),
             flow_action: action,
             ...(Object.keys(actionPayload).length > 0 ? { flow_action_payload: actionPayload } : {}),
           },
+        },
+      },
+    });
+  }
+
+  private async handleListMessage(tenantId: string, node: any, context: any) {
+    const { message, listButton, listSections } = node.data;
+    if (!context.from) return;
+
+    const resolvedMessage = this.variableResolver.resolve(
+      message || "Please choose an option",
+      context,
+    );
+    const resolvedButton = listButton || "View Options";
+
+    await this.messagesService.send({
+      tenantId,
+      to: context.from,
+      type: "interactive",
+      payload: {
+        type: "list",
+        body: { text: resolvedMessage },
+        action: {
+          button: resolvedButton,
+          sections: (listSections || []).map((section: any) => ({
+            title: section.title,
+            rows: (section.rows || []).map((row: any) => ({
+              id: row.id,
+              title: row.title,
+              description: row.description,
+            })),
+          })),
         },
       },
     });

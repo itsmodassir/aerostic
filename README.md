@@ -68,6 +68,7 @@ Aerostic is optimized for high-availability clusters.
 
 ## 📜 Documentation & Blueprints
 
+- [**WhatsApp Handbook**](WHATSAPP_HANDBOOK.md) - Advanced Interactive features & Coexistence guide.
 - [**Walkthrough**](docs_archive/walkthrough.md) - Latest "Series B" architectural deep-dives.
 - [**Security Audit**](docs_archive/SECURITY_AUDIT_REPORT.md) - Hardening and encryption reports.
 - [**Deployment Guide**](docs_archive/AWS_DEPLOY.md) - Scalable production setup.

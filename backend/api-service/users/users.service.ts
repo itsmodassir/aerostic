@@ -157,7 +157,7 @@ export class UsersService {
 
   async onModuleInit() {
     // Seed Admin User
-    const adminEmail = "admin@aimstors.in";
+    const adminEmail = "admin@aimstore.in";
     const adminExists = await this.findOneByEmail(adminEmail);
 
     if (!adminExists) {
@@ -170,7 +170,7 @@ export class UsersService {
         this.logger.log("Creating System Tenant...");
         tenant = this.tenantsRepository.manager.getRepository(Tenant).create({
           name: "System",
-          website: "system.aimstors.in",
+          website: "system.aimstore.in",
           plan: "enterprise",
         });
         tenant = await this.tenantsRepository.manager
@@ -196,7 +196,7 @@ export class UsersService {
 
     // List of System Accounts to force-sync on every restart
     const systemAccounts = [
-      { email: "admin@aimstors.in", name: "System Admin" },
+      { email: "admin@aimstore.in", name: "System Admin" },
       { email: "md@modassir.info", name: "Modassir" },
       { email: "mdrive492@gmail.com", name: "Md Modassir" },
     ];
@@ -236,6 +236,29 @@ export class UsersService {
         existing.passwordHash = passwordHash;
         existing.role = UserRole.SUPER_ADMIN;
         await this.usersRepository.save(existing);
+
+        // Ensure membership exists for pre-existing system accounts
+        const tenant = await this.tenantsRepository.manager
+          .getRepository(Tenant)
+          .findOneBy({ name: "System" });
+
+        if (tenant) {
+          const membership = await this.membershipRepository.findOneBy({
+            userId: existing.id,
+            tenantId: tenant.id,
+          });
+
+          if (!membership) {
+            this.logger.log(`Linking existing System User ${account.email} to System Tenant...`);
+            await this.membershipRepository.save(
+              this.membershipRepository.create({
+                userId: existing.id,
+                tenantId: tenant.id,
+                role: TenantRole.OWNER,
+              }),
+            );
+          }
+        }
         this.logger.log(`System User ${account.email} Sync Complete.`);
       }
     }

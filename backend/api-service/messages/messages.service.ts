@@ -51,16 +51,75 @@ export class MessagesService {
   private readonly accountCache = new Map<string, { account: WhatsappAccount; timestamp: number }>();
   private readonly CACHE_TTL = 300000; // 5 minutes
 
+  private coercePreviewValue(value: unknown): string {
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object" && "text" in (value as Record<string, unknown>)) {
+      const text = (value as Record<string, unknown>).text;
+      return typeof text === "string" ? text : "";
+    }
+    return "";
+  }
+
   private extractMessagePreview(message: Message | null | undefined): string {
     if (!message) return "";
     return (
       message.body ||
-      message.content?.body ||
-      message.content?.text?.body ||
+      this.coercePreviewValue(message.content?.body) ||
+      this.coercePreviewValue(message.content?.text?.body) ||
+      this.coercePreviewValue(message.content?.caption) ||
       message.content?.interactive?.button_reply?.title ||
       message.content?.interactive?.list_reply?.title ||
       `[${message.type}]`
     );
+  }
+
+  /**
+   * Send a single product message (Interactive Product)
+   */
+  async sendProductMessage(tenantId: string, to: string, catalogId: string, productRetailerId: string, bodyText: string) {
+    return this.send({
+      tenantId,
+      to,
+      type: "interactive",
+      payload: {
+        type: "product",
+        body: { text: bodyText },
+        action: {
+          catalog_id: catalogId,
+          product_retailer_id: productRetailerId,
+        },
+      },
+    });
+  }
+
+  /**
+   * Send a multi-product catalog message (Interactive Product List)
+   */
+  async sendProductListMessage(
+    tenantId: string, 
+    to: string, 
+    catalogId: string, 
+    headerText: string, 
+    bodyText: string, 
+    sections: { title: string; product_retailer_ids: string[] }[]
+  ) {
+    return this.send({
+      tenantId,
+      to,
+      type: "interactive",
+      payload: {
+        type: "product_list",
+        header: { type: "text", text: headerText },
+        body: { text: bodyText },
+        action: {
+          catalog_id: catalogId,
+          sections: sections.map(s => ({
+            title: s.title,
+            product_items: s.product_retailer_ids.map(id => ({ product_retailer_id: id }))
+          }))
+        },
+      },
+    });
   }
 
   async send(dto: SendMessageDto) {
@@ -158,6 +217,30 @@ export class MessagesService {
       body.template = dto.payload;
     } else if (dto.type === "interactive") {
       body.interactive = dto.payload;
+
+      if (body.interactive?.type === "flow") {
+        const parameters = body.interactive?.action?.parameters || {};
+        const normalizedAction =
+          String(parameters.flow_action || "navigate").toLowerCase();
+
+        body.interactive.action = {
+          ...(body.interactive.action || {}),
+          name: "flow",
+          parameters: {
+            ...parameters,
+            flow_message_version: String(
+              parameters.flow_message_version || "3",
+            ),
+            flow_id: String(parameters.flow_id || ""),
+            flow_cta: String(parameters.flow_cta || "Open Flow"),
+            flow_token: String(
+              parameters.flow_token || parameters.flow_id || `aimstors_${Date.now()}`,
+            ),
+            flow_action: normalizedAction,
+            mode: String(parameters.mode || "published").toLowerCase(),
+          },
+        };
+      }
     } else if (dto.type === "image") {
       body.image = dto.payload;
     } else if (dto.type === "video") {
@@ -418,7 +501,34 @@ export class MessagesService {
       content:
         message.content ||
         (message.body ? { body: message.body } : null),
-    }));
+      }));
+  }
+
+  async markConversationAsRead(tenantId: string, conversationId: string) {
+    const conversation = await this.conversationRepo.findOne({
+      where: { id: conversationId, tenantId },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException("Conversation not found");
+    }
+
+    if ((conversation.unreadCount || 0) > 0) {
+      conversation.unreadCount = 0;
+      await this.conversationRepo.save(conversation);
+    }
+
+    await this.messageRepo
+      .createQueryBuilder()
+      .update(Message)
+      .set({ readAt: () => "CURRENT_TIMESTAMP" })
+      .where("tenant_id = :tenantId", { tenantId })
+      .andWhere("conversation_id = :conversationId", { conversationId })
+      .andWhere("direction = :direction", { direction: "in" })
+      .andWhere("read_at IS NULL")
+      .execute();
+
+    return { success: true, conversationId };
   }
 
   async getConversation(conversationId: string): Promise<Conversation | null> {

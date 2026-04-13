@@ -14,6 +14,9 @@ import {
   FileText,
   Split,
   Globe,
+  List,
+  Smile,
+  Cpu
 } from "lucide-react";
 import { NodeKind } from "./types";
 import {
@@ -82,6 +85,24 @@ const nodeCategories = [
         border: "border-indigo-200",
         tip: "Send a document or PDF to the customer.",
       },
+      {
+        kind: "list_message" as NodeKind,
+        name: "List Menu",
+        icon: List,
+        color: "text-teal-500",
+        bg: "bg-teal-50",
+        border: "border-teal-200",
+        tip: "Send a list of options (up to 10) for the user to choose from.",
+      },
+      {
+        kind: "template" as NodeKind,
+        name: "Template",
+        icon: Smile,
+        color: "text-blue-600",
+        bg: "bg-blue-50",
+        border: "border-blue-200",
+        tip: "Send a pre-approved Meta WhatsApp template.",
+      },
     ],
   },
   {
@@ -106,6 +127,15 @@ const nodeCategories = [
         tip: "Branch the flow based on complex logic or variables.",
       },
       {
+        kind: "whatsapp_flow" as NodeKind,
+        name: "Flow",
+        icon: Globe,
+        color: "text-indigo-500",
+        bg: "bg-indigo-50",
+        border: "border-indigo-200",
+        tip: "Open a custom Meta WhatsApp Flow form.",
+      },
+      {
         kind: "delay" as NodeKind,
         name: "Wait",
         icon: Clock,
@@ -122,6 +152,20 @@ const nodeCategories = [
         bg: "bg-violet-50",
         border: "border-violet-200",
         tip: "Store custom data during flow execution.",
+      },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      {
+        kind: "ai_agent" as NodeKind,
+        name: "AI Agent",
+        icon: Cpu,
+        color: "text-violet-500",
+        bg: "bg-violet-50",
+        border: "border-violet-200",
+        tip: "Use Gemini to process natural language and make smart decisions.",
       },
       {
         kind: "browser_agent" as NodeKind,

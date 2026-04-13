@@ -19,7 +19,10 @@ import {
   Link,
   Upload,
   Globe,
-  Bot
+  Bot,
+  Cpu,
+  Smile,
+  LayoutList
 } from "lucide-react";
 import { BuilderNode, BuilderNodeData } from "./types";
 import { Button } from "../../ui/button";
@@ -442,6 +445,256 @@ export function ConfigPanel({ selected, onChange, onDelete }: ConfigPanelProps) 
                         <p className="text-[10px] text-orange-600 leading-relaxed font-medium">
                             If the condition is met, the flow follows the <span className="font-bold underline">True</span> branch. Otherwise, it follows <span className="font-bold underline">False</span>.
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {type === 'ai_agent' && (
+                <div className="space-y-6">
+                    <div className="p-4 rounded-2xl bg-violet-50 border border-violet-100 flex gap-3">
+                        <Cpu size={16} className="text-violet-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-violet-800 font-black uppercase tracking-wider">AI Intelligence Node</p>
+                            <p className="text-[10px] text-violet-600 leading-relaxed font-medium">
+                                Use Gemini to process conversation context and make autonomous decisions.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">AI Prompt / Task</label>
+                        <Textarea 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-medium p-4 outline-none focus:ring-2 focus:ring-violet-500/20 resize-none min-h-[140px] shadow-inner"
+                            placeholder="e.g. Analyze the user's intent. If they want to check balance, extract their account number..."
+                            value={data.aiPrompt || ''}
+                            onChange={(e) => onChange({ aiPrompt: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Model Selection</label>
+                        <select 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3 outline-none"
+                            value={data.aiModel || 'gemini-1.5-pro'}
+                            onChange={(e) => onChange({ aiModel: e.target.value })}
+                        >
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                        </select>
+                    </div>
+                </div>
+            )}
+
+            {type === 'whatsapp_flow' && (
+                <div className="space-y-6">
+                    <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex gap-3">
+                        <Globe size={16} className="text-indigo-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-indigo-800 font-black uppercase tracking-wider">Meta WhatsApp Flow</p>
+                            <p className="text-[10px] text-indigo-600 leading-relaxed font-medium">
+                                Configure the interactive flow to launch on the user's device.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Flow ID (from Meta)</label>
+                        <Input 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                            placeholder="Enter Flow ID..."
+                            value={data.metaFlowId || ''}
+                            onChange={(e) => onChange({ metaFlowId: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Button Text (CTA)</label>
+                        <Input 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                            placeholder="Open Flow"
+                            value={data.flowCTA || ''}
+                            onChange={(e) => onChange({ flowCTA: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Initial Screen (Optional)</label>
+                        <Input 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                            placeholder="START (default)"
+                            value={data.flowInitialScreen || ''}
+                            onChange={(e) => onChange({ flowInitialScreen: e.target.value })}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {type === 'template' && (
+                <div className="space-y-6">
+                    <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex gap-3">
+                        <Smile size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-blue-800 font-black uppercase tracking-wider">Meta Template</p>
+                            <p className="text-[10px] text-blue-600 leading-relaxed font-medium">
+                                Select and personalize an approved WhatsApp template.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Template Name</label>
+                        <Input 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                            placeholder="e.g. shipping_update"
+                            value={data.templateName || ''}
+                            onChange={(e) => onChange({ templateName: e.target.value })}
+                        />
+                        <p className="text-[9px] text-slate-400 font-medium px-1 italic">Templates must be pre-approved in Meta Suite.</p>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Variable Mapping</label>
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Select a template to map variables</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {type === 'list_message' && (
+                <div className="space-y-6">
+                    <div className="p-4 rounded-2xl bg-teal-50 border border-teal-100 flex gap-3">
+                        <LayoutList size={16} className="text-teal-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] text-teal-800 font-black uppercase tracking-wider">WhatsApp List Menu</p>
+                            <p className="text-[10px] text-teal-600 leading-relaxed font-medium">
+                                Create an interactive list with up to 10 options across multiple sections.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Menu Title / Body</label>
+                        <Textarea 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-medium p-4 outline-none focus:ring-2 focus:ring-teal-500/20 resize-none min-h-[80px] shadow-inner"
+                            placeholder="Main text to show above the list..."
+                            value={data.message || ''}
+                            onChange={(e) => onChange({ message: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Button Text</label>
+                        <Input 
+                            className="w-full bg-slate-50 border-none rounded-xl text-xs font-bold p-3"
+                            placeholder="View Options"
+                            value={data.listButton || ''}
+                            onChange={(e) => onChange({ listButton: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">List Sections</label>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-7 text-[9px] uppercase font-black px-3 rounded-lg border-teal-100 text-teal-600 hover:bg-teal-50"
+                                onClick={() => {
+                                    const currSections = data.listSections || [];
+                                    const newSections = [...currSections, { id: `sec_${Date.now()}`, title: 'New Section', rows: [] }];
+                                    onChange({ listSections: newSections });
+                                }}
+                            >
+                                <Plus size={12} className="mr-1.5" />
+                                Add Section
+                            </Button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            {(data.listSections || []).map((section: any, sIdx: number) => (
+                                <div key={section.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                                    <div className="flex gap-2">
+                                        <Input 
+                                            className="flex-1 bg-white border-none text-[11px] font-black uppercase tracking-tight h-8 rounded-lg px-3"
+                                            value={section.title}
+                                            onChange={(e) => {
+                                                const newSections = [...(data.listSections || [])];
+                                                newSections[sIdx] = { ...section, title: e.target.value };
+                                                onChange({ listSections: newSections });
+                                            }}
+                                        />
+                                        <button 
+                                            onClick={() => {
+                                                const newSections = (data.listSections || []).filter((_: any, i: number) => i !== sIdx);
+                                                onChange({ listSections: newSections });
+                                            }}
+                                            className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-2 pl-2 border-l-2 border-teal-100">
+                                        {(section.rows || []).map((row: any, rIdx: number) => (
+                                            <div key={row.id} className="bg-white p-2 rounded-xl border border-teal-50 flex gap-2 group">
+                                                <div className="flex-1 space-y-1">
+                                                    <Input 
+                                                        className="w-full bg-transparent border-none text-[10px] font-bold h-6 p-0 px-1"
+                                                        value={row.title}
+                                                        placeholder="Row Title"
+                                                        onChange={(e) => {
+                                                            const newSections = [...(data.listSections || [])];
+                                                            const newRows = [...(section.rows || [])];
+                                                            newRows[rIdx] = { ...row, title: e.target.value };
+                                                            newSections[sIdx] = { ...section, rows: newRows };
+                                                            onChange({ listSections: newSections });
+                                                        }}
+                                                    />
+                                                    <Input 
+                                                        className="w-full bg-transparent border-none text-[9px] text-slate-400 h-4 p-0 px-1"
+                                                        value={row.description || ''}
+                                                        placeholder="Optional description"
+                                                        onChange={(e) => {
+                                                            const newSections = [...(data.listSections || [])];
+                                                            const newRows = [...(section.rows || [])];
+                                                            newRows[rIdx] = { ...row, description: e.target.value };
+                                                            newSections[sIdx] = { ...section, rows: newRows };
+                                                            onChange({ listSections: newSections });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <button 
+                                                    onClick={() => {
+                                                        const newSections = [...(data.listSections || [])];
+                                                        newSections[sIdx] = { ...section, rows: (section.rows || []).filter((_: any, i: number) => i !== rIdx) };
+                                                        onChange({ listSections: newSections });
+                                                    }}
+                                                    className="p-1.5 text-slate-200 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="w-full h-8 text-[9px] font-bold text-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                                            onClick={() => {
+                                                const newSections = [...(data.listSections || [])];
+                                                const currRows = section.rows || [];
+                                                const newRows = [...currRows, { id: `row_${Date.now()}`, title: 'New Option' }];
+                                                newSections[sIdx] = { ...section, rows: newRows };
+                                                onChange({ listSections: newSections });
+                                            }}
+                                        >
+                                            <Plus size={12} className="mr-1" />
+                                            Add Option
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}

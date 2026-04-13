@@ -27,6 +27,7 @@ import { AuditModule } from "../audit/audit.module";
 import { UsersModule } from "../users/users.module";
 import { User } from "@shared/database/entities/core/user.entity";
 import { Plan } from "@shared/database/entities/billing/plan.entity";
+import { Addon } from "@shared/database/entities/billing/addon.entity";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { Invoice } from "./entities/invoice.entity";
 import { AdminModule } from "../admin/admin.module";
@@ -38,6 +39,7 @@ import { ResellerConfig } from "@shared/database/entities/core/reseller-config.e
       UsageMetric,
       Subscription,
       Plan,
+      Addon,
       ApiKey,
       WebhookEndpoint,
       RazorpayEvent,

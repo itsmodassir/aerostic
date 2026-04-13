@@ -16,7 +16,10 @@ import {
   Split,
   ExternalLink,
   Globe,
-  Bot
+  Bot,
+  List,
+  Smile,
+  Cpu
 } from "lucide-react";
 import { BuilderNodeData } from "./types";
 import { cn } from "@/lib/utils";
@@ -283,6 +286,89 @@ export const BrowserAgentNode = ({ data, selected }: NodeProps<XYNode<BuilderNod
   </NodeWrapper>
 );
 
+export const WhatsappFlowNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="WhatsApp Flow" icon={Globe} color="text-indigo-500" bg="bg-indigo-50/50" selected={selected}>
+    <div className="space-y-1">
+        <p className="text-xs font-bold text-indigo-700 tracking-tight">
+            {data.flowCTA || 'Open Flow'}
+        </p>
+        <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
+            Meta Flow ID: {data.metaFlowId || 'Not set'}
+        </p>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
+export const ListMessageNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="List Menu" icon={List} color="text-teal-500" bg="bg-teal-50/50" selected={selected}>
+    <div className="space-y-2">
+        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+            <p className="text-[11px] text-slate-600 font-medium leading-relaxed italic">
+                {data.message || 'Menu Title...'}
+            </p>
+        </div>
+        <div className="space-y-1">
+            <div className="text-[8px] font-black uppercase text-slate-400 flex items-center justify-between">
+                <span>Items: {(data.listSections?.reduce((acc, s) => acc + s.rows.length, 0) || 0)}</span>
+                <span className="text-teal-600">{data.listButton || 'View Menu'}</span>
+            </div>
+            {(data.listSections || []).slice(0, 1).map((section: any) => (
+                <div key={section.id} className="space-y-1">
+                    {section.rows.slice(0, 3).map((row: any) => (
+                        <div key={row.id} className="bg-white border border-teal-100 rounded-lg p-1.5 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-teal-300 shrink-0" />
+                            <span className="text-[9px] font-bold text-slate-700 truncate">{row.title}</span>
+                        </div>
+                    ))}
+                </div>
+            ))}
+        </div>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-teal-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
+export const TemplateNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="Official Template" icon={Smile} color="text-blue-600" bg="bg-blue-50/50" selected={selected}>
+    <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+            <Badge className="bg-blue-100 text-blue-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5">Approved</Badge>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">WA Node</span>
+        </div>
+        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+            <p className="text-[11px] font-black text-slate-800 tracking-tight truncate">
+                {data.templateName || 'Selecting template...'}
+            </p>
+            <p className="text-[9px] text-slate-400 font-medium">Mapped Vars: {Object.keys(data.variableMapping || {}).length}</p>
+        </div>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
+export const AiAgentNode = ({ data, selected }: NodeProps<XYNode<BuilderNodeData>>) => (
+  <NodeWrapper title="Intelligence" icon={Cpu} color="text-violet-500" bg="bg-violet-50/50" selected={selected}>
+    <div className="space-y-2">
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">Active Brain</span>
+            </div>
+            <span className="text-[8px] font-bold text-slate-300 uppercase underline decoration-violet-100">{data.aiModel || 'Gemini'}</span>
+        </div>
+        <div className="bg-white border border-violet-100 p-2.5 rounded-xl text-[10px] text-slate-600 italic line-clamp-2 leading-relaxed">
+            {data.aiPrompt || 'Instructing the agent...'}
+        </div>
+    </div>
+    <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-slate-200 !border-2 !border-white" />
+    <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-violet-500 !border-2 !border-white" />
+  </NodeWrapper>
+);
+
 const Badge = ({ children, className }: any) => (
     <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold", className)}>
         {children}
@@ -301,4 +387,8 @@ export const nodeTypes = {
   doc: DocNode,
   if_else: IfElseNode,
   browser_agent: BrowserAgentNode,
+  whatsapp_flow: WhatsappFlowNode,
+  list_message: ListMessageNode,
+  template: TemplateNode,
+  ai_agent: AiAgentNode,
 };

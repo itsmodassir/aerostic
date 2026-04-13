@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, MessageSquare, Users2, Settings, Zap, LogOut,
     Megaphone, FileText, Bot, Shield, Target, Calendar, Workflow,
-    ChevronDown, Crown
+    ChevronDown, Crown, ShoppingCart
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useDashboard } from './DashboardContext';
@@ -26,6 +26,8 @@ const NAVIGATION: NavItem[] = [
     { name: 'Contacts', href: '/contacts', icon: Users2, permission: 'contacts:read' },
     { name: 'Inbox', href: '/inbox', icon: MessageSquare, permission: 'inbox:read' },
     { name: 'Campaigns', href: '/campaigns', icon: Megaphone, permission: 'campaigns:read' },
+    { name: 'Orders', href: '/orders', icon: ShoppingCart },
+    { name: 'Catalogue', href: '/commerce/catalogue', icon: LayoutDashboard },
     { name: 'Templates', href: '/templates', icon: FileText, permission: 'campaigns:read' },
     { name: 'WhatsApp Flows', href: '/settings/whatsapp/flows', icon: Workflow, permission: 'campaigns:read' },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
@@ -57,19 +59,29 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
     const { isSidebarCollapsed, toggleSidebarCollapse, isSidebarOpen, setIsSidebarOpen, membership } = useDashboard();
     
     const permissions = user?.permissions || membership?.permissions || [];
-    const workspacePrefix = membership?.tenant?.slug
-        ? `/dashboard/${membership.tenant.slug}`
-        : membership?.tenantId
-            ? `/dashboard/${membership.tenantId}`
-            : '';
+    
+    // Optimized workspace prefixing logic with better fallbacks
+    const workspacePrefix = useMemo(() => {
+        // First priority: Tenant slug from active membership
+        if (membership?.tenant?.slug) return `/dashboard/${membership.tenant.slug}`;
+        if (membership?.tenantId) return `/dashboard/${membership.tenantId}`;
+        
+        // Second priority: Extract from URL if membership is still loading
+        const matches = pathname.match(/\/dashboard\/([^\/]+)/);
+        if (matches && matches[1] !== 'new') {
+            return `/dashboard/${matches[1]}`;
+        }
+        
+        return '';
+    }, [membership, pathname]);
 
     const visibleNavigation = useMemo(() => {
         const items = NAVIGATION.map(item => {
             // Apply workspace prefix to all internal links
             const transformHref = (href?: string) => {
                 if (!href || href.startsWith('http')) return href;
+                if (href === '/dashboard' && workspacePrefix) return workspacePrefix;
                 if (!workspacePrefix) return href;
-                // Avoid double prefixing if already prefixed
                 if (href.startsWith(workspacePrefix)) return href;
                 return `${workspacePrefix}${href}`;
             };
@@ -98,12 +110,21 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
     }, [isAdmin, permissions, workspacePrefix]);
 
     return (
-        <aside className={clsx(
-            "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-all duration-300 sm:translate-x-0",
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-            isSidebarCollapsed ? "w-20" : "w-64"
-        )}>
-            <div className="flex h-16 items-center px-4 border-b justify-between">
+        <>
+            {isSidebarOpen && (
+                <button
+                    aria-label="Close navigation"
+                    className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[1px] sm:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+            <aside className={clsx(
+                "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-all duration-300 sm:translate-x-0",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+                isSidebarCollapsed ? "sm:w-20" : "sm:w-64",
+                "w-[min(20rem,88vw)] shadow-2xl shadow-slate-950/10 sm:shadow-none"
+            )}>
+            <div className="flex h-16 items-center border-b px-4 justify-between">
                 <Link href="/" className={clsx(
                     "flex items-center gap-2 font-bold text-xl text-primary overflow-hidden transition-all",
                     isSidebarCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
@@ -123,11 +144,11 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
                 )}
             </div>
             
-            <div className={clsx("px-4 py-4 border-b", isSidebarCollapsed && "px-2")}>
+            <div className={clsx("border-b px-4 py-4", isSidebarCollapsed && "sm:px-2")}>
                 <WorkspaceSwitcher isCollapsed={isSidebarCollapsed} />
             </div>
 
-            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <nav className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6 space-y-1">
                 {visibleNavigation.map((item) => (
                     <NavRow 
                         key={item.name}
@@ -138,7 +159,8 @@ const Sidebar = memo(function Sidebar({ user, isAdmin }: { user: any, isAdmin: b
                     />
                 ))}
             </nav>
-        </aside>
+            </aside>
+        </>
     );
 });
 
@@ -176,7 +198,7 @@ const NavRow = memo(function NavRow({ item, pathname, isCollapsed, onCloseMobile
                     onClick={() => setIsOpen(!isOpen)}
                     className={clsx(
                         'flex justify-between items-center rounded-lg text-sm font-medium transition-all duration-200 w-full',
-                        isCollapsed ? 'justify-center p-2.5 mx-2' : 'px-3 py-2.5',
+                        isCollapsed ? 'sm:justify-center sm:p-2.5 sm:mx-2 px-3 py-2.5' : 'px-3 py-2.5',
                         isActive && !isOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
                 >
@@ -213,7 +235,7 @@ const NavRow = memo(function NavRow({ item, pathname, isCollapsed, onCloseMobile
             onClick={onCloseMobile}
             className={clsx(
                 'flex items-center rounded-lg text-sm font-medium transition-all duration-200 mb-1',
-                isCollapsed ? 'justify-center p-2.5 mx-2' : 'gap-3 px-3 py-2.5',
+                isCollapsed ? 'sm:justify-center sm:p-2.5 sm:mx-2 px-3 py-2.5' : 'gap-3 px-3 py-2.5',
                 isActive ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
         >

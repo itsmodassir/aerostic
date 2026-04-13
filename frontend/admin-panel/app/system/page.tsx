@@ -204,7 +204,22 @@ export default function SystemPage() {
             setTesting(true);
             setResult(null);
             try {
-                const res = await fetch('/api/v1/admin/system/email/test', { method: 'POST', credentials: 'include' });
+                // Pass current values to allow testing before saving
+                const testBody = {
+                    host: config['email.smtp_host'],
+                    port: config['email.smtp_port'],
+                    secure: config['email.smtp_secure'] === 'true',
+                    user: config['email.smtp_user'],
+                    pass: config['email.smtp_pass'],
+                    fromEmail: config['email.from_email'],
+                };
+                
+                const res = await fetch('/api/v1/admin/system/email/test', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(testBody)
+                });
                 const data = await res.json();
                 setResult(data);
             } catch (e: any) {

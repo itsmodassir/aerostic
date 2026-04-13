@@ -12,6 +12,9 @@ import { Contact } from "../database/entities/core/contact.entity";
 import { Conversation } from "../database/entities/messaging/conversation.entity";
 import { Message } from "../database/entities/messaging/message.entity";
 import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
+import { Order } from "../database/entities/commerce/order.entity";
+import { OrderItem } from "../database/entities/commerce/order-item.entity";
+import { CatalogProduct } from "../database/entities/commerce/catalog-product.entity";
 import { AiService } from "../../api-service/ai/ai.service";
 import { forwardRef, Inject } from "@nestjs/common";
 import { MessagesGateway } from "../../api-service/messages/messages.gateway";
@@ -36,6 +39,12 @@ export class WebhooksService {
     private webhookQueue: Queue,
     @Inject(forwardRef(() => AiService))
     private aiService: AiService,
+    @InjectRepository(Order)
+    private orderRepo: Repository<Order>,
+    @InjectRepository(OrderItem)
+    private orderItemRepo: Repository<OrderItem>,
+    @InjectRepository(CatalogProduct)
+    private catalogProductRepo: Repository<CatalogProduct>,
     @Inject(forwardRef(() => MessagesGateway))
     private messagesGateway: MessagesGateway,
   ) {}
@@ -106,9 +115,14 @@ export class WebhooksService {
       await this.handleTemplateStatus(value);
     }
 
-    // 4. Handle SMB App State Sync (Coexistence)
+    // 4. Handle SMB App State Sync (Coexistence Contacts)
     if (changes.field === "smb_app_state_sync") {
       await this.handleSMBStateSync(value);
+    }
+
+    // 5. Handle History Sync (Coexistence Messages)
+    if (changes.field === "history") {
+      await this.handleHistorySync(value);
     }
   }
 
@@ -144,6 +158,9 @@ export class WebhooksService {
 
     // Process regular messages
     for (const msg of messages) {
+      if (msg.type === "order") {
+        await this.handleOrderMessage(account, msg);
+      }
       await this.processIncomingMessage(account, msg, value.contacts?.[0]);
     }
 
@@ -375,8 +392,143 @@ export class WebhooksService {
   }
 
   private async handleSMBStateSync(value: any) {
-    // Logic for syncing contacts from Business App
-    this.logger.log("SMB App State Sync received");
+    const phoneNumberId = value.metadata?.phone_number_id;
+    const account = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
+    if (!account) return;
+
+    const contactData = value.contact; // Meta payload structure for contact sync
+    if (!contactData || !contactData.phone_number) return;
+
+    this.logger.log(`SMB Sync: ${value.sync_type} contact ${contactData.phone_number}`);
+
+    if (value.sync_type === "add") {
+      let contact = await this.contactRepo.findOneBy({
+        tenantId: account.tenantId,
+        phoneNumber: contactData.phone_number,
+      });
+
+      if (!contact) {
+        contact = this.contactRepo.create({
+          tenantId: account.tenantId,
+          phoneNumber: contactData.phone_number,
+          name: contactData.full_name || contactData.first_name || "Unknown",
+          attributes: {
+            source: "whatsapp_coexistence",
+            syncOrigin: "mobile_app",
+            lastSyncedAt: new Date(),
+          },
+        });
+      } else {
+        // Enrich Name only if currently generic
+        if (contact.name === "Unknown" || !contact.name) {
+          contact.name = contactData.full_name || contactData.first_name || contact.name;
+        }
+        contact.attributes = {
+          ...(contact.attributes || {}),
+          source: "whatsapp_coexistence",
+          syncOrigin: "mobile_app",
+          lastSyncedAt: new Date(),
+        };
+      }
+      await this.contactRepo.save(contact);
+    }
+  }
+
+  private async handleHistorySync(value: any) {
+    const phoneNumberId = value.metadata?.phone_number_id;
+    const account = await this.whatsappAccountRepo.findOneBy({ phoneNumberId });
+    if (!account) return;
+
+    const messages = value.messages || [];
+    this.logger.log(`Importing ${messages.length} historical messages for tenant ${account.tenantId}`);
+
+    const syncedConversationIds = new Set<string>();
+
+    for (const msg of messages) {
+      const message = await this.processHistoricalMessage(account, msg);
+      if (message?.conversationId) {
+        syncedConversationIds.add(message.conversationId);
+      }
+    }
+
+    // Insert system notification in each touched thread
+    for (const conversationId of syncedConversationIds) {
+      await this.messageRepo.save(
+        this.messageRepo.create({
+          tenantId: account.tenantId,
+          conversationId,
+          direction: "in",
+          type: "system",
+          body: "Conversation history imported from WhatsApp Business",
+          status: "received",
+          metadata: {
+            source: "whatsapp_history_sync",
+            isImported: true,
+            isSystem: true,
+          },
+        }),
+      );
+    }
+  }
+
+  private async processHistoricalMessage(account: WhatsappAccount, msg: any): Promise<any> {
+    const existingMsg = await this.messageRepo.findOneBy({ metaMessageId: msg.id });
+    if (existingMsg) return;
+
+    const from = msg.from || msg.to; // history might have both
+    if (!from) return;
+
+    // 1. Resolve Contact (Silent Import)
+    let contact = await this.contactRepo.findOneBy({
+      tenantId: account.tenantId,
+      phoneNumber: from,
+    });
+    if (!contact) {
+      contact = this.contactRepo.create({
+        tenantId: account.tenantId,
+        phoneNumber: from,
+        name: "Unknown (Imported)",
+      });
+      await this.contactRepo.save(contact);
+    }
+
+    // 2. Resolve Conversation (Silent)
+    let conversation = await this.conversationRepo.findOne({
+      where: { tenantId: account.tenantId, contactId: contact.id, status: "open" },
+    });
+    if (!conversation) {
+      conversation = this.conversationRepo.create({
+        tenantId: account.tenantId,
+        contactId: contact.id,
+        phoneNumberId: account.phoneNumberId,
+        status: "open",
+        lastMessageAt: new Date(msg.timestamp * 1000),
+      });
+      await this.conversationRepo.save(conversation);
+    }
+
+    // 3. Persist Message with Historical Metadata
+    const message = this.messageRepo.create({
+      tenantId: account.tenantId,
+      conversationId: conversation.id,
+      direction: msg.from === account.displayPhoneNumber ? "out" : "in",
+      type: msg.type || "text",
+      content: msg[msg.type] || { body: msg.text?.body },
+      metaMessageId: msg.id,
+      status: "received",
+      createdAt: new Date(msg.timestamp * 1000),
+      metadata: {
+        source: "whatsapp_history_sync",
+        isImported: true,
+        isHistorical: true,
+        importedAt: new Date(),
+        metaWebhookEventId: msg.id,
+      },
+    });
+
+    await this.messageRepo.save(message);
+    // Note: We EXPLICITLY do NOT emit to gateway, AI, or Workflows here.
+    return message;
   }
 
   private resolveTriggerType(msg: any): string {
@@ -472,7 +624,7 @@ export class WebhooksService {
     }
 
     const triggerType = this.resolveTriggerType(msg);
-    const context = {
+    const context: any = {
       from: msg?.from,
       contactId: contact.id,
       conversationId: conversation.id,
@@ -482,6 +634,21 @@ export class WebhooksService {
       messageId: msg?.id,
       whatsappMessage: msg,
     };
+
+    // Enrich context for specialized triggers
+    if (triggerType === "flow_response") {
+      const flowData = msg?.interactive?.nfm_reply?.response_json;
+      if (flowData) {
+        try {
+          context.flow = typeof flowData === "string" ? JSON.parse(flowData) : flowData;
+        } catch (e) {
+          context.flow = { raw: flowData };
+        }
+      }
+    } else if (triggerType === "template_reply") {
+      context.selection =
+        msg?.interactive?.button_reply || msg?.interactive?.list_reply || {};
+    }
 
     const triggerPath =
       this.configService.get<string>("AUTOMATION_TRIGGER_PATH") ||
@@ -507,4 +674,67 @@ export class WebhooksService {
       this.logger.error(`Failed dispatching workflow trigger: ${detail}`);
     }
   }
+
+  private async handleOrderMessage(account: WhatsappAccount, msg: any) {
+    const orderData = msg.order;
+    if (!orderData) return;
+
+    const from = msg.from;
+    const contact = await this.contactRepo.findOneBy({ 
+      tenantId: account.tenantId, 
+      phoneNumber: from 
+    });
+    if (!contact) return;
+
+    // 1. Create Order
+    const order = this.orderRepo.create({
+      tenantId: account.tenantId,
+      contactId: contact.id,
+      catalogId: orderData.catalog_id,
+      status: "NEW",
+      currency: "INR",
+      totalAmount: 0,
+      metadata: orderData,
+      source: "whatsapp"
+    } as any);
+
+    const savedOrder = await this.orderRepo.save(order);
+    const orderId = (savedOrder as any).id;
+    let total = 0;
+
+    // 2. Create Order Items
+    for (const item of orderData.product_items) {
+      const localProduct = await this.catalogProductRepo.findOneBy({
+        tenantId: account.tenantId,
+        retailerId: item.product_retailer_id
+      });
+
+      const lineTotal = (localProduct?.price || item.item_price || 0) * (item.quantity || 1);
+      total += lineTotal;
+
+      const orderItem = this.orderItemRepo.create({
+        orderId: orderId,
+        retailerId: item.product_retailer_id,
+        name: localProduct?.name || `Product ${item.product_retailer_id}`,
+        quantity: item.quantity || 1,
+        unitPrice: localProduct?.price || item.item_price || 0,
+        totalPrice: lineTotal
+      });
+      await this.orderItemRepo.save(orderItem);
+    }
+
+    // 3. Update total
+    await this.orderRepo.update(orderId, { totalAmount: total });
+
+    this.logger.log(`Order ${orderId} created for contact ${contact.id} via WhatsApp`);
+    
+    // 4. Emit debug/real-time event
+    this.messagesGateway.emitWorkflowDebug(account.tenantId, {
+      workflowId: "commerce",
+      nodeId: "order_received",
+      status: "completed",
+      result: { orderId: orderId, total }
+    });
+  }
+
 }

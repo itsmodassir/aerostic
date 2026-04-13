@@ -8,6 +8,7 @@ interface AccountDetailsCardProps {
     phoneNumberId: string;
     displayPhoneNumber?: string;
     verifiedName?: string;
+    mode?: string;
     onEdit?: () => void;
 }
 
@@ -57,6 +58,7 @@ export default function AccountDetailsCard({
     phoneNumberId,
     displayPhoneNumber,
     verifiedName,
+    mode,
     onEdit,
 }: AccountDetailsCardProps) {
     const [copiedField, setCopiedField] = React.useState<string | null>(null);
@@ -78,8 +80,16 @@ export default function AccountDetailsCard({
                         <Building2 className="text-emerald-600" size={24} />
                     </div>
                     <div>
-                        <h3 className="text-lg font-black text-gray-900 tracking-tight">Account Identity</h3>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Meta Cloud Hub credentials</p>
+                            <h3 className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                                Account Identity
+                                {mode === 'coexistence' && (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md border border-blue-100 animate-pulse">
+                                        <div className="w-1 h-1 bg-blue-500 rounded-full" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Coexistence</span>
+                                    </div>
+                                )}
+                            </h3>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Meta Cloud Hub credentials</p>
                     </div>
                 </div>
                 {onEdit && (

@@ -1,103 +1,66 @@
-'use client';
+"use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Plus } from 'lucide-react';
+import { Check, X, Zap, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import api from '@/lib/api';
 
 export default function Pricing() {
-    const plans = [
-        {
-            name: "Starter",
-            subtitle: "For small businesses & individuals",
-            price: "999",
-            setupFee: "₹1,999 setup",
-            description: "Best for: Local businesses, solo agents, beginners",
-            features: [
-                "WhatsApp API onboarding (1 number)",
-                "100 AI credits / month",
-                "Auto-reply bot (1 basic)",
-                "Human takeover",
-                "Unlimited Contact",
-                "5,000 broadcasts / month (Meta fee extra)",
-                "Lead capture from WhatsApp chats",
-                "Google Sheet integration (1 sheet)",
-                "Basic keyword-based lead filtering",
-                "Daily lead sync",
-                "7 days support"
-            ],
-            cta: "Get Started",
-            highlight: false,
-            color: "blue"
-        },
-        {
-            name: "Starter 2",
-            subtitle: "More power for small businesses",
-            price: "2,499",
-            setupFee: "₹1,999 setup",
-            description: "Best for: Local businesses, solo agents, beginners",
-            features: [
-                "WhatsApp API onboarding (1 number)",
-                "500 AI credits / month",
-                "Auto-reply bot (3 bots)",
-                "Human takeover",
-                "Unlimited Contact",
-                "20,000 broadcasts / month (Meta fee extra)",
-                "Lead capture from WhatsApp chats",
-                "Google Sheet integration (1 sheet)",
-                "Basic keyword-based lead filtering",
-                "Daily lead sync",
-                "7 days support"
-            ],
-            cta: "Get Started",
-            highlight: false,
-            color: "emerald"
-        },
-        {
-            name: "Growth",
-            subtitle: "Most Popular",
-            price: "3,999",
-            setupFee: "₹0 setup",
-            description: "Best for: Real estate agents, coaches, service providers",
-            features: [
-                "Everything in Starter",
-                "WhatsApp API (up to 3 numbers)",
-                "1000 AI credits / month",
-                "Unlimited Contact",
-                "Unlimited broadcasts / month",
-                "Smart lead detection (name, phone, requirement)",
-                "Google Sheets + CRM sync",
-                "Group message lead extraction",
-                "Auto follow-up sequences (Day 1, 3, 7)",
-                "Admin dashboard (leads, status, source)",
-                "Campaign scheduler",
-                "30 days support"
-            ],
-            cta: "Choose Growth",
-            highlight: true,
-            color: "purple"
-        },
-        {
-            name: "Professional",
-            subtitle: "High-volume businesses",
-            price: "6,999",
-            setupFee: "₹29,999 setup",
-            description: "Best for: Agencies, builders, marketing teams",
-            features: [
-                "Everything in Growth",
-                "Up to 5 WhatsApp numbers",
-                "Multi-client dashboard",
-                "Advanced lead tagging & pipeline",
-                "AI-based message classification",
-                "Duplicate lead detection",
-                "Google Sheet + Webhook + API access",
-                "Role-based access (Admin / Agent)",
-                "Priority support (WhatsApp + Call)"
-            ],
-            cta: "Go Professional",
-            highlight: false,
-            color: "orange"
+    const [plans, setPlans] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPlans();
+    }, []);
+
+    const fetchPlans = async () => {
+        try {
+            const res = await api.get('/billing/available-plans');
+            setPlans(res.data);
+        } catch (err) {
+            console.error('Failed to fetch plans', err);
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
+
+    const colors = ['blue', 'emerald', 'purple', 'orange'];
+    const FEATURE_MAP: Record<string, string> = {
+        'whatsapp_embedded': 'WhatsApp Embedded Signup',
+        'whatsapp_marketing': 'WhatsApp Marketing',
+        'ai_features': 'AI Features',
+        'templates': 'Templates Management',
+        'api_access': 'API Access',
+        'webhooks': 'Webhooks',
+        'human_takeover': 'Human Takeover',
+        'unlimited_broadcasts': 'Unlimited Broadcasts',
+        'multi_client_dashboard': 'Multi-Client Dashboard',
+        'lead_pipeline': 'Lead Pipeline',
+        'ai_classification': 'AI Classification'
+    };
+
+    if (loading) return (
+        <div className="py-24 flex justify-center">
+            <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+        </div>
+    );
+
+    const displayPlans = plans.map((p, idx) => ({
+        name: p.name,
+        subtitle: p.price === 0 ? "For individuals" : (p.price > 10000 ? "High-volume businesses" : "For growing teams"),
+        price: p.price.toLocaleString(),
+        setupFee: `₹${(p.setupFee || 0).toLocaleString()} setup`,
+        description: p.description || (p.price === 0 ? "Best for beginners" : "Full power for scaling"),
+        features: [
+            ...(p.limits?.monthly_messages ? [`${p.limits.monthly_messages === -1 ? 'Unlimited' : p.limits.monthly_messages.toLocaleString()} messages/mo`] : []),
+            ...(p.limits?.ai_credits ? [`${p.limits.ai_credits === -1 ? 'Unlimited' : p.limits.ai_credits.toLocaleString()} AI credits`] : []),
+            ...p.features.map((f: string) => FEATURE_MAP[f] || f)
+        ],
+        cta: p.price === 0 ? "Get Started" : `Choose ${p.name}`,
+        highlight: plans.length > 2 ? idx === 1 : (plans.length === 2 ? idx === 1 : false),
+        color: colors[idx % colors.length]
+    }));
 
     const addOns = [
         { name: "WhatsApp API approval support", price: "₹2,000" },
@@ -125,8 +88,8 @@ export default function Pricing() {
                 </div>
 
                 {/* Plans Grid */}
-                <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-24">
-                    {plans.map((plan, idx) => (
+                <div className={`grid gap-6 mb-24 ${displayPlans.length === 2 ? 'md:grid-cols-2 max-w-4xl mx-auto' : 'md:grid-cols-2 xl:grid-cols-4'}`}>
+                    {displayPlans.map((plan, idx) => (
                         <motion.div
                             key={idx}
                             initial={false}
@@ -159,7 +122,7 @@ export default function Pricing() {
                                         <span className={`text-sm font-bold ml-2 ${plan.highlight ? 'text-gray-400' : 'text-gray-500'}`}>/mo</span>
                                     </div>
                                     <p className={`text-sm mt-2 font-bold ${plan.highlight ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        + {plan.setupFee}
+                                        {plan.setupFee}
                                     </p>
                                 </div>
 
@@ -168,7 +131,7 @@ export default function Pricing() {
                                 </p>
 
                                 <ul className="space-y-4 mb-8">
-                                    {plan.features.map((feature, i) => (
+                                    {plan.features.map((feature: string, i: number) => (
                                         <li key={i} className="flex items-start">
                                             <Check className={`w-5 h-5 mr-3 shrink-0 ${plan.highlight ? 'text-emerald-400' : 'text-emerald-500'}`} />
                                             <span className={`text-sm font-medium leading-relaxed ${plan.highlight ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -181,7 +144,7 @@ export default function Pricing() {
 
                             <div className="p-8 pt-0 mt-auto">
                                 <Link
-                                    href="https://app.aimstore.in/register"
+                                    href="/register"
                                     className={`block w-full py-4 rounded-xl text-center font-bold text-lg transition-all ${plan.highlight
                                         ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/30'
                                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -207,11 +170,11 @@ export default function Pricing() {
 
                         <div className="relative z-10">
                             <span className="inline-block px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest mb-6">
-                                Red Plan
+                                Enterprise
                             </span>
                             <h3 className="text-3xl font-black mb-4">Enterprise / Custom</h3>
                             <p className="text-gray-400 mb-8 text-lg">
-                                Need more? Get a tailored solution for your specific requirements breakdown.
+                                Need more? Get a tailored solution for your specific business requirements.
                             </p>
                             <Link
                                 href="/contact"

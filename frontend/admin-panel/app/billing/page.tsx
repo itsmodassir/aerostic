@@ -38,11 +38,7 @@ export default function AdminBillingPage() {
         { label: 'Churn Rate', value: '0%', change: '0%', period: 'vs last month' },
     ];
 
-    const planDistribution = stats?.planDistribution || [
-        { plan: 'Enterprise', count: 0, revenue: '₹0L', percentage: 0 },
-        { plan: 'Growth', count: 0, revenue: '₹0L', percentage: 0 },
-        { plan: 'Starter', count: 0, revenue: '₹0L', percentage: 0 },
-    ];
+    const planDistribution = stats?.planDistribution || [];
 
     const recentTransactions = stats?.recentTransactions || [];
 
@@ -95,10 +91,11 @@ export default function AdminBillingPage() {
                             <div className="flex-1">
                                 <div className="h-8 bg-gray-100 rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full ${plan.plan === 'Enterprise' ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
-                                            plan.plan === 'Growth' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                                                'bg-gradient-to-r from-gray-400 to-gray-500'
-                                            }`}
+                                        className={`h-full rounded-full ${
+                                            plan.plan.toLowerCase().includes('enterprise') || plan.plan.toLowerCase().includes('reseller') ? 'bg-gradient-to-r from-purple-500 to-purple-600' :
+                                            plan.plan.toLowerCase().includes('growth') || plan.plan.toLowerCase().includes('yearly') ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                                            'bg-gradient-to-r from-gray-400 to-gray-500'
+                                        }`}
                                         style={{ width: `${plan.percentage}%` }}
                                     />
                                 </div>
@@ -149,10 +146,11 @@ export default function AdminBillingPage() {
                                 <td className="py-4 font-mono text-gray-600">{txn.id}</td>
                                 <td className="py-4 font-medium text-gray-900">{txn.tenant}</td>
                                 <td className="py-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${txn.plan === 'Enterprise' ? 'bg-purple-100 text-purple-700' :
-                                        txn.plan === 'Growth' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-gray-100 text-gray-700'
-                                        }`}>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        txn.plan.toLowerCase().includes('enterprise') || txn.plan.toLowerCase().includes('reseller') ? 'bg-purple-100 text-purple-700' :
+                                        txn.plan.toLowerCase().includes('growth') || txn.plan.toLowerCase().includes('yearly') ? 'bg-blue-100 text-blue-700' :
+                                        'bg-gray-100 text-gray-700'
+                                    }`}>
                                         {txn.plan}
                                     </span>
                                 </td>

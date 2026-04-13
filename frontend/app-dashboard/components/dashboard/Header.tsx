@@ -44,23 +44,29 @@ const Header = memo(function Header({ user, isAdmin, logout }: { user: any, isAd
     const planInfo = PLAN_COLORS[userPlan];
 
     return (
-        <header className="sticky top-0 z-30 flex flex-col sm:flex-row h-auto sm:h-16 items-center justify-between border-b bg-background/95 backdrop-blur px-4 md:px-8 py-3 sm:py-0 shadow-sm gap-4 sm:gap-0">
+        <header className="sticky top-0 z-30 flex h-auto min-h-16 flex-col items-stretch justify-between gap-3 border-b bg-background/95 px-3 py-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:gap-0 sm:px-4 sm:py-0 lg:px-8">
             <div className="flex items-center justify-between w-full sm:w-auto gap-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 -ml-2 text-muted-foreground hover:text-foreground sm:hidden"
+                        className="rounded-xl p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground sm:hidden"
                     >
                         <Menu className="w-6 h-6" />
                     </button>
+                    <div className="sm:hidden">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">Workspace</p>
+                        <p className="text-sm font-black text-slate-900 truncate max-w-[12rem]">
+                            {membership?.branding?.brandName || user?.name || 'Dashboard'}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-4">
                 <Link
                     href="/billing"
                     className={clsx(
-                        "hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium hover:opacity-80 transition-opacity",
+                        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium hover:opacity-80 transition-opacity sm:text-xs",
                         planInfo.bg, planInfo.text
                     )}
                 >
@@ -83,7 +89,7 @@ const Header = memo(function Header({ user, isAdmin, logout }: { user: any, isAd
                     </button>
 
                     {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                        <div className="absolute right-0 mt-2 z-50 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl sm:w-80">
                             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                 <h3 className="font-semibold text-gray-900">Notifications</h3>
                                 <button 
@@ -113,18 +119,18 @@ const Header = memo(function Header({ user, isAdmin, logout }: { user: any, isAd
                     )}
                 </div>
 
-                <div className="h-8 w-px bg-border" />
+                <div className="hidden h-8 w-px bg-border sm:block" />
 
                 {/* Profile Dropdown */}
                 <div className="relative" ref={profileRef}>
                     <button
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-3 p-1.5 pr-3 rounded-lg hover:bg-muted transition-colors"
+                        className="flex items-center gap-2 rounded-lg p-1.5 pr-2 transition-colors hover:bg-muted sm:gap-3 sm:pr-3"
                     >
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-sm">
                             {(user?.name || 'U')[0].toUpperCase()}
                         </div>
-                        <div className="text-left hidden md:block">
+                        <div className="hidden text-left lg:block">
                             <p className="text-sm font-medium leading-none text-gray-900">{membership?.branding?.brandName || user?.name}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{membership?.branding?.supportEmail || user?.email}</p>
                         </div>
@@ -132,7 +138,7 @@ const Header = memo(function Header({ user, isAdmin, logout }: { user: any, isAd
                     </button>
 
                     {showProfileMenu && (
-                        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                        <div className="absolute right-0 mt-2 z-50 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl sm:w-64">
                             <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur text-white flex items-center justify-center font-bold text-lg">

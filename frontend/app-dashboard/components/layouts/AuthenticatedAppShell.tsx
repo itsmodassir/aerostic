@@ -100,16 +100,18 @@ function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-muted/40 font-sans" style={brandingStyles}>
+    <div className="flex min-h-dvh bg-muted/40 font-sans" style={brandingStyles}>
       <Sidebar user={user} isAdmin={isAdmin} />
       <div
         className={clsx(
-          'flex flex-col w-full min-h-screen transition-all duration-300',
+          'flex min-h-dvh w-full flex-col transition-all duration-300',
           isSidebarCollapsed ? 'sm:pl-20' : 'sm:pl-64',
         )}
       >
         <Header user={user} isAdmin={isAdmin} logout={logout} />
-        <main className="flex-1 p-4 md:p-8 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-x-hidden px-3 pb-4 pt-3 sm:px-4 sm:pb-6 sm:pt-4 lg:px-8 lg:pb-8 lg:pt-6">
+          {children}
+        </main>
       </div>
     </div>
   );

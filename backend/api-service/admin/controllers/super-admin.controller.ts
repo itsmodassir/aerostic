@@ -73,8 +73,20 @@ export class SuperAdminController {
   }
 
   @Post("email/test")
-  async testEmailConnection() {
-    return this.emailService.testConnection();
+  async testEmailConnection(@Body() config: any) {
+    // If config body is provided, it's a "Live Test" from the UI
+    // Otherwise, it uses the persisted database config
+    const testConfig = (config && config.host) ? {
+      host: config.host,
+      port: parseInt(config.port),
+      secure: config.secure === true || config.secure === "true",
+      auth: {
+        user: config.user || config.smtp_user,
+        pass: config.pass || config.smtp_pass,
+      }
+    } : undefined;
+
+    return this.emailService.testConnection(testConfig);
   }
 
   @Post("tokens/rotate")

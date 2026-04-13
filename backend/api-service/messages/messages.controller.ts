@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile } from "@nestjs/common";
+import { Body, Controller, Post, Get, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile, Patch } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MessagesService } from "./messages.service";
 import { SendMessageDto } from "./dto/send-message.dto";
@@ -59,6 +59,14 @@ export class MessagesController {
     @Param("id") conversationId: string,
   ) {
     return this.messagesService.getMessages(tenantId, conversationId);
+  }
+
+  @Patch("conversations/:id/read")
+  async markConversationAsRead(
+    @UserTenant() tenantId: string,
+    @Param("id") conversationId: string,
+  ) {
+    return this.messagesService.markConversationAsRead(tenantId, conversationId);
   }
 
   /** Get AI mode status + 24h window timer for a conversation */

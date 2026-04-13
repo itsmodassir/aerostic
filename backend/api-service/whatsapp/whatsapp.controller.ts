@@ -177,6 +177,34 @@ export class WhatsappController {
   ) {
     return this.whatsappService.uploadFlowAsset(tenantId, flowId, "flow.json", body.json);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("flows/:id/json")
+  async getFlowJsonEditor(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+  ) {
+    return this.whatsappService.getFlowJsonEditor(tenantId, flowId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put("flows/:id/json")
+  async updateFlowJsonEditor(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+    @Body() body: { json: any; useCustomOverride?: boolean },
+  ) {
+    return this.whatsappService.updateFlowJsonEditor(tenantId, flowId, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete("flows/:id/json")
+  async clearFlowJsonOverride(
+    @UserTenant() tenantId: string,
+    @Param("id") flowId: string,
+  ) {
+    return this.whatsappService.clearFlowJsonOverride(tenantId, flowId);
+  }
   @UseGuards(JwtAuthGuard)
   @Post("smb-sync")
   async triggerSmbSync(@UserTenant() tenantId: string) {

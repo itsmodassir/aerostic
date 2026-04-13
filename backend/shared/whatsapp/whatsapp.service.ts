@@ -12,6 +12,7 @@ import { WhatsappAccount } from "./entities/whatsapp-account.entity";
 import { RedisService } from "../redis.service";
 import { EncryptionService } from "../encryption.service";
 import { AdminConfigService } from "@api/admin/services/admin-config.service";
+import { CatalogProduct } from "../database/entities/commerce/catalog-product.entity";
 
 @Injectable()
 export class WhatsappService {
@@ -37,6 +38,8 @@ export class WhatsappService {
     private automationFlowRepo: Repository<AutomationFlow>,
     @InjectQueue("whatsapp-messages")
     private messageQueue: Queue,
+    @InjectRepository(CatalogProduct)
+    private catalogProductRepo: Repository<CatalogProduct>,
     private redisService: RedisService,
     private encryptionService: EncryptionService,
   ) {}
@@ -162,12 +165,12 @@ export class WhatsappService {
       mode === "coexistence"
         ? {
             // Coexistence onboarding keeps WA Business App usable on phone.
-            feature: "whatsapp_business_app_onboarding",
+            featureType: "whatsapp_business_app_onboarding",
             sessionInfoVersion: "3",
           }
         : {
             // Cloud onboarding provisions direct Cloud API flow.
-            feature: "whatsapp_embedded_signup",
+            featureType: "whatsapp_embedded_signup",
             sessionInfoVersion: "3",
           };
     const params = qs.stringify({
@@ -475,6 +478,12 @@ export class WhatsappService {
       throw new BadRequestException(data.error?.message || "Asset upload failed");
     }
 
+    const validationMessage = this.getFlowValidationMessage(data);
+    if (validationMessage) {
+      this.logger.error(`Meta Flow JSON Validation Failed for flow ${flowId}: ${validationMessage}`);
+      throw new BadRequestException(validationMessage);
+    }
+
     return data;
   }
 
@@ -546,10 +555,8 @@ export class WhatsappService {
     const flow = await this.findOrCreateFlowRecord(tenantId, flowId);
     const metaFlowId = flow.remoteId || await this.resolveMetaFlowId(tenantId, flowId);
 
-    if (flow.triggerConfig?.canvas) {
-      const flowJson = this.generateMetaFlowJson(flow.triggerConfig.canvas);
-      await this.uploadFlowAsset(tenantId, flow.id, "flow.json", flowJson);
-    }
+    const flowJson = this.resolveFlowJsonForFlow(flow);
+    await this.uploadFlowAsset(tenantId, flow.id, "flow.json", flowJson);
 
     this.logger.log(`Publishing Meta Flow ${metaFlowId} (Internal ID: ${flowId})`);
 
@@ -736,17 +743,31 @@ export class WhatsappService {
     flow.name = payload.name;
     flow.triggerConfig = { ...flow.triggerConfig, canvas: payload.flowData };
     flow.status = AutomationStatus.DRAFT;
-    
-    // Also update Meta flow.json via logic
-    try {
-       const flowJson = this.generateMetaFlowJson(payload.flowData);
-       await this.uploadFlowAsset(tenantId, flow.id, "flow.json", flowJson);
-    } catch (err) {
-       this.logger.error("Failed to auto-upload flow.json asset on save", err);
-    }
-
     await this.automationFlowRepo.save(flow);
-    return { success: true, id: flow.id, metaFlowId: flow.remoteId };
+
+    const flowJson = this.resolveFlowJsonForFlow(flow);
+    try {
+      await this.uploadFlowAsset(tenantId, flow.id, "flow.json", flowJson);
+      return {
+        success: true,
+        id: flow.id,
+        metaFlowId: flow.remoteId,
+        metaValidation: { ok: true },
+      };
+    } catch (err: any) {
+      const message = err?.response?.message || err?.message || "Flow JSON validation failed";
+      this.logger.error("Failed to sync flow.json asset on save", err);
+      return {
+        success: true,
+        id: flow.id,
+        metaFlowId: flow.remoteId,
+        metaValidation: {
+          ok: false,
+          message,
+          json: flowJson,
+        },
+      };
+    }
   }
 
   async getFlowCanvas(tenantId: string, flowId: string) {
@@ -755,41 +776,72 @@ export class WhatsappService {
     return flow.triggerConfig?.canvas || { nodes: [], edges: [] };
   }
 
+  async getFlowJsonEditor(tenantId: string, flowId: string) {
+    const flow = await this.findOrCreateFlowRecord(tenantId, flowId);
+    const generatedJson = this.generateMetaFlowJson(flow.triggerConfig?.canvas);
+    const customJson = flow.triggerConfig?.metaFlowJsonOverride || null;
+    return {
+      generatedJson,
+      activeJson: customJson || generatedJson,
+      hasCustomOverride: Boolean(customJson),
+    };
+  }
+
+  async updateFlowJsonEditor(
+    tenantId: string,
+    flowId: string,
+    payload: { json: any; useCustomOverride?: boolean },
+  ) {
+    const flow = await this.findOrCreateFlowRecord(tenantId, flowId);
+    const json = this.normalizeFlowJsonInput(payload?.json);
+    this.assertValidFlowJsonShape(json);
+
+    flow.triggerConfig = {
+      ...(flow.triggerConfig || {}),
+      metaFlowJsonOverride: payload?.useCustomOverride === false ? null : json,
+    };
+
+    await this.automationFlowRepo.save(flow);
+    await this.uploadFlowAsset(tenantId, flow.id, "flow.json", json);
+
+    return {
+      success: true,
+      activeJson: json,
+      hasCustomOverride: payload?.useCustomOverride !== false,
+    };
+  }
+
+  async clearFlowJsonOverride(tenantId: string, flowId: string) {
+    const flow = await this.findOrCreateFlowRecord(tenantId, flowId);
+    flow.triggerConfig = {
+      ...(flow.triggerConfig || {}),
+      metaFlowJsonOverride: null,
+    };
+    await this.automationFlowRepo.save(flow);
+
+    const generatedJson = this.generateMetaFlowJson(flow.triggerConfig?.canvas);
+    await this.uploadFlowAsset(tenantId, flow.id, "flow.json", generatedJson);
+
+    return {
+      success: true,
+      activeJson: generatedJson,
+      hasCustomOverride: false,
+    };
+  }
+
   private generateMetaFlowJson(canvas: any) {
-    const nodes = canvas?.nodes || [];
-    const edges = canvas?.edges || [];
-
+    const nodes = Array.isArray(canvas?.nodes) ? canvas.nodes : [];
+    const edges = Array.isArray(canvas?.edges) ? canvas.edges : [];
     const supportedNodeTypes = new Set(["wa_text", "wa_question", "wa_mcq", "wa_link"]);
-    const contentNodes = nodes.filter(
-      (node: any) => node?.type && node.type !== "wa_start" && node.type !== "wa_end",
-    );
 
-    if (contentNodes.length === 0) {
-      return {
-        version: this.flowJsonVersion,
-        screens: [{
-          id: "WELCOME_SCREEN",
-          title: "Welcome",
-          terminal: true,
-          layout: {
-            type: "SingleColumnLayout",
-            children: [
-              { type: "TextHeading", text: "Welcome" },
-              {
-                type: "Footer",
-                label: "Complete",
-                "on-click-action": {
-                  name: "complete",
-                  payload: { status: "done" },
-                },
-              },
-            ],
-          }
-        }]
-      };
+    const traversal = this.collectPublishableFlowNodes(nodes, edges);
+    const publishableNodes = traversal.publishable;
+
+    if (publishableNodes.length === 0) {
+      return this.createDefaultMetaFlowJson();
     }
 
-    const unsupported = contentNodes.filter((node: any) => !supportedNodeTypes.has(node.type));
+    const unsupported = traversal.unsupported;
     if (unsupported.length > 0) {
       const labels = unsupported
         .map((node: any) => String(node?.data?.label || node?.type || "Unknown"))
@@ -800,18 +852,20 @@ export class WhatsappService {
       );
     }
 
+    if (publishableNodes.every((node: any) => ["wa_text", "wa_link"].includes(node.type))) {
+      return this.buildCollapsedMetaFlowJson(publishableNodes);
+    }
+
     const screenIdByNodeId = new Map<string, string>();
-    contentNodes.forEach((node: any, index: number) => {
+    publishableNodes.forEach((node: any, index: number) => {
       const screenId =
-        contentNodes.length === 1
-          ? "WELCOME_SCREEN"
-          : this.toMetaFlowScreenId(node.id, index);
+        index === 0 ? "WELCOME_SCREEN" : this.toMetaFlowScreenId(node.id, index);
       screenIdByNodeId.set(node.id, screenId);
     });
 
     const routingModel: Record<string, string[]> = {};
 
-    const screens = contentNodes.map((node: any, index: number) => {
+    const screens = publishableNodes.map((node: any, index: number) => {
       const data = node.data || {};
       const screenChildren: any[] = [];
       const formChildren: any[] = [];
@@ -859,11 +913,12 @@ export class WhatsappService {
       }
 
       // Meta screens can only route to other publishable content screens.
-      const outboundEdges = edges.filter((e: any) => e.source === node.id);
-      const nextTargets = outboundEdges
-        .map((edge: any) => edge.target)
-        .map((targetId: string) => screenIdByNodeId.get(targetId))
-        .filter((targetId: string | undefined): targetId is string => Boolean(targetId));
+      const nextSequenceNode = publishableNodes[index + 1];
+      const nextTargets = nextSequenceNode
+        ? [screenIdByNodeId.get(nextSequenceNode.id)].filter(
+            (targetId: string | undefined): targetId is string => Boolean(targetId),
+          )
+        : [];
       const isTerminal = nextTargets.length === 0;
       if (nextTargets.length > 0) {
         routingModel[screenId] = nextTargets;
@@ -921,6 +976,225 @@ export class WhatsappService {
     }
 
     return flowJson;
+  }
+
+  private createDefaultMetaFlowJson() {
+    return {
+      version: this.flowJsonVersion,
+      screens: [
+        {
+          id: "WELCOME_SCREEN",
+          title: "Welcome",
+          terminal: true,
+          layout: {
+            type: "SingleColumnLayout",
+            children: [
+              { type: "TextHeading", text: "Welcome" },
+              {
+                type: "Footer",
+                label: "Complete",
+                "on-click-action": {
+                  name: "complete",
+                  payload: { status: "done" },
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  private buildCollapsedMetaFlowJson(nodes: any[]) {
+    const children: any[] = nodes.flatMap((node: any) => {
+      const data = node?.data || {};
+      if (node.type === "wa_link") {
+        const body = [data.linkTitle, data.linkDescription, data.linkUrl]
+          .filter(Boolean)
+          .join("\n");
+        return [{ type: "TextBody", text: body || "Visit Link" }];
+      }
+      return [{ type: "TextBody", text: String(data.text || data.label || "Continue") }];
+    });
+
+    children.push({
+      type: "Footer",
+      label: "Complete",
+      "on-click-action": {
+        name: "complete",
+        payload: { status: "done" },
+      },
+    });
+
+    return {
+      version: this.flowJsonVersion,
+      screens: [
+        {
+          id: "WELCOME_SCREEN",
+          title: "Welcome",
+          terminal: true,
+          layout: {
+            type: "SingleColumnLayout",
+            children,
+          },
+        },
+      ],
+    };
+  }
+
+  private collectPublishableFlowNodes(nodes: any[], edges: any[]) {
+    const nodeById = new Map(nodes.map((node: any) => [String(node.id || node.nodeId), node]));
+    const outgoing = new Map<string, any[]>();
+    edges.forEach((edge: any) => {
+      const source = String(edge?.source || edge?.sourceNodeId || "");
+      if (!source) return;
+      const list = outgoing.get(source) || [];
+      list.push(edge);
+      outgoing.set(source, list);
+    });
+
+    const sortEdges = (sourceId: string) =>
+      (outgoing.get(sourceId) || []).slice().sort((a: any, b: any) => {
+        const targetA = nodeById.get(String(a?.target || a?.targetNodeId || ""));
+        const targetB = nodeById.get(String(b?.target || b?.targetNodeId || ""));
+        const yA = Number(targetA?.position?.y ?? 0);
+        const yB = Number(targetB?.position?.y ?? 0);
+        if (yA !== yB) return yA - yB;
+        const xA = Number(targetA?.position?.x ?? 0);
+        const xB = Number(targetB?.position?.x ?? 0);
+        return xA - xB;
+      });
+
+    const visited = new Set<string>();
+    const publishable: any[] = [];
+    const unsupported: any[] = [];
+    const publishableTypes = new Set(["wa_text", "wa_question", "wa_mcq", "wa_link"]);
+
+    const walk = (nodeId?: string | null) => {
+      const id = String(nodeId || "");
+      if (!id || visited.has(id)) return;
+      visited.add(id);
+      const node = nodeById.get(id);
+      if (!node) return;
+
+      if (publishableTypes.has(node.type)) {
+        publishable.push(node);
+      } else if (node.type !== "wa_start" && node.type !== "wa_end") {
+        unsupported.push(node);
+      }
+
+      for (const edge of sortEdges(id)) {
+        walk(String(edge?.target || edge?.targetNodeId || ""));
+      }
+    };
+
+    const startNodes = nodes
+      .filter((node: any) => node?.type === "wa_start")
+      .sort((a: any, b: any) => Number(a?.position?.y ?? 0) - Number(b?.position?.y ?? 0));
+
+    if (startNodes.length > 0) {
+      startNodes.forEach((node: any) => walk(node.id || node.nodeId));
+    }
+
+    nodes
+      .filter((node: any) => !visited.has(String(node?.id || node?.nodeId || "")))
+      .sort((a: any, b: any) => {
+        const yDiff = Number(a?.position?.y ?? 0) - Number(b?.position?.y ?? 0);
+        if (yDiff !== 0) return yDiff;
+        return Number(a?.position?.x ?? 0) - Number(b?.position?.x ?? 0);
+      })
+      .forEach((node: any) => walk(node.id || node.nodeId));
+
+    return { publishable, unsupported };
+  }
+
+  private resolveFlowJsonForFlow(flow: AutomationFlow) {
+    const override = flow?.triggerConfig?.metaFlowJsonOverride;
+    return override || this.generateMetaFlowJson(flow?.triggerConfig?.canvas);
+  }
+
+  private normalizeFlowJsonInput(input: any) {
+    if (typeof input === "string") {
+      try {
+        return JSON.parse(input);
+      } catch {
+        throw new BadRequestException("Invalid JSON format");
+      }
+    }
+    if (!input || typeof input !== "object") {
+      throw new BadRequestException("Flow JSON must be an object");
+    }
+    return input;
+  }
+
+  private assertValidFlowJsonShape(json: any) {
+    if (!json || typeof json !== "object") {
+      throw new BadRequestException("Flow JSON must be an object");
+    }
+    if (!Array.isArray(json.screens) || json.screens.length === 0) {
+      throw new BadRequestException("Flow JSON must include at least one screen");
+    }
+
+    const screenIds = new Set<string>();
+    json.screens.forEach((screen: any, index: number) => {
+      const screenId = String(screen?.id || "").trim();
+      if (!screenId) {
+        throw new BadRequestException(`Screen ${index + 1} is missing an id`);
+      }
+      if (screenIds.has(screenId)) {
+        throw new BadRequestException(`Duplicate screen id: ${screenId}`);
+      }
+      screenIds.add(screenId);
+      if (!screen?.layout || screen.layout.type !== "SingleColumnLayout" || !Array.isArray(screen.layout.children)) {
+        throw new BadRequestException(`Screen ${screenId} must use SingleColumnLayout with children`);
+      }
+    });
+
+    const routingModel = json.routing_model;
+    if (routingModel && typeof routingModel === "object") {
+      Object.entries(routingModel).forEach(([source, targets]) => {
+        if (!screenIds.has(source)) {
+          throw new BadRequestException(`routing_model source screen not found: ${source}`);
+        }
+        if (!Array.isArray(targets)) {
+          throw new BadRequestException(`routing_model targets for ${source} must be an array`);
+        }
+        targets.forEach((target: any) => {
+          if (!screenIds.has(String(target))) {
+            throw new BadRequestException(`routing_model target screen not found: ${String(target)}`);
+          }
+        });
+      });
+    }
+  }
+
+  private getFlowValidationMessage(data: any): string | null {
+    const candidates = [
+      data?.validation_errors,
+      data?.validationErrors,
+      data?.errors,
+      data?.error?.error_data?.details,
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate) && candidate.length > 0) {
+        const summary = candidate
+          .slice(0, 3)
+          .map((item: any) => {
+            if (typeof item === "string") return item;
+            const path = item?.error_path || item?.path || item?.field || item?.location;
+            const message = item?.message || item?.error || item?.description || JSON.stringify(item);
+            return path ? `${path}: ${message}` : message;
+          })
+          .join(" | ");
+        return `Flow JSON validation failed: ${summary}`;
+      }
+      if (typeof candidate === "string" && candidate.trim()) {
+        return `Flow JSON validation failed: ${candidate.trim()}`;
+      }
+    }
+
+    return null;
   }
 
   private toMetaFlowScreenId(rawId: string, index: number): string {
@@ -1004,5 +1278,262 @@ export class WhatsappService {
     });
 
     return this.automationFlowRepo.save(created);
+  }
+
+  /**
+   * Fetch Commerce Accounts and associated Catalogs for a WABA.
+   */
+  async fetchAvailableCatalogs(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId });
+    if (!account) throw new BadRequestException("Account not found");
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    // 1. Get Commerce Accounts
+    const commRes = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${account.wabaId}/commerce_accounts?access_token=${token}`,
+    );
+    if (!commRes.ok) return [];
+
+    const commerceAccounts = commRes.data.data || [];
+    const allCatalogs = [];
+
+    // 2. For each Commerce Account, get Catalogs
+    for (const comm of commerceAccounts) {
+      const catRes = await this.callMetaApi(
+        `https://graph.facebook.com/${apiVersion}/${comm.id}/catalogs?access_token=${token}`,
+      );
+      if (catRes.ok) {
+        allCatalogs.push(
+          ...(catRes.data.data || []).map((cat: any) => ({
+            ...cat,
+            commerce_account_id: comm.id,
+          })),
+        );
+      }
+    }
+
+    return allCatalogs;
+  }
+
+  /**
+   * Pull products from Meta Catalog and mirror them in Aerostic DB.
+   */
+  async syncCatalogProducts(tenantId: string, catalogId?: string) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId });
+    if (!account) throw new BadRequestException("Account not found");
+
+    const targetCatalogId = catalogId || account.catalogId;
+    if (!targetCatalogId) return { success: false, message: "No catalog linked" };
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    // Fetch products from Meta
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${targetCatalogId}/products?fields=retailer_id,name,description,price,currency,image_url,category,availability&access_token=${token}`,
+    );
+
+    if (!res.ok) return { success: false, error: res.data };
+
+    const metaProducts = res.data.data || [];
+
+    // Batch upsert into CatalogProduct
+    for (const p of metaProducts) {
+      await this.catalogProductRepo.upsert(
+        {
+          tenantId: account.tenantId,
+          retailerId: p.retailer_id,
+          name: p.name,
+          description: p.description,
+          price: (p.price || 0) / 100, // Meta often returns price in cents/sub-units
+          currency: p.currency || "INR",
+          imageUrl: p.image_url,
+          category: p.category,
+          availability: p.availability === "in stock",
+          metaProductId: p.id,
+          metadata: p,
+        },
+        ["tenantId", "retailerId"],
+      );
+    }
+
+    await this.whatsappAccountRepo.update({ tenantId }, { lastSyncedAt: new Date() });
+
+    return { success: true, count: metaProducts.length };
+  }
+
+  /**
+   * Push a product to Meta Catalog.
+   */
+  async pushMetaProduct(tenantId: string, product: CatalogProduct) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId });
+    if (!account || !account.catalogId) {
+      throw new BadRequestException("No Meta Catalog linked to this account.");
+    }
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    const payload = {
+      name: product.name,
+      description: product.description || product.name,
+      retailer_id: product.retailerId,
+      currency: product.currency || "INR",
+      price: Math.round(Number(product.price) * 100), // Meta expects price in subunits (e.g. cents)
+      image_url: product.imageUrl,
+      brand: product.brand || account.verifiedName || "Aimstore",
+      url: product.url || `https://aimstore.in/p/${product.retailerId}`,
+      condition: product.condition || "new",
+      availability: product.availability ? "in stock" : "out of stock",
+    };
+
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${account.catalogId}/products?access_token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    if (!res.ok) {
+      this.logger.error(`Meta Product Push Failed: ${JSON.stringify(res.data)}`);
+      throw new BadRequestException(res.data.error?.message || "Failed to push product to Meta");
+    }
+
+    return res.data;
+  }
+
+  async deleteMetaProduct(tenantId: string, retailerId: string) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId, status: "connected" });
+    if (!account || !account.catalogId) throw new BadRequestException("Catalog ID not found for this account");
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${account.catalogId}/items_batch?access_token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requests: [{
+            method: "DELETE",
+            retailer_id: retailerId
+          }]
+        }),
+      }
+    );
+
+    if (!res.ok) {
+        throw new BadRequestException(res.data.error?.message || "Failed to delete product from Meta");
+    }
+
+    return res.data;
+  }
+
+  /**
+   * Fetch Business Portfolios (BAs) owned by the business account.
+   */
+  async getBusinessPortfolios(tenantId: string) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId });
+    if (!account || !account.wabaId) throw new BadRequestException("WhatsApp account not fully connected");
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    // We fetch portfolios via the businesses edge of the user/system user
+    // For simplicity, we can fetch from the WABA owner or use the business_id if we have it
+    const bizId = account.businessId || account.wabaId; // Fallback to WABA ID if biz ID not saved
+    
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${bizId}/owned_businesses?access_token=${token}`,
+      { method: "GET" }
+    );
+
+    return res.data?.data || [];
+  }
+
+  /**
+   * Create a new Product Catalog in Meta.
+   */
+  async createMetaCatalog(tenantId: string, name: string, vertical = "COMMERCE") {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId, status: "connected" });
+    if (!account || !account.businessId) throw new BadRequestException("Business ID missing for this account");
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${account.businessId}/owned_product_catalogs?access_token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          vertical,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      throw new BadRequestException(res.data.error?.message || "Failed to create Meta Catalog");
+    }
+
+    return res.data;
+  }
+
+  /**
+   * Update WhatsApp Commerce Settings (Link Catalog, Toggle Visibility).
+   */
+  async updateCommerceSettings(tenantId: string, settings: { catalog_id?: string; is_catalog_visible?: boolean; is_cart_enabled?: boolean }) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId, status: "connected" });
+    if (!account || !account.phoneNumberId) throw new BadRequestException("Phone Number ID missing");
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${account.phoneNumberId}/whatsapp_commerce_settings?access_token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      }
+    );
+
+    if (!res.ok) {
+      throw new BadRequestException(res.data.error?.message || "Failed to update commerce settings");
+    }
+
+    return res.data;
+  }
+
+  /**
+   * Sync multiple products to Meta using the items_batch endpoint.
+   */
+  async pushItemsBatch(tenantId: string, catalogId: string, requests: any[]) {
+    const account = await this.whatsappAccountRepo.findOneBy({ tenantId });
+    if (!account) throw new BadRequestException("Account not found");
+
+    const token = this.resolveAccessToken(account);
+    const apiVersion = await this.getApiVersion();
+
+    const res = await this.callMetaApi(
+      `https://graph.facebook.com/${apiVersion}/${catalogId}/items_batch?access_token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requests }),
+      }
+    );
+
+    if (!res.ok) {
+      throw new BadRequestException(res.data.error?.message || "Batch sync failed");
+    }
+
+    return res.data;
   }
 }

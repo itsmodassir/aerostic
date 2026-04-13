@@ -22,6 +22,7 @@ export class PolicyEngineService {
     // 1️⃣ Load resolved auth context from Redis
     const authContext = await this.cacheService.getAuthContext(
       user?.id || user?.sub || apiKey?.id,
+      tenantId
     );
 
     if (!authContext) {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Razorpay from "razorpay";
 import * as crypto from "crypto";
@@ -7,6 +7,7 @@ import { Repository } from "typeorm";
 import { Tenant, TenantType } from "@shared/database/entities/core/tenant.entity";
 import { ResellerConfig } from "@shared/database/entities/core/reseller-config.entity";
 import { AdminConfigService } from "../admin/services/admin-config.service";
+import { PlansService } from "./plans.service";
 
 export interface CreateSubscriptionDto {
   tenantId: string;
@@ -28,17 +29,13 @@ export interface RazorpayPlan {
 export class RazorpayService {
   private readonly logger = new Logger(RazorpayService.name);
 
-  // Subscription Plans
-  static readonly PLANS: RazorpayPlan[] = [
-    { id: "plan_starter", name: "Starter", priceInr: 999, interval: "monthly", features: ["1,000 Messages", "100 AI Credits", "1 Agent"] },
-    { id: "plan_starter-2", name: "Starter 2", priceInr: 2499, interval: "monthly", features: ["5,000 Messages", "500 AI Credits", "3 Agents"] },
-    { id: "plan_growth", name: "Growth", priceInr: 3999, interval: "monthly", features: ["10,000 Messages", "1,000 AI Credits", "5 Agents", "Unlimited Broadcasts"] },
-    { id: "plan_professional", name: "Professional", priceInr: 6999, interval: "monthly", features: ["20,000 Messages", "2,000 AI Credits", "10 Agents", "Unlimited Broadcasts"] },
-  ];
+
 
   constructor(
     private configService: ConfigService,
     private adminConfigService: AdminConfigService,
+    @Inject(forwardRef(() => PlansService))
+    private plansService: PlansService,
     @InjectRepository(Tenant)
     private tenantRepo: Repository<Tenant>,
     @InjectRepository(ResellerConfig)
@@ -58,12 +55,20 @@ export class RazorpayService {
     return new Razorpay({ key_id: keyId, key_secret: keySecret });
   }
 
-  getPlans(): RazorpayPlan[] {
-    return RazorpayService.PLANS;
+  async getPlans(): Promise<RazorpayPlan[]> {
+    const plans = await this.plansService.findAll();
+    return plans.map((p: any) => ({
+      id: p.razorpayPlanId || `plan_${p.slug}`,
+      name: p.name,
+      priceInr: p.price,
+      interval: "monthly",
+      features: p.features || [],
+    }));
   }
 
-  getPlanById(planId: string): RazorpayPlan | undefined {
-    return RazorpayService.PLANS.find((p) => p.id === planId);
+  async getPlanById(planId: string): Promise<RazorpayPlan | undefined> {
+    const plans = await this.getPlans();
+    return plans.find((p) => p.id === planId);
   }
 
   async getRazorpayClient(tenantId?: string): Promise<Razorpay> {
@@ -111,7 +116,7 @@ export class RazorpayService {
 
   async createSubscription(dto: CreateSubscriptionDto): Promise<any> {
     try {
-      const plan = this.getPlanById(dto.planId);
+      const plan = await this.getPlanById(dto.planId);
       if (!plan) {
         throw new Error(`Plan ${dto.planId} not found`);
       }

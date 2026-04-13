@@ -191,7 +191,7 @@ export class BillingService {
       subscription = this.subscriptionRepo.create({ tenantId });
     }
 
-    const plan = this.razorpayService.getPlanById(planId);
+    const plan = await this.razorpayService.getPlanById(planId);
 
     // Map razorpay plan IDs to PlanType
     const planMapping: Record<string, PlanType> = {

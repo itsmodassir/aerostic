@@ -37,6 +37,7 @@ import { ResellerModule } from "./reseller/reseller.module";
 import { ApiKeysModule } from "./api-keys/api-keys.module";
 import { TenantContextMiddleware } from "@shared/middleware/tenant-context.middleware";
 import { WaFormsModule } from "./wa-forms/wa-forms.module";
+import { CommerceModule } from "./commerce/commerce.module";
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { WaFormsModule } from "./wa-forms/wa-forms.module";
     ResellerModule,
     ApiKeysModule,
     WaFormsModule,
+    CommerceModule,
   ],
   controllers: [AppController],
   providers: [

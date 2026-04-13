@@ -4,11 +4,9 @@
 
 set -e
 
-KEY="~/Downloads/aimstors2.pem"
-HOST="ec2-user@app.aimstore.in"
+KEY="~/Downloads/modassir.pem"
+HOST="ubuntu@52.66.246.46"
 REMOTE_DIR="/var/www/aimstors"
-NGINX_STATIC_DIR="/var/www/aimstors/frontend/app-dashboard/static_runtime"
-NGINX_PUBLIC_DIR="/var/www/aimstors/frontend/app-dashboard/public"
 
 echo "🚀 Preparing deployment package..."
 
@@ -22,57 +20,71 @@ COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/backend.tar.gz -C backend dist package.
 
 # 2. Package Frontend Dashboard (Built .next)
 echo "📦 Packaging Frontend App Dashboard..."
-# Note: We include .next for the app and static assets
-COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_app.tar.gz -C frontend/app-dashboard .next public package.json package-lock.json next.config.ts
+COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_app.tar.gz -C frontend/app-dashboard .next public package.json package-lock.json next.config.ts 2>/dev/null || COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_app.tar.gz -C frontend/app-dashboard .next public package.json next.config.ts
+
+echo "📦 Packaging Frontend Admin Panel..."
+COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_admin.tar.gz -C frontend/admin-panel .next package.json package-lock.json next.config.mjs 2>/dev/null || COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_admin.tar.gz -C frontend/admin-panel .next package.json next.config.mjs
+
+echo "📦 Packaging Frontend Reseller Panel..."
+COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_reseller.tar.gz -C frontend/reseller-panel .next public package.json package-lock.json next.config.ts 2>/dev/null || COPYFILE_DISABLE=1 tar -czf $STAGING_DIR/frontend_reseller.tar.gz -C frontend/reseller-panel .next public package.json next.config.ts
 
 echo "🔐 Transferring packages to server using rsync..."
-rsync -avz --progress -e "ssh -i $KEY" $STAGING_DIR/backend.tar.gz $STAGING_DIR/frontend_app.tar.gz $HOST:/tmp/
+rsync -avz --progress -e "ssh -i $KEY -o StrictHostKeyChecking=no" $STAGING_DIR/backend.tar.gz $STAGING_DIR/frontend_app.tar.gz $STAGING_DIR/frontend_admin.tar.gz $STAGING_DIR/frontend_reseller.tar.gz $HOST:/tmp/
 
 echo "🛠️  Executing remote setup..."
-ssh -i $KEY $HOST "
+ssh -i $KEY -o StrictHostKeyChecking=no $HOST "
     set -e
     
     echo '📂 Extracting Backend...'
     mkdir -p $REMOTE_DIR/backend
     sudo tar -xzf /tmp/backend.tar.gz -C $REMOTE_DIR/backend
-    sudo chown -R ec2-user:ec2-user $REMOTE_DIR/backend
+    sudo chown -R ubuntu:ubuntu $REMOTE_DIR/backend
     
-    echo '📂 Extracting Frontend...'
+    echo '📂 Extracting Frontend (Dashboard)...'
     mkdir -p $REMOTE_DIR/frontend/app-dashboard
     sudo tar -xzf /tmp/frontend_app.tar.gz -C $REMOTE_DIR/frontend/app-dashboard
-    sudo chown -R ec2-user:ec2-user $REMOTE_DIR/frontend/app-dashboard
+    sudo chown -R ubuntu:ubuntu $REMOTE_DIR/frontend/app-dashboard
+
+    echo '📂 Extracting Frontend (Admin)...'
+    mkdir -p $REMOTE_DIR/frontend/admin-panel
+    sudo tar -xzf /tmp/frontend_admin.tar.gz -C $REMOTE_DIR/frontend/admin-panel
+    sudo chown -R ubuntu:ubuntu $REMOTE_DIR/frontend/admin-panel
+
+    echo '📂 Extracting Frontend (Reseller)...'
+    mkdir -p $REMOTE_DIR/frontend/reseller-panel
+    sudo tar -xzf /tmp/frontend_reseller.tar.gz -C $REMOTE_DIR/frontend/reseller-panel
+    sudo chown -R ubuntu:ubuntu $REMOTE_DIR/frontend/reseller-panel
     
     echo '🗄️ Running DB Migration Fix...'
-    cd $REMOTE_DIR/backend && sudo node api-service/fix-db.js
+    cd $REMOTE_DIR/backend && [ -f .env ] && export \$(grep -v '^#' .env | xargs)
+    cd $REMOTE_DIR/backend && node api-service/fix-db.js
     echo '✅ DB Migration sync complete!'
     
     echo '⚙️  Installing dependencies (Backend)...'
     cd $REMOTE_DIR/backend && npm install --production
     
-    echo '⚙️  Installing dependencies (Frontend)...'
-    cd $REMOTE_DIR/frontend/app-dashboard && npm install --production || true
-    
-    echo '🎨 SYNCING STATIC ASSETS FOR CSS...'
-    # This is the critical step to ensure Nginx serves the correct CSS/JS chunks
-    sudo mkdir -p $NGINX_STATIC_DIR
-    sudo rm -rf $NGINX_STATIC_DIR/*
-    sudo cp -r $REMOTE_DIR/frontend/app-dashboard/.next/static/* $NGINX_STATIC_DIR/
-    
-    echo '🖼️  Syncing Public assets...'
-    sudo mkdir -p $NGINX_PUBLIC_DIR
-    # Only copy if source and destination are different to avoid errors
-    if [ "$REMOTE_DIR/frontend/app-dashboard/public" != "$NGINX_PUBLIC_DIR" ]; then
-        sudo cp -r $REMOTE_DIR/frontend/app-dashboard/public/* $NGINX_PUBLIC_DIR/
-    fi
+    echo '🎨 SYNCING STATIC ASSETS FOR CSS (Dashboard)...'
+    sudo mkdir -p $REMOTE_DIR/frontend/app-dashboard/static_runtime
+    sudo rm -rf $REMOTE_DIR/frontend/app-dashboard/static_runtime/*
+    sudo cp -r $REMOTE_DIR/frontend/app-dashboard/.next/static/* $REMOTE_DIR/frontend/app-dashboard/static_runtime/
+
+    echo '🎨 SYNCING STATIC ASSETS FOR CSS (Admin)...'
+    sudo mkdir -p $REMOTE_DIR/frontend/admin-panel/static_runtime
+    sudo rm -rf $REMOTE_DIR/frontend/admin-panel/static_runtime/*
+    sudo cp -r $REMOTE_DIR/frontend/admin-panel/.next/static/* $REMOTE_DIR/frontend/admin-panel/static_runtime/
+
+    echo '🎨 SYNCING STATIC ASSETS FOR CSS (Reseller)...'
+    sudo mkdir -p $REMOTE_DIR/frontend/reseller-panel/static_runtime
+    sudo rm -rf $REMOTE_DIR/frontend/reseller-panel/static_runtime/*
+    sudo cp -r $REMOTE_DIR/frontend/reseller-panel/.next/static/* $REMOTE_DIR/frontend/reseller-panel/static_runtime/
     
     echo '♻️  Restarting Services via PM2...'
-    sudo pm2 restart all || (
-        echo 'PM2 restart failed, attempting to start from scratch...'
-        sudo pm2 start $REMOTE_DIR/backend/dist/api-service/main.js --name aimstors-api
-        sudo pm2 start $REMOTE_DIR/backend/dist/webhook-service/main.js --name aimstors-webhook
-        sudo pm2 start $REMOTE_DIR/backend/dist/worker-service/main.js --name aimstors-worker
-        sudo pm2 start "npm start" --name aimstors-dashboard --cwd $REMOTE_DIR/frontend/app-dashboard
-    )
+    cd $REMOTE_DIR
+    # Nuclear Cleanup: Ensure no zombie instances are holding ports
+    sudo pkill -9 node || true
+    sudo pm2 delete all || true
+    sudo pm2 startOrReload ecosystem.config.js --update-env
+    sudo pm2 save
     
     echo '🌐 Reloading Nginx inside Docker...'
     sudo docker exec aimstors-nginx nginx -t && sudo docker exec aimstors-nginx nginx -s reload

@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { clsx } from 'clsx';
-import { 
-    MessageSquare, Bot, Star, Circle, 
-    MessageCircle, Hash, Clock, Smartphone, 
-    LayoutTemplate, Instagram, Loader2
+import {
+    Star, Circle,
+    MessageCircle, Clock, Smartphone,
+    LayoutTemplate, Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -47,7 +47,8 @@ interface ConversationItemProps {
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isActive, onClick }) => {
-    const hasUnread = conversation.unreadCount > 0;
+    const unreadCount = Math.max(0, conversation.unreadCount || 0);
+    const hasUnread = unreadCount > 0;
     
     const formatTime = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -64,8 +65,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isAct
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
             className={clsx(
-                "w-full px-6 py-5 flex gap-5 transition-all relative overflow-hidden group border-b border-slate-50",
-                isActive ? "bg-blue-50/40" : "hover:bg-slate-50/80 bg-white"
+                "w-full rounded-[28px] px-5 py-5 flex gap-4 transition-all relative overflow-hidden group border mb-3 text-left",
+                isActive
+                    ? "bg-[linear-gradient(135deg,rgba(37,99,235,0.10),rgba(14,165,233,0.04))] border-blue-100 shadow-[0_18px_45px_rgba(37,99,235,0.12)]"
+                    : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 hover:shadow-[0_12px_32px_rgba(15,23,42,0.08)]"
             )}
         >
             {/* Active Indicator Strip */}
@@ -107,7 +110,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isAct
                 </div>
                 
                 {hasUnread && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 border-2 border-white rounded-full animate-pulse shadow-lg" />
+                    <div className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 bg-blue-600 border-2 border-white rounded-full shadow-lg shadow-blue-200 flex items-center justify-center">
+                        <span className="text-[10px] font-black text-white tabular-nums">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                    </div>
                 )}
             </div>
 
@@ -162,13 +169,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, isAct
                         {conversation.lastMessage || 'Sent an attachment'}
                     </p>
                     
-                        {hasUnread && (
-                        <motion.span 
-                            initial={{ scale: 0 }} 
+                    {hasUnread && (
+                        <motion.span
+                            initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-blue-100 uppercase tracking-wider"
+                            className="h-7 min-w-7 px-2 rounded-full bg-blue-600 text-white text-[10px] font-black shadow-lg shadow-blue-100 flex items-center justify-center tabular-nums shrink-0"
+                            aria-label={`${unreadCount} unread incoming messages`}
                         >
-                            {conversation.unreadCount} New
+                            {unreadCount > 99 ? '99+' : unreadCount}
                         </motion.span>
                     )}
                 </div>

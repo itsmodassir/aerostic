@@ -71,6 +71,12 @@ export class WhatsappAccount {
   @Column({ name: "message_count", default: 0 })
   messageCount: number;
 
+  @Column({ name: "catalog_id", nullable: true })
+  catalogId: string;
+
+  @Column({ name: "commerce_account_id", nullable: true })
+  commerceAccountId: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 

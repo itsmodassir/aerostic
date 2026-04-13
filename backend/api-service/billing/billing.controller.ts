@@ -16,7 +16,6 @@ import { PlansService } from "./plans.service";
 import { JwtAuthGuard } from "@api/auth/jwt-auth.guard";
 import { UserTenant } from "../auth/decorators/user-tenant.decorator";
 
-@UseGuards(JwtAuthGuard)
 @Controller("billing")
 export class BillingController {
   constructor(
@@ -28,7 +27,7 @@ export class BillingController {
   // ============ PLANS ============
 
   @Get("plans")
-  getPlans() {
+  async getPlans() {
     return this.razorpayService.getPlans();
   }
 
@@ -39,12 +38,14 @@ export class BillingController {
 
   // ============ SUBSCRIPTION ============
 
+  @UseGuards(JwtAuthGuard)
   @Get("subscription")
   async getSubscription(@UserTenant() tenantId: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");
     return this.billingService.getSubscription(tenantId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post("subscribe")
   async createSubscription(
     @UserTenant() tenantId: string,
@@ -76,6 +77,7 @@ export class BillingController {
     });
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post("trial")
   async startTrial(@UserTenant() tenantId: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");
@@ -117,12 +119,14 @@ export class BillingController {
 
   // ============ API KEYS ============
 
+  @UseGuards(JwtAuthGuard)
   @Get("api-keys")
   async getApiKeys(@UserTenant() tenantId: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");
     return this.billingService.getApiKeys(tenantId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post("api-keys")
   async createApiKey(
     @UserTenant() tenantId: string,
@@ -136,6 +140,7 @@ export class BillingController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete("api-keys/:id")
   async revokeApiKey(@UserTenant() tenantId: string, @Param("id") id: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");
@@ -145,12 +150,14 @@ export class BillingController {
 
   // ============ WEBHOOKS ============
 
+  @UseGuards(JwtAuthGuard)
   @Get("webhooks")
   async getWebhooks(@UserTenant() tenantId: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");
     return this.billingService.getWebhookEndpoints(tenantId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post("webhooks")
   async createWebhook(
     @UserTenant() tenantId: string,
@@ -164,12 +171,14 @@ export class BillingController {
       body.description,
     );
   }
+  @UseGuards(JwtAuthGuard)
   @Get("invoices")
   async getInvoiceHistory(@UserTenant() tenantId: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");
     return this.billingService.getInvoices(tenantId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get("usage")
   async getUsageMetrics(@UserTenant() tenantId: string) {
     if (!tenantId) throw new UnauthorizedException("Tenant ID required");

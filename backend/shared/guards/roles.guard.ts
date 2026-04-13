@@ -6,12 +6,16 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { SystemRole, ROLE_HIERARCHY, JwtPayload } from "../types/roles";
+import { AuthzCacheService } from "../authorization/cache/authz-cache.service";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private authzCache: AuthzCacheService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<SystemRole[]>(
       "requiredRoles",
       [context.getHandler(), context.getClass()],
@@ -25,11 +29,19 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as JwtPayload;
 
-    if (!user || !user.role) {
-      throw new ForbiddenException("Access denied");
+    if (!user || (!user.id && !user.sub)) {
+      throw new ForbiddenException("Access denied: No user context");
     }
 
-    const userWeight = ROLE_HIERARCHY[user.role] || 0;
+    const tenantId = request.headers["x-tenant-id"] || request.query.tenantId || request.body?.tenantId;
+
+    const authContext = await this.authzCache.getAuthContext(user.id || user.sub, tenantId);
+
+    if (!authContext || !authContext.systemRole) {
+      throw new ForbiddenException("Access denied: Invalid role configuration");
+    }
+
+    const userWeight = ROLE_HIERARCHY[authContext.systemRole] || 0;
 
     // Enterprise Logic: User must satisfy at least ONE of the required role hierarchies
     const allowed = requiredRoles.some((role) => {
@@ -38,7 +50,7 @@ export class RolesGuard implements CanActivate {
     });
 
     if (!allowed) {
-      throw new ForbiddenException("Access denied");
+      throw new ForbiddenException("Access denied: Strict role requirements not met");
     }
 
     return true;

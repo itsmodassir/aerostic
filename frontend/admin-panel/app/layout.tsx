@@ -52,7 +52,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ]},
         { group: 'Monetization', items: [
             { name: 'Billing & Plans', href: '/billing', icon: DollarSign },
-            { name: 'Pricing Tiers', href: '/billing/pricing', icon: CreditCard },
+            { name: 'Subscription Plans', href: '/plans', icon: Box },
+            { name: 'WhatsApp Rates', href: '/billing/pricing', icon: CreditCard },
             { name: 'Wallets', href: '/wallets', icon: Zap },
         ]},
         { group: 'Technical', items: [

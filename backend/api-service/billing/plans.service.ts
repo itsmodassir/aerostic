@@ -3,10 +3,12 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { Plan } from "@shared/database/entities/billing/plan.entity";
+import { Repository, IsNull } from "typeorm";
+import { PlanType, Plan } from "@shared/database/entities/billing/plan.entity";
 import { Tenant } from "@shared/database/entities/core/tenant.entity";
 import { RazorpayService } from "./razorpay.service";
 
@@ -17,17 +19,21 @@ export class PlansService {
     private planRepo: Repository<Plan>,
     @InjectRepository(Tenant)
     private tenantRepo: Repository<Tenant>,
+    @Inject(forwardRef(() => RazorpayService))
     private razorpayService: RazorpayService,
   ) {}
 
-  async findAll() {
-    return this.planRepo.find({ order: { price: "ASC" } });
+  async findAll(tenantId: string | null = null) {
+    return this.planRepo.find({ 
+      where: { tenantId: tenantId === null ? IsNull() : tenantId },
+      order: { price: "ASC" } 
+    });
   }
 
-  async findOne(id: string) {
-    const plan = await this.planRepo.findOneBy({ id });
+  async findOne(id: string, tenantId: string | null = null) {
+    const plan = await this.planRepo.findOneBy({ id, tenantId: tenantId === null ? IsNull() : tenantId });
     if (!plan) {
-      throw new NotFoundException(`Plan with ID ${id} not found`);
+      throw new NotFoundException(`Plan with ID ${id} not found in your namespace`);
     }
     return plan;
   }
@@ -37,8 +43,13 @@ export class PlansService {
       throw new BadRequestException("Plan name is required");
     }
 
-    const slug = this.generateSlug(createPlanDto.name);
-    const existing = await this.planRepo.findOneBy({ slug });
+    const tenantId = createPlanDto.tenantId || null;
+
+    // Slug should be unique per tenant
+    const baseSlug = this.generateSlug(createPlanDto.name);
+    const slug = tenantId ? `${tenantId}-${baseSlug}` : baseSlug;
+
+    const existing = await this.planRepo.findOneBy({ slug, tenantId: tenantId === null ? IsNull() : tenantId });
     if (existing) {
       throw new ConflictException(
         `Plan with name "${createPlanDto.name}" already exists`,
@@ -71,8 +82,8 @@ export class PlansService {
     return this.planRepo.save(plan);
   }
 
-  async update(id: string, updatePlanDto: Partial<Plan>) {
-    const plan = await this.findOne(id);
+  async update(id: string, updatePlanDto: Partial<Plan>, tenantId: string | null = null) {
+    const plan = await this.findOne(id, tenantId);
 
     // Check if price changed
     const priceChanged =
@@ -101,7 +112,7 @@ export class PlansService {
     return this.planRepo.save(plan);
   }
 
-  async remove(id: string) {
+  async remove(id: string, tenantId: string | null = null) {
     const usageCount = await this.tenantRepo.count({ where: { planId: id } });
     if (usageCount > 0) {
       throw new BadRequestException(
@@ -109,132 +120,80 @@ export class PlansService {
       );
     }
 
-    const plan = await this.findOne(id);
+    const plan = await this.findOne(id, tenantId);
     return this.planRepo.remove(plan);
   }
 
   async onModuleInit() {
-    await this.seedPlans();
+    // Only seed if the database is completely empty
+    const count = await this.planRepo.count();
+    if (count === 0) {
+      await this.seedPlans();
+    }
   }
 
   private async seedPlans() {
     const plans = [
       {
-        name: "Starter",
-        price: 999,
-        setupFee: 1999,
+        name: "Free",
+        price: 0,
+        setupFee: 0,
+        type: PlanType.REGULAR,
+        features: ["whatsapp_embedded", "templates", "basic_support"],
         limits: {
           monthly_messages: 1000,
           ai_credits: 100,
-          max_agents: 1,
-          max_phone_numbers: 1,
-          max_bots: 1,
-          monthly_broadcasts: 0,
-        },
-        features: ["whatsapp_embedded", "human_takeover"],
+          max_agents: 2,
+          max_whatsapp_accounts: 1,
+          monthly_broadcasts: 500,
+          max_automations: 1,
+          max_flows: 1,
+          max_campaigns: 500,
+          analytics_tier: "basic" as const
+        }
       },
       {
-        name: "Growth", // Replaces Starter 2 price point
-        price: 2499,
-        setupFee: 1999,
-        limits: {
-          monthly_messages: 5000,
-          ai_credits: 500,
-          max_agents: 3,
-          max_phone_numbers: 1,
-          max_bots: 3,
-          monthly_broadcasts: 20000,
-        },
-        features: ["whatsapp_embedded", "human_takeover", "templates"],
-      },
-      {
-        name: "Pro", // New tier
+        name: "Yearly",
         price: 3999,
         setupFee: 0,
+        type: PlanType.REGULAR,
+        features: ["whatsapp_embedded", "advanced_ai", "unlimited_templates", "api_access", "crm_integrations"],
         limits: {
-          monthly_messages: 10000,
-          ai_credits: 1000,
-          max_agents: 5,
-          max_phone_numbers: 3,
-          max_bots: 10,
-          monthly_broadcasts: -1, // Unlimited
-        },
-        features: [
-          "whatsapp_embedded",
-          "human_takeover",
-          "unlimited_broadcasts",
-          "api_access",
-        ],
-      },
-      {
-        name: "Professional",
-        price: 6999,
-        setupFee: 29999,
-        limits: {
-          monthly_messages: 20000,
-          ai_credits: 2000,
-          max_agents: 10,
-          max_phone_numbers: 5,
-          max_bots: 20,
-          monthly_broadcasts: -1,
-        },
-        features: [
-          "whatsapp_embedded",
-          "human_takeover",
-          "unlimited_broadcasts",
-          "multi_client_dashboard",
-          "lead_pipeline",
-          "ai_classification",
-        ],
-      },
-      {
-        name: "Agency",
-        price: 14999,
-        setupFee: 49999,
-        limits: {
-          monthly_messages: 100000,
+          monthly_messages: -1,
           ai_credits: 10000,
-          max_agents: 50,
-          max_phone_numbers: 20,
-          max_bots: 100,
+          max_agents: 10,
+          max_whatsapp_accounts: 5,
           monthly_broadcasts: -1,
-        },
-        features: [
-          "whatsapp_embedded",
-          "human_takeover",
-          "unlimited_broadcasts",
-          "multi_client_dashboard",
-          "lead_pipeline",
-          "ai_classification",
-          "webhooks",
-          "api_access",
-          "whitelabel", // Assumed feature
-        ],
+          max_automations: 10,
+          max_flows: -1,
+          max_campaigns: -1,
+          analytics_tier: "medium" as const
+        }
       },
+      {
+        name: "Reseller Yearly",
+        price: 15000,
+        setupFee: 0,
+        type: PlanType.RESELLER,
+        features: ["whatsapp_embedded", "advanced_ai", "unlimited_templates", "api_access", "reseller_hub", "whitelabel"],
+        limits: {
+          monthly_messages: -1,
+          ai_credits: 0,
+          max_agents: -1,
+          max_whatsapp_accounts: -1,
+          monthly_broadcasts: -1,
+          max_automations: -1,
+          max_flows: -1,
+          max_campaigns: -1,
+          analytics_tier: "advanced" as const
+        }
+      }
     ];
 
     for (const planData of plans) {
-      try {
-        const slug = this.generateSlug(planData.name);
-        const existing = await this.planRepo.findOneBy({ slug });
-
-        if (!existing) {
-          console.log(`Seeding Plan: ${planData.name}`);
-          await this.create({ ...planData, slug });
-        } else {
-          console.log(`Updating Plan: ${planData.name}`);
-          // Update existing plans to match new pricing
-          existing.name = planData.name;
-          existing.price = planData.price;
-          existing.setupFee = planData.setupFee;
-          existing.limits = planData.limits;
-          existing.features = planData.features;
-          await this.planRepo.save(existing);
-        }
-      } catch (error) {
-        console.error(`Failed to seed/update plan ${planData.name}`, error);
-        // Continue to next plan, do not crash startup
-      }
+      const slug = this.generateSlug(planData.name);
+      const plan = this.planRepo.create({ ...planData, slug });
+      await this.planRepo.save(plan);
     }
   }
 

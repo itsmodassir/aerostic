@@ -10,7 +10,7 @@ import {
     Send, Search, Filter, MoreVertical, Phone,
     Clock, AlertCircle, Paperclip, Archive, Star,
     MessageSquare, MessageCircle, ArrowLeft, X, Zap, Inbox,
-    Timer, Gem, Sparkles, Workflow, Layers3
+    Timer, Gem, Sparkles, Workflow, Layers3, ShoppingBag
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -166,7 +166,7 @@ export default function InboxPage() {
     const [filterAssignee, setFilterAssignee] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(false);
     const [showQuickActions, setShowQuickActions] = useState(false);
-    const [quickActionTab, setQuickActionTab] = useState<'templates' | 'flows'>('templates');
+    const [quickActionTab, setQuickActionTab] = useState<'templates' | 'flows' | 'products'>('templates');
     const [showContactDetails, setShowContactDetails] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -183,6 +183,7 @@ export default function InboxPage() {
     const [walletBalance, setWalletBalance] = useState<number>(0);
     const [templates, setTemplates] = useState<any[]>([]);
     const [publishedFlows, setPublishedFlows] = useState<PublishedFlow[]>([]);
+    const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
     const [templateRates, setTemplateRates] = useState<any>({ marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 });
     const [sendingTemplateId, setSendingTemplateId] = useState<string | null>(null);
     const [sendingFlowId, setSendingFlowId] = useState<string | null>(null);
@@ -238,6 +239,9 @@ export default function InboxPage() {
                     setTemplateRates(walletRes.data.rates || { default: walletRes.data.templateRate || 0.80 });
                     setTemplates(templatesRes.data.filter((t: any) => t.status === 'APPROVED'));
                     setPublishedFlows(Array.isArray(publishedFlowsRes.data) ? publishedFlowsRes.data : []);
+                    
+                    // Fetch products if commerce is enabled
+                    api.get('/commerce/products', buildTenantHeaders(tid)).then(res => setCatalogProducts(res.data)).catch(() => {});
                 }
             } catch (e) {
                 console.error('Inbox initialization failed', e);
@@ -697,6 +701,54 @@ export default function InboxPage() {
         }
     };
 
+    const handleSendProduct = async (product: any) => {
+        if (!selectedConversation || !tenantId) return;
+
+        // 1. Resolve Catalog ID (Use product's catalog or fallback to workspace default)
+        const metaCatalogId = product.catalog?.metaCatalogId || product.catalogId;
+        if (!metaCatalogId) {
+            toast({ title: "Catalog not linked", description: "Ensure this product is assigned to a catalog in the Catalogue settings.", variant: "destructive" });
+            return;
+        }
+
+        const tempId = `prod-${Date.now()}`;
+        const previewText = `Product shared: ${product.name}`;
+        
+        // Optimistic UI
+        const optimisticMsg: Message = {
+            id: tempId, direction: 'out', type: 'interactive',
+            content: { body: `Check out our ${product.name}`, product: { name: product.name, price: product.price, imageUrl: product.imageUrl } },
+            status: 'sent', createdAt: new Date().toISOString(), sender: currentUser || undefined
+        };
+        setMessages(prev => [...prev, optimisticMsg]);
+
+        try {
+            const res = await api.post('/messages/send', {
+                to: selectedConversation.contact.phoneNumber,
+                type: 'interactive',
+                payload: {
+                    type: 'product',
+                    body: { text: `Check out our ${product.name}:` },
+                    action: {
+                        catalog_id: metaCatalogId,
+                        product_retailer_id: product.retailerId
+                    }
+                }
+            }, buildTenantHeaders(tenantId));
+
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: res.data.messageId, metaMessageId: res.data.metaId, status: 'sent' } : m));
+            setConversations(prev => prev.map(c => 
+                c.id === selectedConversation.id ? { ...c, lastMessage: previewText, lastMessageAt: new Date().toISOString() } : c
+            ));
+            
+            setShowQuickActions(false);
+            toast({ title: "Product shared!", description: `${product.name} was sent.` });
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Failed to share product';
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed', error: message } : m));
+        }
+    };
+
     // --- Filter Logic ---
     const filteredConversations = useMemo(() => {
         return conversations.filter(c => {
@@ -965,6 +1017,15 @@ export default function InboxPage() {
                                                 >
                                                     <span className="inline-flex items-center gap-2"><Workflow size={14} /> Flows</span>
                                                 </button>
+                                                <button
+                                                    onClick={() => setQuickActionTab('products')}
+                                                    className={clsx(
+                                                        "rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all",
+                                                        quickActionTab === 'products' ? "bg-white text-slate-900" : "bg-white/5 text-slate-400 hover:bg-white/10"
+                                                    )}
+                                                >
+                                                    <span className="inline-flex items-center gap-2"><ShoppingBag size={14} /> Products</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="max-h-[420px] overflow-y-auto custom-scrollbar px-6 py-6">
@@ -1037,7 +1098,7 @@ export default function InboxPage() {
                                                         })}
                                                     </div>
                                                 </>
-                                            ) : (
+                                            ) : quickActionTab === 'flows' ? (
                                                 <>
                                                     {publishedFlows.length === 0 ? (
                                                         <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center text-slate-400">
@@ -1090,6 +1151,34 @@ export default function InboxPage() {
                                                                 </button>
                                                             );
                                                         })}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {catalogProducts.length === 0 ? (
+                                                        <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center text-slate-400">
+                                                            No synced products available. Sync items in the Catalogue first.
+                                                        </div>
+                                                    ) : null}
+                                                    <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                                                        {catalogProducts.map((prod) => (
+                                                            <button
+                                                                key={prod.id}
+                                                                onClick={() => void handleSendProduct(prod)}
+                                                                className="text-left rounded-[28px] border border-white/10 bg-slate-800/90 p-5 shadow-lg transition-all hover:-translate-y-0.5"
+                                                            >
+                                                                <div className="flex gap-4">
+                                                                    <div className="w-16 h-16 rounded-xl bg-white/5 overflow-hidden shrink-0">
+                                                                        {prod.imageUrl ? <img src={prod.imageUrl} className="w-full h-full object-cover" /> : <ShoppingBag className="w-full h-full p-4 text-white/20" />}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-white font-black truncate">{prod.name}</p>
+                                                                        <p className="text-emerald-400 font-bold text-sm">₹{prod.price}</p>
+                                                                        <p className="text-slate-400 text-[10px] uppercase font-black mt-1">SKU: {prod.retailerId}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+                                                        ))}
                                                     </div>
                                                 </>
                                             )}

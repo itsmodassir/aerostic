@@ -41,15 +41,28 @@ export class AuditService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    // Load the most recent hash to continue the chain
-    const latestLog = await this.auditRepo.findOne({
-      where: {},
-      order: { createdAt: "DESC" },
-    });
-    this.lastHash = (latestLog && latestLog.hash) ? latestLog.hash : "INIT_HASH";
-    this.logger.log(
-      `Audit chain initialized. Last hash: ${this.lastHash.substring(0, 8)}...`,
-    );
+    try {
+      // Load the most recent hash to continue the chain
+      const latestLog = await this.auditRepo.findOne({
+        where: {},
+        order: { createdAt: "DESC" },
+      });
+      
+      this.lastHash = (latestLog && latestLog.hash) ? latestLog.hash : "INIT_HASH";
+      
+      // Perform a quick integrity check on startup
+      const check = await this.verifyChain();
+      if (!check.isValid) {
+        this.logger.error(`CRITICAL: Audit chain inconsistency detected at startup. Repair required at ID: ${check.corruptedId}`);
+      }
+      
+      this.logger.log(
+        `Audit chain initialized. Last hash: ${this.lastHash.substring(0, 8)}...`,
+      );
+    } catch (err) {
+      this.logger.error("Failed to initialize audit chain", err.stack);
+      this.lastHash = "INIT_HASH";
+    }
   }
 
   /**

@@ -23,7 +23,7 @@ import { nodeTypes } from "./NodeComponents";
 import { NodeSidebar } from "./NodeSidebar";
 import { ConfigPanel } from "./ConfigPanel";
 import {
-  Save, Loader2, X, Workflow, ChevronLeft, Upload, Download, Send
+  Save, Loader2, X, Workflow, ChevronLeft, Upload, Download, Send, Code2, RotateCcw
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -48,6 +48,11 @@ export default function WaFlowBuilder({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
+  const [jsonDraft, setJsonDraft] = useState("");
+  const [generatedJson, setGeneratedJson] = useState("");
+  const [hasCustomJsonOverride, setHasCustomJsonOverride] = useState(false);
+  const [isJsonBusy, setIsJsonBusy] = useState(false);
 
   const { nodes: initNodes, edges: initEdges } = useMemo(
     () => transformSavedFlow(initialData),
@@ -127,6 +132,60 @@ export default function WaFlowBuilder({
 
   // ─── Save ─────────────────────────────────────────────────────────────────────
 
+  const loadJsonEditor = useCallback(async () => {
+    if (!flowId) return;
+    setIsJsonBusy(true);
+    try {
+      const response = await api.get(`/whatsapp/flows/${flowId}/json`);
+      setGeneratedJson(JSON.stringify(response.data?.generatedJson || {}, null, 2));
+      setJsonDraft(JSON.stringify(response.data?.activeJson || {}, null, 2));
+      setHasCustomJsonOverride(Boolean(response.data?.hasCustomOverride));
+      setIsJsonModalOpen(true);
+    } catch (err: any) {
+      setSaveError(err.response?.data?.message || err.message || "Could not load flow JSON.");
+      setPublishStatus("error");
+    } finally {
+      setIsJsonBusy(false);
+    }
+  }, [flowId]);
+
+  const handleSaveJsonOverride = async () => {
+    if (!flowId) return;
+    setIsJsonBusy(true);
+    setSaveError(null);
+    try {
+      const response = await api.put(`/whatsapp/flows/${flowId}/json`, {
+        json: jsonDraft,
+        useCustomOverride: true,
+      });
+      const activeJson = response.data?.activeJson || JSON.parse(jsonDraft);
+      setJsonDraft(JSON.stringify(activeJson, null, 2));
+      setHasCustomJsonOverride(Boolean(response.data?.hasCustomOverride));
+    } catch (err: any) {
+      setSaveError(err.response?.data?.message || err.message || "Could not save flow JSON.");
+      setPublishStatus("error");
+    } finally {
+      setIsJsonBusy(false);
+    }
+  };
+
+  const handleResetJsonOverride = async () => {
+    if (!flowId) return;
+    setIsJsonBusy(true);
+    setSaveError(null);
+    try {
+      const response = await api.delete(`/whatsapp/flows/${flowId}/json`);
+      setJsonDraft(JSON.stringify(response.data?.activeJson || {}, null, 2));
+      setGeneratedJson(JSON.stringify(response.data?.activeJson || {}, null, 2));
+      setHasCustomJsonOverride(false);
+    } catch (err: any) {
+      setSaveError(err.response?.data?.message || err.message || "Could not reset flow JSON.");
+      setPublishStatus("error");
+    } finally {
+      setIsJsonBusy(false);
+    }
+  };
+
   const handleSave = async (options?: { closeAfterSave?: boolean }) => {
     if (!flowId) return;
     setIsSaving(true);
@@ -136,10 +195,17 @@ export default function WaFlowBuilder({
         name: flowName,
         flowData: transformFlowToPayload(nodes, edges),
       };
-      await api.put(`/whatsapp/flows/${flowId}/canvas`, payload);
+      const response = await api.put(`/whatsapp/flows/${flowId}/canvas`, payload);
+      if (response.data?.metaValidation?.ok === false) {
+        const validationMessage =
+          response.data?.metaValidation?.message || "Flow JSON validation failed on Meta.";
+        setSaveError(validationMessage);
+        setPublishStatus("error");
+      }
       if (options?.closeAfterSave !== false) {
         onSaved?.();
       }
+      return response.data;
     } catch (err: any) {
       setSaveError(err.response?.data?.message || err.message || "Could not save flow.");
       throw err;
@@ -157,7 +223,12 @@ export default function WaFlowBuilder({
     setSaveError(null);
     try {
       // 1. First Save
-      await handleSave({ closeAfterSave: false });
+      const saveResult = await handleSave({ closeAfterSave: false });
+      if (saveResult?.metaValidation?.ok === false) {
+        setSaveError(saveResult?.metaValidation?.message || "Flow JSON validation failed on Meta.");
+        setPublishStatus("error");
+        return;
+      }
       
       // 2. Then Publish
       await api.post(`/whatsapp/flows/${flowId}/publish`);
@@ -262,6 +333,14 @@ export default function WaFlowBuilder({
               <Upload size={14} />
               <input type="file" className="hidden" onChange={handleImport} accept=".json" />
             </label>
+            <button
+              onClick={() => void loadJsonEditor()}
+              disabled={isJsonBusy}
+              className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-500 hover:text-blue-600 disabled:opacity-60"
+              title="Show / edit Meta Flow JSON"
+            >
+              {isJsonBusy ? <Loader2 size={14} className="animate-spin" /> : <Code2 size={14} />}
+            </button>
           </div>
 
           <button
@@ -346,6 +425,82 @@ export default function WaFlowBuilder({
           />
         </div>
       </div>
+
+      {isJsonModalOpen && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/35 backdrop-blur-sm p-4">
+          <div className="w-full max-w-5xl rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-800">Meta Flow JSON</p>
+                <p className="text-[11px] text-slate-500 font-medium mt-1">
+                  Review the generated JSON or save a custom override for publish.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasCustomJsonOverride && (
+                  <span className="rounded-full bg-amber-50 border border-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-700">
+                    Custom JSON Active
+                  </span>
+                )}
+                <button
+                  onClick={() => setIsJsonModalOpen(false)}
+                  className="rounded-xl p-2 text-slate-400 hover:bg-white hover:text-slate-700 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+              <div className="border-b lg:border-b-0 lg:border-r border-slate-200">
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Generated JSON</p>
+                </div>
+                <textarea
+                  readOnly
+                  value={generatedJson}
+                  className="h-[480px] w-full resize-none border-0 bg-slate-50 p-4 font-mono text-[12px] leading-6 text-slate-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Active / Editable JSON</p>
+                </div>
+                <textarea
+                  value={jsonDraft}
+                  onChange={(e) => setJsonDraft(e.target.value)}
+                  className="h-[480px] w-full resize-none border-0 bg-white p-4 font-mono text-[12px] leading-6 text-slate-700 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <p className="text-[11px] text-slate-500 font-medium">
+                Publish uses the custom JSON when saved here; otherwise it uses the generated JSON.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void handleResetJsonOverride()}
+                  disabled={isJsonBusy}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 disabled:opacity-60"
+                >
+                  <RotateCcw size={12} />
+                  Reset
+                </button>
+                <button
+                  onClick={() => void handleSaveJsonOverride()}
+                  disabled={isJsonBusy}
+                  className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {isJsonBusy ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                  Save JSON
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

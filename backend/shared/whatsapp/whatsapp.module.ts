@@ -6,6 +6,9 @@ import { Contact } from "../database/entities/core/contact.entity";
 import { Conversation } from "../database/entities/messaging/conversation.entity";
 import { Message } from "../database/entities/messaging/message.entity";
 import { Campaign } from "../../api-service/campaigns/entities/campaign.entity";
+import { CatalogProduct } from "../database/entities/commerce/catalog-product.entity";
+import { Order } from "../database/entities/commerce/order.entity";
+import { OrderItem } from "../database/entities/commerce/order-item.entity";
 import { WhatsappService } from "./whatsapp.service";
 import { WebhooksService } from "./webhooks.service";
 import { AiModule } from "../../api-service/ai/ai.module";
@@ -31,6 +34,9 @@ import {
       AutomationEdge,
       AutomationExecution,
       AutomationExecutionLog,
+      CatalogProduct,
+      Order,
+      OrderItem,
     ]),
     forwardRef(() => AiModule),
     forwardRef(() => MessagesModule),
