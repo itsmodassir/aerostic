@@ -125,7 +125,7 @@ export default function ContactsPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-32 animate-in fade-in duration-700">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 pb-32 animate-in fade-in duration-700">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
@@ -137,12 +137,12 @@ export default function ContactsPage() {
                     </div>
                     <p className="text-sm font-bold text-slate-400">Manage, segment, and grow your communication lists seamlessly.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                     <motion.button 
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleImport} 
-                        className="flex items-center gap-2 px-6 py-3 bg-white/70 backdrop-blur-md border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all font-black text-sm shadow-sm"
+                        className="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-3 bg-white/70 backdrop-blur-md border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all font-black text-sm shadow-sm"
                     >
                         <Upload size={18} strokeWidth={2.5} />
                         Import CSV
@@ -151,7 +151,7 @@ export default function ContactsPage() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-200 transition-all font-black text-sm shadow-lg shadow-blue-100"
+                        className="w-full sm:w-auto justify-center flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl hover:shadow-xl hover:shadow-blue-200 transition-all font-black text-sm shadow-lg shadow-blue-100"
                     >
                         <Plus size={20} strokeWidth={3} />
                         Create Contact

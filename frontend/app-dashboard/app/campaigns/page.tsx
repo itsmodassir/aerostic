@@ -103,13 +103,13 @@ export default function CampaignsPage() {
   }, []);
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Campaign Manager</h1>
           <p className="text-gray-500 mt-1">Design, schedule, and track your WhatsApp broadcasts.</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="rounded-xl h-12 px-6">
+        <Button onClick={() => setShowCreateModal(true)} className="rounded-xl h-12 w-full sm:w-auto px-6">
           <Plus className="mr-2 h-5 w-5" />
           New Campaign
         </Button>

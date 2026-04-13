@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue, startTransition } from 'react';
 import api from '@/lib/api';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocket } from '@/context/SocketContext';
 import { useToast } from '@/hooks/use-toast';
 import {
-    Send, Search, User, Filter, MoreVertical, Phone, Video,
-    Check, CheckCheck, Clock, AlertCircle, Smile, Paperclip,
-    Archive, Star, Tag, UserPlus, ChevronDown, Bot, MessageSquare, MessageCircle,
-    RefreshCw, ArrowLeft, Settings2, Bell, Users, Inbox,
-    Circle, Mic, Image, FileText, X, Plus, Zap, Pause, Play, Timer,
-    ChevronRight, LayoutTemplate, ShieldCheck, Gem, Sparkles
+    Send, Search, Filter, MoreVertical, Phone,
+    Clock, AlertCircle, Paperclip, Archive, Star,
+    MessageSquare, MessageCircle, ArrowLeft, X, Zap, Inbox,
+    Timer, Gem, Sparkles, Workflow, Layers3
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,7 +20,6 @@ import {
 } from '@/lib/indexedDB';
 import ConversationItem from '@/components/inbox/ConversationItem';
 import MessageBubble from '@/components/inbox/MessageBubble';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface TeamMember {
     id: string;
@@ -60,7 +57,7 @@ interface Conversation {
 interface Message {
     id: string;
     direction: 'in' | 'out';
-    type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template';
+    type: 'text' | 'image' | 'document' | 'audio' | 'video' | 'template' | 'interactive';
     content: any;
     status: 'sent' | 'delivered' | 'read' | 'failed' | 'received';
     createdAt: string;
@@ -69,17 +66,33 @@ interface Message {
     error?: string;
 }
 
+interface PublishedFlow {
+    id: string;
+    name: string;
+    status?: string;
+    categories?: string[];
+}
+
 const buildTenantHeaders = (tenantId: string) => ({
     headers: { 'x-tenant-id': tenantId },
 });
 
+const getTextLikeValue = (value: unknown) => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object' && 'text' in (value as Record<string, unknown>)) {
+        const text = (value as Record<string, unknown>).text;
+        return typeof text === 'string' ? text : '';
+    }
+    return '';
+};
+
 const getMessagePreview = (payload: any, type?: string) => {
     return (
-        payload?.body ||
-        payload?.text?.body ||
+        getTextLikeValue(payload?.body) ||
+        getTextLikeValue(payload?.text?.body) ||
         payload?.interactive?.button_reply?.title ||
         payload?.interactive?.list_reply?.title ||
-        payload?.caption ||
+        getTextLikeValue(payload?.caption) ||
         (type ? `[${type}]` : 'New message')
     );
 };
@@ -123,6 +136,15 @@ const getTemplateRate = (template: any, rates: Record<string, number>) => {
     return rates?.[category] ?? rates?.default ?? 0;
 };
 
+const getFlowLabel = (flow: PublishedFlow) => {
+    return flow?.name?.trim() || 'Untitled flow';
+};
+
+const getFlowTone = (categories?: string[]) => {
+    if (!categories?.length) return 'Customer journey';
+    return categories.join(' • ').replace(/_/g, ' ').toLowerCase();
+};
+
 export default function InboxPage() {
     const params = useParams();
     const { user } = useAuth();
@@ -143,16 +165,27 @@ export default function InboxPage() {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterAssignee, setFilterAssignee] = useState<string>('all');
     const [showFilters, setShowFilters] = useState(false);
-    const [showTemplates, setShowTemplates] = useState(false);
-    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showQuickActions, setShowQuickActions] = useState(false);
+    const [quickActionTab, setQuickActionTab] = useState<'templates' | 'flows'>('templates');
     const [showContactDetails, setShowContactDetails] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (loading) {
+            timeout = setTimeout(() => setLoadingTimeout(true), 15000); // 15s timeout
+        }
+        return () => clearTimeout(timeout);
+    }, [loading]);
 
     // AI & Meta Logic
     const [walletBalance, setWalletBalance] = useState<number>(0);
     const [templates, setTemplates] = useState<any[]>([]);
+    const [publishedFlows, setPublishedFlows] = useState<PublishedFlow[]>([]);
     const [templateRates, setTemplateRates] = useState<any>({ marketing: 1.05, utility: 0.20, authentication: 0.15, default: 0.80 });
     const [sendingTemplateId, setSendingTemplateId] = useState<string | null>(null);
+    const [sendingFlowId, setSendingFlowId] = useState<string | null>(null);
     const [aiStatus, setAiStatus] = useState<{
         aiMode: 'ai' | 'human' | 'paused';
         pauseSecondsLeft: number;
@@ -165,6 +198,7 @@ export default function InboxPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const templatePanelRef = useRef<HTMLDivElement>(null);
     const templateToggleRef = useRef<HTMLButtonElement>(null);
+    const deferredSearchQuery = useDeferredValue(searchQuery);
 
     // --- Initial Load ---
     useEffect(() => {
@@ -190,10 +224,11 @@ export default function InboxPage() {
                     });
 
                     // Background fetch supplemental data
-                    const [teamRes, walletRes, templatesRes] = await Promise.all([
+                    const [teamRes, walletRes, templatesRes, publishedFlowsRes] = await Promise.all([
                         api.get(`/users?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: [] })),
                         api.get(`/billing/wallet/balance?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: { balance: 0 } })),
-                        api.get(`/templates?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: [] }))
+                        api.get(`/templates?tenantId=${tid}`, buildTenantHeaders(tid)).catch(() => ({ data: [] })),
+                        api.get('/whatsapp/flows/published', buildTenantHeaders(tid)).catch(() => ({ data: [] })),
                     ]);
 
                     setTeamMembers(teamRes.data.map((u: any) => ({
@@ -202,6 +237,7 @@ export default function InboxPage() {
                     setWalletBalance(walletRes.data.balance || 0);
                     setTemplateRates(walletRes.data.rates || { default: walletRes.data.templateRate || 0.80 });
                     setTemplates(templatesRes.data.filter((t: any) => t.status === 'APPROVED'));
+                    setPublishedFlows(Array.isArray(publishedFlowsRes.data) ? publishedFlowsRes.data : []);
                 }
             } catch (e) {
                 console.error('Inbox initialization failed', e);
@@ -331,36 +367,61 @@ export default function InboxPage() {
     }, [selectedConversation?.id, tenantId, currentUser?.id, fetchConversationStatus]);
 
     useEffect(() => {
-        setShowTemplates(false);
+        setShowQuickActions(false);
     }, [selectedConversation?.id]);
 
     useEffect(() => {
-        if (!showTemplates) return;
+        if (!showQuickActions) return;
 
         const handlePointerDown = (event: MouseEvent) => {
             const target = event.target as Node;
             if (templatePanelRef.current?.contains(target)) return;
             if (templateToggleRef.current?.contains(target)) return;
-            setShowTemplates(false);
+            setShowQuickActions(false);
         };
 
         document.addEventListener('mousedown', handlePointerDown);
         return () => {
             document.removeEventListener('mousedown', handlePointerDown);
         };
-    }, [showTemplates]);
+    }, [showQuickActions]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
     // --- Handlers ---
+    const handleSelectConversation = useCallback((conversation: Conversation | null) => {
+        startTransition(() => {
+            setSelectedConversation(conversation);
+            setShowContactDetails(false);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!selectedConversation || !tenantId) return;
+
+        setConversations((prev) => prev.map((conversation) => (
+            conversation.id === selectedConversation.id
+                ? { ...conversation, unreadCount: 0 }
+                : conversation
+        )));
+
+        void api.patch(
+            `/messages/conversations/${selectedConversation.id}/read`,
+            {},
+            buildTenantHeaders(tenantId),
+        ).catch((error) => {
+            console.error('Failed to mark conversation as read', error);
+        });
+    }, [selectedConversation?.id, tenantId]);
+
     const handleSend = async () => {
         if (!inputText.trim() || !selectedConversation) return;
         const tempId = `temp-${Date.now()}`;
         const body = inputText;
         setInputText('');
-        setShowTemplates(false);
+        setShowQuickActions(false);
         
         const optimisticMsg: Message = {
             id: tempId, direction: 'out', type: 'text', content: { body },
@@ -377,7 +438,7 @@ export default function InboxPage() {
             setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: res.data.messageId, metaMessageId: res.data.metaId, status: 'sent', error: undefined } : m));
             setConversations(prev => prev.map(c =>
                 c.id === selectedConversation.id
-                    ? { ...c, lastMessage: body, lastMessageAt: new Date().toISOString() }
+                    ? { ...c, lastMessage: body, lastMessageAt: new Date().toISOString(), unreadCount: 0 }
                     : c
             ));
         } catch (e: any) {
@@ -510,11 +571,12 @@ export default function InboxPage() {
                         ...c,
                         lastMessage: previewText,
                         lastMessageAt: new Date().toISOString(),
+                        unreadCount: 0,
                     }
                     : c
             ));
 
-            setShowTemplates(false);
+            setShowQuickActions(false);
             toast({
                 title: 'Template sent',
                 description: `${getTemplateDisplayName(template.name)} was sent in this chat.`,
@@ -536,42 +598,151 @@ export default function InboxPage() {
         }
     };
 
+    const handleSendFlow = async (flow: PublishedFlow) => {
+        if (!selectedConversation) return;
+
+        const tempId = `flow-${Date.now()}`;
+        const previewText = `Flow shared: ${getFlowLabel(flow)}`;
+        const optimisticMsg: Message = {
+            id: tempId,
+            direction: 'out',
+            type: 'interactive',
+            content: {
+                type: 'flow',
+                body: { text: `Please complete ${getFlowLabel(flow)} to continue.` },
+                action: {
+                    name: 'flow',
+                    parameters: {
+                        flow_id: flow.id,
+                        flow_cta: 'Open flow',
+                    },
+                },
+            },
+            status: 'sent',
+            createdAt: new Date().toISOString(),
+            sender: currentUser || undefined,
+        };
+        setMessages((prev) => [...prev, optimisticMsg]);
+
+        try {
+            setSendingFlowId(flow.id);
+            const assetsRes = await api.get(`/whatsapp/flows/${flow.id}/assets`, buildTenantHeaders(tenantId));
+            const firstScreenId = assetsRes.data?.screens?.[0]?.id || 'WELCOME_SCREEN';
+            const res = await api.post('/messages/send', {
+                to: selectedConversation.contact.phoneNumber,
+                type: 'interactive',
+                payload: {
+                    type: 'flow',
+                    body: { text: `Please complete ${getFlowLabel(flow)} to continue.` },
+                    action: {
+                        name: 'flow',
+                        parameters: {
+                            flow_message_version: '3',
+                            flow_token: `inbox_${Date.now()}`,
+                            flow_id: String(flow.id),
+                            flow_cta: 'Open flow',
+                            flow_action: 'navigate',
+                            mode: 'published',
+                            flow_action_payload: {
+                                screen: firstScreenId,
+                            },
+                        },
+                    },
+                },
+            }, buildTenantHeaders(tenantId));
+
+            setMessages((prev) => prev.map((message) => (
+                message.id === tempId
+                    ? {
+                        ...message,
+                        id: res.data.messageId,
+                        metaMessageId: res.data.metaId,
+                        status: 'sent',
+                        error: undefined,
+                    }
+                    : message
+            )));
+
+            setConversations((prev) => prev.map((conversation) => (
+                conversation.id === selectedConversation.id
+                    ? {
+                        ...conversation,
+                        lastMessage: previewText,
+                        lastMessageAt: new Date().toISOString(),
+                        unreadCount: 0,
+                    }
+                    : conversation
+            )));
+
+            setShowQuickActions(false);
+            toast({
+                title: 'Flow sent',
+                description: `${getFlowLabel(flow)} was shared in this chat.`,
+            });
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Failed to send flow';
+            setMessages((prev) => prev.map((chatMessage) => (
+                chatMessage.id === tempId
+                    ? { ...chatMessage, status: 'failed', error: message }
+                    : chatMessage
+            )));
+
+            toast({
+                title: 'Flow send failed',
+                description: message,
+                variant: 'destructive',
+            });
+        } finally {
+            setSendingFlowId(null);
+        }
+    };
+
     // --- Filter Logic ---
     const filteredConversations = useMemo(() => {
         return conversations.filter(c => {
-            const matchesSearch = c.contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.contact.phoneNumber.includes(searchQuery);
+            const normalizedQuery = deferredSearchQuery.toLowerCase();
+            const matchesSearch = c.contact.name.toLowerCase().includes(normalizedQuery) || c.contact.phoneNumber.includes(deferredSearchQuery);
             const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
             const matchesAssignee = filterAssignee === 'all' || (filterAssignee === 'me' && c.assignedTo?.id === currentUser?.id) || (filterAssignee === 'unassigned' && !c.assignedTo);
             return matchesSearch && matchesStatus && matchesAssignee;
         });
-    }, [conversations, searchQuery, filterStatus, filterAssignee, currentUser?.id]);
+    }, [conversations, deferredSearchQuery, filterStatus, filterAssignee, currentUser?.id]);
 
     if (loading) {
         return (
-            <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-50 rounded-[32px]">
+            <div className="h-full flex flex-col items-center justify-center gap-4 rounded-[32px] bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_40%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] m-4">
                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Synchronizing Secure Streams...</p>
+                {loadingTimeout && (
+                    <div className="mt-6 flex flex-col items-center gap-3 animate-in fade-in zoom-in-95 duration-500">
+                        <p className="text-xs font-bold text-red-500">Network connection taking too long.</p>
+                        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors">
+                            Refresh Session
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] bg-white sm:rounded-[32px] rounded-[24px] overflow-hidden shadow-2xl border-2 border-slate-50 relative">
+        <div className="m-2 sm:m-4 lg:m-6 relative flex min-h-[calc(100dvh-8rem)] flex-col overflow-hidden rounded-[24px] border border-slate-200/70 bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_48%,#eef4ff_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.10)] sm:rounded-[32px] lg:h-[calc(100dvh-8rem)] lg:min-h-0 lg:flex-row">
             <AnimatePresence mode="wait">
             {/* Sidebar - Conversation List */}
             <div className={clsx(
-                "w-full md:w-[400px] border-r-2 border-slate-50 bg-white flex flex-col transition-all z-10",
-                selectedConversation && "hidden md:flex"
+                "z-10 flex w-full flex-col border-b border-slate-200/70 bg-white/90 backdrop-blur-sm transition-all lg:w-[400px] lg:border-b-0 lg:border-r",
+                selectedConversation && "hidden lg:flex"
             )}>
-                <div className="p-8 pb-4">
-                    <div className="flex items-center justify-between mb-8">
+                <div className="border-b border-slate-100 p-4 pb-3 sm:p-6 sm:pb-4">
+                    <div className="rounded-[24px] border border-slate-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-4 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)] sm:rounded-[30px] sm:px-5 sm:py-5">
+                    <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-blue-600 text-white rounded-[18px] shadow-lg shadow-blue-100 flex items-center justify-center">
                                 <Inbox size={24} strokeWidth={2.5} />
                             </div>
                             <div>
                                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Inbox</h2>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Unified Channels</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Priority Conversations</p>
                             </div>
                         </div>
                         <button onClick={() => setShowFilters(!showFilters)} className={clsx("p-3 rounded-2xl transition-all", showFilters ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100")}>
@@ -579,17 +750,61 @@ export default function InboxPage() {
                         </button>
                     </div>
 
-                    <div className="relative group mb-6">
+                    <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
+                        <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Open</p>
+                            <p className="mt-1 text-xl font-black text-slate-900">{conversations.filter((c) => c.status === 'open').length}</p>
+                        </div>
+                        <div className="rounded-2xl bg-emerald-50 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-500">Incoming</p>
+                            <p className="mt-1 text-xl font-black text-emerald-700">{conversations.reduce((sum, c) => sum + Math.max(0, c.unreadCount || 0), 0)}</p>
+                        </div>
+                        <div className="rounded-2xl bg-indigo-50 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">AI Live</p>
+                            <p className="mt-1 text-xl font-black text-indigo-700">{conversations.filter((c) => c.isBot).length}</p>
+                        </div>
+                    </div>
+
+                    <div className="relative group mb-4">
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Find high-value contacts..."
+                            placeholder="Search name or number..."
                             className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-[24px] text-sm font-bold outline-none transition-all placeholder:text-slate-300"
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 pb-2 overflow-x-auto no-scrollbar">
+                    <AnimatePresence>
+                        {showFilters && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
+                            >
+                                <button
+                                    onClick={() => setFilterStatus(filterStatus === 'open' ? 'all' : 'open')}
+                                    className={clsx(
+                                        "rounded-2xl border px-4 py-3 text-left transition-all",
+                                        filterStatus === 'open' ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-100 bg-white text-slate-500 hover:border-slate-200"
+                                    )}
+                                >
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em]">Stage</p>
+                                    <p className="mt-1 text-sm font-black">{filterStatus === 'open' ? 'Showing Open' : 'Open Only'}</p>
+                                </button>
+                                <button
+                                    onClick={() => setFilterStatus('all')}
+                                    className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-left text-slate-500 transition-all hover:border-slate-200"
+                                >
+                                    <p className="text-[10px] font-black uppercase tracking-[0.18em]">Reset</p>
+                                    <p className="mt-1 text-sm font-black">Show Every Thread</p>
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                         {[
                             { id: 'all', label: 'Global', active: filterAssignee === 'all', count: conversations.length },
                             { id: 'me', label: 'Mine', active: filterAssignee === 'me', count: conversations.filter(c => c.assignedTo?.id === currentUser?.id).length },
@@ -607,9 +822,10 @@ export default function InboxPage() {
                             </button>
                         ))}
                     </div>
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-12">
+                <div className="max-h-[40dvh] flex-1 overflow-y-auto px-3 py-3 pb-6 custom-scrollbar sm:max-h-none sm:px-4 sm:py-4 sm:pb-8">
                     {filteredConversations.length === 0 ? (
                         <div className="py-20 text-center opacity-20">
                             <MessageSquare size={48} className="mx-auto mb-4" />
@@ -621,7 +837,7 @@ export default function InboxPage() {
                                 key={conv.id}
                                 conversation={conv}
                                 isActive={selectedConversation?.id === conv.id}
-                                onClick={() => setSelectedConversation(conv)}
+                                onClick={() => handleSelectConversation(conv)}
                             />
                         ))
                     )}
@@ -630,26 +846,26 @@ export default function InboxPage() {
 
             {/* Chat Area */}
             <div className={clsx(
-                "flex-1 flex flex-col bg-slate-50 transition-all relative overflow-hidden",
-                !selectedConversation && "hidden md:flex"
+                "relative flex flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.08),transparent_28%),linear-gradient(180deg,#f8fbff_0%,#f8fafc_40%,#f1f5f9_100%)] transition-all",
+                !selectedConversation && "hidden lg:flex"
             )}>
                 {selectedConversation ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full">
                         {/* Chat Header */}
-                        <div className="px-8 py-5 bg-white border-b-2 border-slate-50 flex items-center justify-between z-20">
-                            <div className="flex items-center gap-4 min-w-0">
-                                <button onClick={() => setSelectedConversation(null)} className="md:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><ArrowLeft size={20} /></button>
+                        <div className="z-20 flex items-start justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5 lg:px-8">
+                            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                                <button onClick={() => handleSelectConversation(null)} className="rounded-2xl bg-slate-50 p-3 text-slate-400 lg:hidden"><ArrowLeft size={20} /></button>
                                 <div className="relative">
-                                    <div className="w-14 h-14 rounded-[22px] bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-blue-100">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-blue-600 to-indigo-700 text-xl font-black text-white shadow-xl shadow-blue-100 sm:h-14 sm:w-14 sm:rounded-[22px] sm:text-2xl">
                                         {selectedConversation.contact.name.charAt(0)}
                                     </div>
                                     <div className="absolute -right-1 -bottom-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-lg shadow-sm" />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-lg font-black text-slate-900 truncate tracking-tight">{selectedConversation.contact.name}</h3>
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Phone size={10} /> {selectedConversation.contact.phoneNumber}</span>
-                                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
+                                    <h3 className="truncate text-base font-black tracking-tight text-slate-900 sm:text-lg">{selectedConversation.contact.name}</h3>
+                                    <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
+                                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400"><Phone size={10} /> {selectedConversation.contact.phoneNumber}</span>
+                                        <div className="hidden h-1 w-1 rounded-full bg-slate-200 sm:block" />
                                         {aiStatus?.windowExpired === false ? (
                                             <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-xl animate-pulse border border-emerald-100/50">
                                                 <Timer size={12} className="stroke-[3]" />
@@ -672,10 +888,10 @@ export default function InboxPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 {aiStatus && (
                                     <div className={clsx(
-                                        "hidden lg:flex items-center gap-3 px-5 py-2.5 rounded-2xl border transition-all",
+                                        "hidden xl:flex items-center gap-3 rounded-2xl border px-5 py-2.5 transition-all",
                                         aiStatus.aiMode === 'ai' ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-amber-50 border-amber-100 text-amber-700"
                                     )}>
                                         <div className={clsx("w-2 h-2 rounded-full", aiStatus.aiMode === 'ai' ? "bg-emerald-500 animate-pulse" : "bg-amber-500")} />
@@ -690,12 +906,12 @@ export default function InboxPage() {
                                         </button>
                                     </div>
                                 )}
-                                <button onClick={() => setShowContactDetails(!showContactDetails)} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 transition-all border border-transparent shadow-sm"><MoreVertical size={20} /></button>
+                                <button onClick={() => setShowContactDetails(!showContactDetails)} className="rounded-2xl border border-transparent bg-slate-50 p-3 text-slate-400 shadow-sm transition-all hover:bg-slate-100"><MoreVertical size={20} /></button>
                             </div>
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-10 space-y-1 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1 custom-scrollbar sm:px-6 sm:py-6 lg:p-8 xl:p-10">
                             <AnimatePresence initial={false}>
                                 {messages.map((msg, i) => (
                                     <MessageBubble 
@@ -709,109 +925,187 @@ export default function InboxPage() {
                         </div>
 
                         {/* Composer Area */}
-                        <div className="p-10 pt-4 bg-white/80 backdrop-blur-xl border-t-2 border-slate-50 z-20">
-                            {/* Templates Quick Launch */}
+                        <div className="z-20 border-t border-slate-200/80 bg-white/80 p-3 pt-3 backdrop-blur-xl sm:p-6 sm:pt-4 lg:p-8">
+                            {/* Quick Actions */}
                             <AnimatePresence>
-                                {showTemplates && (
+                                {showQuickActions && (
                                     <motion.div 
                                         ref={templatePanelRef}
                                         initial={{ y: 20, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         exit={{ y: 20, opacity: 0 }}
-                                        className="mb-6 p-8 bg-slate-900 rounded-[32px] border border-slate-800 shadow-2xl max-h-[400px] overflow-y-auto custom-scrollbar"
+                                        className="mb-4 overflow-hidden rounded-[28px] border border-slate-800 bg-slate-900 shadow-2xl sm:mb-6 sm:rounded-[32px]"
                                     >
-                                        <div className="flex items-center justify-between mb-8">
-                                            <h4 className="text-white text-xl font-black tracking-tight flex items-center gap-3">
-                                                <div className="p-2 bg-blue-600 rounded-xl"><Gem size={20} /></div>
-                                                High-Impact Templates
-                                            </h4>
-                                            <div className="flex items-center gap-3">
-                                                <p className="hidden md:block text-xs text-slate-400">
-                                                    Send approved templates with live pricing and clearer labels.
-                                                </p>
+                                        <div className="border-b border-white/10 px-6 py-5">
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div>
+                                                    <h4 className="text-white text-xl font-black tracking-tight">Premium Message Actions</h4>
+                                                    <p className="mt-1 text-sm text-slate-400">Launch approved templates or published WhatsApp flows directly from the live thread.</p>
+                                                </div>
                                                 <div className="px-4 py-1.5 bg-white/10 rounded-full border border-white/5 text-[10px] font-black text-white/60 uppercase tracking-widest">
-                                                    Vault: ₹{walletBalance.toFixed(2)}
+                                                    Wallet: ₹{walletBalance.toFixed(2)}
                                                 </div>
                                             </div>
-                                        </div>
-                                        {templates.length === 0 ? (
-                                            <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center text-slate-400">
-                                                No approved templates are ready for quick send yet.
+                                            <div className="mt-4 flex flex-wrap gap-2">
+                                                <button
+                                                    onClick={() => setQuickActionTab('templates')}
+                                                    className={clsx(
+                                                        "rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all",
+                                                        quickActionTab === 'templates' ? "bg-white text-slate-900" : "bg-white/5 text-slate-400 hover:bg-white/10"
+                                                    )}
+                                                >
+                                                    <span className="inline-flex items-center gap-2"><Gem size={14} /> Templates</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setQuickActionTab('flows')}
+                                                    className={clsx(
+                                                        "rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all",
+                                                        quickActionTab === 'flows' ? "bg-white text-slate-900" : "bg-white/5 text-slate-400 hover:bg-white/10"
+                                                    )}
+                                                >
+                                                    <span className="inline-flex items-center gap-2"><Workflow size={14} /> Flows</span>
+                                                </button>
                                             </div>
-                                        ) : null}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {templates.map(t => {
-                                                const displayName = getTemplateDisplayName(t.name);
-                                                const previewText = getTemplatePreviewText(t);
-                                                const category = getTemplateCategory(t);
-                                                const rate = getTemplateRate(t, templateRates);
-                                                const canSend = walletBalance >= rate;
-                                                const isSending = sendingTemplateId === t.id;
-
-                                                return (
-                                                    <button
-                                                        key={t.id}
-                                                        onClick={() => void handleSendTemplate(t)}
-                                                        disabled={!canSend || isSending}
-                                                        className={clsx(
-                                                            "text-left p-5 rounded-[28px] transition-all border shadow-lg",
-                                                            canSend
-                                                                ? "bg-slate-800/95 hover:bg-slate-800 border-white/10 hover:border-blue-400/30 hover:-translate-y-0.5"
-                                                                : "bg-slate-800/70 border-white/5 opacity-75 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3 mb-4">
-                                                            <div className="min-w-0">
-                                                                <p className="text-white text-base font-semibold leading-snug break-words">
-                                                                    {displayName}
-                                                                </p>
-                                                                <div className="mt-3 flex flex-wrap items-center gap-2">
-                                                                    <span className="rounded-full bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                                                                        {category}
-                                                                    </span>
-                                                                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
-                                                                        {t.language || 'en_US'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="rounded-2xl bg-white/8 px-3 py-2 text-right shrink-0">
-                                                                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Cost</p>
-                                                                <p className="text-sm font-semibold text-white">₹{rate.toFixed(2)}</p>
-                                                            </div>
+                                        </div>
+                                        <div className="max-h-[420px] overflow-y-auto custom-scrollbar px-6 py-6">
+                                            {quickActionTab === 'templates' ? (
+                                                <>
+                                                    {templates.length === 0 ? (
+                                                        <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center text-slate-400">
+                                                            No approved templates are ready for quick send yet.
                                                         </div>
+                                                    ) : null}
+                                                    <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                                                        {templates.map(t => {
+                                                            const displayName = getTemplateDisplayName(t.name);
+                                                            const previewText = getTemplatePreviewText(t);
+                                                            const category = getTemplateCategory(t);
+                                                            const rate = getTemplateRate(t, templateRates);
+                                                            const canSend = walletBalance >= rate;
+                                                            const isSending = sendingTemplateId === t.id;
 
-                                                        <p className="mb-5 line-clamp-3 text-sm leading-6 text-slate-300/90">
-                                                            {previewText}
-                                                        </p>
+                                                            return (
+                                                                <button
+                                                                    key={t.id}
+                                                                    onClick={() => void handleSendTemplate(t)}
+                                                                    disabled={!canSend || isSending}
+                                                                    className={clsx(
+                                                                        "text-left p-5 rounded-[28px] transition-all border shadow-lg",
+                                                                        canSend
+                                                                            ? "bg-slate-800/95 hover:bg-slate-800 border-white/10 hover:border-blue-400/30 hover:-translate-y-0.5"
+                                                                            : "bg-slate-800/70 border-white/5 opacity-75 cursor-not-allowed"
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-start justify-between gap-3 mb-4">
+                                                                        <div className="min-w-0">
+                                                                            <p className="text-white text-base font-semibold leading-snug break-words">
+                                                                                {displayName}
+                                                                            </p>
+                                                                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                                                <span className="rounded-full bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                                                                    {category}
+                                                                                </span>
+                                                                                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                                                                                    {t.language || 'en_US'}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="rounded-2xl bg-white/8 px-3 py-2 text-right shrink-0">
+                                                                            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Cost</p>
+                                                                            <p className="text-sm font-semibold text-white">₹{rate.toFixed(2)}</p>
+                                                                        </div>
+                                                                    </div>
 
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <div className="flex items-center gap-2 text-sm font-semibold text-blue-300">
-                                                                <Sparkles size={14} className="shrink-0" />
-                                                                {isSending ? 'Sending template...' : 'Send in chat'}
-                                                            </div>
-                                                            <span className={clsx(
-                                                                "text-xs",
-                                                                canSend ? "text-slate-400" : "text-amber-300"
-                                                            )}>
-                                                                {canSend ? 'Ready' : 'Low wallet balance'}
-                                                            </span>
+                                                                    <p className="mb-5 line-clamp-3 text-sm leading-6 text-slate-300/90">
+                                                                        {previewText}
+                                                                    </p>
+
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div className="flex items-center gap-2 text-sm font-semibold text-blue-300">
+                                                                            <Sparkles size={14} className="shrink-0" />
+                                                                            {isSending ? 'Sending template...' : 'Send in chat'}
+                                                                        </div>
+                                                                        <span className={clsx(
+                                                                            "text-xs",
+                                                                            canSend ? "text-slate-400" : "text-amber-300"
+                                                                        )}>
+                                                                            {canSend ? 'Ready' : 'Low wallet balance'}
+                                                                        </span>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {publishedFlows.length === 0 ? (
+                                                        <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 px-6 py-10 text-center text-slate-400">
+                                                            No published Meta flows are available yet. Publish a flow first, then send it directly here.
                                                         </div>
-                                                    </button>
-                                                );
-                                            })}
+                                                    ) : null}
+                                                    <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+                                                        {publishedFlows.map((flow) => {
+                                                            const isSending = sendingFlowId === flow.id;
+                                                            return (
+                                                                <button
+                                                                    key={flow.id}
+                                                                    onClick={() => void handleSendFlow(flow)}
+                                                                    disabled={isSending}
+                                                                    className="text-left rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(30,41,59,0.92))] p-5 shadow-lg transition-all hover:-translate-y-0.5 hover:border-cyan-400/30"
+                                                                >
+                                                                    <div className="mb-4 flex items-start justify-between gap-3">
+                                                                        <div className="min-w-0">
+                                                                            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">
+                                                                                <Workflow size={12} />
+                                                                                Published Flow
+                                                                            </div>
+                                                                            <p className="mt-3 text-lg font-black text-white break-words">
+                                                                                {getFlowLabel(flow)}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="rounded-2xl bg-white/8 px-3 py-2 text-right shrink-0">
+                                                                            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">Meta</p>
+                                                                            <p className="text-sm font-semibold text-white">Live</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-sm leading-6 text-slate-300">
+                                                                        Send a form-style CTA directly in the thread so the contact can open and complete the flow without leaving WhatsApp.
+                                                                    </p>
+                                                                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                                                                        <span className="rounded-full bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                                                            {getFlowTone(flow.categories)}
+                                                                        </span>
+                                                                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                                                                            Ready to launch
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="mt-5 flex items-center justify-between gap-3">
+                                                                        <div className="flex items-center gap-2 text-sm font-semibold text-cyan-300">
+                                                                            <Layers3 size={14} className="shrink-0" />
+                                                                            {isSending ? 'Sending flow...' : 'Send flow in chat'}
+                                                                        </div>
+                                                                        <span className="text-xs text-slate-400">Customer opens inside WhatsApp</span>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            <div className="flex items-center gap-5">
+                            <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:gap-5">
                                 <div className="flex gap-2.5">
                                     <button 
                                         ref={templateToggleRef}
-                                        onClick={() => setShowTemplates(!showTemplates)}
+                                        onClick={() => setShowQuickActions(!showQuickActions)}
                                         className={clsx(
                                             "w-14 h-14 rounded-2xl flex items-center justify-center transition-all border-2",
-                                            showTemplates ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-200" : "bg-slate-50 text-slate-400 border-transparent hover:border-slate-200"
+                                            showQuickActions ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-200" : "bg-slate-50 text-slate-400 border-transparent hover:border-slate-200"
                                         )}
                                     >
                                         <Zap size={22} strokeWidth={2.5} />
@@ -825,14 +1119,22 @@ export default function InboxPage() {
                                     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                                 </div>
 
-                                <div className="flex-1 relative">
+                                <div className="relative flex-1">
+                                    <div className="mb-2 flex flex-col gap-1 px-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                                            {showQuickActions ? (quickActionTab === 'templates' ? 'Template mode active' : 'Flow mode active') : 'Live reply composer'}
+                                        </p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-300">
+                                            Enter to send • Shift+Enter for newline
+                                        </p>
+                                    </div>
                                     <textarea
                                         value={inputText}
                                         onChange={(e) => setInputText(e.target.value)}
                                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                                        placeholder="Type into the stream..."
+                                        placeholder="Write a polished reply..."
                                         rows={1}
-                                        className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-[24px] px-8 py-5 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300 resize-none max-h-40 shadow-inner"
+                                        className="max-h-40 w-full resize-none rounded-[22px] border border-slate-200 bg-white px-4 py-4 font-semibold text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none transition-all placeholder:text-slate-300 focus:border-blue-500 focus:bg-white sm:rounded-[26px] sm:px-6 sm:py-5"
                                     />
                                 </div>
 
@@ -841,7 +1143,7 @@ export default function InboxPage() {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleSend}
                                     disabled={!inputText.trim()}
-                                    className="h-14 w-20 bg-blue-600 text-white rounded-[22px] shadow-2xl shadow-blue-200 flex items-center justify-center disabled:opacity-30 transition-all active:bg-blue-700"
+                                    className="flex h-14 w-full items-center justify-center rounded-[22px] bg-blue-600 text-white shadow-2xl shadow-blue-200 transition-all active:bg-blue-700 disabled:opacity-30 sm:w-20"
                                 >
                                     <Send size={24} strokeWidth={3} />
                                 </motion.button>
@@ -849,15 +1151,15 @@ export default function InboxPage() {
                         </div>
                     </motion.div>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-white">
+                    <div className="flex flex-1 flex-col items-center justify-center bg-transparent p-8 text-center sm:p-12">
                         <div className="relative mb-12">
-                            <div className="w-48 h-48 bg-slate-50 rounded-[48px] rotate-6 absolute inset-0 -z-10" />
-                            <div className="w-48 h-48 bg-white border-2 border-slate-50 rounded-[48px] shadow-2xl shadow-slate-100 flex items-center justify-center">
+                            <div className="absolute inset-0 -z-10 rounded-[48px] bg-blue-50 blur-2xl" />
+                            <div className="w-48 h-48 bg-white/90 border border-slate-200 rounded-[48px] shadow-2xl shadow-slate-100 flex items-center justify-center">
                                 <MessageSquare size={80} className="text-blue-500/20" strokeWidth={1} />
                             </div>
                         </div>
-                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">Select Stream</h3>
-                        <p className="text-slate-400 font-bold max-w-xs leading-relaxed uppercase tracking-widest text-[11px]">Choose a communication vector from the left to begin high-fidelity engagement.</p>
+                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">Open a Conversation</h3>
+                        <p className="text-slate-400 font-bold max-w-sm leading-relaxed uppercase tracking-widest text-[11px]">Pick a live thread from the left rail to respond, send templates, or launch a Meta flow directly inside WhatsApp.</p>
                     </div>
                 )}
             </div>
@@ -867,18 +1169,18 @@ export default function InboxPage() {
             <AnimatePresence>
                 {showContactDetails && selectedConversation && (
                     <motion.div 
-                        initial={{ x: 400 }}
+                        initial={{ x: typeof window !== 'undefined' && window.innerWidth < 640 ? 0 : 400, y: typeof window !== 'undefined' && window.innerWidth < 640 ? 500 : 0 }}
                         animate={{ x: 0 }}
-                        exit={{ x: 400 }}
+                        exit={{ x: typeof window !== 'undefined' && window.innerWidth < 640 ? 0 : 400, y: typeof window !== 'undefined' && window.innerWidth < 640 ? 500 : 0 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed sm:relative inset-y-0 right-0 w-full sm:w-[400px] bg-white border-l-2 border-slate-50 flex flex-col shadow-2xl z-[100]"
+                        className="fixed inset-x-0 bottom-0 top-auto z-[100] flex h-[82dvh] w-full flex-col rounded-t-[32px] border-t-2 border-slate-50 bg-white shadow-2xl sm:inset-y-0 sm:right-0 sm:left-auto sm:h-auto sm:w-[400px] sm:rounded-none sm:border-t-0 sm:border-l-2"
                     >
-                        <div className="p-8 border-b-2 border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center justify-between border-b-2 border-slate-50 p-5 sm:p-8">
                             <h3 className="text-xl font-black text-slate-900 tracking-tight">Lead Intelligence</h3>
                             <button onClick={() => setShowContactDetails(false)} className="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-400"><X size={20} strokeWidth={3} /></button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto space-y-8 p-5 custom-scrollbar sm:space-y-12 sm:p-10">
                             <div className="flex flex-col items-center">
                                 <div className="w-32 h-32 rounded-[32px] bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center text-white text-5xl font-black mb-6 shadow-2xl shadow-blue-200">
                                     {selectedConversation.contact.name.charAt(0)}
@@ -908,7 +1210,7 @@ export default function InboxPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-transparent hover:border-slate-100 transition-all group">
                                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2 group-hover:text-slate-400 transition-colors">Stage</p>
                                     <div className="flex items-center gap-2">

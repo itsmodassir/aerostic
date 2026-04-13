@@ -57,8 +57,54 @@ export default function RootLayout({
                     dangerouslySetInnerHTML={{
                         __html: `
                             (function() {
-                                var lastReload = localStorage.getItem('last_chunk_reload');
-                                var now = Date.now();
+                                var RETRY_KEY = 'last_chunk_reload';
+                                var SUCCESS_KEY = 'last_chunk_success';
+
+                                function getNow() {
+                                    return Date.now();
+                                }
+
+                                function getLastRetry() {
+                                    return Number(localStorage.getItem(RETRY_KEY) || '0');
+                                }
+
+                                function buildRetryUrl() {
+                                    var url = new URL(window.location.href);
+                                    url.searchParams.set('__chunk_retry', String(getNow()));
+                                    return url.toString();
+                                }
+
+                                function recoverFromChunkError() {
+                                    var now = getNow();
+                                    var lastRetry = getLastRetry();
+
+                                    // Avoid infinite reload loops while still forcing a fresh HTML request
+                                    if (lastRetry && (now - lastRetry) < 30000) {
+                                        return;
+                                    }
+
+                                    localStorage.setItem(RETRY_KEY, String(now));
+                                    sessionStorage.removeItem('auth_redirect_at');
+
+                                    try {
+                                        if ('caches' in window) {
+                                            caches.keys().then(function(keys) {
+                                                return Promise.all(keys.map(function(key) {
+                                                    return caches.delete(key);
+                                                }));
+                                            }).catch(function() {});
+                                        }
+                                    } catch (err) {}
+
+                                    console.warn('Next.js chunk mismatch detected. Requesting a fresh build.');
+                                    window.location.replace(buildRetryUrl());
+                                }
+
+                                var successAt = Number(localStorage.getItem(SUCCESS_KEY) || '0');
+                                if (!successAt || (getNow() - successAt) > 10000) {
+                                    localStorage.setItem(SUCCESS_KEY, String(getNow()));
+                                    localStorage.removeItem(RETRY_KEY);
+                                }
                                 
                                 // Global error listener for ChunkLoadError (Next.js/Webpack)
                                 window.addEventListener('error', function(e) {
@@ -69,26 +115,40 @@ export default function RootLayout({
                                     );
                                     
                                     if (chunkError) {
-                                        // Avoid infinite reload loops (max once per 30 seconds)
-                                        if (!lastReload || (now - parseInt(lastReload)) > 30000) {
-                                            localStorage.setItem('last_chunk_reload', now.toString());
-                                            console.warn('Next.js ChunkLoadError detected. Accessing new build... Reloading.');
-                                            window.location.reload(true);
-                                        }
+                                        recoverFromChunkError();
                                     }
                                 }, true);
 
                                 // Also handle unhandled promise rejections (often used for dynamic imports)
                                 window.addEventListener('unhandledrejection', function(e) {
                                     var reason = e.reason && e.reason.toString();
-                                    if (reason && (reason.indexOf('ChunkLoadError') !== -1 || reason.indexOf('Loading chunk') !== -1)) {
-                                        if (!lastReload || (now - parseInt(lastReload)) > 30000) {
-                                            localStorage.setItem('last_chunk_reload', now.toString());
-                                            window.location.reload(true);
-                                        }
+                                    if (reason && (
+                                        reason.indexOf('ChunkLoadError') !== -1 ||
+                                        reason.indexOf('Loading chunk') !== -1 ||
+                                        reason.indexOf('Failed to fetch dynamically imported module') !== -1
+                                    )) {
+                                        recoverFromChunkError();
                                     }
                                 });
                             })();
+                        `
+                    }}
+                />
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                                window.addEventListener('load', function() {
+                                    navigator.serviceWorker.register('/sw.js').then(
+                                        function(registration) {
+                                            console.log('PWA ServiceWorker registration successful with scope: ', registration.scope);
+                                        },
+                                        function(err) {
+                                            console.log('PWA ServiceWorker registration failed: ', err);
+                                        }
+                                    );
+                                });
+                            }
                         `
                     }}
                 />

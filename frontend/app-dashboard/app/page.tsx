@@ -22,7 +22,7 @@ const Footer = dynamic(() => import('@/components/landing/Footer'));
 // FAQ data for structured data
 const faqData = [
     { question: "What is Aimstors Solution?", answer: "Aimstors Solution is India's #1 WhatsApp Marketing & Automation Platform that helps businesses send bulk campaigns, deploy AI chatbots, and automate customer support." },
-    { question: "How much does Aimstors Solution cost?", answer: "Aimstors Solution offers three plans: Starter at ₹1,999/month, Growth at ₹4,999/month, and Enterprise at ₹14,999/month with a 14-day free trial." },
+    { question: "How much does Aimstors Solution cost?", answer: "Aimstors Solution offers flexible pricing plans starting with a generous Free Tier. We have specialized plans for growing businesses and resellers with a 7-day free trial." },
     { question: "Do I need technical knowledge to use Aimstors Solution?", answer: "No, Aimstors Solution is designed for non-technical users with an intuitive drag-and-drop interface. No coding required." },
     { question: "Is Aimstors Solution officially approved by Meta?", answer: "Yes, Aimstors Solution uses the official WhatsApp Business API provided by Meta, ensuring compliance and reliability." },
 ];

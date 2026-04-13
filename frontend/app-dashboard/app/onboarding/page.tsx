@@ -53,7 +53,7 @@ interface Plan {
 export default function OnboardingPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [selectedPlan, setSelectedPlan] = useState<string>('plan_starter');
+    const [selectedPlan, setSelectedPlan] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
@@ -142,30 +142,15 @@ export default function OnboardingPage() {
         );
     }
 
-    // Combine Free Trial with fetched plans
-    const allPlans: (Plan & { duration: string; isStatic: boolean; highlight: boolean; icon: any })[] = [
-        {
-            id: 'free_trial',
-            name: 'Free Trial',
-            description: 'Perfect for exploring the platform',
-            price: 0,
-            duration: '7 days',
-            setupFee: 0,
-            features: ['1,000 Messages', '100 AI Credits', '1 AI Agent', 'Basic Automation'],
-            limits: null,
-            slug: 'free-trial',
-            isStatic: true,
-            highlight: false,
-            icon: <Clock className="w-6 h-6 text-gray-500" />
-        },
-        ...plans.map(p => ({
-            ...p,
-            duration: 'monthly',
-            isStatic: false,
-            highlight: p.name.includes('Starter 2') || p.name.includes('Growth'), // Auto-highlight popular plans
-            icon: p.price > 4000 ? <Zap className="w-6 h-6 text-purple-600" /> : <Crown className="w-6 h-6 text-blue-600" />
-        }))
-    ];
+    // strictly use fetched plans
+    const allPlans: (Plan & { duration: string; highlight: boolean; icon: any; isStatic: boolean })[] = plans.map((p, index) => ({
+        ...p,
+        duration: 'monthly',
+        isStatic: false,
+        // Auto-highlight the middle plan or the second plan if exists
+        highlight: plans.length > 2 ? index === 1 : (plans.length === 2 ? index === 1 : false),
+        icon: p.price > 4000 ? <Zap className="w-6 h-6 text-purple-600" /> : <Crown className="w-6 h-6 text-blue-600" />
+    }));
 
     return (
         <div className="min-h-screen bg-gray-50/50 flex flex-col">

@@ -209,6 +209,7 @@ export default function WhatsAppSettingsPage() {
                                     businessId={status.businessId}
                                     verifiedName={status.verifiedName}
                                     displayPhoneNumber={status.displayPhoneNumber}
+                                    mode={status.mode}
                                     onEdit={() => setIsProfileModalOpen(true)}
                                 />
                                 <MessagingLimitsCard 

@@ -136,7 +136,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 isSidebarCollapsed ? "sm:pl-20" : "sm:pl-64"
             )}>
                 <Header user={user} isAdmin={isAdmin} logout={logout} />
-                <main className="flex-1 p-4 md:p-8 overflow-auto">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto">
                     {children}
                 </main>
             </div>

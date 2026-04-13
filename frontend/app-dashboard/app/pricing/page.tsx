@@ -1,60 +1,72 @@
-'use client';
+"use client";
 
 import Link from 'next/link';
-import { Check, X, ArrowRight, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { Loader2, Check, X, ArrowRight, MessageSquare } from 'lucide-react';
+
+const FEATURE_MAP: Record<string, string> = {
+    'whatsapp_embedded': 'WhatsApp Embedded Signup',
+    'whatsapp_marketing': 'WhatsApp Marketing',
+    'ai_features': 'AI Features',
+    'templates': 'Templates Management',
+    'api_access': 'API Access',
+    'webhooks': 'Webhooks',
+    'human_takeover': 'Human Takeover',
+    'unlimited_broadcasts': 'Unlimited Broadcasts',
+    'multi_client_dashboard': 'Multi-Client Dashboard',
+    'lead_pipeline': 'Lead Pipeline',
+    'ai_classification': 'AI Classification',
+    'advanced_ai': 'Advanced AI / Gemini',
+    'whitelabel': 'White-label Branding',
+    'reseller_hub': 'Reseller Hub Access',
+    'crm_integrations': 'CRM Integrations',
+    'basic_support': 'Basic Support',
+    'unlimited_templates': 'Unlimited Templates'
+};
+
+interface Plan {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    setupFee: number;
+    features: string[];
+    limits: any;
+    slug: string;
+}
 
 export default function PricingPage() {
-    const plans = [
-        {
-            id: 'starter',
-            name: 'Starter',
-            price: 1999,
-            description: 'Perfect for small businesses getting started',
-            features: [
-                { text: '10,000 messages/month', included: true },
-                { text: '1,000 AI credits', included: true },
-                { text: '1 AI Agent', included: true },
-                { text: 'Basic templates', included: true },
-                { text: 'Email support', included: true },
-                { text: 'API access', included: false },
-                { text: 'Custom templates', included: false },
-                { text: 'White-label', included: false },
-            ],
-        },
-        {
-            id: 'growth',
-            name: 'Growth',
-            price: 4999,
-            description: 'For growing teams with higher volume',
-            popular: true,
-            features: [
-                { text: '50,000 messages/month', included: true },
-                { text: '5,000 AI credits', included: true },
-                { text: '5 AI Agents', included: true },
-                { text: 'Custom templates', included: true },
-                { text: 'API access', included: true },
-                { text: 'Priority support', included: true },
-                { text: 'Team collaboration', included: true },
-                { text: 'White-label', included: false },
-            ],
-        },
-        {
-            id: 'enterprise',
-            name: 'Enterprise',
-            price: 14999,
-            description: 'For large organizations with custom needs',
-            features: [
-                { text: 'Unlimited messages', included: true },
-                { text: 'Unlimited AI credits', included: true },
-                { text: 'Unlimited Agents', included: true },
-                { text: 'Custom integrations', included: true },
-                { text: 'Dedicated support', included: true },
-                { text: 'SLA guarantee', included: true },
-                { text: 'White-label branding', included: true },
-                { text: 'On-premise option', included: true },
-            ],
-        },
-    ];
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchPlans();
+    }, []);
+
+    const fetchPlans = async () => {
+        try {
+            const res = await api.get('/billing/available-plans');
+            setPlans(res.data);
+        } catch (err) {
+            console.error('Failed to fetch plans', err);
+            setError('Failed to load pricing. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        </div>
+    );
+
+    const allPlans = plans.map((p, index) => ({
+        ...p,
+        popular: plans.length > 2 ? index === 1 : (plans.length === 2 ? index === 1 : false),
+    }));
 
     return (
         <div className="min-h-screen bg-white">
@@ -83,7 +95,7 @@ export default function PricingPage() {
                         Simple, Transparent Pricing
                     </h1>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Choose the plan that fits your business. All plans include a 14-day free trial.
+                        Choose the plan that fits your business. All plans include a 7-day free trial.
                     </p>
                 </div>
             </section>
@@ -91,23 +103,23 @@ export default function PricingPage() {
             {/* Pricing Cards */}
             <section className="py-16 -mt-8">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {plans.map((plan) => (
+                    <div className={`grid gap-8 ${allPlans.length === 2 ? 'md:grid-cols-2 max-w-4xl mx-auto' : 'md:grid-cols-3'}`}>
+                        {allPlans.map((plan) => (
                             <div
                                 key={plan.id}
-                                className={`rounded-2xl p-8 ${plan.popular
-                                        ? 'bg-blue-600 text-white ring-4 ring-blue-600 ring-offset-4'
-                                        : 'bg-white border-2 border-gray-200'
+                                className={`rounded-3xl p-8 flex flex-col ${plan.popular
+                                        ? 'bg-blue-600 text-white shadow-2xl scale-105 z-10'
+                                        : 'bg-white border-2 border-gray-100'
                                     }`}
                             >
                                 {plan.popular && (
-                                    <span className="inline-block bg-white text-blue-600 text-xs font-bold px-3 py-1 rounded-full mb-4">
+                                    <span className="inline-block bg-white text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full mb-4 self-start">
                                         MOST POPULAR
                                     </span>
                                 )}
                                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                                <p className={`mb-6 ${plan.popular ? 'text-blue-100' : 'text-gray-600'}`}>
-                                    {plan.description}
+                                <p className={`mb-6 text-sm ${plan.popular ? 'text-blue-100' : 'text-gray-500'}`}>
+                                    {plan.description || (plan.price === 0 ? 'Basic starter plan' : 'Advanced features for growth')}
                                 </p>
                                 <div className="mb-6">
                                     <span className="text-5xl font-bold">₹{plan.price.toLocaleString()}</span>
@@ -115,24 +127,36 @@ export default function PricingPage() {
                                 </div>
                                 <Link
                                     href="/register"
-                                    className={`block w-full py-3 rounded-lg font-semibold text-center mb-8 transition-colors ${plan.popular
-                                            ? 'bg-white text-blue-600 hover:bg-gray-100'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    className={`block w-full py-4 rounded-xl font-bold text-center mb-8 transition-all ${plan.popular
+                                            ? 'bg-white text-blue-600 hover:bg-gray-100 shadow-lg shadow-blue-900/20'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20'
                                         }`}
                                 >
-                                    Start Free Trial
+                                    {plan.price === 0 ? 'Get Started for Free' : 'Choose Plan'}
                                 </Link>
-                                <ul className="space-y-4">
-                                    {plan.features.map((feature, i) => (
+                                <ul className="space-y-4 flex-1">
+                                    {/* Limits */}
+                                    {plan.limits && (
+                                        <>
+                                            <li className="flex items-center gap-3">
+                                                <Check className={`w-5 h-5 ${plan.popular ? 'text-blue-200' : 'text-blue-500'}`} />
+                                                <span className="text-sm">
+                                                    <span className="font-bold">{plan.limits.monthly_messages === -1 ? 'Unlimited' : plan.limits.monthly_messages.toLocaleString()}</span> Messages/mo
+                                                </span>
+                                            </li>
+                                            <li className="flex items-center gap-3">
+                                                <Check className={`w-5 h-5 ${plan.popular ? 'text-blue-200' : 'text-blue-500'}`} />
+                                                <span className="text-sm">
+                                                    <span className="font-bold">{plan.limits.ai_credits === -1 ? 'Unlimited' : plan.limits.ai_credits.toLocaleString()}</span> AI Credits
+                                                </span>
+                                            </li>
+                                        </>
+                                    )}
+                                    {/* Features */}
+                                    {plan.features.map((f, i) => (
                                         <li key={i} className="flex items-center gap-3">
-                                            {feature.included ? (
-                                                <Check className={`w-5 h-5 ${plan.popular ? 'text-blue-200' : 'text-green-500'}`} />
-                                            ) : (
-                                                <X className={`w-5 h-5 ${plan.popular ? 'text-blue-300' : 'text-gray-300'}`} />
-                                            )}
-                                            <span className={!feature.included ? (plan.popular ? 'text-blue-200' : 'text-gray-400') : ''}>
-                                                {feature.text}
-                                            </span>
+                                            <Check className={`w-5 h-5 ${plan.popular ? 'text-blue-200' : 'text-blue-500'}`} />
+                                            <span className="text-sm">{FEATURE_MAP[f] || f}</span>
                                         </li>
                                     ))}
                                 </ul>
