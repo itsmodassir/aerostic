@@ -4,6 +4,9 @@ module.exports = {
       name: 'aimstors-api',
       script: 'backend/dist/api-service/main.js',
       cwd: '/var/www/aimstors',
+      instances: 'max',
+      exec_mode: 'cluster',
+      max_memory_restart: '1G',
       env: {
         PORT: 3001,
       },
@@ -25,6 +28,9 @@ module.exports = {
       name: 'aimstors-dashboard',
       script: 'frontend/app-dashboard/.next/standalone/server.js',
       cwd: '/var/www/aimstors',
+      exec_mode: 'cluster',
+      instances: 2,
+      max_memory_restart: '1G',
       env: {
         PORT: 3000,
       },

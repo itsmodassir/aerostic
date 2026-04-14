@@ -55,14 +55,12 @@ Aerostic is optimized for high-availability clusters.
 
 1.  **Redis Cluster**: For sub-millisecond metrics and queueing.
 2.  **PostgreSQL**: Highly available relational database.
-3.  **Auto-Deploy**:
+3.  **Auto-Deploy**: Use the synced build script to prevent TS corruption in PM2.
     ```bash
-    ./infrastructure/scripts/deploy_prod.sh
+    ./deploy_remote_build.sh
     ```
-3.  **Auto-Deploy**:
-    ```bash
-    ./infrastructure/scripts/deploy_prod.sh
-    ```
+4.  **Developer API Access**: End users can securely access Swagger Interactive Docs using Webhook or REST integrations. The API endpoint is exposed at:
+    `[BASE_URL]/api/docs` (Includes interactive JWT `access-token` login to test webhooks and integrations directly).
 
 ---
 

@@ -1,6 +1,7 @@
 import { NestFactory, HttpAdapterHost } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { SentryExceptionFilter } from "@shared/filters/sentry-exception.filter";
@@ -34,6 +35,22 @@ async function bootstrap() {
 
   // API Versioning
   app.setGlobalPrefix("api/v1");
+
+  // Developer API Documentation Setup
+  const config = new DocumentBuilder()
+    .setTitle('Aimstors API')
+    .setDescription('The official REST API documentation for the Aimstors Platform. Connect external components securely.')
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token', // Used for API keys or Tokens
+    )
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'Aimstors Developer API Documentation',
+  });
 
   // CORS Configuration
   const baseDomain = process.env.BASE_DOMAIN || "aimstore.in";
